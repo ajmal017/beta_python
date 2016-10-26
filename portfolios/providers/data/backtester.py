@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import timedelta
 import pandas as pd
+import os
 import numpy as np
 from portfolios.providers.dummy_models import AssetClassMock, \
     AssetFeatureValueMock, InstrumentsFactory, MarkowitzScaleMock, \
@@ -9,14 +10,17 @@ from portfolios.returns import get_prices
 from .abstract import DataProviderAbstract
 from portfolios.exceptions import OptimizationException
 
+def _to_string(s):
+    return s or ''
 
 class DataProviderBacktester(DataProviderAbstract):
-    def __init__(self, sliding_window_length):
+    def __init__(self, sliding_window_length, dir=None):
         self.sliding_window_length = sliding_window_length
         self.cache = None
         self.markowitz_scale = None
         self.tickers = list()
-        self.benchmark_marketweight_matrix = pd.read_csv('capitalization_mock.csv',
+        self.dir = os.getcwd() + _to_string(dir)
+        self.benchmark_marketweight_matrix = pd.read_csv(self.dir + 'capitalization_mock.csv',
                                                          index_col='Date',
                                                          infer_datetime_format=True,
                                                          parse_dates=True)
@@ -27,9 +31,12 @@ class DataProviderBacktester(DataProviderAbstract):
                                                 )]
         self.asset_feature_values = [AssetFeatureValueMock(name='featureName',
                                                            feature=None,
-                                                           tickers=['EEM', 'EEMV', 'EFA'])]
-        self.tickers = InstrumentsFactory.create_tickers()
-        self.dates = InstrumentsFactory.get_dates()
+                                                           tickers=['EEM', 'EEMV', 'EFA'])]\
+
+        instruments_factory = InstrumentsFactory(self.dir)
+
+        self.tickers = instruments_factory.create_tickers()
+        self.dates = instruments_factory.get_dates()
         self.__current_date = self.sliding_window_length
         self.time_constrained_tickers = []
         self.investment_cycles = InvestmentCycleObservationFactory.create_cycles()
@@ -77,11 +84,12 @@ class DataProviderBacktester(DataProviderAbstract):
 
     def get_tickers(self):
         self.time_constrained_tickers = []
+        instrument_factory = InstrumentsFactory(self.dir)
         for ticker in self.tickers:
             date_range = (self.get_current_date() - timedelta(days=self.sliding_window_length),
                           self.get_current_date())
 
-            ticker = InstrumentsFactory.create_ticker(ticker=ticker.symbol,
+            ticker = instrument_factory.create_ticker(ticker=ticker.symbol,
                                                       daily_prices=ticker.daily_prices.filter(date__range=date_range),
                                                       benchmark_id=ticker.benchmark.symbol,
                                                       benchmark_daily_prices=

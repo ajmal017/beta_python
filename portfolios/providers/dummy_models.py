@@ -385,8 +385,10 @@ class InvestmentCycleObservationFactory(object):
 
 
 class InstrumentsFactory(object):
-    @staticmethod
-    def create_ticker(ticker, daily_prices, benchmark_id, benchmark_daily_prices):
+    def __init__(self, dir=None):
+        self.dir = dir
+
+    def create_ticker(self, ticker, daily_prices, benchmark_id, benchmark_daily_prices):
         asset_class_mock = AssetClassMock("equity")
         ticker_mock = TickerMock(symbol=ticker, daily_prices=daily_prices,
                                  asset_class=asset_class_mock)
@@ -395,10 +397,9 @@ class InstrumentsFactory(object):
         ticker_mock.benchmark_object_id = ''
         return ticker_mock
 
-    @staticmethod
     @functools.lru_cache(maxsize=100)
-    def create_tickers():
-        fund_price_matrix = pd.read_csv('fundPrices_mock.csv', index_col='Date', infer_datetime_format=True,
+    def create_tickers(self):
+        fund_price_matrix = pd.read_csv(self.dir + 'fundPrices_mock.csv', index_col='Date', infer_datetime_format=True,
                                              parse_dates=True)
         fund_price_matrix.index.name = 'date'
         tickers = list(fund_price_matrix.columns)
@@ -407,16 +408,15 @@ class InstrumentsFactory(object):
 
         tickerMocks = []
         for ticker, benchmark_id in zip(tickers, benchmark_id):
-            ticker_mock = InstrumentsFactory.create_ticker(ticker=ticker,
-                                                           daily_prices=fund_price_matrix[ticker],
-                                                           benchmark_id=benchmark_id,
-                                                           benchmark_daily_prices=benchmark_price_matrix[benchmark_id])
+            ticker_mock = self.create_ticker(ticker=ticker,
+                                             daily_prices=fund_price_matrix[ticker],
+                                             benchmark_id=benchmark_id,
+                                             benchmark_daily_prices=benchmark_price_matrix[benchmark_id])
             tickerMocks.append(ticker_mock)
         return tickerMocks
 
-    @staticmethod
-    def get_fund_price_matrix():
-        tickers = InstrumentsFactory.create_tickers()
+    def get_fund_price_matrix(self):
+        tickers = self.create_tickers()
         matrix = None
         for ticker in tickers:
             current = pd.DataFrame(data=ticker.daily_prices.daily_prices.values,
@@ -428,9 +428,8 @@ class InstrumentsFactory(object):
                 matrix = pd.concat([matrix, current], axis=1)
         return matrix
 
-    @staticmethod
-    def get_dates():
-        tickers = InstrumentsFactory.get_fund_price_matrix()
+    def get_dates(self):
+        tickers = self.get_fund_price_matrix()
         timedates = tickers.index.to_pydatetime()
         dates = [timedate.date() for timedate in timedates]
         return dates
