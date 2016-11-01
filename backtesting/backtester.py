@@ -71,6 +71,9 @@ class TestSetup(object):
         self._covars = self._samples = self._instruments = self._masks = None
         self.data_provider = DataProviderBacktester(sliding_window_length=250*5, dir='/backtesting/')
         self.execution_provider = ExecutionProviderDjango()
+
+        self.data_provider.get_goals()
+
         self.goal = None
 
     def create_goal(self, goal):

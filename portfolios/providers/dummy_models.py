@@ -439,7 +439,7 @@ class GoalFactory(object):
     @staticmethod
     def create_goal(data_provider):
         asset_feature_value = AssetFeatureValueMock(name='featureName', feature=None, tickers=['EEM', 'EEMV', 'EFA'])
-        goal_metric = [GoalMetricMock(type=GoalMetricMock.METRIC_TYPE_RISK_SCORE, feature=asset_feature_value,
+        goal_metric = [GoalMetricMock(type=GoalMetricMock.METRIC_TYPE_PORTFOLIO_MIX, feature=asset_feature_value,
                                       rebalance_type="1", configured_val=0.0, comparison=2)]
         goal_metric_group = GoalMetricGroupMock(metrics=goal_metric)
 

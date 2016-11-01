@@ -44,4 +44,6 @@ class BaseTest(TestCase):
         performance = backtester.calculate_performance(execution_provider=setup.execution_provider)
 
     def create_goal(self):
-        self.goal = Fixture1.goal1()
+        self.goal = Fixture1.create_goal(['EEM','DIA'])
+        #self.goal = Fixture1.goal1()
+

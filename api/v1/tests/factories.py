@@ -14,7 +14,7 @@ from main.models import User, ExternalAsset, PortfolioSet, Firm, Advisor, \
                         GoalMetric, AssetFeatureValue, AssetFeature, \
                         MarkowitzScale, Supervisor, AuthorisedRepresentative, PositionLot, ExecutionDistribution,\
                         InvestmentCycleObservation, InvestmentCyclePrediction, \
-                        RecurringTransaction
+                        RecurringTransaction, Portfolio, PortfolioItem
 from retiresmartz.models import RetirementPlan, RetirementAdvice
 from main.models import Region as MainRegion
 from client.models import Client, ClientAccount, RiskProfileGroup, \
@@ -374,6 +374,26 @@ class ExternalAssetFactory(factory.django.DjangoModelFactory):
     #     RETIREMENT_ACCOUNT = (6, 'Retirement Account')
     #     OTHER = (7, 'Other')
 
+
+class PortfolioFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Portfolio
+
+    setting = factory.SubFactory(GoalSettingFactory)
+    stdev = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
+    er = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
+
+    @factory.post_generation
+    def items(self, create, items, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if items:
+            # A list of groups were passed in, use them
+            for item in items:
+                self.items.add(item)
+                
 
 class InvestmentTypeFactory(factory.django.DjangoModelFactory):
     class Meta:
