@@ -1,7 +1,7 @@
 import pandas as pd
 import pandas.io.data as web
 
-from portfolios.providers.data.backtester import DataProviderBacktester
+from portfolios.providers.data.backtester_django import DataProviderDjango
 from portfolios.providers.dummy_models import GoalFactory, PositionLot
 from portfolios.providers.execution.django import ExecutionProviderDjango
 from main.management.commands.rebalance import rebalance
@@ -69,7 +69,7 @@ class Backtester(object):
 class TestSetup(object):
     def __init__(self):
         self._covars = self._samples = self._instruments = self._masks = None
-        self.data_provider = DataProviderBacktester(sliding_window_length=250*5, dir='/backtesting/')
+        self.data_provider = DataProviderDjango(sliding_window_length=250*5, dir='/backtesting/')
         self.execution_provider = ExecutionProviderDjango()
 
         self.data_provider.get_goals()

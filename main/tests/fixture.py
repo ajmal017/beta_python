@@ -8,7 +8,7 @@ from pinax.eventlog.models import Log
 import address.models as ad
 from api.v1.tests.factories import GoalMetricFactory, TransactionFactory, PositionLotFactory, \
     InvestmentCycleObservationFactory, TickerFactory, AssetFeatureValueFactory, GoalFactory, PortfolioSetFactory, \
-    AssetClassFactory, InvestmentTypeFactory, PortfolioFactory
+    AssetClassFactory, InvestmentTypeFactory, PortfolioFactory, GoalSettingFactory, MarketIndexFactory
 from client.models import Client, ClientAccount, RiskProfileAnswer,\
     RiskProfileGroup, RiskProfileQuestion, IBAccount
 from main.constants import ACCOUNT_TYPE_PERSONAL
@@ -788,34 +788,32 @@ class Fixture1:
         PositionLotFactory.create(quantity=quantity, execution_distribution=distribution)
 
     @classmethod
-    def create_goal(cls, tickers):
-        group = GoalMetricGroup.objects.create(type=GoalMetricGroup.TYPE_PRESET, name='metricgroup1')
-        goal_metric = GoalMetricFactory.create(type=GoalMetric.METRIC_TYPE_PORTFOLIO_MIX, group=group)
-        goal_settings = GoalSetting.objects.create(target=100000,
-                                                   completion=datetime.date(2000, 1, 1),
-                                                   hedge_fx=False,
-                                                   metric_group=group,
-                                                   rebalance=True,
-                                                   )
-
+    def initialize_backtest(cls, tickers):
         ticker_list = list()
-        portfolio = PortfolioFactory.create(setting=goal_settings)
-
-        for t in tickers:
-            ticker = TickerFactory.create(symbol=t)
-            PortfolioItem.objects.create(asset=ticker, weight=0.1, volatility=0, portfolio=portfolio)
-            ticker_list.append(ticker)
-
         equity_asset_class = AssetClassFactory\
             .create(name='equity', investment_type=InvestmentTypeFactory.create(name='equity'))
 
-        asv = AssetFeatureValueFactory.create(name='featureName', assets=ticker_list)
+        for t in tickers:
+            market_index = MarketIndexFactory.create()
+            ticker = TickerFactory.create(symbol=t, asset_class=equity_asset_class, benchmark=market_index)
+            ticker_list.append(ticker)
+
         portfolio_set = PortfolioSetFactory.create(name='portfolio_set1',
                                                    risk_free_rate=0.02,
                                                    asset_classes=[equity_asset_class]
                                                    )
-        goal_metric.feature = asv
-        goal_metric.save()
+        asv = AssetFeatureValueFactory.create(name='random feature', assets=ticker_list)
+        goal_settings = GoalSettingFactory.create(target=100000,
+                                                  completion=datetime.date(2000, 1, 1),
+                                                  hedge_fx=False,
+                                                  rebalance=True,
+                                                  )
+        GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
+        GoalMetricFactory.create(type=GoalMetric.METRIC_TYPE_PORTFOLIO_MIX,
+                                 group=goal_settings.metric_group,
+                                 feature=asv,
+                                 comparison=GoalMetric.METRIC_COMPARISON_EXACTLY,
+                                 configured_val=.8)
 
         return GoalFactory.create(account=Fixture1.personal_account1(),
                                   name='goal1',

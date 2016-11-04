@@ -22,6 +22,7 @@ class BaseTest(TestCase):
         setup = TestSetup()
         self.create_goal()
         setup.create_goal(self.goal)
+        setup.data_provider.initialize_tickers()
         setup.data_provider.move_date_forward()
 
         backtester = Backtester()
@@ -44,6 +45,7 @@ class BaseTest(TestCase):
         performance = backtester.calculate_performance(execution_provider=setup.execution_provider)
 
     def create_goal(self):
-        self.goal = Fixture1.create_goal(['EEM','DIA'])
+        self.goal = Fixture1.initialize_backtest(['DIA', 'DLN', 'DOG', 'DRIP', 'DSLV', 'DUST', 'DVY', 'DWTI', 'DXD',
+       'DXJ', 'EDC', 'EDZ', 'EEM', 'EEMV', 'EFA'])
         #self.goal = Fixture1.goal1()
 
