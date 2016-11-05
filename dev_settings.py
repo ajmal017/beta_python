@@ -10,8 +10,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': 'dev_database.sqlite3',
-        'TEST': {'NAME': 'test_database.sqlite3'}
-    }
+        'TEST': {'NAME': ':memory:'}
+    },
 }
 
 CACHES = {
