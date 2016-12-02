@@ -20,7 +20,10 @@ from main.management.commands.rebalance import rebalance
 class BaseTest(TestCase):
     def test_backtest(self):
         setup = TestSetup()
+
+        # actually tickers are created here - we need to set proper asset class for each ticker
         self.create_goal()
+
         setup.create_goal(self.goal)
         setup.data_provider.initialize_tickers()
         setup.data_provider.move_date_forward()
