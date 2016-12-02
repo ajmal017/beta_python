@@ -109,12 +109,16 @@ class PasswordsTests(APITestCase):
         # userfactory has test for password on new users by default
         old_password = 'test'
         new_password = 'test2'
+        sa1 = SecurityAnswerFactory.create(user=self.user2, question='question one')
+        sa2 = SecurityAnswerFactory.create(user=self.user2, question='question two')
 
         data = {
             'old_password': old_password,
             'new_password': new_password,
-            'question': self.sa.question,
-            'answer': 'test',  # default SecurityAnswer answer
+            'question_one': sa1.question,
+            'answer_one': 'test',
+            'question_two': sa2.question,
+            'answer_two': 'test',
         }
         # check for 403 on an unauthenticated request first
         response = self.client.post(url, data)
@@ -136,8 +140,10 @@ class PasswordsTests(APITestCase):
         data = {
             'old_password': 'Batman Forever',
             'new_password': 'Batman The DarK Knight',
-            'answer': 'test',
-            'question': self.sa.question,
+            'question_one': sa1.question,
+            'answer_one': 'test',
+            'question_two': sa2.question,
+            'answer_two': 'test',
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED,
@@ -150,33 +156,23 @@ class PasswordsTests(APITestCase):
         data = {
             'old_password': 'test',
             'new_password': 'joker',
-            'answer': 'This is the wrong answer',
-            'question': self.sa.question,
+            'question_one': sa1.question,
+            'answer_one': 'This is the wrong answer',
+            'question_two': sa2.question,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.user3)
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED,
                          msg='401 for authenticated request to change password with wrong security answer')
 
-        # lets try camelCase
-        old_password = 'test'
-        new_password = 'test4'
-        data = {
-            'oldPassword': old_password,
-            'newPassword': new_password,
-            'answer': 'test',
-            'question': self.sa2.question,
-        }
-        self.client.force_authenticate(user=self.user4)
-        response = self.client.post(url, data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK,
-                         msg='200 returned by authenticated change password request with camelCase')
-
         # post with no question returns 401
         data = {
             'old_password': old_password,
             'new_password': new_password,
-            'answer': 'test',
+            'question_one': sa1.question,
+            'question_two': sa2.question,
+            'answer_two': 'test',
             # 'question': self.sa2.question,
         }
         response = self.client.post(url, data)

@@ -216,8 +216,10 @@ class ChangePasswordSerializer(serializers.Serializer):
     """
     old_password = serializers.CharField()
     new_password = serializers.CharField()
-    question = serializers.CharField()
-    answer = serializers.CharField()
+    question_one = serializers.CharField(required=True)
+    answer_one = serializers.CharField(required=True)
+    question_two = serializers.CharField(required=True)
+    answer_two = serializers.CharField(required=True)
 
     def validate(self, data):
         # check security answer matches security question
@@ -227,12 +229,26 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError('Wrong password')
 
         # validate security question and answer combo
+        # SecurityAnswer checks
         try:
-            sa = SecurityAnswer.objects.get(user=user, question=data.get('question'))
+            sa1 = SecurityAnswer.objects.get(user=user, question=data.get('question_one'))
         except:
-            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s' % (user.email, data.get('question')))
-        if not sa.check_answer(data.get('answer')):
-            raise serializers.ValidationError('Wrong answer')
+            logger.error('ChangePasswordSerializer question %s not found' % data.get('question_one'))
+            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
+
+        if not sa1.check_answer(data.get('answer_one')):
+            logger.error('ChangePasswordSerializer answer two was wrong')
+            raise serializers.ValidationError('Wrong answer_one for ChangePasswordSerializer')
+
+        try:
+            sa2 = SecurityAnswer.objects.get(user=user, question=data.get('question_two'))
+        except:
+            logger.error('ChangePasswordSerializer question %s not found' % data.get('question_two'))
+            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
+
+        if not sa2.check_answer(data.get('answer_two')):
+            logger.error('ChangePasswordSerializer answer two was wrong')
+            raise serializers.ValidationError('Wrong answer_two for ChangePasswordSerializer')
         return data
 
 
