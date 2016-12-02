@@ -7,7 +7,7 @@ from main.constants import ACCOUNT_TYPES
 from main.models import User
 from main.tests.fixture import Fixture1
 from .factories import AccountTypeRiskProfileGroupFactory, ClientFactory, \
-    GroupFactory, UserFactory
+    GroupFactory, UserFactory, SecurityAnswerFactory
 
 
 class UserTests(APITestCase):
@@ -74,6 +74,8 @@ class UserTests(APITestCase):
         # the user must be a client, advisor or possibly supportstaff here, otherwise 403
         client = ClientFactory(user=self.user)
         client.user.groups_add(User.GROUP_CLIENT)
+        sa1 = SecurityAnswerFactory.create(user=client.user, question='question one')
+        sa2 = SecurityAnswerFactory.create(user=client.user, question='question two')
 
         url = reverse('api:v1:user-me')
         new_name = 'Bruce Wayne'
@@ -84,6 +86,10 @@ class UserTests(APITestCase):
             'password': 'test',
             'password2': 'test',
             'oldpassword': 'test',
+            'question_one': sa1.question,
+            'answer_one': 'test',
+            'question_two': sa2.question,
+            'answer_two': 'test',
         }
         # 403 unauthenticated request
         response = self.client.put(url, data)

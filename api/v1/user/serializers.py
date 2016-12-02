@@ -83,23 +83,54 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(required=False)
     password2 = serializers.CharField(required=False)
     # TODO: add fields to update advisor and client profiles
+    question_one = serializers.CharField(required=True)
+    answer_one = serializers.CharField(required=True)
+    question_two = serializers.CharField(required=True)
+    answer_two = serializers.CharField(required=True)
 
     class Meta:
         model = User
         fields = (
             'first_name', 'last_name', 'email',
             'password', 'password2', 'oldpassword',
+            'question_one', 'answer_one',
+            'question_two', 'answer_two',
         )
 
     def validate(self, data):
         request = self.context.get('request')
         user = request.user
+        if data.get('question_one') == data.get('question_two'):
+            logger.error('UserUpdateSerializer given matching questions')
+            raise serializers.ValidationError('SecurityQuestions match for UserUpdateSerializer' % (user.email, data.get('question')))
+
+        # SecurityAnswer checks
+        try:
+            sa1 = SecurityAnswer.objects.get(user=user, question=data.get('question_one'))
+        except:
+            logger.error('UserUpdateSerializer question %s not found' % data.get('question_one'))
+            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+
+        if not sa1.check_answer(data.get('answer_one')):
+            logger.error('UserUpdateSerializer answer two was wrong')
+            raise serializers.ValidationError('Wrong answer_one for UserUpdateSerializer')
+
+        try:
+            sa2 = SecurityAnswer.objects.get(user=user, question=data.get('question_two'))
+        except:
+            logger.error('UserUpdateSerializer question %s not found' % data.get('question_two'))
+            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+
+        if not sa2.check_answer(data.get('answer_two')):
+            logger.error('UserUpdateSerializer answer two was wrong')
+            raise serializers.ValidationError('Wrong answer_two for UserUpdateSerializer')
 
         if data.get('password'):
             if data.get('password') != data.get('password2'):
                 raise serializers.ValidationError('Passwords are not equal')
 
             if not user.check_password(data.get('oldpassword')):
+                logger.error('UserUpdateSerializer given wrong oldpassword')
                 raise serializers.ValidationError('Invalid current password')
 
         return data
