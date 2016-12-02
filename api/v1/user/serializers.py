@@ -220,9 +220,9 @@ class ChangePasswordSerializer(serializers.Serializer):
     """
     old_password = serializers.CharField()
     new_password = serializers.CharField()
-    question_one = serializers.CharField(required=True)
+    question_one = serializers.IntegerField(required=True)
     answer_one = serializers.CharField(required=True)
-    question_two = serializers.CharField(required=True)
+    question_two = serializers.IntegerField(required=True)
     answer_two = serializers.CharField(required=True)
 
     def validate(self, data):
@@ -235,7 +235,9 @@ class ChangePasswordSerializer(serializers.Serializer):
         # validate security question and answer combo
         # SecurityAnswer checks
         try:
-            sa1 = SecurityAnswer.objects.get(user=user, question=data.get('question_one'))
+            sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
+            if sa1.user != user:
+                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
         except:
             logger.error('ChangePasswordSerializer question %s not found' % data.get('question_one'))
             raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
@@ -245,7 +247,9 @@ class ChangePasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError('Wrong answer_one for ChangePasswordSerializer')
 
         try:
-            sa2 = SecurityAnswer.objects.get(user=user, question=data.get('question_two'))
+            sa2 = SecurityAnswer.objects.get(pk=data.get('question_two'))
+            if sa2.user != user:
+                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
         except:
             logger.error('ChangePasswordSerializer question %s not found' % data.get('question_two'))
             raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))

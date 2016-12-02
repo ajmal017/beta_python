@@ -115,9 +115,9 @@ class PasswordsTests(APITestCase):
         data = {
             'old_password': old_password,
             'new_password': new_password,
-            'question_one': sa1.question,
+            'question_one': sa1.pk,
             'answer_one': 'test',
-            'question_two': sa2.question,
+            'question_two': sa2.pk,
             'answer_two': 'test',
         }
         # check for 403 on an unauthenticated request first
@@ -140,9 +140,9 @@ class PasswordsTests(APITestCase):
         data = {
             'old_password': 'Batman Forever',
             'new_password': 'Batman The DarK Knight',
-            'question_one': sa1.question,
+            'question_one': sa1.pk,
             'answer_one': 'test',
-            'question_two': sa2.question,
+            'question_two': sa2.pk,
             'answer_two': 'test',
         }
         response = self.client.post(url, data)
@@ -156,9 +156,9 @@ class PasswordsTests(APITestCase):
         data = {
             'old_password': 'test',
             'new_password': 'joker',
-            'question_one': sa1.question,
+            'question_one': sa1.pk,
             'answer_one': 'This is the wrong answer',
-            'question_two': sa2.question,
+            'question_two': sa2.pk,
             'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.user3)
@@ -170,8 +170,8 @@ class PasswordsTests(APITestCase):
         data = {
             'old_password': old_password,
             'new_password': new_password,
-            'question_one': sa1.question,
-            'question_two': sa2.question,
+            'question_one': sa1.pk,
+            'question_two': sa2.pk,
             'answer_two': 'test',
             # 'question': self.sa2.question,
         }
