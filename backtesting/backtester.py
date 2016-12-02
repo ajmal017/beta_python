@@ -7,6 +7,7 @@ from portfolios.providers.execution.django import ExecutionProviderDjango
 from main.management.commands.rebalance import rebalance
 from portfolios.calculation import build_instruments, \
     calculate_portfolio, calculate_portfolios, get_instruments
+from api.v1.tests.factories import MarkowitzScaleFactory
 
 
 class GetETFTickers(object):
@@ -72,7 +73,7 @@ class TestSetup(object):
         self._covars = self._samples = self._instruments = self._masks = None
         self.data_provider = DataProviderDjango(sliding_window_length=250*5, dir='/backtesting/')
         self.execution_provider = ExecutionProviderDjango()
-
+        MarkowitzScaleFactory.create()
         self.data_provider.get_goals()
 
         self.goal = None
@@ -122,7 +123,6 @@ if __name__ == "__main__":
                                data_provider=setup.data_provider,
                                execution_provider=setup.execution_provider)
         '''
-
 
         # calculate current portfolio stats
         portfolios_stats = calculate_portfolios(setting=setup.goal.active_settings,
