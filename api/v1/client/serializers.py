@@ -12,11 +12,9 @@ from client.models import Client, EmailNotificationPrefs, EmailInvite, RiskProfi
 from notifications.signals import notify
 from main import constants
 from pdf_parsers.tax_return import parse_pdf
-from ..user.serializers import UserFieldSerializer
+from ..user.serializers import UserFieldSerializer, PhoneNumberValidationSerializer
 import logging
-import tempfile
 import uuid
-import json
 
 logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
@@ -27,15 +25,22 @@ class ClientSerializer(ReadOnlyModelSerializer):
     advisor = AdvisorFieldSerializer()
     residential_address = AddressSerializer()
     regional_data = serializers.JSONField()
+    reason = serializers.SerializerMethodField()
 
     class Meta:
         model = Client
+
+    def get_reason(self, obj):
+        if hasattr(obj.user, 'invitation'):
+            return obj.user.invitation.reason
+        return None
 
 
 class ClientFieldSerializer(ReadOnlyModelSerializer):
     residential_address = AddressSerializer()
     advisor = AdvisorFieldSerializer()
     regional_data = serializers.JSONField()
+    reason = serializers.SerializerMethodField()
 
     class Meta:
         model = Client
@@ -45,6 +50,11 @@ class ClientFieldSerializer(ReadOnlyModelSerializer):
             'confirmation_key',
             'create_date',
         )
+
+    def get_reason(self, obj):
+        if hasattr(obj.user, 'invitation'):
+            return obj.user.invitation.reason
+        return None
 
 
 class ClientUpdateSerializer(serializers.ModelSerializer):
@@ -72,7 +82,19 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
             'advisor_agreement',
             'phone_num',
             'regional_data',
+            'smoker',
+            'daily_exercise',
+            'weight',
+            'height',
+            'drinks',
+            'date_of_birth',
         )
+
+    def validate_phone_num(self, phone_num):
+        serializer = PhoneNumberValidationSerializer(data={'number': phone_num})
+        if not serializer.is_valid():
+            raise serializers.ValidationError('Invalid phone number')
+        return serializer.validated_data
 
     def create(self, validated_data):
         # Default to Personal account type for risk profile group on a brand
@@ -122,7 +144,6 @@ class ExternalAssetSerializer(ReadOnlyModelSerializer):
 
     class Meta:
         model = ExternalAsset
-        exclude = ('owner',)
 
 
 class ExternalAssetWritableSerializer(serializers.ModelSerializer):
@@ -187,6 +208,7 @@ class InvitationSerializer(ReadOnlyModelSerializer):
 
     class Meta:
         model = EmailInvite
+        read_only_fields = ('email', )
         fields = (
             'invite_key',
             'status',
@@ -198,6 +220,7 @@ class InvitationSerializer(ReadOnlyModelSerializer):
             'firm_name',
             'firm_logo',
             'firm_colored_logo',
+            'email',
         )
 
     def get_firm_name(self, obj):
@@ -226,8 +249,9 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmailInvite
-        read_only_fields = ('invite_key', 'status')
+        read_only_fields = ('invite_key', 'email', 'status')
         fields = (
+            'email',
             'invite_key',
             'status',
             'onboarding_data',
@@ -296,6 +320,8 @@ class ClientUserRegistrationSerializer(serializers.Serializer):
         if User.objects.filter(email=self.invite.email).exists():
             msg = _('Email is already in use')
             raise exceptions.ValidationError(msg)
+
+        attrs['email'] = self.invite.email
 
         if self.invite.status == EmailInvite.STATUS_CREATED:
             msg = _('Unable to accept this invitation, it hasnt been sent yet')

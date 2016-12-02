@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import factory
-import json
 import decimal
 import random
 from dateutil.relativedelta import relativedelta
@@ -13,14 +12,14 @@ from main.models import User, ExternalAsset, PortfolioSet, Firm, Advisor, \
                         FiscalYear, DailyPrice, MarketCap, MarketIndex, \
                         GoalMetric, AssetFeatureValue, AssetFeature, \
                         MarkowitzScale, Supervisor, AuthorisedRepresentative, PositionLot, ExecutionDistribution,\
-                        InvestmentCycleObservation, InvestmentCyclePrediction, \
-                        RecurringTransaction, Portfolio, PortfolioItem
-from retiresmartz.models import RetirementPlan, RetirementAdvice
+                        InvestmentCycleObservation, InvestmentCyclePrediction, ExecutionRequest, MarketOrderRequest, \
+    ApexFill, ExecutionApexFill, Execution, RecurringTransaction, AccountGroup, Platform, OrderETNA, Portfolio, PortfolioItem
+from retiresmartz.models import RetirementPlan, RetirementAdvice, RetirementPlanAccount
 from main.models import Region as MainRegion
 from client.models import Client, ClientAccount, RiskProfileGroup, \
     RiskProfileQuestion, RiskProfileAnswer, \
     AccountTypeRiskProfileGroup, EmailInvite
-from statements.models import StatementOfAdvice, RecordOfAdvice
+from statements.models import StatementOfAdvice, RecordOfAdvice, RetirementStatementOfAdvice
 from user.models import SecurityQuestion, SecurityAnswer
 from address.models import Address, Region
 from django.contrib.contenttypes.models import ContentType
@@ -345,7 +344,7 @@ class GoalFactory(factory.django.DjangoModelFactory):
 
     account = factory.SubFactory(ClientAccountFactory)
     name = factory.Sequence(lambda n: "Goal %d" % n)
-    cash_balance = factory.LazyAttribute(lambda n: float(random.randrange(1000000)) / 100)
+    cash_balance = factory.LazyAttribute(lambda n: float(random.randrange(500000, 1000000)) / 100)
     type = factory.SubFactory(GoalTypeFactory)
     portfolio_set = factory.SubFactory(PortfolioSetFactory)
 
@@ -501,6 +500,55 @@ class ExecutionDistributionFactory(factory.django.DjangoModelFactory):
         model = ExecutionDistribution
 
 
+class ExecutionRequestFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ExecutionRequest
+    reason = ExecutionRequest.Reason.DRIFT.value
+
+
+class MarketOrderRequestFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = MarketOrderRequest
+    state = MarketOrderRequest.State.APPROVED.value
+    account = factory.SubFactory(ClientAccountFactory)
+
+
+class OrderETNAFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = OrderETNA
+
+    ticker = factory.SubFactory(TickerFactory)
+
+
+class ApexFillFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ApexFill
+
+    etna_order = factory.SubFactory(OrderETNAFactory)
+    volume = factory.SelfAttribute('apex_order.volume')
+    price = factory.LazyAttribute(lambda n: float(random.randrange(100) / 10))
+    executed = factory.Sequence(lambda n: (datetime.today() - relativedelta(days=n + 5)).date())
+
+
+class ExecutionFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Execution
+    asset = factory.SubFactory(TickerFactory)
+    volume = factory.LazyAttribute(lambda n: random.randrange(1000))
+    order = factory.SubFactory(MarketOrderRequestFactory)
+    price = factory.LazyAttribute(lambda n: float(random.randrange(100) / 10))
+    executed = factory.Sequence(lambda n: (datetime.today() - relativedelta(days=n + 5)).date())
+    amount = factory.LazyAttribute(lambda n: random.randrange(1000))
+
+
+class ExecutionApexFillFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = ExecutionApexFill
+
+    apex_fill = factory.SubFactory(ApexFillFactory)
+    execution = factory.SubFactory(ExecutionFactory)
+
+
 class DailyPriceFactory(factory.django.DjangoModelFactory):
     """
     DailyPriceFactory uses TickerFacory for the instrument by default.
@@ -560,17 +608,26 @@ class RetirementPlanFactory(factory.django.DjangoModelFactory):
     selected_life_expectancy = 80
     desired_income = 250000
     income = 100000
-    btc = 0
+    btc = 4000
     atc = 0
     volunteer_days = factory.LazyAttribute(lambda n: random.randrange(7))
     paid_days = factory.LazyAttribute(lambda n: random.randrange(7))
     same_home = False
+    same_location = False
     retirement_postal_code = 11901
     reverse_mortgage = True
     expected_return_confidence = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
     desired_risk = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
     recommended_risk = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
     max_risk = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
+
+
+class RetirementPlanAccountFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = RetirementPlanAccount
+
+    plan = factory.SubFactory(RetirementPlanFactory)
+    account = factory.SubFactory(ClientAccountFactory)
 
 
 class RecurringTransactionFactory(factory.django.DjangoModelFactory):
@@ -590,3 +647,33 @@ class RetirementAdviceFactory(factory.django.DjangoModelFactory):
     plan = factory.SubFactory(RetirementPlanFactory)
     # trigger = factory.SubFactory(EventLogFactory)
     text = factory.Sequence(lambda n: 'Retirement Advice %s' % n)
+
+
+class AccountGroupFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AccountGroup
+
+    name = factory.Sequence(lambda n: 'Account Group %s' % n)
+    advisor = factory.SubFactory(AdvisorFactory)
+
+    # @factory.post_generation
+    # def secondary_advisors(self, create, extracted, **kwargs):
+    #     if not create:
+    #         return
+    #     if extracted:
+    #         for advisor in extracted:
+    #             self.secondary_advisors.add(advisor)
+
+
+class PlatformFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Platform
+
+    portfolio_set = factory.SubFactory(PortfolioSetFactory)
+
+
+class RetirementStatementOfAdviceFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = RetirementStatementOfAdvice
+
+    retirement_plan = factory.SubFactory(RetirementPlanFactory)

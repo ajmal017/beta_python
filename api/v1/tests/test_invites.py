@@ -34,6 +34,134 @@ class InviteTests(APITestCase):
     def tearDown(self):
         self.client.logout()
 
+    def test_register_clears_sensitive_onboarding_login_data_from_EmailInvite(self):
+        # check to make sure sensitive information isn't stored in onboarding_data
+        # since user is registered now
+        invite = EmailInviteFactory.create(status=EmailInvite.STATUS_SENT)
+        onboarding = '{"risk":{"steps":[{"completed":false}],"completed":false},"agreements":{"steps":[{"advisorAgreement":false,\
+          "betasmartzAgreement":false,"completed":false}],"completed":false},\
+          "info":{"steps":[{"completed":false},{"completed":false},{"completed":false},{"completed":false}],"completed":false}, \
+          "login":{"steps":[{"primarySecurityQuestion":"What was the name of your elementary school?","password":"t47LLRtur7O*PI", \
+                "primarySecurityAnswer":"1","passwordConfirmation":"t47LLRtur7O*PI","secondarySecurityAnswer":"None",\
+                "secondarySecurityQuestion":"What was the name of your favorite childhood friend?"}],"completed":true}}'
+        invite.onboarding_data = json.loads(onboarding)
+        invite.save()
+        url = reverse('api:v1:client-user-register')
+        data = {
+            'first_name': invite.first_name,
+            'last_name': invite.last_name,
+            'invite_key': invite.invite_key,
+            'password': 'test',
+            'question_one': 'what is the first answer?',
+            'question_one_answer': 'answer one',
+            'question_two': 'what is the second answer?',
+            'question_two_answer': 'answer two',
+        }
+        response = self.client.post(url, dict(data, question_one=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question')
+        response = self.client.post(url, dict(data, question_two=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question')
+        response = self.client.post(url, dict(data, question_one_answer=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question answer')
+        response = self.client.post(url, dict(data, question_two_answer=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question answer')
+
+        # With a valid token, get a valid user
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Register a valid invitation is 200 OK')
+        self.assertNotEqual(response.data['id'], None,
+                            msg='Registering an invitation should give valid user_id')
+        self.assertEqual(response.data['email'], invite.email)
+
+        lookup_invite = EmailInvite.objects.get(pk=invite.pk)
+        self.assertEqual(response.data['email'], invite.email,
+                         msg='New users email should match invitation')
+        self.assertEqual(response.data['id'], lookup_invite.user.id,
+                         msg='New users id should match invitation')
+        self.assertEqual(EmailInvite.STATUS_ACCEPTED, lookup_invite.status)
+        self.assertEqual(lookup_invite.onboarding_data['login']['steps'][0]['password'], '')
+        self.assertEqual(lookup_invite.onboarding_data['login']['steps'][0]['passwordConfirmation'], '')
+        self.assertEqual(lookup_invite.onboarding_data['login']['steps'][0]['primarySecurityQuestion'], '')
+        self.assertEqual(lookup_invite.onboarding_data['login']['steps'][0]['primarySecurityAnswer'], '')
+        self.assertEqual(lookup_invite.onboarding_data['login']['steps'][0]['secondarySecurityQuestion'], '')
+        self.assertEqual(lookup_invite.onboarding_data['login']['steps'][0]['secondarySecurityAnswer'], '')
+
+    def test_register_answers_validate(self):
+        invite = EmailInviteFactory.create(status=EmailInvite.STATUS_SENT)
+
+        url = reverse('api:v1:client-user-register')
+        data = {
+            'first_name': invite.first_name,
+            'last_name': invite.last_name,
+            'invite_key': invite.invite_key,
+            'password': 'test',
+            'question_one': 'what is the first answer?',
+            'question_one_answer': 'answer one',
+            'question_two': 'what is the second answer?',
+            'question_two_answer': 'answer two',
+        }
+
+        # 400 no such token=123
+        response = self.client.post(url, dict(data, invite_key='123'))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 for registrations from nonexistant email invite')
+
+        # 400 on bad securityquestions
+        response = self.client.post(url, dict(data, question_one=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question')
+        response = self.client.post(url, dict(data, question_two=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question')
+        response = self.client.post(url, dict(data, question_one_answer=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question answer')
+        response = self.client.post(url, dict(data, question_two_answer=''))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='400 on bad question answer')
+
+        # With a valid token, get a valid user
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Register a valid invitation is 200 OK')
+        self.assertNotEqual(response.data['id'], None,
+                            msg='Registering an invitation should give valid user_id')
+        self.assertEqual(response.data['email'], invite.email)
+
+        lookup_invite = EmailInvite.objects.get(pk=invite.pk)
+        self.assertEqual(response.data['email'], invite.email,
+                         msg='New users email should match invitation')
+        self.assertEqual(response.data['id'], lookup_invite.user.id,
+                         msg='New users id should match invitation')
+        self.assertEqual(EmailInvite.STATUS_ACCEPTED, lookup_invite.status)
+
+        questions_url = reverse('api:v1:user-security-question')
+        response = self.client.get(questions_url)
+        test_question_id1 = response.data[0]['id']
+        test_question_id2 = response.data[1]['id']
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        check_answer_url = reverse('api:v1:user-check-answer', args=[test_question_id1])
+        # question/answer combo 1
+        data = {
+            'answer': 'answer one',
+        }
+        response = self.client.post(check_answer_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # question/answer combo 2
+        check_answer_url = reverse('api:v1:user-check-answer', args=[test_question_id2])
+        data = {
+            'answer': 'answer two',
+        }
+        response = self.client.post(check_answer_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_register_with_invite_key(self):
         # Bring an invite key, get logged in as a new user
         invite = EmailInviteFactory.create(status=EmailInvite.STATUS_SENT)
@@ -74,7 +202,8 @@ class InviteTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Register a valid invitation is 200 OK')
         self.assertNotEqual(response.data['id'], None,
-                         msg='Registering an invitation should give valid user_id')
+                            msg='Registering an invitation should give valid user_id')
+        self.assertEqual(response.data['email'], invite.email)
 
         lookup_invite = EmailInvite.objects.get(pk=invite.pk)
         self.assertEqual(response.data['email'], invite.email,
@@ -82,6 +211,7 @@ class InviteTests(APITestCase):
         self.assertEqual(response.data['id'], lookup_invite.user.id,
                          msg='New users id should match invitation')
         self.assertEqual(EmailInvite.STATUS_ACCEPTED, lookup_invite.status)
+
 
         # New user must be logged in too
         self.assertIn('sessionid', response.cookies)
@@ -118,6 +248,7 @@ class InviteTests(APITestCase):
         self.assertEqual(response.data['firm_logo'], lookup_invite.advisor.firm.logo.url)
         self.assertEqual(response.data['firm_colored_logo'], lookup_invite.advisor.firm.colored_logo)
         self.assertEqual(response.data['firm_name'], lookup_invite.advisor.firm.name)
+        self.assertEqual(response.data['email'], lookup_invite.email)
 
     def test_register_logout_then_login(self):
         # Bring an invite key, get logged in as a new user
@@ -234,7 +365,7 @@ class InviteTests(APITestCase):
 
         # PUT: /api/v1/invites/:key
         # Tax transcript upload and parsing
-        expected_tax_transcript_data = {'sections': [{'name': 'Introduction', 'fields': {'SPOUSE NAME': 'SPOUSE M LAST', 'SPOUSE SSN': '222-22-2222', 'ADDRESS': '999 AVENUE RD  CITY, ST 10.000-90.00-800', 'NAME': 'FIRST M', 'SSN': '111-11-1111', 'FILING STATUS': 'Married Filing Joint'}}, {'name': 'Income', 'fields': {'TOTAL INCOME': '$0.00'}}]}
+        expected_tax_transcript_data = {'SPOUSE NAME': 'SPOUSE M LAST', 'SPOUSE SSN': '222-22-2222', 'ADDRESS': '999 AVENUE RD  CITY, ST 10.000-90.00-800', 'NAME': 'FIRST M', 'SSN': '111-11-1111', 'FILING STATUS': 'Married Filing Joint', 'TOTAL INCOME': '$0.00'}
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
@@ -277,7 +408,7 @@ class InviteTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             "residential_address": address,
             "regional_data": json.dumps(regional_data)
         }
@@ -285,8 +416,8 @@ class InviteTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         regional_data_load = json.loads(response.data['regional_data'])
         self.assertNotEqual(regional_data_load['tax_transcript'], None)
-        self.assertEqual(regional_data_load['tax_transcript_data']['sections'][0]['fields']['FILING STATUS'],
-                         expected_tax_transcript_data['sections'][0]['fields']['FILING STATUS'],
+        self.assertEqual(regional_data_load['tax_transcript_data']['FILING STATUS'],
+                         expected_tax_transcript_data['FILING STATUS'],
                          msg='Parsed tax_transcript_data FILING STATUS parsed successfully')
 
     def test_complete_invitation(self):

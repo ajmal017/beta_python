@@ -1,26 +1,31 @@
-from datetime import datetime
 import logging
 import uuid
+from datetime import datetime, date, timedelta
 from enum import Enum, unique
 
+import numpy as np
 import scipy.stats as st
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, Group, \
     PermissionsMixin, UserManager, send_mail
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import (MaxValueValidator, MinLengthValidator,
                                     MinValueValidator, RegexValidator, ValidationError)
 from django.db import models, transaction
-from django.db.models import Sum, F
-from django.db.models.functions import Coalesce
+from django.db.models import F, Sum
 from django.db.models.deletion import CASCADE, PROTECT, SET_NULL
+from django.db.models.functions import Coalesce
 from django.db.models.query_utils import Q
 from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.template.loader import render_to_string
+from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import ugettext as _
-from django.dispatch import receiver
 from django_pandas.managers import DataFrameManager
 from jsonfield.fields import JSONField
 from phonenumber_field.modelfields import PhoneNumberField
@@ -29,6 +34,9 @@ from pinax.eventlog import models as el_models
 from address.models import Address
 from common.constants import GROUP_SUPPORT_STAFF
 from common.structures import ChoiceEnum
+from common.utils import months_between
+from main import redis
+from main.constants import ACCOUNT_TYPES_COUNTRY, ACCOUNT_UNKNOWN
 from main.finance import mod_dietz_rate
 from main.managers import AccountTypeQuerySet
 from main.risk_profiler import validate_risk_score
@@ -39,12 +47,8 @@ from .abstract import FinancialInstrument, NeedApprobation, \
 from .fields import ColorField
 from .managers import ExternalAssetQuerySet, GoalQuerySet, PositionLotQuerySet
 from .slug import unique_slugify
-from django.core.exceptions import ObjectDoesNotExist
-
-from django.utils.functional import cached_property
-from django.contrib.staticfiles.templatetags.staticfiles import static
 import numpy as np
-
+from pinax.eventlog.models import log
 logger = logging.getLogger('main.models')
 
 
@@ -338,7 +342,7 @@ class ExternalAsset(models.Model):
         if to_date is None:
             to_date = datetime.now().date()
         delta = to_date - self.valuation_date
-        accumulated_value = self.valuation
+
         return self.valuation * pow(1 + self.growth, delta.days)
 
     class Meta:
@@ -370,7 +374,10 @@ class AccountType(models.Model):
     objects = AccountTypeQuerySet.as_manager()
 
     def __str__(self):
-        return "[{}] {}".format(self.id, dict(constants.ACCOUNT_TYPES)[self.id])
+        countries = [c for c, tl in ACCOUNT_TYPES_COUNTRY.items()
+                     if self.id in tl]
+        title = dict(constants.ACCOUNT_TYPES).get(self.id, ACCOUNT_UNKNOWN)
+        return "[{}] ({}) {}".format(self.id, '/'.join(countries), title)
 
 
 class Firm(models.Model):
@@ -663,7 +670,7 @@ class Advisor(NeedApprobation, NeedConfirmation, PersonalData):
         for household in self.households:
             all_accounts = household.accounts.all()
             accounts.extend(all_accounts)
-        return accounts
+        return set(accounts)
 
     @property
     def total_balance(self):
@@ -883,7 +890,6 @@ class AccountGroup(models.Model):
 
     def __str__(self):
         return self.name
-
 
 
 class ExternalAssetTransfer(TransferPlan):
@@ -1269,8 +1275,7 @@ class RecurringTransaction(TransferPlan):
     Note: Only settings that are active will have their recurring
           transactions processed.
     """
-    setting = models.ForeignKey('GoalSetting',
-                                related_name='recurring_transactions')
+    setting = models.ForeignKey('GoalSetting', related_name='recurring_transactions', on_delete=CASCADE)
     enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
@@ -1292,7 +1297,7 @@ class RecurringTransaction(TransferPlan):
 
 
 class Portfolio(models.Model):
-    setting = models.OneToOneField('GoalSetting', related_name='portfolio')
+    setting = models.OneToOneField('GoalSetting', related_name='portfolio', on_delete=CASCADE)
     stdev = models.FloatField()
     er = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
@@ -1307,8 +1312,8 @@ class Portfolio(models.Model):
 
 
 class PortfolioItem(models.Model):
-    portfolio = models.ForeignKey(Portfolio, related_name='items')
-    asset = models.ForeignKey(Ticker)
+    portfolio = models.ForeignKey(Portfolio, related_name='items', on_delete=CASCADE)
+    asset = models.ForeignKey(Ticker, on_delete=PROTECT)
     weight = models.FloatField()
     volatility = models.FloatField(help_text='variance of this asset at the time of creating this portfolio.')
 
@@ -1318,7 +1323,7 @@ class GoalSetting(models.Model):
     completion = models.DateField(help_text='The scheduled completion date for the goal.')
     hedge_fx = models.BooleanField(help_text='Do we want to hedge foreign exposure?')
     # metric_group is a foreignkey rather than onetoone since a metric group can be used by more than one setting object
-    metric_group = models.ForeignKey('GoalMetricGroup', related_name='settings')
+    metric_group = models.ForeignKey('GoalMetricGroup', related_name='settings', on_delete=PROTECT)
     rebalance = models.BooleanField(default=True, help_text='Do we want to perform automated rebalancing?')
     # also may have a 'recurring_transactions' field from RecurringTransaction model.
     # also may have a 'portfolio' field from Portfolio model. May be null if no portfolio has been assigned yet.
@@ -1463,7 +1468,8 @@ class Goal(models.Model):
         return '[' + str(self.id) + '] ' + self.name + " : " + self.account.primary_owner.full_name
 
     def get_positions_all(self):
-        lots = PositionLot.objects.filter(quantity__gt=0, execution_distribution__transaction__from_goal=self).\
+        lots = PositionLot.objects.filter(quantity__gt=0, execution_distribution__transaction__from_goal=self,
+                                          execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value).\
             annotate(ticker_id=F('execution_distribution__execution__asset__id'),
                      price=F('execution_distribution__execution__asset__unit_price'))\
             .values('ticker_id', 'price').annotate(quantity=Sum('quantity'))
@@ -1471,8 +1477,10 @@ class Goal(models.Model):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
+        from retiresmartz.models import RetirementPlan
         if not self.account.confirmed:
             raise ValidationError('Account is not verified.')
+
         return super(Goal, self).save(force_insert, force_update, using,
                                       update_fields)
 
@@ -1524,14 +1532,12 @@ class Goal(models.Model):
         validate_risk_score(setting)
         self.save()
         if old_setting not in (self.active_settings, self.approved_settings):
-            custom_group = old_setting.metric_group.type == GoalMetricGroup.TYPE_CUSTOM
-            last_user = old_setting.metric_group.settings.count() == 1
+            old_group = old_setting.metric_group
+            custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
+            last_user = old_group.settings.count() == 1
+            old_setting.delete()
             if custom_group and last_user:
-                # This will also delete the setting as the metric group is a foreign key.
-                old_setting.metric_group.delete()
-            else:
-                # We are using a shared group, or we're not the last user. Just delete the setting object.
-                old_setting.delete()
+                old_group.delete()
 
     @transaction.atomic
     def approve_selected(self):
@@ -1779,12 +1785,12 @@ class Goal(models.Model):
         predicted = 0
         for dt, val in cf_events:
             tdelta = dt - current_time
-            y_delta = (tdelta.days + tdelta.seconds/86400.0)/365.2425
+            y_delta = (tdelta.days + tdelta.seconds/86400.0)/365.25
             predicted += val * (er ** y_delta + z_mult * stdev * (y_delta ** 0.5))
 
         return predicted
 
-    @property
+    @cached_property
     def on_track(self):
         if self.selected_settings is None:
             return False
@@ -1807,7 +1813,7 @@ class Goal(models.Model):
     @property
     def total_balance(self):
         b = self.cash_balance
-        b += self._sum_holdings(PositionLot.objects.all())
+        b += self._sum_holdings(PositionLot.objects.filter(execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value))
         return b
 
     @property
@@ -1821,26 +1827,30 @@ class Goal(models.Model):
     def stock_balance(self):
         stocks = InvestmentType.Standard.STOCKS.get()
         return self._sum_holdings(
-            PositionLot.objects.filter(execution_distribution__execution__asset__asset_class__investment_type=stocks)
+            PositionLot.objects.filter(execution_distribution__execution__asset__asset_class__investment_type=stocks,
+                                       execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value)
         )
 
     @property
     def bond_balance(self):
         bonds = InvestmentType.Standard.BONDS.get()
         return self._sum_holdings(
-            PositionLot.objects.filter(execution_distribution__execution__asset__asset_class__investment_type=bonds)
+            PositionLot.objects.filter(execution_distribution__execution__asset__asset_class__investment_type=bonds,
+                                       execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value)
         )
 
     @property
     def core_balance(self):
         return self._sum_holdings(
-            PositionLot.objects.filter(execution_distribution__execution__asset__etf=True)
+            PositionLot.objects.filter(execution_distribution__execution__asset__etf=True,
+                                       execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value)
         )
 
     @property
     def satellite_balance(self):
         return self._sum_holdings(
-            PositionLot.objects.filter(execution_distribution__execution__asset_etf=False)
+            PositionLot.objects.filter(execution_distribution__execution__asset_etf=False,
+                                       execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value)
         )
 
     @property
@@ -2117,15 +2127,144 @@ class GoalMetric(models.Model):
                                                                  self.id)
 
 
+class OrderETNAManager(models.Manager):
+    def is_complete(self):
+        return self.filter(Status__in=OrderETNA.StatusChoice.complete_statuses())
+
+    def is_not_complete(self):
+        return self.exclude(Status__in=OrderETNA.StatusChoice.complete_statuses())
+
+
+class OrderETNA(models.Model):
+    class OrderTypeChoice(ChoiceEnum):
+        Market = 0
+        Limit = 1
+
+    class SideChoice(ChoiceEnum):
+        Buy = 0
+        Sell = 1
+
+    class TimeInForceChoice(ChoiceEnum):
+        Day = 0
+        GoodTillCancel = 1
+        AtTheOpening = 2
+        ImmediateOrCancel = 3
+        FillOrKill = 4
+        GoodTillCrossing = 5
+        GoodTillDate = 6
+
+    class StatusChoice(ChoiceEnum):
+        New = 'New'
+        Sent = 'Sent'
+        PartiallyFilled = 'PartiallyFilled'
+        Filled = 'Filled'
+        DoneForDay = 'DoneForDay'
+        Canceled = 'Canceled'
+        Replaced = 'Replaced'
+        PendingCancel = 'PendingCancel'
+        Stopped = 'Stopped'
+        Rejected = 'Rejected'
+        Suspended = 'Suspended'
+        PendingNew = 'PendingNew'
+        Calculated = 'Calculated'
+        Expired = 'Expired'
+        AcceptedForBidding = 'AcceptedForBidding'
+        PendingReplace = 'PendingReplace'
+        Error = 'Error'
+        Archived = 'Archived'
+
+        @classmethod
+        def complete_statuses(cls):
+            accessor = OrderETNA.StatusChoice
+            return (accessor.Filled.value, accessor.DoneForDay.value, accessor.Canceled.value, accessor.Rejected.value,
+                    accessor.Expired.value, accessor.Error.value)
+
+    class FillInfo(ChoiceEnum):
+        FILLED = 0 # entire quantity of order was filled
+        PARTIALY_FILLED = 1 # less than entire quantity was filled, but > 0
+        UNFILLED = 2 # 0 shares were transacted for this order
+
+    Price = models.FloatField()
+    Exchange = models.CharField(default="Auto", max_length=128)
+    TrailingLimitAmount = models.FloatField(default=0)
+    AllOrNone = models.IntegerField(default=0)
+    TrailingStopAmount = models.FloatField(default=0)
+    Type = models.IntegerField(choices=OrderTypeChoice.choices(),default=OrderTypeChoice.Limit.value)
+    Quantity = models.IntegerField()
+    SecurityId = models.IntegerField()
+    Side = models.IntegerField(choices=SideChoice.choices())
+    TimeInForce = models.IntegerField(choices=TimeInForceChoice.choices(), default=TimeInForceChoice.GoodTillDate.value)
+    StopPrice = models.FloatField(default=0)
+    ExpireDate = models.IntegerField()
+    created = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    # response fields
+    # -1 not assigned - we will get order Id as response from REST and update it
+    Order_Id = models.IntegerField(default=-1)
+    Status = models.CharField(choices=StatusChoice.choices(), default=StatusChoice.New.value, max_length=128, db_index=True)
+    FillPrice = models.FloatField(default=0)
+    FillQuantity = models.IntegerField(default=0)
+    Description = models.CharField(max_length=128)
+    objects = OrderETNAManager() # ability to filter based on this, property cannot be used to filter
+
+    ticker = models.ForeignKey('Ticker', related_name='OrderETNA', on_delete=PROTECT)
+    fill_info = models.IntegerField(choices=FillInfo.choices(), default=FillInfo.UNFILLED.value)
+    # also has field order_fills from ApexFill model
+
+    @property
+    def is_complete(self):
+        return self.Status in self.StatusChoice.complete_statuses()
+
+    def __str__(self):
+        return "[{}] - {}".format(self.id, self.Status)
+
+    def __repr__(self):
+        return {
+            'Status': self.Status,
+            'ticker': self.ticker,
+            'volume': self.Quantity,
+            'morsAPEX': list(self.morsAPEX) if hasattr(self, 'morsAPEX') else [],
+            'apex_fills': list(self.apex_fills) if hasattr(self, 'apex_fills') else [],
+        }
+
+
+class ExecutionApexFill(models.Model):
+    # one apex_fill may contribute to many ExecutionApexFills and many Executions
+    apex_fill = models.ForeignKey('ApexFill', related_name='execution_apex_fill')
+    execution = models.OneToOneField('Execution', related_name='execution_apex_fill')
+
+
+class ApexFill(models.Model):
+    #apex_order = models.ForeignKey('ApexOrder', related_name='apex_fills')
+    etna_order = models.ForeignKey('OrderETNA', related_name='etna_fills', default=None)
+    volume = models.FloatField(help_text="Will be negative for a sell.")
+    price = models.FloatField(help_text="Price for the fill.")
+    executed = models.DateTimeField(help_text='The time the trade was executed.')
+    # also has field 'execution_apex_fill' from model ExecutionApexFill
+
+
+class MarketOrderRequestAPEX(models.Model):
+    ticker = models.ForeignKey('Ticker', related_name='morsAPEX', on_delete=PROTECT)
+    #apex_order = models.ForeignKey('ApexOrder', related_name='morsAPEX')
+    etna_order = models.ForeignKey('OrderETNA', related_name='morsAPEX', default=None)
+    market_order_request = models.ForeignKey('MarketOrderRequest', related_name='morsAPEX')
+
+    class Meta:
+        unique_together = ("ticker", "market_order_request")
+
+
 class MarketOrderRequest(models.Model):
     """
     A Market Order Request defines a request for an order to buy or sell one or more assets on a market.
+    It aggregates ExecutionRequests (each execution request is per goal per client) into a group of ExecutionRequests
+    of various goals for single client
     """
+
     class State(ChoiceEnum):
         PENDING = 0  # Raised somehow, but not yet approved to send to market
         APPROVED = 1  # Approved to send to market, but not yet sent.
         SENT = 2  # Sent to the broker (at least partially outstanding).
-        CANCEL_PENDING = 3 # Sent, but have also sent a cancel
+        CANCEL_PENDING = 3  # Sent, but have also sent a cancel
         COMPLETE = 4  # May be fully or partially executed, but there is none left outstanding.
 
     # The list of Order states that are still considered open.
@@ -2135,6 +2274,7 @@ class MarketOrderRequest(models.Model):
     account = models.ForeignKey('client.ClientAccount', related_name='market_orders', on_delete=PROTECT)
     # Also has 'execution_requests' field showing all the requests that went into this one order.
     # Also has 'executions' once the request has had executions.
+    # also has 'morsAPEX' from MarketOrderRequestAPEX
 
     def __str__(self):
         return "[{}] - {}".format(self.id, self.State(self.state).name)
@@ -2173,6 +2313,8 @@ class ExecutionRequest(models.Model):
     # transaction can be null because once the request is complete, the transaction is removed.
     transaction = models.OneToOneField('Transaction', related_name='execution_request', null=True)
 
+    # also has field 'execution_distribution' from model ExecutionDistribution
+
     def __repr__(self):
         return {
             'reason': str(self.reason),
@@ -2204,6 +2346,9 @@ class Execution(models.Model):
     # Also has field 'distributions' from the ExecutionDistribution model describing to what goals this execution was
     # distributed
 
+    # also has field 'execution_apex_fill' from model ExecutionApexFill to map execution to ApexFill via
+    # ExecutionApexFill
+
     def __str__(self):
         return '{}|{}|{}|{}@{}'.format(self.id, self.executed, self.asset, self.volume, self.price)
 
@@ -2213,16 +2358,20 @@ class ExecutionDistribution(models.Model):
     execution = models.ForeignKey('Execution', related_name='distributions', on_delete=PROTECT)
     transaction = models.OneToOneField('Transaction', related_name='execution_distribution', on_delete=PROTECT)
     volume = models.FloatField(help_text="The number of units from the execution that were applied to the transaction.")
+    execution_request = models.ForeignKey('ExecutionRequest', related_name='execution_distributions',blank=True,null=True)
+    # also has field 'position_lot' from PositionLot model
+    # also has field 'sold_lot' from Sale model
+    # also has field 'bought_lot' from Sale model
 
     def __str__(self):
         return "{}|{}|{}".format(self.execution, self.transaction, self.volume)
 
 
 class PositionLot(models.Model):
-    #create on every buy
+    # create on every buy
     execution_distribution = models.OneToOneField(ExecutionDistribution, related_name='position_lot')
     quantity = models.FloatField(null=True, blank=True, default=None)
-    #quantity get decreased on every sell, until it it zero, then delete the model
+    # quantity gets decreased on every sell, until it it zero, then delete the model
 
     objects = PositionLotQuerySet.as_manager()
 
@@ -2231,7 +2380,7 @@ class PositionLot(models.Model):
 
 
 class Sale(models.Model):
-    #create on every sale
+    # create on every sale
     sell_execution_distribution = models.ForeignKey(ExecutionDistribution, related_name='sold_lot')
     buy_execution_distribution = models.ForeignKey(ExecutionDistribution, related_name='bought_lot')
     quantity = models.FloatField(null=True, blank=True, default=None)
@@ -2307,9 +2456,11 @@ class Supervisor(models.Model):
     user = models.OneToOneField(User, related_name="supervisor")
     firm = models.ForeignKey(Firm, related_name="supervisors")
     # has full authorization to make action in name of advisor and clients
-    can_write = models.BooleanField(default=False,
-                                    verbose_name="Has Full Access?",
-                                    help_text="A supervisor with 'full access' can perform actions for their advisers and clients.")
+    can_write = models.BooleanField(
+        default=False,
+        verbose_name="Has Full Access?",
+        help_text="A supervisor with 'full access' can perform actions for "
+                  "their advisors and clients.")
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -2515,3 +2666,66 @@ class ActivityLogEvent(models.Model):
             alog = ActivityLog.objects.create(name=event.name, format_str='DEFAULT_TEXT: {}'.format(event.name))
 
         return ActivityLogEvent.objects.create(id=event.value, activity_log=alog)
+
+
+class Inflation(models.Model):
+    year = models.PositiveIntegerField(help_text="The year the inflation value is for. "
+                                                 "If after recorded, it is a forecast, otherwise it's an observation.")
+    month = models.PositiveIntegerField(help_text="The month the inflation value is for. "
+                                                  "If after recorded, it is a forecast, otherwise it's an observation.")
+    value = models.FloatField(help_text="This is the monthly inflation figure as of the given as_of date.")
+    recorded = models.DateField(auto_now=True, help_text="The date this inflation figure was added.")
+
+    class Meta:
+        ordering = ['year', 'month']
+        unique_together = ('year', 'month')
+
+    @classmethod
+    def cumulative(cls):
+        """
+        :return: A dictionary from (year, month) => cumulative total inflation (1-based) from beginning of records till that time
+        """
+        data = getattr(cls, '_cum_data', None)
+        if not data:
+            data = cache.get(redis.Keys.INFLATION)
+        if not data:
+            data = {}
+            vals = list(cls.objects.all().values_list('year', 'month', 'value'))
+            if vals:
+                f_d = date(vals[0][0], vals[0][1], 1)
+                l_d = date(vals[-1][0], vals[-1][1], 1)
+                if (months_between(f_d, l_d) + 1) > len(vals):
+                    raise Exception("Holes exist in the inflation forecast figures, cannot proceed.")
+                isum = 1
+                # Add the entry for the start of the series.
+                data[((f_d - timedelta(days=1)).month, (f_d - timedelta(days=1)).year)] = isum
+                for val in vals:
+                    isum *= 1 + val[2]
+                    data[(val[0], val[1])] = isum
+                cache.set(redis.Keys.INFLATION, data, timeout=60 * 60 * 24)
+        cls._cum_data = data
+        return data
+
+    @classmethod
+    def between(cls, begin_date: datetime.date, end_date: datetime.date) -> float:
+        """
+        Calculates inflation between two dates. (predicted if in future, actual for all past dates)
+        :param start: The start date from when to calculate the inflation
+        :param start: The date until when to calculate the inflation
+        :return: float value for the inflation. 0.05 = 5% inflation
+        """
+
+        if begin_date > end_date:
+            raise ValueError('End date must not be before begin date.')
+        if begin_date == end_date:
+            return 0
+        data = cls.cumulative()
+        first = data.get((begin_date.year, begin_date.month), None)
+        last = data.get((end_date.year, end_date.month), None)
+        if first is None or last is None:
+            raise ValidationError("Inflation figures don't cover entire period requested: {} - {}".format(begin_date,
+                                                                                                          end_date))
+        return (last / first) - 1
+
+    def __str__(self):
+        return '{0.month}/{0.year}: {0.value}'.format(self)

@@ -1,19 +1,50 @@
+import logging
+from datetime import date
+
+import numpy as np
+import pandas as pd
+import scipy.stats as st
+from dateutil.relativedelta import relativedelta
+from django.conf import settings
+from django.core.mail import send_mail
+from django.db import IntegrityError
+from django.db import transaction
+from django.db.models import Q
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.functional import curry
+from django.utils.timezone import now
 from rest_framework import status
 from rest_framework.decorators import detail_route, list_route
-from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
+
+from api.v1.account.serializers import ClientAccountSerializer
+from api.v1.goals.serializers import PortfolioSerializer
+from api.v1.permissions import IsClient
 from api.v1.views import ApiViewMixin
-from retiresmartz.models import RetirementPlan, RetirementAdvice
+from client.models import Client, ClientAccount
+from common.utils import d2ed
+from main import constants
+from main.event import Event
 from main.models import Ticker
-from client.models import Client
+from portfolios.calculation import Unsatisfiable
+from retiresmartz import advice_responses
+from retiresmartz.calculator import Calculator, create_settings
+from retiresmartz.calculator.assets import TaxDeferredAccount
+from retiresmartz.calculator.cashflows import EmploymentIncome, \
+    InflatedCashFlow, ReverseMortgage
+from retiresmartz.calculator.desired_cashflows import RetiresmartzDesiredCashFlow
+from retiresmartz.calculator.social_security import calculate_payments
+from retiresmartz.models import RetirementAdvice, RetirementPlan
 from support.models import SupportRequest
-from django.db.models import Q
-from django.utils import timezone
-from dateutil.relativedelta import relativedelta
 from . import serializers
-import logging
+
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
 
@@ -64,55 +95,247 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.agreed_on:
-            return Response(
-            {'error': 'Unable to update a RetirementPlan that has been agreed on'},
-            status=status.HTTP_400_BAD_REQUEST)
-        return super(RetiresmartzViewSet, self).update(request, *args, **kwargs)
+            return Response({'error': 'Unable to update a RetirementPlan that has been agreed on'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        orig = RetirementPlan.objects.get(pk=instance.pk)
+        updated = serializer.update(instance, serializer.validated_data)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # refresh the instance from the database.
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+
+        # RetirementAdvice Triggers
+
+        # Spending and Contributions
+        # TODO: Replace income with function to calculate expected income
+        # increase in these two calls to get_decrease_spending_increase_contribution
+        # and get_increase_contribution_decrease_spending
+        if orig.btc > updated.btc:
+            # spending increased, contributions decreased
+            e = Event.RETIRESMARTZ_SPENDABLE_INCOME_UP_CONTRIB_DOWN.log(None,
+                                                                        orig.btc,
+                                                                        updated.btc,
+                                                                        user=updated.client.user,
+                                                                        obj=updated)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_increase_spending_decrease_contribution(advice, orig.btc, orig.btc * 1.2)
+            advice.save()
+
+        if orig.btc < updated.btc:
+            e = Event.RETIRESMARTZ_CONTRIB_UP_SPENDING_DOWN.log(None,
+                                                                orig.btc,
+                                                                updated.btc,
+                                                                user=updated.client.user,
+                                                                obj=updated)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_increase_contribution_decrease_spending(advice, updated.btc, updated.btc * 1.2)
+            advice.save()
+
+            # contributions increased, spending decreased
+            # this one is suppose to trigger if there is a second
+            # contribution increase - check if previous event is in current
+            # retirementadvice feed
+            # e = Event.RETIRESMARTZ_SPENDABLE_INCOME_DOWN_CONTRIB_UP.log(None,
+            #                                                             orig.btc,
+            #                                                             updated.btc,
+            #                                                             user=updated.client.user,
+            #                                                             obj=updated)
+            # advice = RetirementAdvice(plan=updated, trigger=e)
+            # advice.text = advice_responses.get_decrease_spending_increase_contribution(advice)
+            # advice.save()
+
+        # Risk Slider Changed
+        if updated.desired_risk < orig.desired_risk:
+            # protective move
+            e = Event.RETIRESMARTZ_PROTECTIVE_MOVE.log(None,
+                                                       orig.desired_risk,
+                                                       updated.desired_risk,
+                                                       user=updated.client.user,
+                                                       obj=updated)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_protective_move(advice)
+            advice.save()
+        elif updated.desired_risk > orig.desired_risk:
+            # dynamic move
+            e = Event.RETIRESMARTZ_DYNAMIC_MOVE.log(None,
+                                                    orig.desired_risk,
+                                                    updated.desired_risk,
+                                                    user=updated.client.user,
+                                                    obj=updated)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_dynamic_move(advice)
+            advice.save()
+
+        # age manually adjusted selected_life_expectancy
+        if updated.selected_life_expectancy != orig.selected_life_expectancy:
+            e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                               orig.retirement_age,
+                                                               updated.retirement_age,
+                                                               user=updated.client.user,
+                                                               obj=updated)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_manually_adjusted_age(advice)
+            advice.save()
+
+        # Retirement Age Adjusted
+        if updated.retirement_age >= 62 and updated.retirement_age <= 70:
+            if orig.retirement_age != updated.retirement_age:
+                # retirement age changed
+                if orig.retirement_age > 62 and updated.retirement_age == 62:
+                    # decreased to age 62
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_decrease_retirement_age_to_62(advice)
+                    advice.save()
+                elif orig.retirement_age > 63 and updated.retirement_age == 63:
+                    # decreased to age 63
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_decrease_retirement_age_to_63(advice)
+                    advice.save()
+                elif orig.retirement_age > 64 and updated.retirement_age == 64:
+                    # decreased to age 64
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_decrease_retirement_age_to_64(advice)
+                    advice.save()
+                elif orig.retirement_age > 65 and updated.retirement_age == 65:
+                    # decreased to age 65
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_decrease_retirement_age_to_65(advice)
+                    advice.save()
+                elif orig.retirement_age < 67 and updated.retirement_age == 67:
+                    # increased to age 67
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_increase_retirement_age_to_67(advice)
+                    advice.save()
+                elif orig.retirement_age < 68 and updated.retirement_age == 68:
+                    # increased to age 68
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_increase_retirement_age_to_68(advice)
+                    advice.save()
+                elif orig.retirement_age < 69 and updated.retirement_age == 69:
+                    # increased to age 69
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_increase_retirement_age_to_69(advice)
+                    advice.save()
+                elif orig.retirement_age < 70 and updated.retirement_age == 70:
+                    # increased to age 70
+                    e = Event.RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED.log(None,
+                                                                       orig.retirement_age,
+                                                                       updated.retirement_age,
+                                                                       user=updated.client.user,
+                                                                       obj=updated)
+                    advice = RetirementAdvice(plan=updated, trigger=e)
+                    advice.text = advice_responses.get_increase_retirement_age_to_70(advice)
+                    advice.save()
+
+        if orig.on_track != updated.on_track:
+            # user update to goal caused on_track status changed
+            if updated.on_track:
+                # RetirementPlan now on track
+                e = Event.RETIRESMARTZ_ON_TRACK_NOW.log(None,
+                                                        user=updated.client.user,
+                                                        obj=updated)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_off_track_item_adjusted_to_on_track(advice)
+                advice.save()
+            else:
+                # RetirementPlan now off track
+                e = Event.RETIRESMARTZ_OFF_TRACK_NOW.log(None,
+                                                         user=updated.client.user,
+                                                         obj=updated)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_on_track_item_adjusted_to_off_track(advice)
+                advice.save()
+
+        return Response(self.serializer_response_class(updated).data)
 
     @detail_route(methods=['get'], url_path='suggested-retirement-income')
-    def suggested_retirement_income(self):
+    def suggested_retirement_income(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates a suggested retirement income based on the client's retirement plan and personal profile.
+        Calculates a suggested retirement income based on the client's
+        retirement plan and personal profile.
         """
         # TODO: Make this work
         return Response(1234)
 
     @detail_route(methods=['get'], url_path='calculate-contributions')
-    def calculate_contributions(self):
+    def calculate_contributions(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates suggested contributions (value for the amount in the btc and atc) that will generate the desired
-        retirement income.
+        Calculates suggested contributions (value for the amount in the
+        btc and atc) that will generate the desired retirement income.
         """
         # TODO: Make this work
         return Response({'btc_amount': 1111, 'atc_amount': 0})
 
     @detail_route(methods=['get'], url_path='calculate-income')
-    def calculate_income(self):
+    def calculate_income(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates retirement income possible given the current contributions and other details on the retirement plan.
+        Calculates retirement income possible given the current contributions
+        and other details on the retirement plan.
         """
         # TODO: Make this work
         return Response(2345)
 
     @detail_route(methods=['get'], url_path='calculate-balance-income')
-    def calculate_balance_income(self):
+    def calculate_balance_income(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates the retirement balance required to provide the desired_income as specified in the plan.
+        Calculates the retirement balance required to provide the
+        desired_income as specified in the plan.
         """
         # TODO: Make this work
         return Response(5555555)
 
     @detail_route(methods=['get'], url_path='calculate-income-balance')
-    def calculate_income_balance(self):
+    def calculate_income_balance(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates the retirement income possible with a supplied retirement balance and other details on the
-        retirement plan.
+        Calculates the retirement income possible with a supplied
+        retirement balance and other details on the retirement plan.
         """
         # TODO: Make this work
         return Response(1357)
 
     @detail_route(methods=['get'], url_path='calculate-balance-contributions')
-    def calculate_balance_contributions(self):
+    def calculate_balance_contributions(self, request, parent_lookup_client, pk, format=None):
         """
         Calculates the retirement balance generated from the contributions.
         """
@@ -120,15 +343,16 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         return Response(6666666)
 
     @detail_route(methods=['get'], url_path='calculate-contributions-balance')
-    def calculate_contributions_balance(self):
+    def calculate_contributions_balance(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates the contributions required to generate the given retirement balance.
+        Calculates the contributions required to generate the
+        given retirement balance.
         """
         # TODO: Make this work
         return Response({'btc_amount': 2222, 'atc_amount': 88})
 
-    @detail_route(methods=['get'], url_path='calculate')
-    def calculate(self, request, parent_lookup_client, pk, format=None):
+    @detail_route(methods=['get'], url_path='calculate-demo')
+    def calculate_demo(self, request, parent_lookup_client, pk, format=None):
         """
         Calculate the single projection values for the
         current retirement plan settings.
@@ -154,10 +378,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         going up by 1000 every point, income starting
         at 200000, increasing by 50 every point.
         """
-        try:
-            retirement_plan = RetirementPlan.objects.get(pk=pk)
-        except:
-            return Response({'error': 'not found'}, status=status.HTTP_404_NOT_FOUND)
+        retirement_plan = self.get_object()
         tickers = Ticker.objects.filter(~Q(state=Ticker.State.CLOSED.value))
         portfolio = []
         projection = []
@@ -168,18 +389,186 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                 percent = 10
             portfolio.append([ticker.id, percent])
         # grab 50 evenly spaced time points between dob and current time
-        now = timezone.now()
-        first_year = retirement_plan.client.date_of_birth.year + retirement_plan.retirement_age
-        last_year = retirement_plan.client.date_of_birth.year + retirement_plan.selected_life_expectancy
-        day_interval = ((last_year - first_year) * 365) / 50
+        today = timezone.now().date()
+        last_day = retirement_plan.client.date_of_birth + relativedelta(years=retirement_plan.selected_life_expectancy)
+        day_interval = (last_day - today) / 49
         income_start = 20000
         assets_start = 100000
-        for i in range(1, 50):
+        for i in range(50):
             income = income_start + (i * 50)
             assets = assets_start + (i * 1000)
-            dt = now + relativedelta(days=i * day_interval)
-            projection.append([income, assets, dt])
+            dt = today + i * day_interval
+            projection.append([d2ed(dt), assets, income])
         return Response({'portfolio': portfolio, 'projection': projection})
+
+    @detail_route(methods=['get'], url_path='calculate')
+    def calculate(self, request, parent_lookup_client, pk, format=None):
+        """
+        Calculate the single projection values for the current retirement plan.
+        {
+          "portfolio": [
+            # list of [fund id, weight as percent]. There will be max 20 of these. Likely 5-10
+            [1, 5],
+            [53, 12],
+            ...
+          ],
+          "projection": [
+            # this is the asset and cash-flow projection. It is a list of [date, assets, income]. There will be at most 50 of these. (21 bytes each)
+            [43356, 120000, 2000],
+            [43456, 119000, 2004],
+            ...
+          ]
+        }
+        """
+        plan = self.get_object()
+
+        # We need a date of birth for the client
+        if not plan.client.date_of_birth:
+            raise ValidationError("Client must have a date of birth entered to calculate retirement plans.")
+
+        # TODO: We can cache the portfolio on the plan and only update it every 24hrs, or if the risk changes.
+        try:
+            settings = create_settings(plan)
+        except Unsatisfiable as e:
+            rdata = {'reason': "No portfolio could be found: {}".format(e)}
+            if e.req_funds is not None:
+                rdata['req_funds'] = e.req_funds
+            return Response({'error': rdata}, status=status.HTTP_400_BAD_REQUEST)
+
+        plan.set_settings(settings)
+        plan.save()
+
+        # Get the z-multiplier for the given confidence
+        z_mult = -st.norm.ppf(plan.expected_return_confidence)
+        performance = settings.portfolio.er + z_mult * settings.portfolio.stdev
+
+        today = timezone.now().date()
+        retire_date = max(today, plan.client.date_of_birth + relativedelta(years=plan.retirement_age))
+        death_date = max(retire_date, plan.client.date_of_birth + relativedelta(years=plan.selected_life_expectancy))
+
+        # Pre-retirement income cash flow
+        income_calc = EmploymentIncome(income=plan.income / 12,
+                                       growth=0.01,
+                                       today=today,
+                                       end_date=retire_date)
+
+        ss_all = calculate_payments(plan.client.date_of_birth, plan.income)
+        ss_income = ss_all.get(plan.retirement_age, None)
+        if ss_income is None:
+            ss_income = sorted(ss_all)[0]
+        ss_payments = InflatedCashFlow(ss_income, today, retire_date, death_date)
+
+        cash_flows = [ss_payments]
+
+        # TODO: Call the logic that determines the retirement accounts to figure out what accounts to use.
+        # TODO: Get the tax rate to use when withdrawing from the account at retirement
+        # For now we assume we want a tax deferred 401K
+        acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
+                                      tax_rate=0.0,
+                                      name='401k',
+                                      today=today,
+                                      opening_balance=plan.opening_tax_deferred_balance,
+                                      growth=performance,
+                                      retirement_date=retire_date,
+                                      end_date=death_date,
+                                      contributions=plan.btc / 12)
+
+        assets = [acc_401k]
+
+        if plan.reverse_mortgage and plan.retirement_home_price is not None:
+            cash_flows.append(ReverseMortgage(home_value=plan.retirement_home_price,
+                                              value_date=today,
+                                              start_date=retire_date,
+                                              end_date=death_date))
+
+        if plan.paid_days > 0:
+            # Average retirement income is 116 per day as of September 2016, working until age 80
+            cash_flows.append(InflatedCashFlow(amount=116*plan.paid_days,
+                                               today=date(2016, 9, 1),
+                                               start_date=retire_date,
+                                               end_date=plan.client.date_of_birth + relativedelta(years=80)))
+
+        # The desired cash flow generator.
+        rdcf = RetiresmartzDesiredCashFlow(current_income=income_calc,
+                                           retirement_income=plan.desired_income / 12,
+                                           today=today,
+                                           retirement_date=retire_date,
+                                           end_date=death_date)
+        # Add the income cash flow to the list of cash flows.
+        cash_flows.append(rdcf)
+
+        calculator = Calculator(cash_flows=cash_flows, assets=assets)
+
+        asset_values, income_values = calculator.calculate(rdcf)
+
+        # Convert these returned values to a format for the API
+        catd = pd.concat([asset_values.sum(axis=1), income_values['actual']], axis=1)
+        locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
+        proj_data = [(d2ed(d), a, i) for d, a, i in catd.iloc[locs, :].itertuples()]
+
+        pser = PortfolioSerializer(instance=settings.portfolio)
+
+        return Response({'portfolio': pser.data, 'projection': proj_data})
+
+    @list_route(methods=['post'], url_path='add-account',
+                permission_classes=[IsClient])
+    @transaction.atomic
+    def add_account(self, request, *args, **kwargs):
+        client = request.user.client
+
+        if str(client.id) != kwargs['parent_lookup_client']:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        serializer = serializers.new_account_fabric(request.data)
+        if serializer.is_valid():
+            account = serializer.save(request, client)
+            return Response(ClientAccountSerializer(instance=account).data)
+        return Response({'error': serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    # TODO clarify the confirmation process before proceeding
+    # @list_route(methods=['get'], permission_classes=[])
+    # @transaction.atomic
+    # def joint_confirm(self, request, token):
+    #     try:
+    #         account = ClientAccount.objects.get(token=token)
+    #         account.confirmed = True
+    #         account.save(update_fields=['confirmed'])
+    #     except ClientAccount.DoesNotExist:
+    #         return Response(status=status.HTTP_403_FORBIDDEN)
+    #
+    #     sender = account.primary_owner
+    #     cosignee = account.signatories.first()
+    #     advisors = {sender.advisor, cosignee.advisor}
+    #
+    #     context = RequestContext(request, {
+    #         'sender': sender,
+    #         'cosignee': cosignee,
+    #         'account': account,
+    #     })
+    #     render = curry(render_to_string, context=context)
+    #     base_path = 'email/client/joint-confirmed'
+    #
+    #     # notify primary owner account confirmed
+    #     client_path = '%s/%s' % (base_path, 'client')
+    #     sender.user.email_user(
+    #         subject=render('%s/subject.txt' % client_path).strip(),
+    #         message=render('%s/message.txt' % client_path),
+    #         html_message=render('%s/message.html' % client_path),
+    #         from_email=settings.DEFAULT_FROM_EMAIL,
+    #     )
+    #
+    #     # notify advisor(s) account confirmed
+    #     advisor_path = '%s/%s' % (base_path, 'advisor')
+    #     send_mail(
+    #         subject=render('%s/subject.txt' % advisor_path).strip(),
+    #         message=render('%s/message.txt' % advisor_path),
+    #         html_message=render('%s/message.html' % advisor_path),
+    #         from_email=settings.DEFAULT_FROM_EMAIL,
+    #         recipient_list=list(a.user.email for a in advisors)
+    #     )
+    #
+    #     return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):

@@ -1,7 +1,7 @@
 import json
 from decimal import Decimal
 from datetime import date, timedelta, datetime
-from unittest import mock
+from unittest import mock, skip
 from unittest.mock import MagicMock
 
 from django.utils import timezone
@@ -32,10 +32,8 @@ mocked_now = datetime(2016, 1, 1)
 class GoalTests(APITestCase):
     def setUp(self):
         self.support_group = GroupFactory(name=GROUP_SUPPORT_STAFF)
-        self.bonds_type = InvestmentType.Standard.BONDS.get()
-        self.stocks_type = InvestmentType.Standard.STOCKS.get()
-        self.bonds_asset_class = AssetClassFactory.create(investment_type=self.bonds_type)
-        self.stocks_asset_class = AssetClassFactory.create(investment_type=self.stocks_type)
+        self.bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')
+        self.stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
         self.portfolio_set = PortfolioSetFactory.create()
         self.portfolio_set.asset_classes.add(self.bonds_asset_class, self.stocks_asset_class)
 
@@ -158,6 +156,7 @@ class GoalTests(APITestCase):
         self.assertEqual(response.data, [])
 
     def test_performance_history(self):
+        goal = GoalFactory.create()
         prices = (
             (Fixture1.fund1(), '20160101', 10),
             (Fixture1.fund1(), '20160102', 10.5),
@@ -184,6 +183,7 @@ class GoalTests(APITestCase):
             (Fixture1.personal_account1(), MarketOrderRequest.State.COMPLETE),
             (Fixture1.personal_account1(), MarketOrderRequest.State.COMPLETE),
         )
+
         orders = Fixture1.add_orders(order_details)
 
         execution_details = (
@@ -198,6 +198,7 @@ class GoalTests(APITestCase):
             (Fixture1.fund2(), orders[5], -5, 52, 255, '20160106'),
         )
         executions = Fixture1.add_executions(execution_details)
+        execution_requests = Fixture1.add_execution_requests(goal, execution_details, executions)
 
         # We distribute the entire executions to one goal.
         distributions = (
@@ -211,7 +212,7 @@ class GoalTests(APITestCase):
             (executions[7], -2, Fixture1.goal1()),
             (executions[8], -5, Fixture1.goal1()),
         )
-        Fixture1.add_execution_distributions(distributions)
+        Fixture1.add_execution_distributions(distributions, execution_requests)
 
         url = '/api/v1/goals/{}/performance-history'.format(Fixture1.goal1().id)
         self.client.force_authenticate(user=Fixture1.client1().user)
@@ -392,10 +393,12 @@ class GoalTests(APITestCase):
         """
         # tickers for testing portfolio calculations in goals endpoint
         # otherwise, No valid instruments found
-        self.bonds_index = MarketIndexFactory.create()
-        self.stocks_index = MarketIndexFactory.create()
-        self.bonds_ticker = TickerFactory.create(asset_class=self.bonds_asset_class, benchmark=self.bonds_index)
-        self.stocks_ticker = TickerFactory.create(asset_class=self.stocks_asset_class, benchmark=self.stocks_index)
+
+        TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
+        TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
+        TickerFactory.create(symbol='IPO')
+        fund = TickerFactory.create(symbol='rest')
+        self.portfolio_set.asset_classes.add(fund.asset_class)
 
         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
@@ -410,8 +413,8 @@ class GoalTests(APITestCase):
         # setup some inclusive goal settings
         goal_settings = GoalSettingFactory.create()
         # Create a risk score metric for the settings
-        goal_metric = GoalMetricFactory.create(group=goal_settings.metric_group)
-        goal = GoalFactory.create(account=account, active_settings=goal_settings, portfolio_set=self.portfolio_set)
+        GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
+        goal = GoalFactory.create(account=account, selected_settings=goal_settings, portfolio_set=self.portfolio_set)
         goal_settings.completion_date = timezone.now().date() - timedelta(days=365)
         serializer = GoalSettingSerializer(goal_settings)
         url = '/api/v1/goals/{}/calculate-all-portfolios?setting={}'.format(goal.id, json.dumps(serializer.data))
@@ -430,12 +433,15 @@ class GoalTests(APITestCase):
         """
         # tickers for testing portfolio calculations in goals endpoint
         # otherwise, No valid instruments found
-        self.bonds_index = MarketIndexFactory.create()
-        self.stocks_index = MarketIndexFactory.create()
-        self.bonds_ticker = TickerFactory.create(asset_class=self.bonds_asset_class, benchmark=self.bonds_index)
-        self.stocks_ticker = TickerFactory.create(asset_class=self.stocks_asset_class, benchmark=self.stocks_index)
 
-        # Set the markowitz bounds for today
+        TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
+        TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
+        TickerFactory.create(symbol='IPO')
+        fund = TickerFactory.create(symbol='rest')
+
+        self.portfolio_set.asset_classes.add(fund.asset_class)
+
+         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
 
         # populate the data needed for the optimisation
@@ -448,8 +454,9 @@ class GoalTests(APITestCase):
         # setup some inclusive goal settings
         goal_settings = GoalSettingFactory.create()
         # Create a risk score metric for the settings
-        goal_metric = GoalMetricFactory.create(group=goal_settings.metric_group)
-        goal = GoalFactory.create(account=account, active_settings=goal_settings, portfolio_set=self.portfolio_set)
+        GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
+
+        goal = GoalFactory.create(account=account, selected_settings=goal_settings, portfolio_set=self.portfolio_set)
         serializer = GoalSettingSerializer(goal_settings)
         url = '/api/v1/goals/{}/calculate-portfolio?setting={}'.format(goal.id, json.dumps(serializer.data))
         response = self.client.get(url)
@@ -463,10 +470,12 @@ class GoalTests(APITestCase):
     def test_calculate_portfolio_complete(self):
         # tickers for testing portfolio calculations in goals endpoint
         # otherwise, No valid instruments found
-        self.bonds_index = MarketIndexFactory.create()
-        self.stocks_index = MarketIndexFactory.create()
-        self.bonds_ticker = TickerFactory.create(asset_class=self.bonds_asset_class, benchmark=self.bonds_index)
-        self.stocks_ticker = TickerFactory.create(asset_class=self.stocks_asset_class, benchmark=self.stocks_index)
+        TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
+        TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
+        TickerFactory.create(symbol='IPO')
+        fund = TickerFactory.create(symbol='rest')
+
+        self.portfolio_set.asset_classes.add(fund.asset_class)
 
         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
@@ -481,8 +490,9 @@ class GoalTests(APITestCase):
         # setup some inclusive goal settings
         goal_settings = GoalSettingFactory.create()
         # Create a risk score metric for the settings
-        goal_metric = GoalMetricFactory.create(group=goal_settings.metric_group)
-        goal = GoalFactory.create(account=account, active_settings=goal_settings, portfolio_set=self.portfolio_set)
+        GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
+        goal = GoalFactory.create(account=account, selected_settings=goal_settings, portfolio_set=self.portfolio_set,
+                                  active_settings=goal_settings)
         goal_settings.completion_date = timezone.now().date() - timedelta(days=365)
         serializer = GoalSettingSerializer(goal_settings)
         url = '/api/v1/goals/{}/calculate-all-portfolios?setting={}'.format(goal.id, json.dumps(serializer.data))
@@ -666,53 +676,10 @@ class GoalTests(APITestCase):
         # Create a 6 month old execution, transaction and a distribution that caused the transaction
         fund = TickerFactory.create(unit_price=2.1)
         fund2 = TickerFactory.create(unit_price=4)
-        order1 = MarketOrderRequest.objects.create(state=MarketOrderRequest.State.COMPLETE.value, account=goal.account)
-        exec1 = Execution.objects.create(asset=fund,
-                                         volume=10,
-                                         order=order1,
-                                         price=2,
-                                         executed=date(2014, 6, 1),
-                                         amount=20)
-        t1 = TransactionFactory.create(reason=Transaction.REASON_EXECUTION,
-                                       to_goal=None,
-                                       from_goal=goal,
-                                       status=Transaction.STATUS_EXECUTED,
-                                       executed=date(2014, 6, 1),
-                                       amount=20)
-        dist1 = ExecutionDistributionFactory.create(execution=exec1, transaction=t1, volume=10)
-        PositionLotFactory(quantity=10, execution_distribution=dist1)
 
-        order2 = MarketOrderRequest.objects.create(state=MarketOrderRequest.State.COMPLETE.value, account=goal.account)
-        exec2 = Execution.objects.create(asset=fund,
-                                         volume=5,
-                                         order=order2,
-                                         price=2,
-                                         executed=date(2014, 6, 1),
-                                         amount=10)
-        t2 = TransactionFactory.create(reason=Transaction.REASON_EXECUTION,
-                                       to_goal=None,
-                                       from_goal=goal,
-                                       status=Transaction.STATUS_EXECUTED,
-                                       executed=date(2014, 6, 1),
-                                       amount=10)
-        dist2 = ExecutionDistributionFactory.create(execution=exec2, transaction=t2, volume=5)
-        PositionLotFactory(quantity=5, execution_distribution=dist2)
-
-        order3 = MarketOrderRequest.objects.create(state=MarketOrderRequest.State.COMPLETE.value, account=goal.account)
-        exec3 = Execution.objects.create(asset=fund2,
-                                         volume=1,
-                                         order=order3,
-                                         price=2,
-                                         executed=date(2014, 6, 1),
-                                         amount=4)
-        t3 = TransactionFactory.create(reason=Transaction.REASON_EXECUTION,
-                                       to_goal=None,
-                                       from_goal=goal,
-                                       status=Transaction.STATUS_EXECUTED,
-                                       executed=date(2014, 6, 1),
-                                       amount=4)
-        dist3 = ExecutionDistributionFactory.create(execution=exec3, transaction=t3, volume=1)
-        PositionLotFactory(quantity=1, execution_distribution=dist3)
+        Fixture1.create_execution_details(goal, fund, 10, 2, date(2014, 6, 1))
+        Fixture1.create_execution_details(goal, fund, 5, 2, date(2014, 6, 1))
+        Fixture1.create_execution_details(goal, fund2, 1, 2, date(2014, 6, 1))
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK,

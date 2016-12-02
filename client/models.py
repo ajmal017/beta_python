@@ -3,10 +3,8 @@ import uuid
 from itertools import chain
 from datetime import datetime
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.core.validators import (MaxValueValidator, MinLengthValidator,
-                                    MinValueValidator, MaxLengthValidator, ValidationError)
+from django.core.validators import MaxValueValidator, MinValueValidator, ValidationError
 from django.db import models
 from django.db.models import PROTECT
 from django.db.models.aggregates import Min, Max, Sum
@@ -20,7 +18,10 @@ from main.abstract import NeedApprobation, NeedConfirmation, PersonalData
 from main.models import AccountGroup, Goal, Platform
 from .managers import ClientAccountQuerySet, ClientQuerySet
 from main.finance import mod_dietz_rate
-
+from retiresmartz.models import RetirementAdvice, RetirementPlan
+from pinax.eventlog.models import log
+from retiresmartz import advice_responses
+from main.event import Event
 logger = logging.getLogger('client.models')
 
 
@@ -65,8 +66,10 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     smoker = models.NullBooleanField(null=True, blank=True)
     daily_exercise = models.PositiveIntegerField(null=True, blank=True,
                                                  help_text="In Minutes")
-    weight = models.PositiveIntegerField(null=True, blank=True, help_text="In kilograms")
-    height = models.PositiveIntegerField(null=True, blank=True, help_text="In centimeters")
+    weight = models.FloatField(null=True, blank=True, help_text="In kilograms")
+    height = models.FloatField(null=True, blank=True, help_text="In centimeters")
+
+    drinks = models.PositiveIntegerField(null=True, blank=True, help_text='Number of drinks per day')
 
     betasmartz_agreement = models.BooleanField(default=False)
     advisor_agreement = models.BooleanField(default=False)
@@ -194,6 +197,11 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                 return False
         return True
 
+    @property
+    def life_expectancy(self):
+        # TODO: Return a better extimate of life expectancy
+        return 85
+
     def get_risk_profile_bas_scores(self):
         """
         Get the scores for an entity's willingness to take risk, based on a previous elicitation of its preferences.
@@ -237,6 +245,10 @@ class IBAccount(models.Model):
     ib_account = models.CharField(max_length=32)
     bs_account = models.OneToOneField('ClientAccount', related_name='ib_account')
 
+class APEXAccount(models.Model):
+    apex_account = models.CharField(max_length=32)
+    bs_account = models.OneToOneField('ClientAccount', related_name='apex_account')
+
 
 class ClientAccount(models.Model):
     """
@@ -276,6 +288,7 @@ class ClientAccount(models.Model):
                                                    'to operate the account.',
                                          blank=True)
     # also has ib_account foreign key to IBAccount
+    # also has apex_account foreign key to APEXAccount
 
     objects = ClientAccountQuerySet.as_manager()
 
@@ -296,8 +309,7 @@ class ClientAccount(models.Model):
             self.token = str(uuid.uuid4())
         if self.confirmed != self.__was_confirmed:
             self.on_confirmed_modified()
-        ret_value = super(ClientAccount, self).save(force_insert, force_update,
-                                               using, update_fields)
+        ret_value = super(ClientAccount, self).save(force_insert, force_update, using, update_fields)
         self.__was_confirmed = self.confirmed
         return ret_value
 
@@ -462,7 +474,8 @@ class ClientAccount(models.Model):
 
     @property
     def account_type_name(self):
-        return constants.ACCOUNT_TYPES[self.account_type][1]
+        return dict(constants.ACCOUNT_TYPES).get(self.account_type,
+                                                 constants.ACCOUNT_UNKNOWN)
 
     @cached_property
     def on_track(self):
@@ -539,7 +552,7 @@ class RiskProfileGroup(models.Model):
     A way to group a set of predefined risk profile questions to
     be asked together.
     """
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
 
     # Also has properties:
@@ -672,6 +685,29 @@ class EmailInvite(models.Model):
     def __str__(self):
         return '{} {} {} ({})'.format(self.first_name, self.middle_name[:1],
                                       self.last_name, self.email)
+
+    def save(self, *args, **kwargs):
+        if self.status == EmailInvite.STATUS_ACCEPTED:
+            # clear sensitive information from onboarding_data,
+            # that information has been used by ClientUserRegistration
+            # if EmailInvite.STATUS_ACCEPTED
+            if self.onboarding_data:
+                if 'login' in self.onboarding_data:
+                    if 'steps' in self.onboarding_data['login']:
+                        info = self.onboarding_data['login']['steps'][0]
+                        if 'password' in info:
+                            self.onboarding_data['login']['steps'][0]['password'] = ''
+                        if 'passwordConfirmation' in info:
+                            self.onboarding_data['login']['steps'][0]['passwordConfirmation'] = ''
+                        if 'primarySecurityQuestion' in info:
+                            self.onboarding_data['login']['steps'][0]['primarySecurityQuestion'] = ''
+                        if 'primarySecurityAnswer' in info:
+                            self.onboarding_data['login']['steps'][0]['primarySecurityAnswer'] = ''
+                        if 'secondarySecurityQuestion' in info:
+                            self.onboarding_data['login']['steps'][0]['secondarySecurityQuestion'] = ''
+                        if 'secondarySecurityAnswer' in info:
+                            self.onboarding_data['login']['steps'][0]['secondarySecurityAnswer'] = ''
+        super(EmailInvite, self).save(*args, **kwargs)
 
     @property
     def can_resend(self):

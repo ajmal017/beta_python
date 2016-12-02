@@ -14,15 +14,15 @@ from main.models import ExternalAsset, User
 from user.models import SecurityAnswer
 from client.models import Client, EmailInvite
 from support.models import SupportRequest
-from api.v1.user.serializers import UserSerializer, AuthSerializer
-from api.v1.retiresmartz.serializers import RetirementPlanEincSerializer, \
-    RetirementPlanEincWritableSerializer
-from retiresmartz.models import RetirementPlan, RetirementPlanEinc
+from api.v1.user.serializers import UserSerializer
+from api.v1.retiresmartz.serializers import RetirementPlanEincSerializer, RetirementPlanEincWritableSerializer
+from retiresmartz.models import RetirementPlan, RetirementPlanEinc, RetirementAdvice
 from django.views.generic.detail import SingleObjectMixin
 from . import serializers
-from django.core.urlresolvers import reverse
 import logging
 import json
+from retiresmartz import advice_responses
+from main.event import Event
 
 logger = logging.getLogger('api.v1.client.views')
 
@@ -152,8 +152,79 @@ class ClientViewSet(ApiViewMixin,
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
+        instance = self.get_object()
         kwargs['partial'] = True
-        return super(ClientViewSet, self).update(request, *args, **kwargs)
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        orig = Client.objects.get(pk=instance.pk)
+        updated = serializer.update(instance, serializer.validated_data)
+
+        # RetirementAdvice Triggers
+        for plan in RetirementPlan.objects.filter(client=updated, agreed_on=None):
+            life_expectancy_field_updated = (updated.daily_exercise != orig.daily_exercise or
+                                             updated.weight != orig.weight or
+                                             updated.height != orig.height or
+                                             updated.smoker != orig.smoker or
+                                             updated.drinks != orig.drinks)
+            if updated.smoker != orig.smoker:
+                if updated.smoker:
+                    e = Event.RETIRESMARTZ_IS_A_SMOKER.log(None,
+                                                           user=updated.user,
+                                                           obj=updated)
+                    advice = RetirementAdvice(plan=plan, trigger=e)
+                    advice.text = advice_responses.get_smoking_yes(advice)
+                    advice.save()
+                elif updated.smoker is False:
+                    e = Event.RETIRESMARTZ_IS_NOT_A_SMOKER.log(None,
+                                                               user=updated.user,
+                                                               obj=updated)
+                    advice = RetirementAdvice(plan=plan, trigger=e)
+                    advice.text = advice_responses.get_smoking_no(advice)
+                    advice.save()
+                    plan.selected_life_expectancy += 7
+                    plan.save()
+
+            if updated.daily_exercise != orig.daily_exercise:
+                # exercise only
+                e = Event.RETIRESMARTZ_EXERCISE_ONLY.log(None,
+                                                         user=updated.user,
+                                                         obj=updated)
+                advice = RetirementAdvice(plan=plan, trigger=e)
+                advice.text = advice_responses.get_exercise_only(advice)
+                advice.save()
+
+            # frontend posts one at a time, weight then height, not together in one post
+            if (updated.weight != orig.weight or updated.height != orig.height):
+                # weight and/or height updated
+                e = Event.RETIRESMARTZ_WEIGHT_AND_HEIGHT_ONLY.log(None,
+                                                                  user=updated.user,
+                                                                  obj=updated)
+                advice = RetirementAdvice(plan=plan, trigger=e)
+                advice.text = advice_responses.get_weight_and_height_only(advice)
+                advice.save()
+
+            if life_expectancy_field_updated and (updated.daily_exercise and
+               updated.weight and updated.height and updated.smoker is not None and
+               updated.drinks is not None):
+                # every wellbeing field
+                e = Event.RETIRESMARTZ_ALL_WELLBEING_ENTRIES.log(None,
+                                                                 user=updated.user,
+                                                                 obj=updated)
+                advice = RetirementAdvice(plan=plan, trigger=e)
+                advice.text = advice_responses.get_all_wellbeing_entries(advice)
+                advice.save()
+        # elif life_expectancy_field_updated:
+        #     # life expectancy field updated but not all of them
+        #     # and not an individual one must be combination of
+        #     # wellbeing entries updated
+        #         e = Event.RETIRESMARTZ_COMBINATION_WELLBEING_ENTRIES.log(None,
+        #                                                                  user=updated.user,
+        #                                                                  obj=updated)
+        #         advice = RetirementAdvice(plan=plan, trigger=e)
+        #         advice.text = advice_responses.get_combination_of_more_than_one_entry_but_not_all(advice)
+        #         advice.save()
+        return Response(self.serializer_response_class(updated).data)
 
 
 class InvitesView(ApiViewMixin, views.APIView):
@@ -189,9 +260,10 @@ class InvitesView(ApiViewMixin, views.APIView):
 
         if invite.status == EmailInvite.STATUS_EXPIRED:
             invite.advisor.user.email_user('A client tried to use an expired invitation'
-                    "Your potential client %s %s (%s) just tried to register using an invite "
-                    "you sent them, but it has expired!"%
-                    (invite.first_name, invite.last_name, invite.email))
+                                           "Your potential client {} {} ({}) just tried to register using an invite "
+                                           "you sent them, but it has expired!".format(invite.first_name,
+                                                                                       invite.last_name,
+                                                                                       invite.email))
 
         if invite.status != EmailInvite.STATUS_ACCEPTED:
             return Response(self.serializer_class(instance=invite).data,
@@ -199,7 +271,7 @@ class InvitesView(ApiViewMixin, views.APIView):
 
         serializer = self.serializer_class(invite, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
-            invitation = serializer.save()
+            serializer.save()
 
         return Response(serializer.data)
 
@@ -214,7 +286,7 @@ class ClientUserRegisterView(ApiViewMixin, views.APIView):
     def post(self, request):
         serializer = serializers.ClientUserRegistrationSerializer(data=request.data)
         if not serializer.is_valid(raise_exception=True):
-            logger.error('Error accepting invitation: %s'%serializer.errors['non_field_errors'][0])
+            logger.error('Error accepting invitation: %s' % serializer.errors['non_field_errors'][0])
             return Response({'error': 'invitation not found for this email'}, status=status.HTTP_404_NOT_FOUND)
         invite = serializer.invite
 
@@ -227,13 +299,13 @@ class ClientUserRegisterView(ApiViewMixin, views.APIView):
         }
         user = User.objects.create_user(**user_params)
 
-        SecurityAnswer.objects.create(user=user,
-                                      question=serializer.validated_data['question_one'],
-                                      answer=serializer.validated_data['question_one_answer'])
+        sa1 = SecurityAnswer(user=user, question=serializer.validated_data['question_one'])
+        sa1.set_answer(serializer.validated_data['question_one_answer'])
+        sa1.save()
 
-        SecurityAnswer.objects.create(user=user,
-                                      question=serializer.validated_data['question_two'],
-                                      answer=serializer.validated_data['question_two_answer'])
+        sa2 = SecurityAnswer(user=user, question=serializer.validated_data['question_two'])
+        sa2.set_answer(serializer.validated_data['question_two_answer'])
+        sa2.save()
 
         invite.status = EmailInvite.STATUS_ACCEPTED
         invite.user = user
@@ -255,11 +327,10 @@ class ClientUserRegisterView(ApiViewMixin, views.APIView):
         auth_login(request, user)
 
         user_serializer = UserSerializer(instance=user)
-
-        invite.advisor.user.email_user('Client has accepted your invitation',
-            "Your client %s %s (%s) has accepted your invitation to BetaSmartz!"
-                                %(user.first_name, user.last_name, user.email))
-
+        msg = "Your client %s %s (%s) has accepted your invitation to Betasmartz!" % (user.first_name,
+                                                                                      user.last_name,
+                                                                                      user.email)
+        invite.advisor.user.email_user('Client has accepted your invitation', msg)
         return Response(user_serializer.data)
 
 

@@ -177,7 +177,7 @@ class ClientTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['type'], asset.type)
         self.assertEqual(response.data['name'], asset.name)
-        self.assertFalse('owner' in response.data)
+        self.assertEqual(response.data['owner'], self.betasmartz_client.id)
         self.assertEqual(response.data['description'], asset.description)
         self.assertEqual(response.data['valuation'], asset.valuation)
         self.assertEqual(response.data['valuation_date'], str(asset.valuation_date))
@@ -251,11 +251,13 @@ class ClientTests(APITestCase):
         new_occupation = 'Super Hero'
         new_employer = 'League of Extraordinary Gentlemen'
         new_civil_status = 1  # 0 single, 1 married
+        new_date_of_birth = date(1990, 1, 1)
         data = {
             'income': new_income,
             'occupation': new_occupation,
             'employer': new_employer,
-            'civil_status': new_civil_status
+            'civil_status': new_civil_status,
+            'date_of_birth': new_date_of_birth
         }
         self.client.force_authenticate(self.user)
         response = self.client.put(url, data)
@@ -268,6 +270,8 @@ class ClientTests(APITestCase):
         self.assertTrue(self.betasmartz_client.occupation == new_occupation)
         self.assertTrue(response.data['employer'] == new_employer)
         self.assertTrue(response.data['civil_status'] == new_civil_status)
+        self.assertEqual(response.data['date_of_birth'], str(new_date_of_birth))
+        self.assertEqual(self.betasmartz_client.date_of_birth, new_date_of_birth)
 
     def test_create_client(self):
         # We need an accepted invitation to be able to create a client
@@ -294,7 +298,7 @@ class ClientTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             "residential_address": address,
             "regional_data": json.dumps(regional_data)
         }
@@ -304,7 +308,7 @@ class ClientTests(APITestCase):
         # Ensure it is created approved and accepted.
         self.assertEqual(response.data['is_confirmed'], True)
         self.assertEqual(response.data['is_accepted'], True)
-        self.assertEqual(response.data['phone_num'], "+41524204249")
+        self.assertEqual(response.data['phone_num'], "+12342342342")
         self.assertEqual(response.data['residential_address']['address'], address['address'])
         self.assertEqual(response.data['residential_address']['post_code'], address['post_code'])
         self.assertEqual(response.data['betasmartz_agreement'], True)
@@ -350,7 +354,7 @@ class ClientTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             'regional_data': regional_data,
         }
         self.client.force_authenticate(usr)
@@ -381,7 +385,7 @@ class ClientTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             "residential_address": address,
         }
         self.client.force_authenticate(usr)
@@ -417,7 +421,7 @@ class ClientTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             "residential_address": {
                 "address": "123 My Street\nSome City",
                 "post_code": "112233",
@@ -456,7 +460,7 @@ class ClientTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             "residential_address": {
                 "address": "123 My Street\nSome City",
                 "post_code": "112233",
@@ -494,7 +498,7 @@ class ClientTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             "residential_address": {
                 "address": "123 My Street\nSome City",
                 "post_code": "112233",
@@ -528,7 +532,7 @@ class ClientTests(APITestCase):
             'ssn': '555-55-5555',
             'politically_exposed': True,
             'tax_transcript': 'some.random.url',
-            'tax_transcript_data': {"sections":[{"name":"Introduction","fields":{"FILING STATUS":"test"}}]},
+            'tax_transcript_data': {"FILING STATUS":"test"},
         }
         data = {
             "advisor_agreement": True,
@@ -537,7 +541,7 @@ class ClientTests(APITestCase):
             "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
             "gender": GENDER_MALE,
             "income": 1234,
-            "phone_num": "+41524204249",
+            "phone_num": "+1-234-234-2342",
             "residential_address": {
                 "address": "123 My Street\nSome City",
                 "post_code": "112233",
@@ -556,4 +560,32 @@ class ClientTests(APITestCase):
         self.assertNotEqual(usr.id, 44)
         self.assertEqual(response.data['user']['id'], usr.id)
         regional_data_load = response.data.get('regional_data')
-        self.assertEqual(regional_data_load['tax_transcript_data']['sections'][0]['fields']['FILING STATUS'], 'test')
+        self.assertEqual(regional_data_load['tax_transcript_data']['FILING STATUS'], 'test')
+
+    def test_update_client_drinks(self):
+        url = '/api/v1/clients/%s' % self.betasmartz_client.id
+        # lets test income update
+        data = {
+            'drinks': 5,
+        }
+        self.client.force_authenticate(self.user)
+        response = self.client.put(url, data)
+        self.betasmartz_client.refresh_from_db()  # Refresh after the put.
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='200 for authenticated put request to update client drinks')
+        self.assertEqual(response.data['id'], self.betasmartz_client.id)
+        self.assertEqual(response.data['drinks'], 5)
+
+    def test_update_client_smoker(self):
+        url = '/api/v1/clients/%s' % self.betasmartz_client.id
+        # lets test income update
+        data = {
+            'smoker': True,
+        }
+        self.client.force_authenticate(self.user)
+        response = self.client.put(url, data)
+        self.betasmartz_client.refresh_from_db()  # Refresh after the put.
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='200 for authenticated put request to update client smoker field')
+        self.assertEqual(response.data['id'], self.betasmartz_client.id)
+        self.assertEqual(response.data['smoker'], True)

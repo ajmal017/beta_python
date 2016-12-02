@@ -4,9 +4,8 @@ from django.contrib.auth import (
 )
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import (
-    login as auth_views_login ,
+    login as auth_views_login,
 )
-from django.conf import settings
 from django.core.urlresolvers import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
@@ -47,13 +46,6 @@ def login(request, template_name='registration/login.html',
 
     if user.is_authenticated():
         # custom extra checking
-        if not user.is_superuser:
-            if not check_ip_city(request, 'Chicago') and (ENVIRONMENT == 'demo' or ENVIRONMENT == 'production'):
-                messages.error(request, 'Sorry, the BetaSmartz demo is only available to the Chicago area for the moment.')
-                form = authentication_form(request)
-                context = {'form': form}
-                return TemplateResponse(request, template_name, context)
-
 
         # TODO: temp temp temp
         # TODO: discuss "confirmation" feature
@@ -63,6 +55,26 @@ def login(request, template_name='registration/login.html',
         is_client = user.is_client
         is_advisor = user.is_advisor
         is_representative = user.is_authorised_representative
+        # Geolocation restriction, configurable per account - set city to restrict
+        if not user.is_superuser:
+            city_lock = None
+            if is_client:
+                if user.client.geolocation_lock:
+                    city_lock = user.client.geolocation_lock
+            elif is_advisor:
+                if user.advisor.geolocation_lock:
+                    city_lock = user.advisor.geolocation_lock
+            elif is_representative:
+                if user.authorised_representative.geolocation_lock:
+                    city_lock = user.authorised_representative.geolocation_lock
+
+            if city_lock is not None and city_lock is not '':
+                if not check_ip_city(request, city_lock) and (ENVIRONMENT == 'demo' or ENVIRONMENT == 'production'):
+                    messages.error(request, 'Sorry, the BetaSmartz demo is only available to the %s area on this account.' % city_lock)
+                    form = authentication_form(request)
+                    context = {'form': form}
+                    return TemplateResponse(request, template_name, context)
+
         confirmed_client = is_client and user.client.is_confirmed
         confirmed_advisor = is_advisor and user.advisor.is_confirmed
         confirmed_representative = is_representative and user.authorised_representative.is_confirmed

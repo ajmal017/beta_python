@@ -9,7 +9,9 @@ from portfolios.exceptions import OptimizationException
 from portfolios.returns import get_return_history, get_benchmark_returns, filter_returns
 
 # TODO: Once we have automated predictions, reduce this value.
-OLDEST_ACCEPTABLE_DATA = 180  # The number of days back we will look data before we consider it too old.
+# The number of days back we will look data before we consider it too old.
+OLDEST_ACCEPTABLE_DATA = 400  # 180 - until we update data, we will use longer treshold
+
 
 MAX_HISTORY = 20  # The maximum years of history we want to use
 CYCLE_LABEL = 'CYCLE'
@@ -53,10 +55,13 @@ class InvestmentClock(object):
         # Filter any funds that don't have enough data.
         # Our latest start date is the first day of the last complete investment cycle from the current date.
         latest_start = self.get_last_cycle_start()
+
+        # try to be more tolerant - although not sure what this will do
         returns = filter_returns(returns, OLDEST_ACCEPTABLE_DATA, latest_start=latest_start)
+        #returns = filter_returns(returns, OLDEST_ACCEPTABLE_DATA) this gives weird symmetric error in portfolio optim
 
         if returns.empty:
-            raise OptimizationException('Not returns data available')
+            raise OptimizationException('No returns data available')
 
         oldest_dt = today - timedelta(days=OLDEST_ACCEPTABLE_DATA)
         cycles = self.get_cycle_obs(begin_date)

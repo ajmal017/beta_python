@@ -12,7 +12,7 @@ from client.models import RiskProfileGroup
 from main import constants, models
 from main.abstract import PersonalData
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
-from main.models import AccountType
+from main.models import AccountType, Ticker
 from . import serializers
 from ..permissions import IsAdvisorOrClient
 from client import models as client_models
@@ -65,7 +65,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
         for a_t in AccountType.objects.filter_by_user(request.user):
             res.append({
                 "id": a_t.id,
-                "name": act[a_t.id],
+                "name": act.get(a_t.id, constants.ACCOUNT_UNKNOWN),
                 "creatable": a_t.id not in US_RETIREMENT_ACCOUNT_TYPES
             })
 
@@ -88,7 +88,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
 
     @list_route(methods=['get'])
     def tickers(self, request):
-        tickers = models.Ticker.objects.order_by('ordering', 'display_name')
+        tickers = Ticker.objects.filter(state=Ticker.State.ACTIVE.value).order_by('ordering', 'display_name')
         serializer = serializers.TickerListSerializer(tickers, many=True)
         return Response(serializer.data)
 
@@ -122,7 +122,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
 
     @list_route(methods=['get'])
     def civil_statuses(self, request):
-        return Response([{"id": status.value, "name": status.name}
+        return Response([{"id": status.value, "name": status.human_name}
                          for status in PersonalData.CivilStatus])
 
     @list_route(methods=['get'])
