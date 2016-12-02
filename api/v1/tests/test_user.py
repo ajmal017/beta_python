@@ -86,9 +86,9 @@ class UserTests(APITestCase):
             'password': 'test',
             'password2': 'test',
             'oldpassword': 'test',
-            'question_one': sa1.question,
+            'question_one': sa1.pk,
             'answer_one': 'test',
-            'question_two': sa2.question,
+            'question_two': sa2.pk,
             'answer_two': 'test',
         }
         # 403 unauthenticated request

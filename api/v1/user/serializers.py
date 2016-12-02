@@ -83,9 +83,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(required=False)
     password2 = serializers.CharField(required=False)
     # TODO: add fields to update advisor and client profiles
-    question_one = serializers.CharField(required=True)
+    question_one = serializers.IntegerField(required=True)
     answer_one = serializers.CharField(required=True)
-    question_two = serializers.CharField(required=True)
+    question_two = serializers.IntegerField(required=True)
     answer_two = serializers.CharField(required=True)
 
     class Meta:
@@ -106,7 +106,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
         # SecurityAnswer checks
         try:
-            sa1 = SecurityAnswer.objects.get(user=user, question=data.get('question_one'))
+            sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
+            if sa1.user != user:
+                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
         except:
             logger.error('UserUpdateSerializer question %s not found' % data.get('question_one'))
             raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
@@ -116,7 +118,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Wrong answer_one for UserUpdateSerializer')
 
         try:
-            sa2 = SecurityAnswer.objects.get(user=user, question=data.get('question_two'))
+            sa2 =  SecurityAnswer.objects.get(pk=data.get('question_two'))
+            if sa2.user != user:
+                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
         except:
             logger.error('UserUpdateSerializer question %s not found' % data.get('question_two'))
             raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
