@@ -100,34 +100,36 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         request = self.context.get('request')
         user = request.user
-        if data.get('question_one') == data.get('question_two'):
-            logger.error('UserUpdateSerializer given matching questions')
-            raise serializers.ValidationError('SecurityQuestions match for UserUpdateSerializer' % (user.email, data.get('question')))
+        # no user is create request for initial registration
+        if user:
+            if data.get('question_one') == data.get('question_two'):
+                logger.error('UserUpdateSerializer given matching questions')
+                raise serializers.ValidationError('SecurityQuestions match %s for UserUpdateSerializer' % data.get('question_one'))
 
-        # SecurityAnswer checks
-        try:
-            sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
-            if sa1.user != user:
+            # SecurityAnswer checks
+            try:
+                sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
+                if sa1.user != user:
+                    raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+            except:
+                logger.error('UserUpdateSerializer question %s not found' % data.get('question_one'))
                 raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
-        except:
-            logger.error('UserUpdateSerializer question %s not found' % data.get('question_one'))
-            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
 
-        if not sa1.check_answer(data.get('answer_one')):
-            logger.error('UserUpdateSerializer answer two was wrong')
-            raise serializers.ValidationError('Wrong answer_one for UserUpdateSerializer')
+            if not sa1.check_answer(data.get('answer_one')):
+                logger.error('UserUpdateSerializer answer two was wrong')
+                raise serializers.ValidationError('Wrong answer_one for UserUpdateSerializer')
 
-        try:
-            sa2 =  SecurityAnswer.objects.get(pk=data.get('question_two'))
-            if sa2.user != user:
+            try:
+                sa2 = SecurityAnswer.objects.get(pk=data.get('question_two'))
+                if sa2.user != user:
+                    raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+            except:
+                logger.error('UserUpdateSerializer question %s not found' % data.get('question_two'))
                 raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
-        except:
-            logger.error('UserUpdateSerializer question %s not found' % data.get('question_two'))
-            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
 
-        if not sa2.check_answer(data.get('answer_two')):
-            logger.error('UserUpdateSerializer answer two was wrong')
-            raise serializers.ValidationError('Wrong answer_two for UserUpdateSerializer')
+            if not sa2.check_answer(data.get('answer_two')):
+                logger.error('UserUpdateSerializer answer two was wrong')
+                raise serializers.ValidationError('Wrong answer_two for UserUpdateSerializer')
 
         if data.get('password'):
             if data.get('password') != data.get('password2'):

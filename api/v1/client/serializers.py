@@ -15,6 +15,7 @@ from pdf_parsers.tax_return import parse_pdf
 from ..user.serializers import UserFieldSerializer, PhoneNumberValidationSerializer
 import logging
 import uuid
+from user.models import SecurityAnswer
 
 logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
@@ -68,6 +69,11 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
     residential_address = AddressUpdateSerializer()
     regional_data = serializers.JSONField()
 
+    question_one = serializers.IntegerField(required=False)
+    answer_one = serializers.CharField(required=False)
+    question_two = serializers.IntegerField(required=False)
+    answer_two = serializers.CharField(required=False)
+
     class Meta:
         model = Client
         fields = (
@@ -88,7 +94,46 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
             'height',
             'drinks',
             'date_of_birth',
+            'question_one',
+            'answer_one',
+            'question_two',
+            'answer_two',
         )
+
+    def validate(self, data):
+        user = self.context.get('user')
+        # no user is create request for initial registration
+        if user:
+            # SecurityAnswer checks
+            if data.get('question_one') == data.get('question_two'):
+                logger.error('ClientUpdateSerializer given matching questions')
+                raise serializers.ValidationError('SecurityQuestions match %s for ClientUpdateSerializer' % data.get('question'))
+
+            try:
+                sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
+                if sa1.user != user:
+                    raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+            except:
+                logger.error('ClientUpdateSerializer question %s not found' % data.get('question_one'))
+                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+
+            if not sa1.check_answer(data.get('answer_one')):
+                logger.error('ClientUpdateSerializer answer two was wrong')
+                raise serializers.ValidationError('Wrong answer_one for ClientUpdateSerializer')
+
+            try:
+                sa2 = SecurityAnswer.objects.get(pk=data.get('question_two'))
+                if sa2.user != user:
+                    raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+            except:
+                logger.error('ClientUpdateSerializer question %s not found' % data.get('question_two'))
+                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+
+            if not sa2.check_answer(data.get('answer_two')):
+                logger.error('ClientUpdateSerializer answer two was wrong')
+                raise serializers.ValidationError('Wrong answer_two for ClientUpdateSerializer')
+
+        return data
 
     def validate_phone_num(self, phone_num):
         serializer = PhoneNumberValidationSerializer(data={'number': phone_num})

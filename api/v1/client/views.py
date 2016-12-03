@@ -120,7 +120,7 @@ class ClientViewSet(ApiViewMixin,
             return Response({'error': 'requires account with accepted invitation'},
                             status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, context={'user': request.user})
         serializer.is_valid(raise_exception=True)
         # creat new client
         client = serializer.save(advisor=request.user.invitation.advisor, user=request.user)
@@ -155,7 +155,7 @@ class ClientViewSet(ApiViewMixin,
         instance = self.get_object()
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'user': request.user})
         serializer.is_valid(raise_exception=True)
         orig = Client.objects.get(pk=instance.pk)
         updated = serializer.update(instance, serializer.validated_data)
