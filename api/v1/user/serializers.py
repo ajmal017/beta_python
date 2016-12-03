@@ -77,7 +77,7 @@ class UserSerializer(ReadOnlyModelSerializer):
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     """
-    For write (POST/PUT/...) requests only
+    For write PUT requests only
     """
     oldpassword = serializers.CharField(required=False)
     password = serializers.CharField(required=False)
