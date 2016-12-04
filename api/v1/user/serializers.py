@@ -100,34 +100,36 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     def validate(self, data):
         request = self.context.get('request')
         user = request.user
-        if data.get('question_one') == data.get('question_two'):
-            logger.error('UserUpdateSerializer given matching questions')
-            raise serializers.ValidationError('SecurityQuestions match %s for UserUpdateSerializer' % data.get('question_one'))
-
         # SecurityAnswer checks
+        if data.get('question_one') == data.get('question_two'):
+            logger.error('UserUpdateSerializer given matching questions %s' % data.get('question_one'))
+            raise serializers.ValidationError({'question_two': 'Questions must be unique'})
+
         try:
             sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
             if sa1.user != user:
-                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+                logger.error('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question_one')))
+                raise serializers.ValidationError({'question_one': 'User does not own question'})
         except:
             logger.error('UserUpdateSerializer question %s not found' % data.get('question_one'))
-            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+            raise serializers.ValidationError({'question_one': 'Question not found'})
 
         if not sa1.check_answer(data.get('answer_one')):
-            logger.error('UserUpdateSerializer answer two was wrong')
-            raise serializers.ValidationError('Wrong answer_one for UserUpdateSerializer')
+            logger.error('UserUpdateSerializer answer one was wrong')
+            raise serializers.ValidationError({'answer_one': 'Wrong answer'})
 
         try:
             sa2 = SecurityAnswer.objects.get(pk=data.get('question_two'))
             if sa2.user != user:
-                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+                logger.error('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question_two')))
+                raise serializers.ValidationError({'question_two': 'User does not own question'})
         except:
             logger.error('UserUpdateSerializer question %s not found' % data.get('question_two'))
-            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with UserUpdateSerializer' % (user.email, data.get('question')))
+            raise serializers.ValidationError({'question_two': 'Question not found'})
 
         if not sa2.check_answer(data.get('answer_two')):
             logger.error('UserUpdateSerializer answer two was wrong')
-            raise serializers.ValidationError('Wrong answer_two for UserUpdateSerializer')
+            raise serializers.ValidationError({'answer_two': 'Wrong answer'})
 
         if data.get('password'):
             if data.get('password') != data.get('password2'):
@@ -135,7 +137,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
             if not user.check_password(data.get('oldpassword')):
                 logger.error('UserUpdateSerializer given wrong oldpassword')
-                raise serializers.ValidationError('Invalid current password')
+                raise serializers.ValidationError({'oldpassword': 'Wrong password'})
 
         return data
 
@@ -232,31 +234,37 @@ class ChangePasswordSerializer(serializers.Serializer):
         if not user.check_password(data.get('old_password')):
             raise serializers.ValidationError('Wrong password')
 
-        # validate security question and answer combo
         # SecurityAnswer checks
+        if data.get('question_one') == data.get('question_two'):
+            logger.error('ChangePasswordSerializer given matching questions %s' % data.get('question_one'))
+            raise serializers.ValidationError({'question_two': 'Questions must be unique'})
+
         try:
             sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
             if sa1.user != user:
-                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
+                logger.error('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question_one')))
+                raise serializers.ValidationError({'question_one': 'User does not own question'})
         except:
             logger.error('ChangePasswordSerializer question %s not found' % data.get('question_one'))
-            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
+            raise serializers.ValidationError({'question_one': 'Question not found'})
 
         if not sa1.check_answer(data.get('answer_one')):
-            logger.error('ChangePasswordSerializer answer two was wrong')
-            raise serializers.ValidationError('Wrong answer_one for ChangePasswordSerializer')
+            logger.error('ChangePasswordSerializer answer one was wrong')
+            raise serializers.ValidationError({'answer_one': 'Wrong answer'})
 
         try:
             sa2 = SecurityAnswer.objects.get(pk=data.get('question_two'))
             if sa2.user != user:
-                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
+                logger.error('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question_two')))
+                raise serializers.ValidationError({'question_two': 'User does not own question'})
         except:
             logger.error('ChangePasswordSerializer question %s not found' % data.get('question_two'))
-            raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ChangePasswordSerializer' % (user.email, data.get('question')))
+            raise serializers.ValidationError({'question_two': 'Question not found'})
 
         if not sa2.check_answer(data.get('answer_two')):
             logger.error('ChangePasswordSerializer answer two was wrong')
-            raise serializers.ValidationError('Wrong answer_two for ChangePasswordSerializer')
+            raise serializers.ValidationError({'answer_two': 'Wrong answer'})
+
         return data
 
 

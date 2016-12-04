@@ -106,32 +106,34 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
         if user:
             # SecurityAnswer checks
             if data.get('question_one') == data.get('question_two'):
-                logger.error('ClientUpdateSerializer given matching questions')
-                raise serializers.ValidationError('SecurityQuestions match %s for ClientUpdateSerializer' % data.get('question'))
+                logger.error('ClientUpdateSerializer given matching questions %s' % data.get('question_one'))
+                raise serializers.ValidationError({'question_two': 'Questions must be unique'})
 
             try:
                 sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
                 if sa1.user != user:
-                    raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+                    logger.error('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question_one')))
+                    raise serializers.ValidationError({'question_one': 'User does not own given question'})
             except:
                 logger.error('ClientUpdateSerializer question %s not found' % data.get('question_one'))
-                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+                raise serializers.ValidationError({'question_one': 'Question not found'})
 
             if not sa1.check_answer(data.get('answer_one')):
                 logger.error('ClientUpdateSerializer answer two was wrong')
-                raise serializers.ValidationError('Wrong answer_one for ClientUpdateSerializer')
+                raise serializers.ValidationError({'answer_one': 'Wrong answer'})
 
             try:
                 sa2 = SecurityAnswer.objects.get(pk=data.get('question_two'))
                 if sa2.user != user:
-                    raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+                    logger.error('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question_two')))
+                    raise serializers.ValidationError({'question_two': 'User does not own given question'})
             except:
                 logger.error('ClientUpdateSerializer question %s not found' % data.get('question_two'))
-                raise serializers.ValidationError('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question')))
+                raise serializers.ValidationError({'question_two': 'Question not found'})
 
             if not sa2.check_answer(data.get('answer_two')):
                 logger.error('ClientUpdateSerializer answer two was wrong')
-                raise serializers.ValidationError('Wrong answer_two for ClientUpdateSerializer')
+                raise serializers.ValidationError({'answer_two': 'Wrong answer'})
 
         return data
 
