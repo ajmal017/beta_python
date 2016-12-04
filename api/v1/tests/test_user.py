@@ -87,10 +87,6 @@ class UserTests(APITestCase):
             'password': 'test',
             'password2': 'test',
             'oldpassword': 'test',
-            'question_one': sa1.pk,
-            'answer_one': 'test',
-            'question_two': sa2.pk,
-            'answer_two': 'test',
         }
         # 403 unauthenticated request
         response = self.client.put(url, data)
@@ -100,11 +96,19 @@ class UserTests(APITestCase):
         self.client.force_authenticate(self.user)
 
         response = self.client.put(url, data)
-        # We gave a get control response so we can compare the two.
-        control_response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST,
+                         msg='Put without question and answers returns 400')
+        data['question_one'] = sa1.pk
+        data['answer_one'] = 'test'
+        data['question_two'] = sa2.pk
+        data['answer_two'] = 'test'
+        response = self.client.put(url, data)
         # 200 for put request
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='200 for authenticated put request to update user settings')
+        # We gave a get control response so we can compare the two.
+        control_response = self.client.get(url)
+
         # MAke sure put and get return same data
         self.assertEqual(control_response.data, response.data)
         self.assertEqual(response.data['first_name'], new_name)

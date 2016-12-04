@@ -30,8 +30,8 @@ class ClientTests(APITestCase):
         self.user.groups_add(User.GROUP_CLIENT)
         self.betasmartz_client = ClientFactory.create(user=self.user)
 
-        self.sa1 = SecurityAnswerFactory.create(user=self.betasmartz_client.user, question='question one')
-        self.sa2 = SecurityAnswerFactory.create(user=self.betasmartz_client.user, question='question two')
+        self.sa1 = SecurityAnswerFactory.create(user=self.user, question='question one')
+        self.sa2 = SecurityAnswerFactory.create(user=self.user, question='question two')
 
         self.betasmartz_client_account = ClientAccountFactory(primary_owner=self.betasmartz_client, account_type=ACCOUNT_TYPE_PERSONAL)
         self.external_asset1 = ExternalAssetFactory.create(owner=self.betasmartz_client)
@@ -243,6 +243,8 @@ class ClientTests(APITestCase):
         data['residential_address']['address'] = new_add
 
         response = self.client.put(url, data)
+        print(response.content)
+        print(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='200 for authenticated put request to update user address')
         self.assertEqual(response.data['residential_address']['address'], new_add)
@@ -579,6 +581,10 @@ class ClientTests(APITestCase):
         # lets test income update
         data = {
             'drinks': 5,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(self.user)
         response = self.client.put(url, data)
@@ -593,6 +599,10 @@ class ClientTests(APITestCase):
         # lets test income update
         data = {
             'smoker': True,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(self.user)
         response = self.client.put(url, data)

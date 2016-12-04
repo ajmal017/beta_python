@@ -100,8 +100,10 @@ class ClientViewSet(ApiViewMixin,
     pagination_class = None
 
     def get_serializer_class(self):
-        if self.request.method in ['PUT', 'POST']:
+        if self.request.method in ['PUT']:
             return serializers.ClientUpdateSerializer
+        elif self.request.method in ['POST']:
+            return serializers.ClientCreateSerializer
         else:
             # Default for get and other requests is the read only serializer
             return serializers.ClientSerializer
@@ -120,7 +122,7 @@ class ClientViewSet(ApiViewMixin,
             return Response({'error': 'requires account with accepted invitation'},
                             status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        serializer = self.get_serializer(data=request.data, context={'user': request.user})
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         # creat new client
         client = serializer.save(advisor=request.user.invitation.advisor, user=request.user)
@@ -155,7 +157,8 @@ class ClientViewSet(ApiViewMixin,
         instance = self.get_object()
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
-        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'user': request.user})
+        logger.error('Update client request %s' % request.user)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'request': request})
         serializer.is_valid(raise_exception=True)
         orig = Client.objects.get(pk=instance.pk)
         updated = serializer.update(instance, serializer.validated_data)
