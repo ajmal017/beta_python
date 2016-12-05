@@ -106,6 +106,8 @@ class InvestmentClock(object):
         :return: Returns the merged dataframe
         """
         returns[CYCLE_LABEL] = cycles.reindex(returns.index, method='pad')
+        returns = returns[~pd.isnull(returns[CYCLE_LABEL])]
+
         if len(returns[CYCLE_LABEL].unique()) != 5: #!5 - need to revert to original
             emsg = "A full investment cycle was not present in the available history ({} - {})"
             logger.error(emsg.format(returns.index[0], returns.index[-1]))

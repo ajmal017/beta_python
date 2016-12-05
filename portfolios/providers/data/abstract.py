@@ -42,7 +42,7 @@ class DataProviderAbstract(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_market_weight(self, content_type_id, content_object_id):
+    def get_market_weight_latest(self, ticker):
         raise NotImplementedError()
 
     @abstractmethod

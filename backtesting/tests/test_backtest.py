@@ -33,6 +33,7 @@ class BaseTest(TestCase):
         print("backtesting " + str(setup.data_provider.get_current_date()))
         build_instruments(setup.data_provider)
 
+        # optimization fails due to
         portfolios_stats = calculate_portfolios(setting=setup.goal.selected_settings,
                                                 data_provider=setup.data_provider,
                                                 execution_provider=setup.execution_provider)

@@ -22,6 +22,7 @@ from main.models import Advisor, AssetClass, DailyPrice, Execution, \
     Transaction, MarketOrderRequest, GoalMetric
 from main.risk_profiler import MINIMUM_RISK
 from retiresmartz.models import RetirementPlan
+from api.v1.tests.factories import PortfolioFactory, GoalMetricGroupFactory
 
 
 class Fixture1:
@@ -778,7 +779,8 @@ class Fixture1:
         for val in values:
             dates.append(begin_date)
             InvestmentCycleObservationFactory.create(as_of=begin_date,
-                                                     cycle=int(val))
+                                                     cycle=int(val),
+                                                     recorded=begin_date)
             begin_date += datetime.timedelta(1)
         return dates
 
@@ -818,7 +820,7 @@ class Fixture1:
     def initialize_backtest(cls, tickers):
         ticker_list = list()
         equity_asset_class = AssetClassFactory\
-            .create(name='equity', investment_type=InvestmentTypeFactory.create(name='equity'))
+            .create(name='US_MUNICIPAL_BONDS', investment_type=InvestmentTypeFactory.create(name='US_MUNICIPAL_BONDS'))
 
         for t in tickers:
             market_index = MarketIndexFactory.create()
@@ -829,23 +831,21 @@ class Fixture1:
                                                    risk_free_rate=0.02,
                                                    asset_classes=[equity_asset_class]
                                                    )
-        asv = AssetFeatureValueFactory.create(name='random feature', assets=ticker_list)
         goal_settings = GoalSettingFactory.create(target=100000,
                                                   completion=datetime.date(2000, 1, 1),
                                                   hedge_fx=False,
                                                   rebalance=True,
                                                   )
-        GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
-        GoalMetricFactory.create(type=GoalMetric.METRIC_TYPE_PORTFOLIO_MIX,
-                                 group=goal_settings.metric_group,
-                                 feature=asv,
-                                 comparison=GoalMetric.METRIC_COMPARISON_EXACTLY,
-                                 configured_val=.8)
+        goal_metric = GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
+        PortfolioFactory.create(setting=goal_settings)
+        #GoalMetricGroupFactory.create()
 
         return GoalFactory.create(account=Fixture1.personal_account1(),
                                   name='goal1',
                                   type=Fixture1.goal_type1(),
                                   cash_balance=10000,
+                                  approved_settings=goal_settings,
                                   selected_settings=goal_settings,
+                                  active_settings=goal_settings,
                                   portfolio_set=portfolio_set
                                   )

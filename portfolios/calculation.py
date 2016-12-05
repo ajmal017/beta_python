@@ -80,6 +80,7 @@ def build_instruments(data_provider):
             logger.warn("Excluding {} from instruments as it has no predictions".format(ticker))
             continue
 
+        #data_provider.get_market_weight_latest(ticker=ticker)
         irows.append((ticker.symbol,
                       ers[ticker.id],
                       ticker.asset_class.name,
@@ -221,7 +222,7 @@ def get_core_constraints(nvars):
     return xs, constraints
 
 
-def get_metric_constraints(settings, cvx_masks, xs, overrides=None, data_provider=None):
+def get_metric_constraints(settings, cvx_masks, xs, overrides=None):
     """
     Adds the constraints to be used by cvxpy coming from the metrics for this goal.
     :param settings: Details of the settings you want the constraints for
@@ -232,17 +233,10 @@ def get_metric_constraints(settings, cvx_masks, xs, overrides=None, data_provide
     :return: (lambda, constraints)
     """
     constraints = []
-    risk_score = None
 
     metrics = settings.get_metrics_all()
     for metric in metrics:
-        if metric.type == GoalMetric.METRIC_TYPE_RISK_SCORE:
-            if overrides:
-                risk_score = overrides.get("risk_score", metric.configured_val)
-            else:
-                risk_score = metric.configured_val
-
-        elif metric.type == GoalMetric.METRIC_TYPE_PORTFOLIO_MIX:
+        if metric.type == GoalMetric.METRIC_TYPE_PORTFOLIO_MIX:
             if overrides:
                 val = overrides.get(metric.feature.id, metric.configured_val)
             else:
@@ -279,14 +273,8 @@ def get_metric_constraints(settings, cvx_masks, xs, overrides=None, data_provide
                 constraints.append(sum_entries(xs[feature_assets]) <= val)
             else:
                 raise Exception("Unknown metric comparison value: {} found for settings: {}".format(metric.comparison, settings))
-        else:
-            raise Exception("Unknown metric type: {} found for settings: {}".format(metric.type, settings))
 
-    if risk_score is None:
-        raise Exception("Risk score metric could not be found for settings: {}".format(settings))
-
-    lambda_risk = risk_score_to_lambda(risk_score=risk_score, data_provider=data_provider)
-    return lambda_risk, constraints
+    return constraints
 
 
 class Unsatisfiable(Exception):
@@ -341,11 +329,12 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
     if len(settings_symbol_ixs) == 0:
         raise Unsatisfiable("No assets available for settings: {} given it's constraints.".format(settings))
     xs, constraints = get_core_constraints(len(settings_symbol_ixs))
-    lam, mconstraints = get_metric_constraints(settings=settings,
+    mconstraints = get_metric_constraints(settings=settings,
                                                cvx_masks=cvx_masks,
                                                xs=xs,
-                                               overrides=metric_overrides,
-                                               data_provider=data_provider)
+                                               overrides=metric_overrides)
+    risk_profile, lam = get_lambda(settings, data_provider)
+
     constraints += mconstraints
 
     settings_instruments = instruments.iloc[settings_symbol_ixs]
@@ -475,6 +464,22 @@ def get_model_constraints(settings_instruments, xs, risk_profile, decrease=0):
     return constraints, weights, tickers_per_ac
 
 
+def get_lambda(settings, data_provider, risk_setting=None):
+    if risk_setting is None:
+        risk_profile = extract_risk_setting(settings)
+    else:
+        risk_profile = risk_setting
+    risk_profile = int(risk_profile * 100)
+    if risk_profile == 0:
+        risk_profile = 1
+
+    if risk_profile is None:
+        raise Exception("Risk score metric could not be found for settings: {}".format(settings))
+
+    lambda_risk = risk_score_to_lambda(risk_score=risk_profile/100.0, data_provider=data_provider)
+    return risk_profile, lambda_risk
+
+
 def calculate_portfolio(settings, data_provider, execution_provider, idata=None, risk_setting=None):
     """
     Calculates the instrument weights to use for a given goal settings.
@@ -498,30 +503,19 @@ def calculate_portfolio(settings, data_provider, execution_provider, idata=None,
         raise Unsatisfiable("No assets available for settings: {} given it's constraints.".format(settings))
 
     xs, constraints = get_core_constraints(len(settings_symbol_ixs))
-    lam, mconstraints = get_metric_constraints(settings=settings,
-                                               cvx_masks=cvx_masks,
-                                               xs=xs,
-                                               overrides=None,
-                                               data_provider=data_provider)
+    mconstraints = get_metric_constraints(settings=settings, cvx_masks=cvx_masks, xs=xs)
+
     constraints += mconstraints
 
     settings_instruments = instruments.iloc[settings_symbol_ixs]
     lcovars = covars.iloc[settings_symbol_ixs, settings_symbol_ixs].values
 
-    if risk_setting is None:
-        risk_profile = extract_risk_setting(settings)
-    else:
-        risk_profile = risk_setting
-    risk_profile = int(risk_profile * 100)
-    if risk_profile == 0:
-        risk_profile = 1
+    risk_profile, lam = get_lambda(settings, data_provider, risk_setting)
 
-    modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(settings_instruments=settings_instruments,
-                                                       xs=xs,
-                                                       risk_profile=risk_profile)
-
-
-
+    modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
+                                                              settings_instruments=settings_instruments,
+                                                              xs=xs,
+                                                              risk_profile=risk_profile)
 
     # this is old - because we use tax lots - do we really need condition not to sell something held less than 1 year,
     # when we radically change goal? probably not
@@ -545,6 +539,7 @@ def calculate_portfolio(settings, data_provider, execution_provider, idata=None,
 
     constraints_without_model = list(constraints)
     constraints += modelportfolio_constraints
+
     weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, constraints)
 
     decrease = 1

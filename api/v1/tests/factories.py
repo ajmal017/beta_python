@@ -42,7 +42,7 @@ class InvestmentCycleObservationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCycleObservation
 
-    recorded = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2015,1,1))
+    recorded = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2016,1,1))
     source = ''
 
 
@@ -50,7 +50,7 @@ class InvestmentCyclePredictionFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCyclePrediction
 
-    pred_dt = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2015,1,1))
+    pred_dt = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2016,1,1))
     source = ''
 
 
@@ -318,6 +318,8 @@ class GoalMetricFactory(factory.django.DjangoModelFactory):
 class GoalMetricGroupFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = GoalMetricGroup
+    type = GoalMetricGroup.TYPE_CUSTOM
+    name = factory.fuzzy.FuzzyText(length=10)
 
 
 class GoalSettingFactory(factory.django.DjangoModelFactory):

@@ -163,9 +163,9 @@ class DataProviderDjango(DataProviderAbstract):
     def get_ticker(self, tid):
         return Ticker.objects.get(id=tid)
 
-    def get_market_weight(self, content_type_id, content_object_id):
-        mp = MarketCap.objects.filter(instrument_content_type__id=content_type_id,
-                                      instrument_object_id=content_object_id).order_by('-date').first()
+    def get_market_weight_latest(self, ticker):
+        mp = MarketCap.objects.filter(instrument_content_type__id=ticker.benchmark_content_type.id,
+                                      instrument_object_id=ticker.benchmark_object_id).order_by('-date').first()
         return None if mp is None else mp.value
 
     def get_portfolio_sets_ids(self):
