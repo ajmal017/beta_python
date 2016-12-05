@@ -129,8 +129,12 @@
                 <td>{{ client.get_employment_status_display|default:'-' }}</td>
               </tr>
               <tr>
+                <td>Industry Sector</td>
+                <td>{{ client.get_industry_sector_display|default:'-' }}</td>
+              </tr>
+              <tr>
                 <td>Occupation</td>
-                <td>{{ client.occupation|default:'-' }}</td>
+                <td>{{ client.get_occupation_display|default:'-' }}</td>
               </tr>
               <tr>
                 <td>Employer</td>
