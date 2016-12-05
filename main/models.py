@@ -36,7 +36,7 @@ from common.constants import GROUP_SUPPORT_STAFF
 from common.structures import ChoiceEnum
 from common.utils import months_between
 from main import redis
-from main.constants import ACCOUNT_TYPES_COUNTRY, ACCOUNT_UNKNOWN
+from main.constants import ACCOUNT_TYPES_COUNTRY, ACCOUNT_UNKNOWN, OCCUPATION_TYPES, INDUSTRY_TYPES
 from main.finance import mod_dietz_rate
 from main.managers import AccountTypeQuerySet
 from main.risk_profiler import validate_risk_score
