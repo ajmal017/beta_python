@@ -1,24 +1,12 @@
 from datetime import date, datetime
-from ujson import loads
-from unittest import mock
-from unittest.mock import MagicMock
-
-from django.utils.timezone import now
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from common.constants import GROUP_SUPPORT_STAFF
 from retiresmartz.models import RetirementPlan
-from .factories import AssetClassFactory, ContentTypeFactory, GroupFactory, \
-    RetirementPlanFactory, TickerFactory, RetirementAdviceFactory
-from django.utils import timezone
-from api.v1.tests.factories import RetirementPlanFactory, RetirementAdviceFactory, \
-    GroupFactory, EmailInviteFactory, GoalFactory, GoalSettingFactory, \
-    PortfolioSetFactory, AssetClassFactory, GoalMetricFactory, \
-    RecurringTransactionFactory
-from rest_framework import status
+from .factories import AssetClassFactory, GroupFactory, \
+    RetirementPlanFactory, RetirementAdviceFactory
+from api.v1.tests.factories import EmailInviteFactory, PortfolioSetFactory, SecurityAnswerFactory
 from django.core.urlresolvers import reverse
-from common.constants import GROUP_SUPPORT_STAFF
 from retiresmartz.models import RetirementAdvice
 from client.models import EmailInvite
 from main.models import InvestmentType
@@ -45,6 +33,9 @@ class RetiresmartzAdviceTests(APITestCase):
         self.stocks_asset_class = AssetClassFactory.create(investment_type=self.stocks_type)
         self.portfolio_set = PortfolioSetFactory.create()
         self.portfolio_set.asset_classes.add(self.bonds_asset_class, self.stocks_asset_class)
+
+        self.sa1 = SecurityAnswerFactory.create(user=self.plan.client.user, question='question one')
+        self.sa2 = SecurityAnswerFactory.create(user=self.plan.client.user, question='question two')
 
     def test_decrease_retirement_age_to_62(self):
         """
@@ -216,6 +207,10 @@ class RetiresmartzAdviceTests(APITestCase):
         pre_save_count = RetirementAdvice.objects.count()
         data = {
             'smoker': True,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         prev_life_expectancy = self.plan2.selected_life_expectancy
         self.client.force_authenticate(user=self.plan.client.user)
@@ -234,6 +229,10 @@ class RetiresmartzAdviceTests(APITestCase):
         self.plan2.selected_life_expectancy = 80
         data = {
             'smoker': False,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
         response = self.client.put(self.client_url, data)
@@ -251,6 +250,10 @@ class RetiresmartzAdviceTests(APITestCase):
     def test_exercise_only(self):
         data = {
             'daily_exercise': 20,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
         response = self.client.put(self.client_url, data)
@@ -264,6 +267,10 @@ class RetiresmartzAdviceTests(APITestCase):
         data = {
             'weight': 145.02,
             'height': 2,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
         response = self.client.put(self.client_url, data)
@@ -276,6 +283,10 @@ class RetiresmartzAdviceTests(APITestCase):
     def test_weight_only(self):
         data = {
             'weight': 145,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
         response = self.client.put(self.client_url, data)
@@ -288,6 +299,10 @@ class RetiresmartzAdviceTests(APITestCase):
     def test_height_only(self):
         data = {
             'height': 9,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
         response = self.client.put(self.client_url, data)
@@ -318,6 +333,10 @@ class RetiresmartzAdviceTests(APITestCase):
             'daily_exercise': 20,
             'smoker': False,
             'drinks': 5,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
         response = self.client.put(self.client_url, data)

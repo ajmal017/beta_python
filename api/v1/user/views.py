@@ -261,14 +261,6 @@ class ChangePasswordView(ApiViewMixin, views.APIView):
     serializer_class = ChangePasswordSerializer
 
     def post(self, request):
-        # camelCase to snake_case
-        if 'oldPassword' in request.data:
-            request.data['old_password'] = request.data['oldPassword']
-            request.data.pop('oldPassword', None)
-        if 'newPassword' in request.data:
-            request.data['new_password'] = request.data['newPassword']
-            request.data.pop('newPassword', None)
-
         serializer = serializers.ChangePasswordSerializer(data=request.data, context={'user': request.user})
         if serializer.is_valid():
             logger.info('Changing password for user %s' % request.user.email)

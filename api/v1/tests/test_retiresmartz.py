@@ -42,6 +42,105 @@ class RetiresmartzTests(APITestCase):
     def tearDown(self):
         self.client.logout()
 
+    def test_update_client_civil_status(self):
+        """
+        Users should be able to update their civil_status through the
+        retirement plan endpoint.
+        """
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'civil_status': 2,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['civil_status'], 2)
+
+        # try one more update to validate against
+        data = {
+            'civil_status': 1,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['civil_status'], 1)
+
+    def test_update_client_smoker(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'smoker': True,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['smoker'], True)
+
+        # try one more update to validate against
+        data = {
+            'smoker': False,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['smoker'], False)
+
+    def test_update_client_daily_exercise(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'daily_exercise': 25,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['daily_exercise'], 25)
+
+        # try one more update to validate against
+        data = {
+            'daily_exercise': 30,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['daily_exercise'], 30)
+
+    def test_update_client_weight(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'weight': 25.0,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['weight'], 25.0)
+
+        # try one more update to validate against
+        data = {
+            'weight': 30.0,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['weight'], 30.0)
+
+    def test_update_client_height(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'height': 25.0,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['height'], 25.0)
+
+        # try one more update to validate against
+        data = {
+            'height': 30,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['height'], 30)
+
     def test_get_plan(self):
         """
         Test clients are able to access their own retirement plan by id.
