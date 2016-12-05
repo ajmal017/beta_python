@@ -36,12 +36,21 @@ class RetirementPlan(TimestampedModel):
         LUXURY = 4, 'Luxury'
 
     class ExpenseCategory(ChoiceEnum):
-        SHELTER = 1, 'Housing - Shelter'
-        UTILS = 2, 'Housing - Utilities & Bills'
-        TRANSPORTATION = 3, 'Transportation'
-        VOLUNTARY_INSURANCE = 4, 'Voluntary Insurance'
-        TUITION = 5, 'Tuition'
-        OTHER = 6, 'Other'
+        ALCOHOLIC_BEVERAGE = 1, 'Alcoholic Beverage'
+        APPAREL_SERVICES = 2, 'Apparel & Services'
+        EDUCATION_READING = 3, 'Education & Reading'
+        ENTERTAINMENT = 4, 'Entertainment'
+        FOOD = 5, 'Food'
+        HEALTHCARE = 6, 'Healthcare'
+        HOUSING = 7, 'Housing'
+        INSURANCE = 8, 'Insurance'
+        PENSIONS_SOCIAL_SECURITY = 9, 'Pensions & Social Security'
+        PERSONAL_CARE = 10, 'Personal Care'
+        SAVINGS = 11, 'Savings'
+        TAXES = 12, 'Taxes'
+        TOBACCO = 13, 'Tobacco'
+        TRANSPORTATION = 14, 'Transportation'
+        MISCELLANEOUS = 15, 'Miscellaneous'
 
     class SavingCategory(ChoiceEnum):
         HEALTH_GAP = 1, 'Health Gap'
@@ -253,7 +262,7 @@ class RetirementPlan(TimestampedModel):
         if self.pk:
             # RetirementPlan is being created
             # default btc if btc not provided
-            # SPEND = plan.spendable_income # available spending money 
+            # SPEND = plan.spendable_income # available spending money
             # CONTR = # contributions needed to reach their goal - not function for this yet
             # CONTC = validated_data['income'] * validated_data.get('max_employer_match_percent') # current retirement contributions
             if not self.btc:
@@ -498,7 +507,7 @@ def determine_accounts(plan):
                 # under 131k single / 193k joint
                 # contribute to roth IRA up to 5.5/6.5 limit
                 account_type_contributions[constants.ACCOUNT_TYPE_ROTHIRA] += 6500
-                    
+
     sorted_contribs = sorted(account_type_contributions, key=account_type_contributions.get, reverse=True)
     rv = [(ac, min(account_type_contributions[ac], max_contributions_pre_tax)) for ac in sorted_contribs]
     if roth_first:
