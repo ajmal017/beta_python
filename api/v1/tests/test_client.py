@@ -258,6 +258,7 @@ class ClientTests(APITestCase):
         new_income = old_income + 5000.0
         new_occupation = '11-0000'
         new_industry_sector = 'NAICS 11'
+        new_student_loan = True
         new_employer = 'League of Extraordinary Gentlemen'
         new_civil_status = 1  # 0 single, 1 married
         new_date_of_birth = date(1990, 1, 1)
@@ -265,6 +266,7 @@ class ClientTests(APITestCase):
             'income': new_income,
             'occupation': new_occupation,
             'industry_sector': new_industry_sector,
+            'student_loan': new_student_loan,
             'employer': new_employer,
             'civil_status': new_civil_status,
             'date_of_birth': new_date_of_birth,
@@ -282,6 +284,7 @@ class ClientTests(APITestCase):
         self.assertTrue(response.data['income'] == new_income)
         self.assertTrue(response.data['occupation'] == new_occupation)
         self.assertTrue(response.data['industry_sector'] == new_industry_sector)
+        self.assertTrue(response.data['student_loan'] == new_student_loan)
         self.assertTrue(self.betasmartz_client.occupation == new_occupation)
         self.assertTrue(self.betasmartz_client.industry_sector == new_industry_sector)
         self.assertTrue(response.data['employer'] == new_employer)

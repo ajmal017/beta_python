@@ -77,6 +77,7 @@ class ClientCreateSerializer(serializers.ModelSerializer):
             'income',
             'occupation',
             'industry_sector',
+            'student_loan',
             'employer',
             'civil_status',
             'risk_profile_responses',
