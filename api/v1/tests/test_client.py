@@ -1,4 +1,3 @@
-import os
 import json
 from datetime import date
 from django.core.urlresolvers import reverse
@@ -14,9 +13,8 @@ from main.constants import ACCOUNT_TYPE_PERSONAL, EMPLOYMENT_STATUS_FULL_TIME, G
 from main.models import ExternalAsset, User
 from .factories import AccountTypeRiskProfileGroupFactory, AddressFactory, \
     ClientAccountFactory, ClientFactory, ExternalAssetFactory, GoalFactory, \
-    GroupFactory, RegionFactory, RiskProfileGroupFactory, UserFactory
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.conf import settings
+    GroupFactory, RegionFactory, RiskProfileGroupFactory, UserFactory, \
+    SecurityAnswerFactory
 
 
 class ClientTests(APITestCase):
@@ -31,6 +29,9 @@ class ClientTests(APITestCase):
         self.user = UserFactory.create()
         self.user.groups_add(User.GROUP_CLIENT)
         self.betasmartz_client = ClientFactory.create(user=self.user)
+
+        self.sa1 = SecurityAnswerFactory.create(user=self.user, question='question one')
+        self.sa2 = SecurityAnswerFactory.create(user=self.user, question='question two')
 
         self.betasmartz_client_account = ClientAccountFactory(primary_owner=self.betasmartz_client, account_type=ACCOUNT_TYPE_PERSONAL)
         self.external_asset1 = ExternalAssetFactory.create(owner=self.betasmartz_client)
@@ -220,6 +221,7 @@ class ClientTests(APITestCase):
 
     def test_update_client_address(self):
         url = '/api/v1/clients/%s' % self.betasmartz_client.id
+
         # residential_address should be self.client3.residential_address.pk
         self.client.force_authenticate(self.betasmartz_client.user)
         response = self.client.get(url)
@@ -231,7 +233,13 @@ class ClientTests(APITestCase):
 
         # Lets change the address
         new_add = '1 over there\nsomewhere'
-        data = {"residential_address": response.data['residential_address']}
+        data = {
+            "residential_address": response.data['residential_address'],
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
+        }
         data['residential_address']['address'] = new_add
 
         response = self.client.put(url, data)
@@ -257,7 +265,11 @@ class ClientTests(APITestCase):
             'occupation': new_occupation,
             'employer': new_employer,
             'civil_status': new_civil_status,
-            'date_of_birth': new_date_of_birth
+            'date_of_birth': new_date_of_birth,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(self.user)
         response = self.client.put(url, data)
@@ -567,6 +579,10 @@ class ClientTests(APITestCase):
         # lets test income update
         data = {
             'drinks': 5,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(self.user)
         response = self.client.put(url, data)
@@ -581,6 +597,10 @@ class ClientTests(APITestCase):
         # lets test income update
         data = {
             'smoker': True,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
         }
         self.client.force_authenticate(self.user)
         response = self.client.put(url, data)

@@ -6,15 +6,9 @@ import pandas as pd
 import scipy.stats as st
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.mail import send_mail
-from django.db import IntegrityError
 from django.db import transaction
 from django.db.models import Q
-from django.template import RequestContext
-from django.template.loader import render_to_string
 from django.utils import timezone
-from django.utils.functional import curry
-from django.utils.timezone import now
 from rest_framework import status
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import ValidationError

@@ -15,6 +15,7 @@ from pdf_parsers.tax_return import parse_pdf
 from ..user.serializers import UserFieldSerializer, PhoneNumberValidationSerializer
 import logging
 import uuid
+from user.models import SecurityAnswer
 
 logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
@@ -57,9 +58,9 @@ class ClientFieldSerializer(ReadOnlyModelSerializer):
         return None
 
 
-class ClientUpdateSerializer(serializers.ModelSerializer):
+class ClientCreateSerializer(serializers.ModelSerializer):
     """
-    Write (POST/PUT) update requests only
+    For Create POST requests only
     """
     qs = RiskProfileAnswer.objects.all()
     risk_profile_responses = serializers.PrimaryKeyRelatedField(many=True,
@@ -110,7 +111,94 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
         validated_data['is_confirmed'] = True
         validated_data['is_accepted'] = True
 
-        return super(ClientUpdateSerializer, self).create(validated_data)
+        return super(ClientCreateSerializer, self).create(validated_data)
+
+
+class ClientUpdateSerializer(serializers.ModelSerializer):
+    """
+    Write PUT update requests only
+    """
+    qs = RiskProfileAnswer.objects.all()
+    risk_profile_responses = serializers.PrimaryKeyRelatedField(many=True,
+                                                                queryset=qs,
+                                                                required=False)
+    residential_address = AddressUpdateSerializer()
+    regional_data = serializers.JSONField()
+
+    question_one = serializers.IntegerField(required=True)
+    answer_one = serializers.CharField(required=True)
+    question_two = serializers.IntegerField(required=True)
+    answer_two = serializers.CharField(required=True)
+
+    class Meta:
+        model = Client
+        fields = (
+            'employment_status',
+            RESIDENTIAL_ADDRESS_KEY,
+            'income',
+            'occupation',
+            'employer',
+            'civil_status',
+            'risk_profile_responses',
+            'betasmartz_agreement',
+            'advisor_agreement',
+            'phone_num',
+            'regional_data',
+            'smoker',
+            'daily_exercise',
+            'weight',
+            'height',
+            'drinks',
+            'date_of_birth',
+            'question_one',
+            'answer_one',
+            'question_two',
+            'answer_two',
+        )
+
+    def validate(self, data):
+        request = self.context.get('request')
+        user = request.user
+        # no user is create request for initial registration
+
+        # SecurityAnswer checks
+        if data.get('question_one') == data.get('question_two'):
+            logger.error('ClientUpdateSerializer given matching questions %s' % data.get('question_one'))
+            raise serializers.ValidationError({'question_two': 'Questions must be unique'})
+
+        try:
+            sa1 = SecurityAnswer.objects.get(pk=data.get('question_one'))
+            if sa1.user != user:
+                logger.error('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question_one')))
+                raise serializers.ValidationError({'question_one': 'User does not own given question'})
+        except:
+            logger.error('ClientUpdateSerializer question %s not found' % data.get('question_one'))
+            raise serializers.ValidationError({'question_one': 'Question not found'})
+
+        if not sa1.check_answer(data.get('answer_one')):
+            logger.error('ClientUpdateSerializer answer two was wrong')
+            raise serializers.ValidationError({'answer_one': 'Wrong answer'})
+
+        try:
+            sa2 = SecurityAnswer.objects.get(pk=data.get('question_two'))
+            if sa2.user != user:
+                logger.error('SecurityAnswer not found for user %s and question %s with ClientUpdateSerializer' % (user.email, data.get('question_two')))
+                raise serializers.ValidationError({'question_two': 'User does not own given question'})
+        except:
+            logger.error('ClientUpdateSerializer question %s not found' % data.get('question_two'))
+            raise serializers.ValidationError({'question_two': 'Question not found'})
+
+        if not sa2.check_answer(data.get('answer_two')):
+            logger.error('ClientUpdateSerializer answer two was wrong')
+            raise serializers.ValidationError({'answer_two': 'Wrong answer'})
+
+        return data
+
+    def validate_phone_num(self, phone_num):
+        serializer = PhoneNumberValidationSerializer(data={'number': phone_num})
+        if not serializer.is_valid():
+            raise serializers.ValidationError('Invalid phone number')
+        return serializer.validated_data
 
     def update(self, instance, validated_data):
         add_data = validated_data.pop(RESIDENTIAL_ADDRESS_KEY, None)
