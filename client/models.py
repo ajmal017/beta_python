@@ -19,9 +19,6 @@ from main.models import AccountGroup, Goal, Platform
 from .managers import ClientAccountQuerySet, ClientQuerySet
 from main.finance import mod_dietz_rate
 from retiresmartz.models import RetirementAdvice, RetirementPlan
-from pinax.eventlog.models import log
-from retiresmartz import advice_responses
-from main.event import Event
 logger = logging.getLogger('client.models')
 
 

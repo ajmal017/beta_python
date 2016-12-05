@@ -121,6 +121,11 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     statement_of_advice = serializers.PrimaryKeyRelatedField(read_only=True)
     statement_of_advice_url = serializers.SerializerMethodField(required=False)
     civil_status = serializers.SerializerMethodField(required=False)
+    smoker = serializers.SerializerMethodField(required=False)
+    daily_exercise = serializers.SerializerMethodField(required=False)
+    weight = serializers.SerializerMethodField(required=False)
+    height = serializers.SerializerMethodField(required=False)
+    drinks = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = RetirementPlan
@@ -135,6 +140,21 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
 
     def get_civil_status(self, obj):
         return obj.client.civil_status
+
+    def get_smoker(self, obj):
+        return obj.client.smoker
+
+    def get_daily_exercise(self, obj):
+        return obj.client.daily_exercise
+
+    def get_weight(self, obj):
+        return obj.client.weight
+
+    def get_height(self, obj):
+        return obj.client.height
+
+    def get_drinks(self, obj):
+        return obj.client.drinks
 
 
 class RetirementPlanWritableSerializer(serializers.ModelSerializer):
@@ -156,6 +176,11 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
     retirement_postal_code = serializers.CharField(max_length=10, required=False)
     partner_data = serializers.JSONField(required=False, validators=[partner_data_validator])
     civil_status = serializers.IntegerField(source='client.civil_status', required=False)
+    smoker = serializers.BooleanField(source='client.smoker', required=False)
+    daily_exercise = serializers.IntegerField(source='client.daily_exercise', required=False)
+    weight = serializers.FloatField(source='client.weight', required=False)
+    height = serializers.FloatField(source='client.height', required=False)
+    drinks = serializers.IntegerField(source='client.drinks', required=False)
 
     class Meta:
         model = RetirementPlan
@@ -189,6 +214,12 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             'partner_data',
             'agreed_on',
             'civil_status',  # this field on the client not the RetirementPlan
+            'smoker',
+            'daily_exercise',
+            'weight',
+            'height',
+            'drinks',
+
         )
 
     def __init__(self, *args, **kwargs):
@@ -250,10 +281,11 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         if plan.agreed_on: plan.generate_soa()
 
         # Client civil_status check
-        if 'client' in validated_data:
-            if 'civil_status' in validated_data['client']:
-                client.civil_status = validated_data['client']['civil_status']
-                client.save()
+        # if 'client' in validated_data:
+        #     logger.error(validated_data['client'])
+        #     if 'civil_status' in validated_data['client']:
+        #         client.civil_status = validated_data['client']['civil_status']
+        #         client.save()
 
         return plan
 
@@ -273,6 +305,21 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         if 'client' in validated_data:
             if 'civil_status' in validated_data['client']:
                 instance.client.civil_status = validated_data['client']['civil_status']
+                instance.client.save()
+            if 'smoker' in validated_data['client']:
+                instance.client.smoker = validated_data['client']['smoker']
+                instance.client.save()
+            if 'drinks' in validated_data['client']:
+                instance.client.drinks = validated_data['client']['drinks']
+                instance.client.save()
+            if 'height' in validated_data['client']:
+                instance.client.height = validated_data['client']['height']
+                instance.client.save()
+            if 'weight' in validated_data['client']:
+                instance.client.weight = validated_data['client']['weight']
+                instance.client.save()
+            if 'daily_exercise' in validated_data['client']:
+                instance.client.daily_exercise = validated_data['client']['daily_exercise']
                 instance.client.save()
 
         for attr, value in validated_data.items():
