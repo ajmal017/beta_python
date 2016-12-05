@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import factory
+import factory.fuzzy
 import decimal
 import random
 from dateutil.relativedelta import relativedelta
@@ -41,7 +42,7 @@ class InvestmentCycleObservationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCycleObservation
 
-    recorded = factory.Sequence(lambda n: date(year=int(2000 + n), month=1, day=1))
+    recorded = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2015,1,1))
     source = ''
 
 
@@ -49,7 +50,7 @@ class InvestmentCyclePredictionFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCyclePrediction
 
-    pred_dt = factory.Sequence(lambda n: date(year=int(2000 + n), month=1, day=1))
+    pred_dt = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2015,1,1))
     source = ''
 
 
