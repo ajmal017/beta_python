@@ -250,9 +250,10 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         if plan.agreed_on: plan.generate_soa()
 
         # Client civil_status check
-        if 'civil_status' in validated_data:
-            instance.client.civil_status = validated_data['civil_status']
-            instance.client.save()
+        if 'client' in validated_data:
+            if 'civil_status' in validated_data['client']:
+                client.civil_status = validated_data['client']['civil_status']
+                client.save()
 
         return plan
 
