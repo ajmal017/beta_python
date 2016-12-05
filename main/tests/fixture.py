@@ -7,7 +7,9 @@ from pinax.eventlog.models import Log
 
 import address.models as ad
 from api.v1.tests.factories import GoalMetricFactory, TransactionFactory, PositionLotFactory, \
-    ExecutionDistributionFactory, ExecutionFactory, InvestmentCycleObservationFactory
+    InvestmentCycleObservationFactory, TickerFactory, AssetFeatureValueFactory, GoalFactory, PortfolioSetFactory, \
+    AssetClassFactory, InvestmentTypeFactory, PortfolioFactory, GoalSettingFactory, MarketIndexFactory, \
+    InvestmentCycleObservationFactory, ExecutionFactory, ExecutionDistributionFactory
 from main.models import ExecutionRequest
 from client.models import Client, ClientAccount, IBAccount, RiskProfileAnswer, \
     RiskProfileGroup, RiskProfileQuestion
@@ -17,9 +19,10 @@ from main.models import Advisor, AssetClass, DailyPrice, Execution, \
     ExecutionDistribution, ExternalAsset, Firm, Goal, \
     GoalMetricGroup, GoalSetting, GoalType, HistoricalBalance, MarketIndex, \
     PortfolioSet, Region, Ticker, User, ExternalInstrument, \
-    Transaction, MarketOrderRequest
+    Transaction, MarketOrderRequest, GoalMetric
 from main.risk_profiler import MINIMUM_RISK
 from retiresmartz.models import RetirementPlan
+from api.v1.tests.factories import PortfolioFactory, GoalMetricGroupFactory
 
 
 class Fixture1:
@@ -776,7 +779,8 @@ class Fixture1:
         for val in values:
             dates.append(begin_date)
             InvestmentCycleObservationFactory.create(as_of=begin_date,
-                                                     cycle=int(val))
+                                                     cycle=int(val),
+                                                     recorded=begin_date)
             begin_date += datetime.timedelta(1)
         return dates
 
@@ -800,6 +804,8 @@ class Fixture1:
                                                 status=Transaction.STATUS_EXECUTED,
                                                 executed=executed,
                                                 amount=quantity*price)
+
+
         distribution = ExecutionDistributionFactory.create(execution=execution,
                                                            transaction=transaction,
                                                            volume=quantity,
@@ -809,3 +815,37 @@ class Fixture1:
         return_values = list()
         return_values.extend((mor, execution, transaction, distribution, position_lot))
         return return_values
+
+    @classmethod
+    def initialize_backtest(cls, tickers):
+        ticker_list = list()
+        equity_asset_class = AssetClassFactory\
+            .create(name='US_MUNICIPAL_BONDS', investment_type=InvestmentTypeFactory.create(name='US_MUNICIPAL_BONDS'))
+
+        for t in tickers:
+            market_index = MarketIndexFactory.create()
+            ticker = TickerFactory.create(symbol=t, asset_class=equity_asset_class, benchmark=market_index)
+            ticker_list.append(ticker)
+
+        portfolio_set = PortfolioSetFactory.create(name='portfolio_set1',
+                                                   risk_free_rate=0.02,
+                                                   asset_classes=[equity_asset_class]
+                                                   )
+        goal_settings = GoalSettingFactory.create(target=100000,
+                                                  completion=datetime.date(2000, 1, 1),
+                                                  hedge_fx=False,
+                                                  rebalance=True,
+                                                  )
+        goal_metric = GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
+        PortfolioFactory.create(setting=goal_settings)
+        #GoalMetricGroupFactory.create()
+
+        return GoalFactory.create(account=Fixture1.personal_account1(),
+                                  name='goal1',
+                                  type=Fixture1.goal_type1(),
+                                  cash_balance=10000,
+                                  approved_settings=goal_settings,
+                                  selected_settings=goal_settings,
+                                  active_settings=goal_settings,
+                                  portfolio_set=portfolio_set
+                                  )

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import factory
+import factory.fuzzy
 import decimal
 import random
 from dateutil.relativedelta import relativedelta
@@ -13,7 +14,7 @@ from main.models import User, ExternalAsset, PortfolioSet, Firm, Advisor, \
                         GoalMetric, AssetFeatureValue, AssetFeature, \
                         MarkowitzScale, Supervisor, AuthorisedRepresentative, PositionLot, ExecutionDistribution,\
                         InvestmentCycleObservation, InvestmentCyclePrediction, ExecutionRequest, MarketOrderRequest, \
-    ApexFill, ExecutionApexFill, Execution, RecurringTransaction, AccountGroup, Platform, OrderETNA
+    ApexFill, ExecutionApexFill, Execution, RecurringTransaction, AccountGroup, Platform, OrderETNA, Portfolio, PortfolioItem
 from retiresmartz.models import RetirementPlan, RetirementAdvice, RetirementPlanAccount
 from main.models import Region as MainRegion
 from client.models import Client, ClientAccount, RiskProfileGroup, \
@@ -41,7 +42,7 @@ class InvestmentCycleObservationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCycleObservation
 
-    recorded = factory.Sequence(lambda n: date(year=int(1990 + n), month=1, day=1))
+    recorded = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2016,1,1))
     source = ''
 
 
@@ -49,7 +50,7 @@ class InvestmentCyclePredictionFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCyclePrediction
 
-    pred_dt = factory.Sequence(lambda n: date(year=int(1990 + n), month=1, day=1))
+    pred_dt = factory.fuzzy.FuzzyDate(datetime(1990, 1, 1),datetime(2016,1,1))
     source = ''
 
 
@@ -317,6 +318,8 @@ class GoalMetricFactory(factory.django.DjangoModelFactory):
 class GoalMetricGroupFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = GoalMetricGroup
+    type = GoalMetricGroup.TYPE_CUSTOM
+    name = factory.fuzzy.FuzzyText(length=10)
 
 
 class GoalSettingFactory(factory.django.DjangoModelFactory):
@@ -373,6 +376,26 @@ class ExternalAssetFactory(factory.django.DjangoModelFactory):
     #     RETIREMENT_ACCOUNT = (6, 'Retirement Account')
     #     OTHER = (7, 'Other')
 
+
+class PortfolioFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Portfolio
+
+    setting = factory.SubFactory(GoalSettingFactory)
+    stdev = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
+    er = factory.LazyAttribute(lambda n: float(random.randrange(100) / 100))
+
+    @factory.post_generation
+    def items(self, create, items, **kwargs):
+        if not create:
+            # Simple build, do nothing.
+            return
+
+        if items:
+            # A list of groups were passed in, use them
+            for item in items:
+                self.items.add(item)
+                
 
 class InvestmentTypeFactory(factory.django.DjangoModelFactory):
     class Meta:

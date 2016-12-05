@@ -82,7 +82,7 @@ def metrics_changed(goal):
     :param goal:
     :return: Boolean (True if changed)
     """
-    return goal.active_settings.constraint_inputs() != goal.approved_settings.constraint_inputs()
+    return goal.active_settings.metric_group.constraint_inputs() != goal.approved_settings.metric_group.constraint_inputs()
 
 
 def build_positions(goal, weights, instruments):
@@ -439,10 +439,10 @@ def perturbate(goal, idata, data_provider, execution_provider):
     if weights is None:
         min_weights = perturbate_mix(goal, opt_inputs)
         weights = optimise_up(opt_inputs, min_weights)
-        weights = process_risk(weights, held_weights)
+        new_weights = process_risk(weights, goal, idata, data_provider, execution_provider)
     else:
         # We got a satisfiable optimisation (mix metrics satisfied), now check and fix any risk drift.
-        new_weights = process_risk(weights, held_weights)
+        new_weights = process_risk(weights, goal, idata, data_provider, execution_provider)
 
         if new_weights == weights:
             reason = execution_provider.get_execution_request(Reason.DEPOSIT.value)

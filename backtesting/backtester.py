@@ -1,12 +1,13 @@
 import pandas as pd
 import pandas.io.data as web
 
-from portfolios.providers.data.backtester import DataProviderBacktester
+from portfolios.providers.data.backtester_django import DataProviderDjango
 from portfolios.providers.dummy_models import GoalFactory, PositionLot
-from portfolios.providers.execution.backtester import ExecutionProviderBacktester
+from portfolios.providers.execution.django import ExecutionProviderDjango
 from main.management.commands.rebalance import rebalance
 from portfolios.calculation import build_instruments, \
     calculate_portfolio, calculate_portfolios, get_instruments
+from api.v1.tests.factories import MarkowitzScaleFactory
 
 
 class GetETFTickers(object):
@@ -70,9 +71,15 @@ class Backtester(object):
 class TestSetup(object):
     def __init__(self):
         self._covars = self._samples = self._instruments = self._masks = None
-        self.data_provider = DataProviderBacktester(sliding_window_length=250*5)
-        self.execution_provider = ExecutionProviderBacktester()
-        self.goal = GoalFactory.create_goal(self.data_provider)
+        self.data_provider = DataProviderDjango(sliding_window_length=250*5, dir='/backtesting/')
+        self.execution_provider = ExecutionProviderDjango()
+        MarkowitzScaleFactory.create()
+        self.data_provider.get_goals()
+
+        self.goal = None
+
+    def create_goal(self, goal):
+        self.goal = goal
 
     def instruments_setup(self):
         self._covars, self._samples, self._instruments, self._masks = build_instruments(self.data_provider)
@@ -116,7 +123,6 @@ if __name__ == "__main__":
                                data_provider=setup.data_provider,
                                execution_provider=setup.execution_provider)
         '''
-
 
         # calculate current portfolio stats
         portfolios_stats = calculate_portfolios(setting=setup.goal.active_settings,
