@@ -139,6 +139,8 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
             RESIDENTIAL_ADDRESS_KEY,
             'income',
             'occupation',
+            'industry_sector',
+            'student_loan',
             'employer',
             'civil_status',
             'risk_profile_responses',

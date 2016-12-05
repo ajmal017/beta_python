@@ -279,7 +279,7 @@ class ClientTests(APITestCase):
         response = self.client.put(url, data)
         self.betasmartz_client.refresh_from_db()  # Refresh after the put.
         self.assertEqual(response.status_code, status.HTTP_200_OK,
-                         msg='200 for authenticated put request to update client income, occupation, industry_sector, employer, and civil status')
+                         msg='200 for authenticated put request to update client income, occupation, industry_sector, student_loan, employer, and civil status')
         self.assertTrue(response.data['id'] == self.betasmartz_client.id)
         self.assertTrue(response.data['income'] == new_income)
         self.assertTrue(response.data['occupation'] == new_occupation)
@@ -287,6 +287,7 @@ class ClientTests(APITestCase):
         self.assertTrue(response.data['student_loan'] == new_student_loan)
         self.assertTrue(self.betasmartz_client.occupation == new_occupation)
         self.assertTrue(self.betasmartz_client.industry_sector == new_industry_sector)
+        self.assertTrue(self.betasmartz_client.student_loan == new_student_loan)
         self.assertTrue(response.data['employer'] == new_employer)
         self.assertTrue(response.data['civil_status'] == new_civil_status)
         self.assertEqual(response.data['date_of_birth'], str(new_date_of_birth))

@@ -175,7 +175,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
         serializer = serializers.RetirementLifestyleSerializer(lifestyles, many=True)
         return Response(serializer.data)
 
-    @list_route(methods=['get'], url_path='industry-types')
+    @list_route(methods=['get'], url_path='industry-types', permission_classes=[IsAuthenticated])
     def industry_types(self, request):
         res = []
         itd = dict(constants.INDUSTRY_TYPES)
@@ -186,7 +186,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             })
         return Response(res)
 
-    @list_route(methods=['get'], url_path='occupation-types')
+    @list_route(methods=['get'], url_path='occupation-types', permission_classes=[IsAuthenticated])
     def occupation_types(self, request):
         res = []
         itd = dict(constants.OCCUPATION_TYPES)
