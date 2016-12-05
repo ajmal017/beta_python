@@ -49,6 +49,8 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'retirement_lifestyle_categories': self.retirement_lifestyle_categories(request).data,
             'retirement_lifestyles': self.retirement_lifestyles(request).data,
             'constants': self.constants(request).data,
+            'industry_types': self.industry_types(request).data,
+            'occupation_types': self.occupation_types(request).data
         }
         return Response(data)
 
@@ -172,3 +174,25 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
         lifestyles = retirement_models.RetirementLifestyle.objects.all().order_by('cost')
         serializer = serializers.RetirementLifestyleSerializer(lifestyles, many=True)
         return Response(serializer.data)
+
+    @list_route(methods=['get'], url_path='industry-types')
+    def industry_types(self, request):
+        res = []
+        itd = dict(constants.INDUSTRY_TYPES)
+        for key in sorted(itd):
+            res.append({
+                "id": key,
+                "name": itd[key]
+            })
+        return Response(res)
+
+    @list_route(methods=['get'], url_path='occupation-types')
+    def occupation_types(self, request):
+        res = []
+        itd = dict(constants.OCCUPATION_TYPES)
+        for key in sorted(itd):
+            res.append({
+                "id": key,
+                "name": itd[key]
+            })
+        return Response(res)
