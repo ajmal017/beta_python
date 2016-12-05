@@ -42,6 +42,29 @@ class RetiresmartzTests(APITestCase):
     def tearDown(self):
         self.client.logout()
 
+    def test_update_client_civil_status(self):
+        """
+        Users should be able to update their civil_status through the
+        retirement plan endpoint.
+        """
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'civil_status': 2,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['civil_status'], 2)
+
+        # try one more update to validate against
+        data = {
+            'civil_status': 1,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['civil_status'], 1)
+
     def test_get_plan(self):
         """
         Test clients are able to access their own retirement plan by id.

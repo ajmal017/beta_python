@@ -120,6 +120,7 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     on_track = serializers.BooleanField()
     statement_of_advice = serializers.PrimaryKeyRelatedField(read_only=True)
     statement_of_advice_url = serializers.SerializerMethodField(required=False)
+    civil_status = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = RetirementPlan
@@ -131,6 +132,9 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
             return '/statements/retirement/{}.pdf'.format(obj.statement_of_advice.id)
         else:
             return None
+
+    def get_civil_status(self, obj):
+        return obj.client.civil_status
 
 
 class RetirementPlanWritableSerializer(serializers.ModelSerializer):
@@ -151,6 +155,7 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
     atc = serializers.FloatField(required=False)
     retirement_postal_code = serializers.CharField(max_length=10, required=False)
     partner_data = serializers.JSONField(required=False, validators=[partner_data_validator])
+    civil_status = serializers.IntegerField(source='client.civil_status', required=False)
 
     class Meta:
         model = RetirementPlan
@@ -183,6 +188,7 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             'selected_life_expectancy',
             'partner_data',
             'agreed_on',
+            'civil_status',  # this field on the client not the RetirementPlan
         )
 
     def __init__(self, *args, **kwargs):
@@ -243,6 +249,11 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         plan = RetirementPlan.objects.create(**validated_data)
         if plan.agreed_on: plan.generate_soa()
 
+        # Client civil_status check
+        if 'civil_status' in validated_data:
+            instance.client.civil_status = validated_data['civil_status']
+            instance.client.save()
+
         return plan
 
     @transaction.atomic
@@ -257,8 +268,16 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         if instance.agreed_on:
             raise ValidationError("Unable to make changes to a plan that has been agreed on")
 
+        # Client civil_status check
+        if 'client' in validated_data:
+            if 'civil_status' in validated_data['client']:
+                instance.client.civil_status = validated_data['client']['civil_status']
+                instance.client.save()
+
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            if str(attr) != 'client':
+                # civil_status update is on client
+                setattr(instance, attr, value)
 
         reverse_plan = getattr(instance, 'partner_plan_reverse', None)
         if instance.partner_plan is not None and reverse_plan is not None and instance.partner_plan != reverse_plan:

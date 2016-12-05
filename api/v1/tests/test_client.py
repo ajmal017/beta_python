@@ -243,8 +243,6 @@ class ClientTests(APITestCase):
         data['residential_address']['address'] = new_add
 
         response = self.client.put(url, data)
-        print(response.content)
-        print(data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='200 for authenticated put request to update user address')
         self.assertEqual(response.data['residential_address']['address'], new_add)
