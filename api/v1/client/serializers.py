@@ -76,6 +76,8 @@ class ClientCreateSerializer(serializers.ModelSerializer):
             RESIDENTIAL_ADDRESS_KEY,
             'income',
             'occupation',
+            'industry_sector',
+            'student_loan',
             'employer',
             'civil_status',
             'risk_profile_responses',
@@ -137,6 +139,8 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
             RESIDENTIAL_ADDRESS_KEY,
             'income',
             'occupation',
+            'industry_sector',
+            'student_loan',
             'employer',
             'civil_status',
             'risk_profile_responses',
@@ -449,8 +453,8 @@ class PersonalInfoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Client
-        fields = ('first_name', 'middle_name', 'last_name', 'address',
-                  'phone', 'employment_status', 'occupation', 'employer',
+        fields = ('first_name', 'middle_name', 'last_name', 'address', 'phone',
+                  'employment_status', 'occupation', 'industry_sector', 'employer',
                   'income', 'net_worth')
 
     def save(self, **kwargs):

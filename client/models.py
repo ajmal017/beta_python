@@ -58,7 +58,11 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     employment_status = models.IntegerField(choices=constants.EMPLOYMENT_STATUSES,
                                             null=True, blank=True)
     income = models.FloatField(verbose_name="Income ($)", default=0)
-    occupation = models.CharField(max_length=255, null=True, blank=True)
+    occupation = models.CharField(choices=constants.OCCUPATION_TYPES,
+                                  max_length=20, null=True, blank=True)
+    industry_sector = models.CharField(choices=constants.INDUSTRY_TYPES,
+                                       max_length=20, null=True, blank=True)
+    student_loan = models.NullBooleanField(null=True, blank=True)
     employer = models.CharField(max_length=255, null=True, blank=True)
     smoker = models.NullBooleanField(null=True, blank=True)
     daily_exercise = models.PositiveIntegerField(null=True, blank=True,
