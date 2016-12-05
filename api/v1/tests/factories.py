@@ -41,7 +41,7 @@ class InvestmentCycleObservationFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCycleObservation
 
-    recorded = factory.Sequence(lambda n: date(year=int(1990 + n), month=1, day=1))
+    recorded = factory.Sequence(lambda n: date(year=int(2000 + n), month=1, day=1))
     source = ''
 
 
@@ -49,7 +49,7 @@ class InvestmentCyclePredictionFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = InvestmentCyclePrediction
 
-    pred_dt = factory.Sequence(lambda n: date(year=int(1990 + n), month=1, day=1))
+    pred_dt = factory.Sequence(lambda n: date(year=int(2000 + n), month=1, day=1))
     source = ''
 
 
