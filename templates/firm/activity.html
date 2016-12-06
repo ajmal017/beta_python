@@ -8,7 +8,25 @@
 <script type="application/javascript">
   $(function () {
     betasmartz.widgets.searchTable("#activity");
+    var dp = $('#customDatePicker').datetimepicker({
+      inline: true,
+      format: 'DDD'
+    }).on('dp.change', function(e) {
+      $('#id_period').val('');
+      $('#id_timestamp').val(moment().diff(e.date, 'days'));
+      $('.activityFilterForm').submit();
+    })
   });
+  function handlePeriodChange(elem) {
+    if (elem.value === 'custom') {
+      $('#customDateModal').modal({
+        backdrop: 'static'
+      });
+    } else {
+      $('#id_timestamp').val('');
+      elem.form.submit();
+    }
+  }
 </script>
 {% endblock %}
 
@@ -20,7 +38,7 @@
       <div class="col-sm-6">
           <h3>View your company activity</h3>
       </div>
-      <form>
+      <form class="activityFilterForm">
         <div class="col-sm-2">
           {% bootstrap_field filter.form.group show_label=False show_help=False %}
         </div>
@@ -28,6 +46,7 @@
           {% bootstrap_field filter.form.verb show_label=False show_help=False %}
         </div>
         <div class="col-sm-2">
+          {% bootstrap_field filter.form.period show_label=False show_help=False %}
           {% bootstrap_field filter.form.timestamp show_label=False show_help=False %}
         </div>
       </form>
@@ -72,5 +91,20 @@
       <a href="">Download Activity as CSV</a>
     </div>
   </div>
-{% endblock %}
 
+  <div class="modal fade" id="customDateModal" tabindex="-1" role="dialog" aria-labelledby="customDateModalLabel">
+    <div class="modal-dialog" role="document" style="max-width: 360px">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="customDateModalLabel">Choose date</h4>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <div id="customDatePicker"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
