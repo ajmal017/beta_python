@@ -1,12 +1,15 @@
 import logging
 from collections import defaultdict
 import itertools
-
+from django.contrib.contenttypes.models import ContentType
 import pandas as pd
 import numpy as np
+from django.db.models import F, Value, Max
+from django.db.models.functions import Concat
 
 from portfolios.algorithms.bl import bl_model
 from portfolios.algorithms.covar import lw_covars
+from main.models import Ticker, MarketCap, MarketIndex
 
 logger = logging.getLogger("portfolios.prediction.bl_v1")
 
@@ -102,6 +105,22 @@ def get_market_weights(instruments):
     :param instruments: The instruments table
     :return: A pandas series indexed as the instruments table containing the initial unoptimised instrument weights.
     """
+    #ticker_ids = [int(s) for s in instruments.index.tolist() if str(s).isdigit()]
+
+    #blabels = target_instruments['id'].unique() #we need benchmark, for now just use fund
+
+    # Get all the benchmarks and fund instruments
+    #bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
+
+    indices = MarketIndex.objects.filter(trackers__symbol__in=instruments.index.tolist())
+
+    for ind in indices:
+        m_cap = MarketCap.objects.filter(instrument_object_id=ind.id,
+                                         instrument_content_type=ContentType.objects.get_for_model(ind))\
+                                 .order_by('-date')\
+                                 .values_list('value', flat=True)\
+                                 .first()
+
     interested = instruments['mkt_cap']
     total_market = interested.sum()
     if total_market == 0:
@@ -121,14 +140,14 @@ def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
     """
 
     # Get the indexes for the benchmarks for each of the funds
-    blabels = target_instruments['id'].unique() #we need benchmark, for now just use fund
+    #blabels = target_instruments['id'].unique() #we need benchmark, for now just use fund
 
     # Get all the benchmarks and fund instruments
-    bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
+    #bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
 
     # Get the market weights for the benchmarks for each of the funds, and the funds.
     # The market caps for the funds should be zero.
-    market_caps = get_market_weights(bl_instruments)
+    market_caps = get_market_weights(instruments)
 
     # Get the views appropriate for the settings
     views, vers = get_views(portfolio_set, bl_instruments)
