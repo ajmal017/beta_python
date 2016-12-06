@@ -222,7 +222,7 @@ class NeedConfirmation(models.Model):
 
 class TransferPlan(models.Model):
     begin_date = models.DateField()
-    amount = models.IntegerField()
+    amount = models.FloatField()
     growth = models.FloatField(
         help_text="Daily rate to increase or decrease the amount by as of"
                   " the begin_date. 0.0 for no modelled change")
