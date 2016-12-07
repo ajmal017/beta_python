@@ -489,7 +489,7 @@ def get_lambda(settings, data_provider, risk_setting=None):
     return risk_profile, lambda_risk
 
 
-def calculate_portfolio(settings, data_provider, execution_provider, idata=None, risk_setting=None):
+def calculate_portfolio(settings, data_provider, execution_provider, retry=True, idata=None, risk_setting=None):
     """
     Calculates the instrument weights to use for a given goal settings.
     :param settings: goal.active_settings to calculate the portfolio for.
@@ -509,7 +509,7 @@ def calculate_portfolio(settings, data_provider, execution_provider, idata=None,
     lcovars, mu = odata
 
     decrease = 1
-    while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0:
+    while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0 and retry:
         modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
             settings_instruments=settings_instruments,
             xs=xs,
@@ -574,7 +574,8 @@ def calculate_portfolios(setting, data_provider, execution_provider):
                                         data_provider=data_provider,
                                         execution_provider=execution_provider,
                                         idata=idata,
-                                        risk_setting=risk_score)
+                                        risk_setting=risk_score
+                                        )
 
             # Convert to our statistics for our portfolio.
             portfolios.append((risk_score, stats))
