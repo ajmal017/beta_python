@@ -5,7 +5,7 @@ from django.db.models import Sum, F
 from django.db.models.functions import Coalesce
 from main.management.commands.rebalance import get_weights
 
-from main.models import MarketOrderRequest, Ticker, PositionLot
+from main.models import MarketOrderRequest, Ticker, PositionLot, ExecutionRequest
 from .abstract import ExecutionProviderAbstract
 
 logger = logging.getLogger('betasmartz.execution_provider_django')
@@ -16,11 +16,11 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
         pass
 
     def create_market_order(self, account):
-        order = MarketOrderRequest(account=account)
+        order = MarketOrderRequest.objects.create(account=account)
         return order
 
     def create_execution_request(self, reason, goal, asset, volume, order, limit_price):
-        pass
+        return ExecutionRequest.objects.create(reason=reason, goal=goal, asset=asset, volume=volume, order=order)
 
     def get_asset_weights_without_tax_winners(self, goal):
         lots = PositionLot.objects \

@@ -112,18 +112,18 @@ def get_market_weights(instruments):
     # Get all the benchmarks and fund instruments
     #bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
 
-    indices = MarketIndex.objects.filter(trackers__symbol__in=instruments.index.tolist())
-    market_caps = defaultdict(float)
-    for ind in indices:
-        m_cap = MarketCap.objects.filter(instrument_object_id=ind.id,
-                                         instrument_content_type=ContentType.objects.get_for_model(ind))\
+
+    market_caps = list()
+    for symbol in instruments.index.tolist():
+        index = MarketIndex.objects.filter(trackers__symbol=symbol)[0]
+        m_cap = MarketCap.objects.filter(instrument_object_id=index.id,
+                                         instrument_content_type=ContentType.objects.get_for_model(index))\
                                  .order_by('-date')\
                                  .values_list('value', flat=True)\
                                  .first()
-        market_caps[ind.id] = m_cap
+        market_caps.append(m_cap)
 
-    total_market = sum(market_caps.values())
-    return {key: val / total_market for key, val in market_caps.items()}
+    return list(np.array(market_caps) / sum(market_caps))
 
 
 def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
@@ -153,7 +153,7 @@ def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
     # Pass the data to the BL algorithm to get the the mu and sigma for the optimiser
     lcovars = covars.loc[instruments['id'], instruments['id']]
     mu, sigma = bl_model(lcovars.values,
-                         market_caps.values,
+                         market_caps,
                          views,
                          vers,
                          samples)
@@ -164,12 +164,12 @@ def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
             samples,
             lcovars.index.tolist(),
             lcovars.values.tolist(),
-            market_caps.values.tolist(),
+            market_caps,
             mu.tolist(),
             sigma.tolist())
         )
 
     # modify the mu and sigma to only be the funds, then return just those.
-    return mu[len(blabels):], sigma[len(blabels):, len(blabels):]
+    return mu, sigma
 
 

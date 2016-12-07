@@ -47,6 +47,7 @@ class BaseTest(TestCase):
                              data_provider=setup.data_provider,
                              execution_provider=setup.execution_provider)
 
+        # this does not work - make it work with Django execution provider - use EtnaOrders
         performance = backtester.calculate_performance(execution_provider=setup.execution_provider)
 
     def create_goal(self):

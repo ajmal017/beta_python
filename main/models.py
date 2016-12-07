@@ -2319,9 +2319,12 @@ class ExecutionRequest(models.Model):
         return {
             'reason': str(self.reason),
             'goal': str(self.goal),
-            'asset': str(self.ticker),
+            'asset': str(self.asset),
             'volume': self.volume
         }
+
+    def __str__(self):
+        return "[{}] - {}".format(self.asset.symbol, self.volume)
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
