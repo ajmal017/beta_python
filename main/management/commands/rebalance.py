@@ -37,6 +37,11 @@ def optimise_up(opt_inputs, min_weights):
     mu = settings_instruments[INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL].values
     pweights = create_portfolio_weights(settings_instruments['id'].values, min_weights=min_weights, abs_min=0)
     new_cons = constraints + [xs >= pweights]
+
+
+
+
+
     weights, cost = markowitz_optimizer_3(xs, lcovars.values, lam, mu, new_cons)
     return dict(zip(settings_instruments['id'].values, weights)) if weights.any() else None
 
@@ -419,6 +424,8 @@ def perturbate(goal, idata, data_provider, execution_provider):
     held_weights = get_held_weights(goal)
     tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(goal, data_provider.get_current_date())
     min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
+
+
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
     weights = optimise_up(opt_inputs, min_weights)
 

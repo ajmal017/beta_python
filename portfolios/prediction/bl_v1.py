@@ -113,19 +113,17 @@ def get_market_weights(instruments):
     #bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
 
     indices = MarketIndex.objects.filter(trackers__symbol__in=instruments.index.tolist())
-
+    market_caps = defaultdict(float)
     for ind in indices:
         m_cap = MarketCap.objects.filter(instrument_object_id=ind.id,
                                          instrument_content_type=ContentType.objects.get_for_model(ind))\
                                  .order_by('-date')\
                                  .values_list('value', flat=True)\
                                  .first()
+        market_caps[ind.id] = m_cap
 
-    interested = instruments['mkt_cap']
-    total_market = interested.sum()
-    if total_market == 0:
-        return pd.Series([0]*len(interested), index=interested.index)
-    return interested / total_market
+    total_market = sum(market_caps.values())
+    return {key: val / total_market for key, val in market_caps.items()}
 
 
 def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
@@ -150,10 +148,10 @@ def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
     market_caps = get_market_weights(instruments)
 
     # Get the views appropriate for the settings
-    views, vers = get_views(portfolio_set, bl_instruments)
+    views, vers = get_views(portfolio_set, instruments)
 
     # Pass the data to the BL algorithm to get the the mu and sigma for the optimiser
-    lcovars = covars.loc[bl_instruments['id'], bl_instruments['id']]
+    lcovars = covars.loc[instruments['id'], instruments['id']]
     mu, sigma = bl_model(lcovars.values,
                          market_caps.values,
                          views,
