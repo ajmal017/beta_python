@@ -386,6 +386,20 @@ class InviteTests(APITestCase):
         self.assertEqual(response.data['status'], EmailInvite.STATUS_ACCEPTED,
                          msg='invitation status ACCEPTED')
 
+        # re-upload tax transcript
+        expected_tax_transcript_data = {'SPOUSE NAME': 'SPOUSE M LAST', 'SPOUSE SSN': '222-22-2222', 'ADDRESS': '999 AVENUE RD  CITY, ST 10.000-90.00-800', 'NAME': 'FIRST M', 'SSN': '111-11-1111', 'FILING STATUS': 'Married Filing Joint', 'TOTAL INCOME': '$0.00'}
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as tax_transcript:
+            data = {
+                'tax_transcript': tax_transcript
+            }
+            response = self.client.put(invite_detail_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating onboarding with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['tax_transcript_data'], None,
+                            msg='tax_transcript_data is in the response and not None')
+        self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
+                         msg='Parsed tax_transcript_data matches expected')
+
         # create client and make sure tax_transcript data is carried over properly
         url = reverse('api:v1:client-list')
         address = {

@@ -103,7 +103,7 @@ def parse_text(string):
                 output["sections"][i]["fields"][k] = res
             else:
                 if k == "ADDRESS":
-                    output["sections"][i]["fields"][k] += " " + res
+                    output["sections"][i]["fields"][k] = res
         i += 1
     return output
 
@@ -136,6 +136,8 @@ def clean_results(results):
     clean_output['SPOUSE SSN'] = results['sections'][0]['fields']['SPOUSE SSN']
     clean_output['NAME'] = results['sections'][0]['fields']['NAME']
     clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
+    # logger.error(results['sections'][0])
+    # logger.error(results['sections'][0]['fields']['ADDRESS'])
     clean_output['ADDRESS'] = results['sections'][0]['fields']['ADDRESS']
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
     clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TOTAL INCOME']
