@@ -89,7 +89,6 @@ class AccountTests(APITestCase):
         }
         old_count = ClientAccount.objects.count()
         response = self.client.put(url, data)
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(ClientAccount.objects.count(), old_count)  # No extra account created
         self.assertTrue('id' in response.data)  # Correct response serializer used
