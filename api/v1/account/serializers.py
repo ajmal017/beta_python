@@ -31,6 +31,7 @@ class ClientAccountCreateSerializer(NoUpdateModelSerializer):
         fields = (
             'account_type',
             'account_name',
+            'account_number',
             'primary_owner',
         )
 

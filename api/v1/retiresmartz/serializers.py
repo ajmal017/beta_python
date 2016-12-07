@@ -509,6 +509,7 @@ class AddRolloverAccount(NewAccountFabricBase):
         account = ClientAccount.objects.create(
             account_type=account_type,
             account_name=dict(constants.ACCOUNT_TYPES)[account_type],
+            account_number=account_number,
             primary_owner=client,
             default_portfolio_set=client.advisor.default_portfolio_set,
             confirmed=True,
