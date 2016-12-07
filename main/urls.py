@@ -6,7 +6,6 @@ from django.views.generic import TemplateView
 from api.v1.user.views import PasswordResetView
 from main import settings
 from main.views import *
-from main.views.client.app_missing import ClientAppMissing
 from .swagger import schema_view as swagger
 
 
