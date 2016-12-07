@@ -1,8 +1,8 @@
 /* global body padding */
-// body {
-//   padding-top: 0px;
-//   padding-bottom: 20px;
-// }
+body {
+  padding-top: 0px;
+  padding-bottom: 20px;
+}
 
 /* global spacing overrides */
 h1, h2, h3, h4, h5, h6,
@@ -116,4 +116,27 @@ table thead .active .icon-sort {
 
 .alert-success {
   color: black;
+}
+
+.legal {
+  font-size: 18px;
+  margin-top: 30px;
+}
+
+.legal h1 {
+  font-size: 28px;
+  margin-bottom: 30px;
+}
+.legal h2 {
+  font-size: 21px;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 30px;
+}
+.legal p {
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+.legal .table {
+  margin-bottom: 30px;
 }
