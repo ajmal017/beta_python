@@ -15,7 +15,7 @@ class RetiresmartzTestCase(TestCase):
     def setUp(self):
 
         # employed, client over 50 years old
-        self.betasmartz_client = ClientFactory.create(employment_status=constants.EMPLOYMENT_STATUS_FULL_TIME,
+        self.betasmartz_client = ClientFactory.create(employment_status=constants.EMPLOYMENT_STATUS_EMMPLOYED,
                                                       date_of_birth=datetime.now().date() - relativedelta(years=60))
         self.betasmartz_client.regional_data['tax_transcript_data'] = {'sections': [{'name': 'Introduction', 'fields': {'SPOUSE NAME': 'SPOUSE M LAST', 'SPOUSE SSN': '222-22-2222', 'ADDRESS': '999 AVENUE RD  CITY, ST 10.000-90.00-800', 'NAME': 'FIRST M', 'SSN': '111-11-1111', 'FILING STATUS': 'Single'}}, {'name': 'Income', 'fields': {'TOTAL INCOME': '$0.00'}}]}
         self.betasmartz_client.save()
@@ -53,7 +53,7 @@ class RetiresmartzTestCase(TestCase):
                                                                 account=self.account3)
 
         # employed, client over 50 years old, 150k+ income
-        self.betasmartz_client2 = ClientFactory.create(employment_status=constants.EMPLOYMENT_STATUS_FULL_TIME,
+        self.betasmartz_client2 = ClientFactory.create(employment_status=constants.EMPLOYMENT_STATUS_EMMPLOYED,
                                                       date_of_birth=datetime.now().date() - relativedelta(years=60))
         self.betasmartz_client2.regional_data['tax_transcript_data'] = {'sections': [{'name': 'Introduction', 'fields': {'SPOUSE NAME': 'SPOUSE M LAST', 'SPOUSE SSN': '222-22-2222', 'ADDRESS': '999 AVENUE RD  CITY, ST 10.000-90.00-800', 'NAME': 'FIRST M', 'SSN': '111-11-1111', 'FILING STATUS': 'Single'}}, {'name': 'Income', 'fields': {'TOTAL INCOME': '$0.00'}}]}
         self.betasmartz_client2.save()

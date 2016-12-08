@@ -9,7 +9,7 @@ from api.v1.tests.factories import AdvisorFactory, EmailInviteFactory
 from client.models import EmailInvite
 from django.test import Client as DjangoClient
 from common.constants import GROUP_SUPPORT_STAFF
-from main.constants import ACCOUNT_TYPE_PERSONAL, EMPLOYMENT_STATUS_FULL_TIME, GENDER_MALE
+from main.constants import ACCOUNT_TYPE_PERSONAL, EMPLOYMENT_STATUS_EMMPLOYED, GENDER_MALE
 from main.models import ExternalAsset, User
 from .factories import AccountTypeRiskProfileGroupFactory, AddressFactory, \
     ClientAccountFactory, ClientFactory, ExternalAssetFactory, GoalFactory, \
@@ -315,7 +315,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -371,7 +371,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -402,7 +402,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -438,7 +438,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -477,7 +477,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -515,7 +515,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -558,7 +558,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",

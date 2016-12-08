@@ -248,8 +248,7 @@ def get_increase_spending_decrease_contribution(advice, contrib, income):
     rv = "Hey big spender! I can see you want to spend a bit more. \
 If you decreased your spending by ${:,.2f} a week, you could increase your \
 retirement income by ${:,.2f} a week.".format(contrib, income)
-    if advice.plan.client.employment_status == constants.EMPLOYMENT_STATUS_FULL_TIME or \
-       advice.plan.client.employment_status == constants.EMPLOYMENT_STATUS_PART_TIME:
+    if advice.plan.client.employment_status == constants.EMPLOYMENT_STATUS_EMMPLOYED:
         rv += " Your employer will match these contributions making it easier to reach your goal."
 
     return rv
