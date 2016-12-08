@@ -80,9 +80,9 @@ class YTDPeriodFilter(filters.DateFilter):
         if not value:
             return qs
 
-        dt = value
+        dt = value + relativedelta(days=1)
 
-        qs = qs.filter(timestamp__lte=dt, timestamp__gte=dt - relativedelta(days=365))
+        qs = qs.filter(timestamp__lte = dt, timestamp__gte = dt - relativedelta(days=365))
         return qs
 
 class CustomStartFilter(filters.DateFilter):
