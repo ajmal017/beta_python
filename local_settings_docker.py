@@ -4,14 +4,13 @@ environment = os.environ["ENVIRONMENT"]
 
 if environment in ["production", "demo"]:
     hn = 'app' if environment == 'production' else environment
-    ALLOWED_HOSTS = ["{}.betasmartz.com".format(hn)]
     SITE_URL = "https://{}.betasmartz.com".format(hn)
     DEBUG = False
 else:
     SITE_URL = "https://{}.betasmartz.com".format(environment)
     DEBUG = True
     TEMPLATE_DEBUG = True
-
+ALLOWED_HOSTS = ["{}.betasmartz.com".format(hn)]
 
 DATABASES = {
     'default': {
