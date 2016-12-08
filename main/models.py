@@ -2746,11 +2746,13 @@ def user_logged_in_notification(sender, user: User, **kwargs):
 
 @receiver(user_logged_out)
 def user_logged_out_notification(sender, user: User, **kwargs):
-    user_types = ['client', 'advisor', 'supervisor',
-                  'authorised_representative']
-    for ut in user_types:
-        try:
-            Notify.SYSTEM_LOGOUT.send(getattr(user, ut))
-            break
-        except ObjectDoesNotExist:
-            pass
+    if user is not None:
+        # user was authenticated
+        user_types = ['client', 'advisor', 'supervisor',
+                      'authorised_representative']
+        for ut in user_types:
+            try:
+                Notify.SYSTEM_LOGOUT.send(getattr(user, ut))
+                break
+            except ObjectDoesNotExist:
+                pass
