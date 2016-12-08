@@ -265,6 +265,7 @@ class ClientAccount(models.Model):
     account_name = models.CharField(max_length=255, default='PERSONAL')
     primary_owner = models.ForeignKey('Client',
                                       related_name="primary_accounts")
+    account_number = models.CharField(max_length=16, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     token = models.CharField(max_length=36, editable=False)
     # The confirmed field indicates the account is fully ready to be used by the client.
