@@ -437,8 +437,7 @@ def determine_accounts(plan):
     else:
         joint = False
 
-    if plan.client.employment_status == constants.EMPLOYMENT_STATUS_FULL_TIME or \
-       plan.client.employment_status == constants.EMPLOYMENT_STATUS_PART_TIME:
+    if plan.client.employment_status == constants.EMPLOYMENT_STATUS_EMMPLOYED:
         has_401k = True
     else:
         has_401k = False
