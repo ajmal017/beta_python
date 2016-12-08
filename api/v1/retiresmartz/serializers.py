@@ -365,7 +365,7 @@ class RetirementPlanEincWritableSerializer(serializers.ModelSerializer):
 
 class RetirementAdviceReadSerializer(ReadOnlyModelSerializer):
     """
-        Read-Only RetirementAdvice serializer, used for 
+        Read-Only RetirementAdvice serializer, used for
         get request for retirement-plans advice-feed endpoint
     """
 
@@ -378,15 +378,13 @@ class RetirementAdviceReadSerializer(ReadOnlyModelSerializer):
             'trigger',
             'text',
             'read',
-            'action',
-            'action_url',
-            'action_data',
+            'actions',
         )
 
 
 class RetirementAdviceWritableSerializer(serializers.ModelSerializer):
     """
-        UPDATE PUT/POST RetirementAdvice serializer, used for 
+        UPDATE PUT/POST RetirementAdvice serializer, used for
         put requests for retirement-plans advice-feed endpoint
     """
     class Meta:

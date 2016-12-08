@@ -390,16 +390,19 @@ class RetirementAdvice(models.Model):
     dt = models.DateTimeField(auto_now_add=True)
     read = models.DateTimeField(blank=True, null=True)
     text = models.CharField(max_length=512)
-    action = models.CharField(max_length=12, blank=True)
-    action_url = models.CharField(max_length=512, blank=True)
-    action_data = models.CharField(max_length=512, blank=True)
+    actions = JSONField(null=True,
+                        blank=True,
+                        help_text="List of actions [{label, url, data},...]")
 
     objects = RetirementAdviceQueryset.as_manager()
 
     def save(self, *args, **kwargs):
-        if self.action and not self.action_url:
-            # make sure action_url is set if the action is
-            raise ValidationError('must provide action_url if action is set')
+        if self.actions:
+            for action in actions:
+                if not action.url:
+                    raise ValidationError('must provide action url')
+                if not action.label:
+                    raise ValidationError('must provide action label')
         super(RetirementAdvice, self).save(*args, **kwargs)
 
     def __str__(self):
