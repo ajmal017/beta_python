@@ -67,7 +67,7 @@ class PeriodFilter(filters.ChoiceFilter):
         qs = qs.filter(timestamp__gte=dt)
         return qs
 
-class CustomPeriodFilter(filters.NumberFilter):
+class YTDPeriodFilter(filters.NumberFilter):
     def filter(self, qs, value):
         if not value:
             return qs
@@ -76,6 +76,26 @@ class CustomPeriodFilter(filters.NumberFilter):
         dt = dt - relativedelta(days=int(value))
 
         qs = qs.filter(timestamp__gte=dt)
+        return qs
+
+class CustomStartFilter(filters.DateFilter):
+    def filter(self, qs, value):
+        if not value:
+            return qs
+
+        dt = value
+
+        qs = qs.filter(timestamp__gte=dt)
+        return qs
+
+class CustomEndFilter(filters.DateFilter):
+    def filter(self, qs, value):
+        if not value:
+            return qs
+
+        dt = value + relativedelta(days=1)
+
+        qs = qs.filter(timestamp__lt=dt)
         return qs
 
 class UserGroupFilter(filters.ChoiceFilter):
@@ -157,12 +177,14 @@ class FirmActivityFilterSet(filters.FilterSet):
     group = UserGroupFilter(widget=forms.Select(attrs=ATTRS_ONCHANGE),
         groups=('Advisors', 'Clients', 'Supervisors'))
     period = PeriodFilter(widget=forms.Select(attrs=ATTRS_PERIOD_CHANGE))
-    timestamp = CustomPeriodFilter(widget=forms.HiddenInput)
+    timestamp = YTDPeriodFilter(widget=forms.HiddenInput)
+    start = CustomStartFilter(widget=forms.TextInput())
+    end = CustomEndFilter(widget=forms.TextInput())
     verb = filters.ChoiceFilter(choices=VERB_CHOICES, widget=forms.Select(attrs=ATTRS_ONCHANGE))
 
     class Meta:
         model = Notification
-        fields = ['group', 'verb', 'period', 'timestamp']
+        fields = ['group', 'verb', 'period', 'timestamp', 'start', 'end']
 
 
 class FirmAnalyticsOverviewFilterSet(filters.FilterSet):

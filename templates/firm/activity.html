@@ -7,26 +7,43 @@
 <script type="application/javascript" src="{% static "js/widgets.js" %}"></script>
 <script type="application/javascript">
   $(function () {
-    betasmartz.widgets.searchTable("#activity");
-    var dp = $('#customDatePicker').datetimepicker({
-      inline: true,
-      format: 'DDD'
-    }).on('dp.change', function(e) {
+    $('#ytdPicker').datepicker({
+      endDate: '0d'
+    }).on('changeDate', function(e) {
       $('#id_period').val('');
+      $('#id_start').remove();
+      $('#id_end').remove();
       $('#id_timestamp').val(moment().diff(e.date, 'days'));
       $('.activityFilterForm').submit();
-    })
+    });
+    $('#customDatepicker').datepicker({
+      endDate: '0d'
+    });
   });
   function handlePeriodChange(elem) {
     if (elem.value === 'custom') {
       $('#customDateModal').modal({
         backdrop: 'static'
       });
+    } else if (elem.value === 'ytd') {
+      $('#ytdModal').modal({
+        backdrop: 'static'
+      });
     } else {
       $('#id_timestamp').val('');
+      $('#id_start').remove();
+      $('#id_end').remove();
       elem.form.submit();
     }
   }
+  function handleSubmit(form) {
+    if ($('#id_period').val() === 'custom') {
+      $('#id_period').val('');
+      $('#id_timestamp').remove();
+    }
+    return true;
+  }
+  betasmartz.widgets.searchTable("#activity");
 </script>
 {% endblock %}
 
@@ -38,7 +55,7 @@
       <div class="col-sm-6">
           <h3>View your company activity</h3>
       </div>
-      <form class="activityFilterForm">
+      <form class="activityFilterForm" onSubmit="handleSubmit(this);">
         <div class="col-sm-2">
           {% bootstrap_field filter.form.group show_label=False show_help=False %}
         </div>
@@ -49,6 +66,46 @@
           {% bootstrap_field filter.form.period show_label=False show_help=False %}
           {% bootstrap_field filter.form.timestamp show_label=False show_help=False %}
         </div>
+
+        <div class="modal fade" id="ytdModal" tabindex="-1" role="dialog" aria-labelledby="ytdModalLabel">
+          <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="customDateModalLabel">Choose date</h4>
+              </div>
+              <div class="modal-body">
+                <div class="form-group text-center">
+                  <div id="ytdPicker" style="display: inline-block;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="customDateModal" tabindex="-1" role="dialog" aria-labelledby="customDateModalLabel">
+          <div class="modal-dialog" role="document" style="max-width: 360px">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="customDateModalLabel">Choose custom date range</h4>
+              </div>
+              <div class="modal-body">
+                <div class="form-group">
+                  <div class="input-daterange input-group" id="customDatepicker">
+                    {% bootstrap_field filter.form.start show_label=False show_help=False %}
+                    <span class="input-group-addon">to</span>
+                    {% bootstrap_field filter.form.end show_label=False show_help=False %}
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer text-right">
+                <button type="submit" class="btn btn-primary">Filter</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </form>
     </div>
 
@@ -92,19 +149,4 @@
     </div>
   </div>
 
-  <div class="modal fade" id="customDateModal" tabindex="-1" role="dialog" aria-labelledby="customDateModalLabel">
-    <div class="modal-dialog" role="document" style="max-width: 360px">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title" id="customDateModalLabel">Choose date</h4>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <div id="customDatePicker"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 {% endblock %}
