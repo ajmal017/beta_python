@@ -101,6 +101,10 @@ def transform_execution_requests(execution_requests):
     return allocations
 
 
+def approve_mor(mor):
+    mor.state = MarketOrderRequest.State.APPROVED.value
+    mor.save()
+
 def create_apex_orders():
     '''
     from outstanding MOR and ER create MorApex and ApexOrder
