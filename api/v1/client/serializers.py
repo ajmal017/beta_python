@@ -1,21 +1,22 @@
+import logging
+import uuid
+
 from django.db import transaction
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import serializers, exceptions
+from rest_framework import exceptions, serializers
 
 from api.v1.address.serializers import AddressSerializer, AddressUpdateSerializer
 from api.v1.advisor.serializers import AdvisorFieldSerializer
 from api.v1.serializers import ReadOnlyModelSerializer
+from client.models import AccountTypeRiskProfileGroup, Client, EmailInvite, \
+    EmailNotificationPrefs, RiskProfileAnswer, RiskProfileGroup
+from main import constants
 from main.constants import ACCOUNT_TYPE_PERSONAL
 from main.models import ExternalAsset, ExternalAssetTransfer, User
-from client.models import Client, EmailNotificationPrefs, EmailInvite, RiskProfileAnswer, RiskProfileGroup, \
-    AccountTypeRiskProfileGroup
-from notifications.signals import notify
-from main import constants
 from pdf_parsers.tax_return import parse_pdf
-from ..user.serializers import UserFieldSerializer, PhoneNumberValidationSerializer
-import logging
-import uuid
 from user.models import SecurityAnswer
+from ..user.serializers import PhoneNumberValidationSerializer, \
+    UserFieldSerializer
 
 logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
@@ -465,9 +466,6 @@ class PersonalInfoSerializer(serializers.ModelSerializer):
             current_address.address = new_address['address']
             current_address.save(update_fields=['address'])
         instance = super(PersonalInfoSerializer, self).save(**kwargs)
-
-        notify.send(client.advisor.user, recipient=client.user,
-                    verb='update-personal-info')
 
         # TODO generate a new SOA
 

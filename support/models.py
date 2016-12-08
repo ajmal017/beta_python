@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.contrib.auth import get_user_model
-from common.constants import PERM_CAN_CREATE_SUPPORT_REQUESTS, \
-    KEY_SUPPORT_TICKET
+
+from common.constants import KEY_SUPPORT_TICKET, \
+    PERM_CAN_CREATE_SUPPORT_REQUESTS
 
 
 class SupportRequest(models.Model):

@@ -16,6 +16,7 @@ from advisors.clients.forms import EmailInviteForm
 from client.models import Client, ClientAccount, EmailInvite
 from main.constants import ACCOUNT_TYPES
 from main.views.base import AdvisorView
+from notifications.models import Notify
 from support.models import SupportRequest
 
 
@@ -183,6 +184,10 @@ class AdvisorNewClientInviteView(CreateView, AdvisorView):
         invite.save()
         try:
             invite.send()
+            Notify.ADVISOR_INVITE_NEW_CLIENT.send(
+                actor=self.advisor,
+                target=invite,
+            )
             messages.success(self.request, 'Invitation email sent.')
         except ValidationError as e:
             messages.error(self.request, str(e))
@@ -223,5 +228,8 @@ class AdvisorNewClientResendInviteView(SingleObjectMixin, AdvisorView):
     def post(self, request, *args, **kwargs):
         invite = self.get_object()
         invite.send()
+        Notify.ADVISOR_RESEND_INVITE.send(
+            actor=self.advisor,
+            target=invite)
         messages.info(self.request, "Invite sent successfully!")
         return http.HttpResponseRedirect(reverse('advisor:clients:invites'))

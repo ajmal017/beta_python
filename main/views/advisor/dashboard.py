@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse_lazy
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -20,6 +20,7 @@ from main.constants import (INVITATION_CLIENT)
 from main.models import (AccountGroup, Advisor,
                          Platform, User)
 from main.views.base import AdvisorView, ClientView
+from notifications.models import Notify
 
 
 class AdvisorClientInviteNewView(TemplateView, AdvisorView):
@@ -57,12 +58,22 @@ class AdvisorAgreements(TemplateView, AdvisorView):
         return ctx
 
 
+class AdvisorDownloadAgreement(AdvisorView):
+    def get(self, request, client_id):
+        try:
+            client = self.advisor.clients.get(pk=client_id)
+        except Client.DoesNotExist:
+            return HttpResponseForbidden()
+        Notify.ADVISOR_CLIENT_AGREEMENT_DOWNLOAD.send(
+            actor=self.advisor,
+            recipient=self.advisor.user,
+            target=client
+        )
+        return HttpResponseRedirect(client.client_agreement.url)
+
+
 class AdvisorSupport(TemplateView, AdvisorView):
     template_name = "advisor/support.html"
-
-
-class AdvisorForms(TemplateView, AdvisorView):
-    template_name = "advisor/support-forms.html"
 
 
 class AdvisorCompositeForm:
@@ -136,8 +147,13 @@ class AdvisorCompositeNew(AdvisorCompositeForm, CreateView, AdvisorView):
     """
 
     def get_success_url(self):
+        Notify.ADVISOR_CREATE_GROUP.send(
+            actor=self.advisor,
+            recipient=self.advisor.user,
+            target=self.object,
+        )
         messages.info(self.request, mark_safe(
-            '<span class="mpicon accept"></span>Successfully created household'))
+            '<span class="mpicon accept"></span>Successfully created group.'))
 
         return super(AdvisorCompositeNew, self).get_success_url()
 
@@ -175,6 +191,11 @@ class AdvisorRemoveAccountFromGroupView(AdvisorView):
 
         if group_name:
             # account group deleted (cause no accounts in it any more)
+            Notify.ADVISOR_REMOVE_GROUP.send(
+                actor=self.advisor,
+                recipient=self.advisor.user,
+                target=account,
+            )
             redirect = reverse_lazy('advisor:overview')
         else:
             # account group not deleted (just the account)
@@ -245,6 +266,13 @@ class AdvisorAccountGroupSecondaryCreateView(UpdateView, AdvisorView):
         msg = msg.format(self.secondary_advisor.user.get_full_name().title(),
                          self.object.name)
 
+        Notify.ADVISOR_ADD_SECONDARY_ADVISOR.send(
+            actor=self.advisor,
+            recipient=self.advisor.user,
+            target=self.secondary_advisor,
+            action_object=self.object
+        )
+
         messages.info(self.request, mark_safe(msg))
 
         return reverse_lazy('advisor:composites-detail-secondary-advisors-create',
@@ -312,6 +340,13 @@ class AdvisorAccountGroupSecondaryDeleteView(AdvisorView):
         messages.info(request, mark_safe(
             '<span class="mpicon accept"></span>Successfully removed secondary '
             'advisor from {0}'.format(account_group.name)))
+
+        Notify.ADVISOR_REMOVE_SECONDARY_ADVISOR.send(
+            actor=self.advisor,
+            recipient=self.advisor.user,
+            target=advisor,
+            action_object=account_group
+        )
 
         return HttpResponseRedirect(
             reverse_lazy('advisor:composites-detail-secondary-advisors-create',

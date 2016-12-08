@@ -45,7 +45,8 @@ class ChangeDealerGroup(models.Model):
 
 class SingleInvestorTransfer(models.Model):
     from_advisor = models.ForeignKey('main.Advisor')
-    to_advisor = models.ForeignKey('main.Advisor', verbose_name="To Advisor", related_name="single_transfer_to_advisors")
+    to_advisor = models.ForeignKey('main.Advisor', verbose_name="To Advisor",
+                                   related_name="single_transfer_to_advisors")
     approved = models.BooleanField(default=False)
     approved_at = models.DateTimeField(null=True)
     create_at = models.DateTimeField(auto_now_add=True)
@@ -53,14 +54,18 @@ class SingleInvestorTransfer(models.Model):
     firm = models.ForeignKey('main.Firm', editable=False)
     signatures = models.FileField()
 
+    def __str__(self):
+        return "Transfer {} to {}".format(self.investor, self.to_advisor)
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
 
         if self.pk is None:
             self.firm = self.from_advisor.firm
 
-        return super(SingleInvestorTransfer, self).save(force_insert=False,
-                                                        force_update=False, using=None, update_fields=None)
+        return super(SingleInvestorTransfer, self).save(
+            force_insert, force_update, using, update_fields
+        )
 
     def approve(self):
         self.investor.advisor = self.to_advisor
@@ -103,7 +108,3 @@ class BulkInvestorTransfer(models.Model):
         self.approved = True
         self.approved_at = now()
         self.save()
-
-
-# noinspection PyUnresolvedReferences
-from . import connectors

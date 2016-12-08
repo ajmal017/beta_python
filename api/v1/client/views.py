@@ -11,6 +11,7 @@ from api.v1.client.serializers import EmailNotificationsSerializer, \
 from api.v1.permissions import IsClient
 from api.v1.views import ApiViewMixin
 from main.models import ExternalAsset, User
+from notifications.models import Notify
 from user.models import SecurityAnswer
 from client.models import Client, EmailInvite
 from support.models import SupportRequest
@@ -351,6 +352,10 @@ class ProfileView(ApiViewMixin, RetrieveUpdateAPIView):
 
     def get_object(self):
         return Client.objects.get(user=self.request.user)
+
+    def perform_update(self, serializer):
+        Notify.UPDATE_PERSONAL_INFO.send(self.request.user.client)
+        return super(ProfileView, self).perform_update(serializer)
 
 
 class ClientResendInviteView(SingleObjectMixin, views.APIView):

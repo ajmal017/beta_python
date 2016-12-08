@@ -11,6 +11,6 @@
 <li class="{{ request.resolver_match.view_name|menu_active:'advisor:agreements' }}">
   <a href="{% url 'advisor:agreements' %}">{% trans 'Agreements' %}</a>
 </li>
-<li class="{{ request.resolver_match.view_name|menu_active:'advisor:support, advisor:support-forms, advisor:support-forms-change-firm, advisor:support-forms-transfer-single, advisor:support-forms-transfer-bulk, advisor:support-getting-started' }}">
+<li class="{{ request.resolver_match.view_name|menu_active:'advisor:support, advisor:support-forms:list, advisor:support-forms:change-firm, advisor:support-forms:transfer-single, advisor:support-forms:transfer-bulk, advisor:support-getting-started' }}">
   <a href="{% url 'advisor:support' %}">{% trans 'Support' %}</a>
 </li>
