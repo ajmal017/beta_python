@@ -36,11 +36,13 @@ urlpatterns = patterns(
         views.AdvisorClientAccountChangeFee.as_view(),
         name='composites-client-accounts-fee'),
 
-    url(r'^agreements', views.AdvisorAgreements.as_view(), name='agreements'),
+    url(r'^agreements$', views.AdvisorAgreements.as_view(), name='agreements'),
+    url(r'^agreements/(?P<client_id>\d+)/download$', views.AdvisorDownloadAgreement.as_view(), name='download-agreement'),
+
     url(r'^support$', views.AdvisorSupport.as_view(), name='support'),
     url(r'^support/getting-started$', views.AdvisorSupportGettingStarted.as_view(),
         name='support-getting-started'),
-    url(r'^support/forms', include('advisors.forms.urls', app_name='forms', namespace='forms')),
+    url(r'^support/forms/?', include('advisors.forms.urls', namespace='support-forms', app_name='support-forms')),
 
     url(r'^overview', views.AdvisorCompositeOverview.as_view(), name='overview'),
 )

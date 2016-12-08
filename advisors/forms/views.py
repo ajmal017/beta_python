@@ -8,6 +8,7 @@ from django.views.generic import CreateView, TemplateView, UpdateView
 from advisors.models import BulkInvestorTransfer, ChangeDealerGroup, \
     SingleInvestorTransfer
 from main.views.base import AdvisorView
+from notifications.models import Notify
 from support.models import SupportRequest
 from .forms import BulkInvestorTransferForm, \
     ChangeDealerGroupForm, SingleInvestorTransferForm
@@ -28,6 +29,10 @@ class AdvisorChangeDealerGroupView(AdvisorView, CreateView):
         return ctx_data
 
     def get_success_url(self):
+        Notify.SUBMIT_FORM.send(
+            actor=self.advisor,
+            target=self.object
+        )
         messages.success(self.request, "Change of dealer group submitted successfully")
         return super(AdvisorChangeDealerGroupView, self).get_success_url()
 
@@ -57,6 +62,10 @@ class AdvisorChangeDealerGroupUpdateView(AdvisorView, UpdateView):
         return ctx_data
 
     def get_success_url(self):
+        Notify.UPDATE_FORM.send(
+            actor=self.advisor,
+            target=self.object
+        )
         messages.success(self.request, "Change of dealer group submitted successfully")
         return super(AdvisorChangeDealerGroupUpdateView, self).get_success_url()
 
@@ -75,6 +84,10 @@ class AdvisorSingleInvestorTransferView(AdvisorView, CreateView):
         return ctx_data
 
     def get_success_url(self):
+        Notify.SUBMIT_FORM.send(
+            actor=self.advisor,
+            target=self.object
+        )
         messages.success(self.request, "Single investor transfer submitted successfully")
         return super(AdvisorSingleInvestorTransferView, self).get_success_url()
 
@@ -104,6 +117,10 @@ class AdvisorSingleInvestorTransferUpdateView(AdvisorView, UpdateView):
         return ctx_data
 
     def get_success_url(self):
+        Notify.UPDATE_FORM.send(
+            actor=self.advisor,
+            target=self.object
+        )
         messages.success(self.request, "Single investor transfer submitted successfully")
         return super(AdvisorSingleInvestorTransferUpdateView, self).get_success_url()
 
@@ -122,6 +139,10 @@ class AdvisorBulkInvestorTransferView(AdvisorView, CreateView):
         return ctx_data
 
     def get_success_url(self):
+        Notify.SUBMIT_FORM.send(
+            actor=self.advisor,
+            target=self.object
+        )
         messages.success(self.request, "Bulk investor transfer submitted successfully")
         return super(AdvisorBulkInvestorTransferView, self).get_success_url()
 
@@ -151,6 +172,10 @@ class AdvisorBulkInvestorTransferUpdateView(AdvisorView, UpdateView):
         return ctx_data
 
     def get_success_url(self):
+        Notify.UPDATE_FORM.send(
+            actor=self.advisor,
+            target=self.object
+        )
         messages.success(self.request, "Bulk investor transfer submitted successfully")
         return super(AdvisorBulkInvestorTransferUpdateView, self).get_success_url()
 
