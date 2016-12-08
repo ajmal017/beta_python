@@ -19,6 +19,7 @@ from main.models import AccountGroup, Goal, Platform
 from .managers import ClientAccountQuerySet, ClientQuerySet
 from main.finance import mod_dietz_rate
 from retiresmartz.models import RetirementAdvice, RetirementPlan
+from common.structures import ChoiceEnum
 logger = logging.getLogger('client.models')
 
 
@@ -246,9 +247,28 @@ class IBAccount(models.Model):
     ib_account = models.CharField(max_length=32)
     bs_account = models.OneToOneField('ClientAccount', related_name='ib_account')
 
+
 class APEXAccount(models.Model):
     apex_account = models.CharField(max_length=32)
     bs_account = models.OneToOneField('ClientAccount', related_name='apex_account')
+
+
+class AccountBeneficiary(models.Model):
+    class Type(ChoiceEnum):
+        primary = 0, 'Primary'
+        contingent = 1, 'Contingent'
+
+    class Relationship(ChoiceEnum):
+        legal = 0, 'Legal entity (e.g. charity)'
+        family_or_friend = 1, 'Family member/friend'
+        spouse = 2, 'Spouse'
+        estate = 3, 'My estate'
+
+    type = models.IntegerField(null=True, choices=Type.choices())
+    name = models.CharField(max_length=255)
+    relationship = models.IntegerField(null=True, choices=Relationship.choices())
+    birthdate = models.DateField()
+    share = models.FloatField()
 
 
 class ClientAccount(models.Model):
@@ -289,6 +309,10 @@ class ClientAccount(models.Model):
                                          help_text='Other clients authorised '
                                                    'to operate the account.',
                                          blank=True)
+    beneficiaries = models.ManyToManyField('AccountBeneficiary',
+                                           related_name='accounts',
+                                           help_text='Account beneficiaries.',
+                                           blank=True)
     # also has ib_account foreign key to IBAccount
     # also has apex_account foreign key to APEXAccount
 

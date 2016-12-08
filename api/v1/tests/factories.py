@@ -19,7 +19,8 @@ from retiresmartz.models import RetirementPlan, RetirementAdvice, RetirementPlan
 from main.models import Region as MainRegion
 from client.models import Client, ClientAccount, RiskProfileGroup, \
     RiskProfileQuestion, RiskProfileAnswer, \
-    AccountTypeRiskProfileGroup, EmailInvite
+    AccountTypeRiskProfileGroup, EmailInvite, \
+    AccountBeneficiary
 from statements.models import StatementOfAdvice, RecordOfAdvice, RetirementStatementOfAdvice
 from user.models import SecurityQuestion, SecurityAnswer
 from address.models import Address, Region
@@ -681,3 +682,14 @@ class RetirementStatementOfAdviceFactory(factory.django.DjangoModelFactory):
         model = RetirementStatementOfAdvice
 
     retirement_plan = factory.SubFactory(RetirementPlanFactory)
+
+
+class AccountBeneficiaryFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AccountBeneficiary
+    type = 0
+    name = factory.Sequence(lambda n: 'Account Beneficiary %s' % n)
+
+    relationship = 0
+    birthdate = timezone.now().date() - relativedelta(years=40)
+    share = 1.0

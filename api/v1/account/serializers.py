@@ -3,11 +3,21 @@ from rest_framework import serializers
 from api.v1.serializers import (NoCreateModelSerializer,
                                 NoUpdateModelSerializer,
                                 ReadOnlyModelSerializer)
-from client.models import ClientAccount
+from client.models import ClientAccount, AccountBeneficiary
 import logging
 from user.models import SecurityAnswer
 
 logger = logging.getLogger('api.v1.account.serializers')
+
+
+class AccountBeneficiarySerializer(ReadOnlyModelSerializer):
+    class Meta:
+        model = AccountBeneficiary
+
+
+class AccountBeneficiaryUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountBeneficiary
 
 
 class ClientAccountSerializer(ReadOnlyModelSerializer):
@@ -58,6 +68,7 @@ class ClientAccountUpdateSerializer(NoCreateModelSerializer):
         fields = (
             'account_name',
             'tax_loss_harvesting_status',
+
             'question_one',
             'answer_one',
             'question_two',

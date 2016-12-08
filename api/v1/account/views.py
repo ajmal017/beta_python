@@ -1,6 +1,6 @@
 from django.db.models.query_utils import Q
 from rest_framework import viewsets, mixins, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.response import Response
@@ -123,3 +123,15 @@ class AccountViewSet(ApiViewMixin,
         serializer.is_valid(raise_exception=True)
         updated = serializer.update(instance, serializer.validated_data)
         return Response(self.serializer_response_class(updated).data)
+
+    @detail_route(methods=['get', 'post'], url_path='beneficiaries')
+    def list_beneficiaries(self, request, pk=None, **kwargs):
+        instance = self.get_object()
+        if request.method == 'POST':
+            # create new beneficiary and add to account
+        serializer = serializers.AccountBeneficiarySerializer(instance.beneficiaries, many=True)
+        return Response(serializer.data)
+
+    @detail_route(methods=['get', 'put'], url_path='beneficiary')
+    def update_beneficiary(self, request, pk=None, **kwargs):
+        pass

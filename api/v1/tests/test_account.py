@@ -8,7 +8,8 @@ from main.constants import ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_ROTH401K
 from main.event import Event
 from main.models import ActivityLogEvent, AccountType
 from main.tests.fixture import Fixture1
-from .factories import GroupFactory, SecurityAnswerFactory, ClientAccountFactory
+from .factories import GroupFactory, SecurityAnswerFactory, \
+    ClientAccountFactory, AccountBeneficiaryFactory
 
 
 class AccountTests(APITestCase):
@@ -133,3 +134,23 @@ class AccountTests(APITestCase):
         self.assertEqual(response.data[3], {'balance': 3000.0,
                                             'time': 978307200,
                                             'type': ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED).activity_log.id}) # Balance
+
+    def test_get_beneficiaries(self):
+        account = ClientAccountFactory.create()
+        beneficiary = AccountBeneficiaryFactory.create()
+        account.beneficiaries.add(beneficiary)
+        account.save()
+        url = '/api/v1/accounts/{}/beneficiaries'.format(account.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]['id'], beneficiary.id)
+        self.assertEqual(response.data[0]['name'], beneficiary.name)
+        self.assertEqual(response.data[0]['share'], beneficiary.share)
+
+    def test_create_beneficiary(self):
+        account = ClientAccountFactory.create()
