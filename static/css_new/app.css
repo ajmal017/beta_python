@@ -140,3 +140,13 @@ table thead .active .icon-sort {
 .legal .table {
   margin-bottom: 30px;
 }
+
+#id_start {
+  border-radius: 0 !important;
+  border-top-left-radius: 3px !important;
+  border-bottom-left-radius: 3px !important;
+}
+
+#ytdPicker, #customDatepicker {
+  display: none;
+}
