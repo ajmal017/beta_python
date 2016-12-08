@@ -11,7 +11,7 @@ import numpy as np
 from portfolios.algorithms.markowitz import markowitz_optimizer_3
 from portfolios.providers.execution.abstract import Reason, ExecutionProviderAbstract
 from portfolios.calculation import \
-    MIN_PORTFOLIO_PCT, calc_opt_inputs, create_portfolio_weights, INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL
+    MIN_PORTFOLIO_PCT, calc_opt_inputs, create_portfolio_weights, create_portfolio_max_weights, INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL
 
 from main.models import GoalMetric, PositionLot
 from collections import defaultdict
@@ -27,7 +27,7 @@ TAX_BRACKET_MORE1Y = 0.2
 MAX_WEIGHT_SUM = 1.0001
 
 
-def optimise_up(opt_inputs, min_weights):
+def optimise_up(opt_inputs, min_weights, max_weights=None):
     """
     Reoptimise the portfolio adding appropriate constraints so there can be no removals from assets.
     :param opt_inputs: The basic optimisation inputs for this goal.
@@ -39,6 +39,11 @@ def optimise_up(opt_inputs, min_weights):
 
     pweights = create_portfolio_weights(settings_instruments['id'].values, min_weights=min_weights, abs_min=0)
     new_cons = constraints + [xs >= pweights]
+
+    if max_weights is not None:
+        mweights = create_portfolio_max_weights(settings_instruments['id'].values, max_weights=max_weights, abs_max=1)
+        new_cons = new_cons + [xs <= mweights]
+
     weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, new_cons)
     return dict(zip(settings_instruments['id'].values, weights)) if weights.any() else None
 
@@ -407,6 +412,16 @@ def get_largest_min_weight_per_asset(held_weights, tax_weights):
     return min_weights
 
 
+def get_weight_max_per_asset(held_weights, tax_weights):
+    max_weights = dict()
+    for w in held_weights.items():
+        if w[0] in tax_weights:
+            max_weights[w[0]] = max(float(tax_weights[w[0]]), float(w[1]))
+        else:
+            min_weights[w[0]] = float(w[1])
+    return min_weights
+
+
 def perturbate(goal, idata, data_provider, execution_provider):
     """
     Jiggle the goal's holdings to fit within the current metrics
@@ -421,14 +436,22 @@ def perturbate(goal, idata, data_provider, execution_provider):
     tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(goal, data_provider.get_current_date())
     min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
 
+    tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
+    max_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_max_weights)
+
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
-    weights = optimise_up(opt_inputs, min_weights)
+
+    weights = optimise_up(opt_inputs, min_weights, max_weights)
 
     if weights is None:
         # relax constraints and allow to sell tax winners
         tax_min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)
         min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
-        weights = optimise_up(opt_inputs, min_weights)
+
+        tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
+        max_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_max_weights)
+
+        weights = optimise_up(opt_inputs, min_weights, max_weights)
 
     if weights is None:
         if sum(held_weights.values()) > MAX_WEIGHT_SUM:

@@ -50,6 +50,13 @@ def create_portfolio_weights(instruments, min_weights, abs_min):
     pweights = np.array(pweights)
     return pweights
 
+def create_portfolio_max_weights(instruments, max_weights, abs_max):
+    pweights = []
+    for tid in instruments:
+        pweights.append(min(max_weights.get(tid, abs_max), abs_max))
+    pweights = np.array(pweights)
+    return pweights
+
 
 def build_instruments(data_provider):
     """
@@ -342,6 +349,12 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
                                         min_weights=tax_min_weights,
                                         abs_min=0)
     constraints += [xs >= pweights]
+
+    tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(settings.goal, data_provider.get_current_date())
+    max_weights = create_portfolio_max_weights(settings_instruments['id'].values,
+                                               max_weights=tax_max_weights,
+                                               abs_max=1)
+    constraints += [xs <= max_weights]
 
     risk_profile, lam = get_lambda(settings, data_provider, risk_setting)
     modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
