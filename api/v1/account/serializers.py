@@ -31,9 +31,12 @@ class AccountBeneficiaryUpdateSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         account = self.context.get('account')
-        beneficiary_id = self.context.get('beneficiary_id')
-        beneficiaries = AccountBeneficiary.objects.filter(account=account)
-        shares = [b.share for b in beneficiaries if b.id != beneficiary_id]
+        beneficiary = self.context.get('beneficiary')
+        if 'type' in data:
+            beneficiaries = AccountBeneficiary.objects.filter(account=account, type=data['type'])
+        else:
+            beneficiaries = AccountBeneficiary.objects.filter(account=account, type=beneficiary.type)
+        shares = [b.share for b in beneficiaries if b.id != beneficiary.id]
         shares.append(data['share'])
         if sum(shares) > 1.0:
             raise serializers.ValidationError({'share': 'Beneficiaries for account would be over 100%'})
@@ -56,7 +59,7 @@ class AccountBeneficiaryCreateSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, data):
-        beneficiaries = AccountBeneficiary.objects.filter(account=data['account'])
+        beneficiaries = AccountBeneficiary.objects.filter(account=data['account'], type=data['type'])
         shares = [b.share for b in beneficiaries]
         shares.append(data['share'])
         if sum(shares) > 1.0:

@@ -268,7 +268,7 @@ class AccountBeneficiary(models.Model):
     name = models.CharField(max_length=255)
     relationship = models.IntegerField(null=True, choices=Relationship.choices())
     birthdate = models.DateField()
-    share = models.FloatField()
+    share = models.FloatField(validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
     account = models.ForeignKey('ClientAccount', on_delete=models.CASCADE)
 
 

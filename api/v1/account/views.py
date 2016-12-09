@@ -168,7 +168,7 @@ class AccountBeneficiaryViewSet(ApiViewMixin,
         instance = self.get_object()
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
-        serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'account': instance.account, 'beneficiary_id': instance.id})
+        serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'account': instance.account, 'beneficiary': instance})
         serializer.is_valid(raise_exception=True)
         updated = serializer.update(instance, serializer.validated_data)
         return Response(self.serializer_response_class(updated).data)
