@@ -9,13 +9,16 @@ from api.v1.permissions import IsAdvisorOrClient
 from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
 
-from client.models import ClientAccount
+from client.models import ClientAccount, AccountBeneficiary
 from main import constants
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
 from main.models import AccountType
 from support.models import SupportRequest
-
+import logging
 from . import serializers
+
+
+logger = logging.getLogger('api.v1.account.views')
 
 
 class AccountViewSet(ApiViewMixin,
@@ -125,13 +128,47 @@ class AccountViewSet(ApiViewMixin,
         return Response(self.serializer_response_class(updated).data)
 
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
-    def list_beneficiaries(self, request, pk=None, **kwargs):
+    def beneficiaries(self, request, pk=None, **kwargs):
         instance = self.get_object()
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
         if request.method == 'POST':
             # create new beneficiary and add to account
-        serializer = serializers.AccountBeneficiarySerializer(instance.beneficiaries, many=True)
+            request.data['account'] = instance.id
+            serializer = serializers.AccountBeneficiaryCreateSerializer(data=request.data, partial=partial, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            beneficiary = serializer.save()
+            beneficiaries = AccountBeneficiary.objects.filter(account=instance)
+            serializer = serializers.AccountBeneficiarySerializer(beneficiaries, many=True)
+            return Response(serializer.data)
+        beneficiaries = AccountBeneficiary.objects.filter(account=instance)
+        serializer = serializers.AccountBeneficiarySerializer(beneficiaries, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=['get', 'put'], url_path='beneficiary')
-    def update_beneficiary(self, request, pk=None, **kwargs):
-        pass
+
+class AccountBeneficiaryViewSet(ApiViewMixin,
+                                NestedViewSetMixin,
+                                mixins.UpdateModelMixin,
+                                viewsets.ReadOnlyModelViewSet):
+    model = AccountBeneficiary
+    queryset = AccountBeneficiary.objects.all()
+    permission_classes = (IsAdvisorOrClient,)
+    serializer_response_class = serializers.AccountBeneficiarySerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'PUT':
+            return serializers.AccountBeneficiaryUpdateSerializer
+        elif self.request.method == 'POST':
+            return serializers.AccountBeneficiaryCreateSerializer
+        else:
+            # Default for get and other requests is the read only serializer
+            return serializers.AccountBeneficiarySerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        updated = serializer.update(instance, serializer.validated_data)
+        return Response(self.serializer_response_class(updated).data)

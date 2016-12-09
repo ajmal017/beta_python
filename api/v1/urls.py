@@ -21,6 +21,11 @@ client_accounts_router = client_router.register(r'accounts',
                                                 account_views.AccountViewSet,
                                                 base_name='client-accounts',
                                                 parents_query_lookups=['primary_owner'])
+beneficiaries_router = client_router.register(r'beneficiaries',
+                                              account_views.AccountBeneficiaryViewSet,
+                                              base_name='account-beneficiaries',
+                                              parents_query_lookups=['account__primary_owner'])
+
 retirement_plans_router = client_router.register(r'retirement-plans',
                                                 retiresmartz_views.RetiresmartzViewSet,
                                                 base_name='client-retirement-plans',

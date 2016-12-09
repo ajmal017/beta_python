@@ -158,7 +158,6 @@ class ClientViewSet(ApiViewMixin,
         instance = self.get_object()
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
-        logger.error('Update client request %s' % request.user)
         serializer = self.get_serializer(instance, data=request.data, partial=partial, context={'request': request})
         serializer.is_valid(raise_exception=True)
         orig = Client.objects.get(pk=instance.pk)

@@ -4,7 +4,7 @@ import factory.fuzzy
 import decimal
 import random
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from django.contrib.auth.models import Group
 from django.utils import timezone
 from main.models import User, ExternalAsset, PortfolioSet, Firm, Advisor, \
@@ -693,3 +693,4 @@ class AccountBeneficiaryFactory(factory.django.DjangoModelFactory):
     relationship = 0
     birthdate = timezone.now().date() - relativedelta(years=40)
     share = 1.0
+    account = factory.SubFactory(ClientAccountFactory)

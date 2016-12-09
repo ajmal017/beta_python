@@ -269,6 +269,7 @@ class AccountBeneficiary(models.Model):
     relationship = models.IntegerField(null=True, choices=Relationship.choices())
     birthdate = models.DateField()
     share = models.FloatField()
+    account = models.ForeignKey('ClientAccount', on_delete=models.CASCADE)
 
 
 class ClientAccount(models.Model):
@@ -309,10 +310,10 @@ class ClientAccount(models.Model):
                                          help_text='Other clients authorised '
                                                    'to operate the account.',
                                          blank=True)
-    beneficiaries = models.ManyToManyField('AccountBeneficiary',
-                                           related_name='accounts',
-                                           help_text='Account beneficiaries.',
-                                           blank=True)
+    # beneficiaries = models.ManyToManyField('AccountBeneficiary',
+    #                                        related_name='accounts',
+    #                                        help_text='Account beneficiaries.',
+    #                                        blank=True)
     # also has ib_account foreign key to IBAccount
     # also has apex_account foreign key to APEXAccount
 

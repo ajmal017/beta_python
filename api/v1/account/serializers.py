@@ -18,6 +18,26 @@ class AccountBeneficiarySerializer(ReadOnlyModelSerializer):
 class AccountBeneficiaryUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccountBeneficiary
+        fields = (
+            'type',
+            'name',
+            'relationship',
+            'birthdate',
+            'share',
+        )
+
+
+class AccountBeneficiaryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccountBeneficiary
+        fields = (
+            'type',
+            'name',
+            'relationship',
+            'birthdate',
+            'share',
+            'account',
+        )
 
 
 class ClientAccountSerializer(ReadOnlyModelSerializer):
