@@ -16,6 +16,9 @@ class AccountBeneficiarySerializer(ReadOnlyModelSerializer):
 
 
 class AccountBeneficiaryUpdateSerializer(serializers.ModelSerializer):
+    """
+    For PUT update requests
+    """
     class Meta:
         model = AccountBeneficiary
         fields = (
@@ -26,8 +29,21 @@ class AccountBeneficiaryUpdateSerializer(serializers.ModelSerializer):
             'share',
         )
 
+    def validate(self, data):
+        account = self.context.get('account')
+        beneficiary_id = self.context.get('beneficiary_id')
+        beneficiaries = AccountBeneficiary.objects.filter(account=account)
+        shares = [b.share for b in beneficiaries if b.id != beneficiary_id]
+        shares.append(data['share'])
+        if sum(shares) > 1.0:
+            raise serializers.ValidationError({'share': 'Beneficiaries for account would be over 100%'})
+        return data
+
 
 class AccountBeneficiaryCreateSerializer(serializers.ModelSerializer):
+    """
+    For POST create requests
+    """
     class Meta:
         model = AccountBeneficiary
         fields = (
@@ -38,6 +54,14 @@ class AccountBeneficiaryCreateSerializer(serializers.ModelSerializer):
             'share',
             'account',
         )
+
+    def validate(self, data):
+        beneficiaries = AccountBeneficiary.objects.filter(account=data['account'])
+        shares = [b.share for b in beneficiaries]
+        shares.append(data['share'])
+        if sum(shares) > 1.0:
+            raise serializers.ValidationError({'share': 'Beneficiaries for account would be over 100%'})
+        return data
 
 
 class ClientAccountSerializer(ReadOnlyModelSerializer):

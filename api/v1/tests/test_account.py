@@ -204,3 +204,38 @@ class AccountTests(APITestCase):
         self.assertEqual(response.data['name'], beneficiary.name)
         self.assertEqual(response.data['share'], 0.1)
         self.assertEqual(response.data['relationship'], 2)
+
+    def test_update_beneficiary_share_too_high(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        data = {
+            'id': beneficiary.id,
+            'name': beneficiary.name,
+            'relationship': 2,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 1.5,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
+        response = self.client.put(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_beneficiary_share_too_high(self):
+        account = ClientAccountFactory.create()
+        data = {
+            'type': 0,
+            'name': 'tester9',
+            'relationship': 1,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 1.5,
+        }
+        url = '/api/v1/accounts/{}/beneficiaries'.format(account.id)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
