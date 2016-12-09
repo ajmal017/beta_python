@@ -132,6 +132,8 @@ class AccountViewSet(ApiViewMixin,
         instance = self.get_object()
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
+        if request.user != instance.primary_owner.user and request.user != instance.primary_owner.advisor.user:
+            raise PermissionDenied()
         if request.method == 'POST':
             # create new beneficiary and add to account
             request.data['account'] = instance.id
@@ -183,6 +185,8 @@ class AccountBeneficiaryViewSet(ApiViewMixin,
         instance = self.get_object()
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
+        if request.user != instance.account.primary_owner.user and request.user != instance.account.primary_owner.advisor.user:
+            raise PermissionDenied()
         serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'account': instance.account, 'beneficiary': instance})
         serializer.is_valid(raise_exception=True)
         updated = serializer.update(instance, serializer.validated_data)

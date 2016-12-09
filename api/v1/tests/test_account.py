@@ -249,3 +249,22 @@ class AccountTests(APITestCase):
         self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_update_different_client_beneficiaries(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        account = ClientAccountFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        data = {
+            'id': beneficiary.id,
+            'name': beneficiary.name,
+            'relationship': 2,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 0.1,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.put(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
