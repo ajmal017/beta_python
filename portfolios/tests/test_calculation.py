@@ -62,8 +62,8 @@ class CalculationTest(TestCase):
                                  idata=idata,
                                  data_provider=data_provider,
                                  execution_provider=execution_provider)
-        xs, lam, constraints, settings_instruments, settings_symbol_ixs, lcovars = result
-        self.assertEqual(len(constraints), 3)  # All positive, and sum to 1
+        xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, lcovars, mu = result
+        self.assertEqual(len(constraints), 4)  # All positive, and sum to 1
 
         # Then create a fund in the portfolio I want. We should get a constraint for the maximum for the feature.
         fund3 = TickerFactory.create(asset_class=fund1.asset_class)
@@ -77,8 +77,8 @@ class CalculationTest(TestCase):
                                  idata=idata,
                                  data_provider=data_provider,
                                  execution_provider=execution_provider)
-        xs, lam, constraints, settings_instruments, settings_symbol_ixs, lcovars = result
-        self.assertEqual(len(constraints), 4)  # All positive, sum to 1, and the max constraint
+        xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, lcovars, mu = result
+        self.assertEqual(len(constraints), 5)  # All positive, sum to 1, and the max constraint
 
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_calculate_portfolio_old(self):

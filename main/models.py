@@ -2219,15 +2219,6 @@ class OrderETNA(models.Model):
     def __str__(self):
         return "[{}] - {}".format(self.id, self.Status)
 
-    def __repr__(self):
-        return {
-            'Status': self.Status,
-            'ticker': self.ticker,
-            'volume': self.Quantity,
-            'morsAPEX': list(self.morsAPEX) if hasattr(self, 'morsAPEX') else [],
-            'apex_fills': list(self.apex_fills) if hasattr(self, 'apex_fills') else [],
-        }
-
 
 class ExecutionApexFill(models.Model):
     # one apex_fill may contribute to many ExecutionApexFills and many Executions
@@ -2280,14 +2271,6 @@ class MarketOrderRequest(models.Model):
     def __str__(self):
         return "[{}] - {}".format(self.id, self.State(self.state).name)
 
-    def __repr__(self):
-        return {
-            'state': self.state,
-            'account': self.account,
-            'execution_requests': list(self.execution_requests) if hasattr(self, 'execution_requests') else [],
-            'executions': list(self.executions) if hasattr(self, 'executions') else [],
-        }
-
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         if not self.account.confirmed:
@@ -2316,13 +2299,8 @@ class ExecutionRequest(models.Model):
 
     # also has field 'execution_distribution' from model ExecutionDistribution
 
-    def __repr__(self):
-        return {
-            'reason': str(self.reason),
-            'goal': str(self.goal),
-            'asset': str(self.ticker),
-            'volume': self.volume
-        }
+    def __str__(self):
+        return "[{}] - {}".format(self.asset.symbol, self.volume)
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

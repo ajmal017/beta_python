@@ -612,6 +612,7 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
                 weights, er, stdev = calculate_portfolio(settings,
                                                          data_provider,
                                                          execution_provider,
+                                                         True,
                                                          idata)
                 portfolio = Portfolio.objects.create(
                     setting=settings,

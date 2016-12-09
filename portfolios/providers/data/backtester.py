@@ -1,57 +1,129 @@
 from collections import defaultdict
-from datetime import timedelta
-import pandas as pd
-import os
-import numpy as np
-from portfolios.providers.dummy_models import AssetClassMock, \
-    AssetFeatureValueMock, InstrumentsFactory, MarkowitzScaleMock, \
-    PortfolioSetMock, InvestmentCycleObservationFactory
-from portfolios.returns import get_prices
-from .abstract import DataProviderAbstract
+from datetime import date, timedelta
+from django.core.cache import cache
+from django.utils import timezone
 from portfolios.exceptions import OptimizationException
+from main import redis
+from main.models import AssetFeatureValue, MarketCap, MarkowitzScale, \
+    PortfolioSet, Ticker, InvestmentCycleObservation, InvestmentCyclePrediction, DailyPrice, MarketIndex
+from django_pandas.io import read_frame
+from .abstract import DataProviderAbstract
+from main.tests.fixture import Fixture1
+from portfolios.returns import get_prices
+import os
+from api.v1.tests.factories import InvestmentCyclePredictionFactory
+import pandas as pd
+import numpy as np
 
-def _to_string(s):
-    return s or ''
 
-class DataProviderBacktester(DataProviderAbstract):
+class DataProviderBacktest(DataProviderAbstract):
     def __init__(self, sliding_window_length, dir=None):
-        self.sliding_window_length = sliding_window_length
         self.cache = None
-        self.markowitz_scale = None
-        self.tickers = list()
-        self.dir = os.getcwd() + _to_string(dir)
+        self.sliding_window_length = sliding_window_length
+        self.__current_date = self.sliding_window_length
+        self.dir = os.getcwd() + dir
+
+        cycles = '111222000334440001122200111222000334440001122200111222000334440001122200' * 31
+        dates = Fixture1.populate_observations(cycles, date(2011, 1, 1))
+
+        self.time_constrained_tickers = []
+        self._populate_probabilities()
+        self.fund_price_matrix = None
+        self.benchmark_marketweight_matrix = None
+        self._create_tickers()
+        self.dates = self._get_dates()
+
+    def initialize_tickers(self):
+        self._initial_fill_ticker_prices()
+
+    def _get_dates(self):
+        timedates = self.fund_price_matrix.index.to_pydatetime()
+        dates = [timedate.date() for timedate in timedates]
+        return dates
+
+    def _create_tickers(self):
+        self.fund_price_matrix = pd.read_csv(self.dir + 'fundPrices_mock.csv',
+                                             index_col='Date',
+                                             infer_datetime_format=True,
+                                             parse_dates=True)
+        self.fund_price_matrix.index.name = 'date'
+
         self.benchmark_marketweight_matrix = pd.read_csv(self.dir + 'capitalization_mock.csv',
                                                          index_col='Date',
                                                          infer_datetime_format=True,
                                                          parse_dates=True)
-        self.portfolio_sets = [PortfolioSetMock(name='portfolio_set1',
-                                                asset_classes=[AssetClassMock("equity"),
-                                                               AssetClassMock("fixed Income")],
-                                                views=None
-                                                )]
-        self.asset_feature_values = [AssetFeatureValueMock(name='featureName',
-                                                           feature=None,
-                                                           tickers=['EEM', 'EEMV', 'EFA'])]\
+        self.benchmark_marketweight_matrix.name = 'date'
 
-        instruments_factory = InstrumentsFactory(self.dir)
-
-        self.tickers = instruments_factory.create_tickers()
-        self.dates = instruments_factory.get_dates()
-        self.__current_date = self.sliding_window_length
-        self.time_constrained_tickers = []
-        self.investment_cycles = InvestmentCycleObservationFactory.create_cycles()
-        self.investment_predictions = InvestmentCycleObservationFactory.create_predictions()
+    @staticmethod
+    def _populate_probabilities():
+        vals = [
+            [0.08089787, 0.167216193, 0.007325566, 0.143641463, 0.733230633],
+            [0.080636192, 0.151937142, 0.187936638, 0.39640021, 0.420692639],
+            [0.087140048, 0.122145455, 0.043799137, 0.508127278, 0.412764823],
+            [0.086595196, 0.163545905, 0.029313429, 0.329095078, 0.370009886],
+            [0.087243834, 0.19905742, 0.00229681, 0.09144718, 0.390732573],
+            [0.081566295, 0.277402407, 0.080812535, 0.045212519, 0.360884538],
+            [0.07358428, 0.117376517, 0.001417166, 0.143329684, 0.395081559],
+            [0.073802749, 0.133804588, 0.000635776, 0.394104881, 0.39465102],
+            [0.075446787, 0.082311401, 0.000812869, 0.271816537, 0.69018451],
+            [0.078041426, 0.244725389, 0.014591784, 0.049618232, 0.472784413],
+            [0.076303139, 0.115293179, 0.176512979, 0.07634871, 0.375165155],
+            [0.073802749, 0.133804588, 0.000635776, 0.394104881, 0.39465102],
+        ]
+        dt = date(2011, 1, 1)
+        for p in vals:
+            InvestmentCyclePredictionFactory.create(as_of=dt, eq=p[0], eq_pk=p[1], pk_eq=p[2], eq_pit=p[3], pit_eq=p[4])
+            dt += timedelta(days=31)
 
     def move_date_forward(self):
         # this function is only used in backtesting
         self.cache = None
         success = False
+
+        self._remove_ticker_prices(self.get_start_date())
+
         if len(self.dates) > self.__current_date + 1:
             self.__current_date += 1
             success = True
         else:
             print("cannot move date forward")
+
+        self._add_ticker_prices(self.get_current_date())
         return success
+
+    def _add_ticker_prices(self, dt):
+        tickers = Ticker.objects.all()
+        prices = list()
+        market_indexes = list()
+
+        for t in tickers:
+            data = self.fund_price_matrix[t.symbol]
+            prices.append(DailyPrice(instrument=t, date=dt, price=data[dt]))
+            market_indexes.append(DailyPrice(instrument=t, date=dt, price=data[dt]))
+        DailyPrice.objects.bulk_create(prices)
+
+    def _remove_ticker_prices(self, dt):
+        DailyPrice.objects.filter(date=dt).delete()
+
+    def _initial_fill_ticker_prices(self):
+        tickers = Ticker.objects.all()
+        prices = list()
+        market_caps = list()
+        for t in tickers:
+            data = self.fund_price_matrix[t.symbol]
+            data = data[self.get_start_date():self.get_current_date()]
+
+            market_cap = self.benchmark_marketweight_matrix[t.symbol]
+            market_cap = market_cap[self.get_start_date():self.get_current_date()]
+
+            for day, market_cap_day in zip(data.index, market_cap.index):
+                prices.append(DailyPrice(instrument=t, date=day, price=data[day]))
+                prices.append(DailyPrice(instrument=t.benchmark, date=day, price=data[day]))
+                if not np.isnan(market_cap[market_cap_day]):
+                    market_caps.append(
+                        MarketCap(instrument=t.benchmark, date=market_cap_day, value=market_cap[market_cap_day]))
+        DailyPrice.objects.bulk_create(prices)
+        MarketCap.objects.bulk_create(market_caps)
 
     def get_instrument_daily_prices(self, ticker):
         prices = get_prices(ticker, self.get_start_date(), self.get_current_date())
@@ -66,71 +138,55 @@ class DataProviderBacktester(DataProviderAbstract):
         return date
 
     def get_fund_price_latest(self, ticker):
-        prices = get_prices(ticker, [self.get_current_date()])
-        #prices = self.get_instrument_daily_prices(ticker)
-        # not sure now which will work, as backtester is broken again by django requirements that were added with merge
-        prices = prices.irow(-1)
-        return prices
+        latest_ticker = ticker.daily_prices.order_by('-date').first()
+        if latest_ticker:
+            return latest_ticker.price
+        return None
+
+    def get_instrument_daily_prices(self, ticker):
+        return ticker.daily_prices.order_by('-date')
 
     def get_features(self, ticker):
-        return ticker.features
+        return ticker.features.values_list('id', flat=True)
 
     def get_asset_class_to_portfolio_set(self):
         ac_ps = defaultdict(list)
-        for ps in self.portfolio_sets:
-            for ac in ps.asset_classes:
+        # Build the asset_class -> portfolio_sets mapping
+        for ps in PortfolioSet.objects.all():
+            for ac in ps.asset_classes.all():
                 ac_ps[ac.id].append(ps.id)
         return ac_ps
 
     def get_tickers(self):
-        self.time_constrained_tickers = []
-        instrument_factory = InstrumentsFactory(self.dir)
-        for ticker in self.tickers:
-            date_range = (self.get_current_date() - timedelta(days=self.sliding_window_length),
-                          self.get_current_date())
-
-            ticker = instrument_factory.create_ticker(ticker=ticker.symbol,
-                                                      daily_prices=ticker.daily_prices.filter(date__range=date_range),
-                                                      benchmark_id=ticker.benchmark.symbol,
-                                                      benchmark_daily_prices=
-                                                      ticker.benchmark.daily_prices.filter(date__range=date_range)
-                                                      )
-            self.time_constrained_tickers.append(ticker)
-        return self.time_constrained_tickers
+        return Ticker.objects.all()
 
     def get_ticker(self, tid):
-        ticker = None
-        for t in self.time_constrained_tickers:
-            if t.id == tid:
-                ticker = t
-                break
-        return ticker
+        return Ticker.objects.get(id=tid)
 
-    def get_market_weight(self, content_type_id, content_object_id):
-        # provide market cap for a given benchmark at a given date (latest available) - use get_current_date
-        mp = self.benchmark_marketweight_matrix.ix[:self.get_current_date(), content_type_id]
-        if mp.shape[0] > 0:
-            mp = mp.irow(-1)
-        else:
-            mp = None
-        return None if mp is None else mp
+    def get_market_weight_latest(self, ticker):
+        mp = MarketCap.objects.filter(instrument_content_type__id=ticker.benchmark_content_type.id,
+                                      instrument_object_id=ticker.benchmark_object_id).order_by('-date').first()
+        return None if mp is None else mp.value
 
     def get_portfolio_sets_ids(self):
-        return [val.id for val in self.portfolio_sets]
+        return PortfolioSet.objects.values_list('id', flat=True)
 
     def get_asset_feature_values_ids(self):
-        return [val.id for val in self.asset_feature_values]
+        return AssetFeatureValue.objects.values_list('id', flat=True)
 
     def get_goals(self):
         return
 
     def get_markowitz_scale(self):
-        if self.markowitz_scale is None:
-            self.set_markowitz_scale(date=self.get_current_date(), mn=-1, mx=1, a=1, b=2, c=3)
-        return self.markowitz_scale
+        return MarkowitzScale.objects.order_by('-date').first()
 
-    def set_markowitz_scale(self, date, mn, mx, a, b, c):
-        self.markowitz_scale = MarkowitzScaleMock(date, mn, mx, a, b, c)
+    def set_markowitz_scale(self, dt, mn, mx, a, b, c):
+        MarkowitzScale.objects.create(date=dt,
+                                      min=mn,
+                                      max=mx,
+                                      a=a,
+                                      b=b,
+                                      c=c)
 
     def get_instrument_cache(self):
         return self.cache
@@ -139,58 +195,42 @@ class DataProviderBacktester(DataProviderAbstract):
         self.cache = data
 
     def get_investment_cycles(self):
-        obs = self.investment_cycles
+        # Populate the cache as we'll be hitting it a few times. Boolean evaluation causes full cache population
+        obs = InvestmentCycleObservation.objects.all().filter(as_of__lt=self.get_current_date()).order_by('as_of')
         if not obs:
             raise OptimizationException("There are no historic observations available")
-        return self.investment_cycles
+        return obs
 
     def get_last_cycle_start(self):
-        obs = self.get_cycle_obs()
-        # Populate the cache as we'll be hitting it a few times. Boolean evaluation causes full cache population
+        obs = self.get_investment_cycles()
 
-        # Get the investment cycle for the current date
-        current_cycle = obs[-1]
+        current_cycle = obs.last().cycle
 
-        if len(obs) < 2:
-            raise Exception("There are less than 2 investment cycles")
-        # Get the end date of the last non-current cycle before the current one
-        pre_dt = obs.index[-2]
+        # Get the end date and value of the last non-current full cycle before the current one
+        pre_dt = obs.exclude(cycle=current_cycle).last().as_of
+        previous_cycle = obs.filter(as_of=pre_dt).last().cycle
 
-        # Get the end date of the previous time the current cycle was
-        idx = int(np.where(obs[:pre_dt][:-1] == current_cycle)[-1])
-        pre_on_dt = obs.index[idx]
+        # Get the end date of the cycle before the previous full cycle
+        if current_cycle == InvestmentCycleObservation.Cycle.EQ.value:
+            pre_dt_start = obs.filter(as_of__lte=pre_dt).exclude(cycle=previous_cycle).last().as_of
+            pre_on_dt = obs.filter(as_of__lt=pre_dt_start).filter(cycle=previous_cycle).last().as_of
+        else:
+            pre_dt_start = obs.filter(as_of__lt=pre_dt).filter(cycle=current_cycle).last().as_of
+            pre_on_dt = obs.filter(as_of__lt=pre_dt_start).exclude(cycle=current_cycle).last().as_of
 
-        # Get the end date of the time before that when we were not in the current cycle
-        observations = obs[:pre_on_dt][:-1]
-        observations = observations[observations != current_cycle]
-        pre_off_dt = observations.index[-1]
+        # Now get the first date after this when the full previous cycle was on
+        return obs.filter(as_of__gt=pre_on_dt).first().as_of
 
-        # Not get the first date after this when the current cycle was on and we have the answer
-        return obs[pre_off_dt:].index[0]
-
-    def get_cycle_obs(self, begin_date=None):
-        cycles = self.investment_cycles
-
-        if begin_date is None:
-            begin_date = cycles[0].as_of
-
-        data = pd.Series()
-        for cycle in cycles:
-            if cycle.as_of >= begin_date:
-                observation = pd.Series(cycle.cycle, index=[cycle.as_of])
-                data = data.append(observation)
-        return data
-
-    def get_probs_df(self, begin_date):
-        predictions = self.investment_predictions
-        data = pd.DataFrame(columns=['eq', 'eq_pk', 'pk_eq', 'eq_pit', 'pit_eq'])
-        for p in predictions:
-            if p.as_of >= begin_date:
-                row = pd.DataFrame(data=[[p.eq, p.eq_pk, p.pk_eq, p.eq_pit, p.pit_eq]],  index=[p.as_of], columns=['eq', 'eq_pk', 'pk_eq', 'eq_pit', 'pit_eq'])
-                data = data.append(row)
-        return data
-
+    def get_cycle_obs(self, begin_date):
+        qs = self.get_investment_cycles().filter(as_of__gte=begin_date)
+        return read_frame(qs, fieldnames=['cycle'], index_col='as_of', verbose=False)['cycle']
 
     def get_investment_cycle_predictions(self):
-        pass
+        return InvestmentCyclePrediction.objects.all().filter(as_of__lt=self.get_current_date()).order_by('as_of')
 
+    def get_probs_df(self, begin_date):
+        qs = self.get_investment_cycle_predictions().filter(as_of__gt=begin_date)
+        probs_df = read_frame(qs,
+                              fieldnames=['eq', 'eq_pk', 'pk_eq', 'eq_pit', 'pit_eq'],
+                              index_col='as_of')
+        return probs_df

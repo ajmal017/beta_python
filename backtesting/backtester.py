@@ -1,13 +1,16 @@
 import pandas as pd
 import pandas.io.data as web
 
-from portfolios.providers.data.backtester_django import DataProviderDjango
+from portfolios.providers.data.backtester import DataProviderBacktest
 from portfolios.providers.dummy_models import GoalFactory, PositionLot
 from portfolios.providers.execution.django import ExecutionProviderDjango
 from main.management.commands.rebalance import rebalance
 from portfolios.calculation import build_instruments, \
     calculate_portfolio, calculate_portfolios, get_instruments
-from api.v1.tests.factories import MarkowitzScaleFactory
+from api.v1.tests.factories import MarkowitzScaleFactory, ApexFillFactory
+from execution.end_of_day import create_apex_orders, process_apex_fills, send_etna_order, \
+    mark_etna_order_as_complete, approve_mor
+from main.models import OrderETNA, Ticker
 
 
 class GetETFTickers(object):
@@ -64,6 +67,20 @@ class Backtester(object):
         execution_provider.cancel_pending_orders()
         execution_provider.cash_left(cash=settings.cash_balance, time=data_provider.get_current_date())
 
+    def execute(self, mor):
+        approve_mor(mor)
+        create_apex_orders()
+        orders_etna = OrderETNA.objects.is_not_complete()
+        for order in orders_etna:
+            send_etna_order(order)
+            mark_etna_order_as_complete(order)
+
+            ticker = Ticker.objects.get(id=order.ticker.id)
+            price = ticker.daily_prices.order_by('-date').first().price
+
+            ApexFillFactory.create(volume=order.FillQuantity,price=price,etna_order=order)
+        process_apex_fills()
+
     def calculate_performance(self, execution_provider):
         return execution_provider.calculate_portfolio_returns()
 
@@ -71,7 +88,7 @@ class Backtester(object):
 class TestSetup(object):
     def __init__(self):
         self._covars = self._samples = self._instruments = self._masks = None
-        self.data_provider = DataProviderDjango(sliding_window_length=250*5, dir='/backtesting/')
+        self.data_provider = DataProviderBacktest(sliding_window_length=250 * 5, dir='/backtesting/')
         self.execution_provider = ExecutionProviderDjango()
         MarkowitzScaleFactory.create()
         self.data_provider.get_goals()
@@ -142,10 +159,11 @@ if __name__ == "__main__":
         #    print("reblance not succesful")
         #    requests = [setup.execution_provider.create_empty_market_order()]
 
-        backtester.execute_order(settings=setup.goal,
-                                 order=requests,
-                                 data_provider=setup.data_provider,
-                                 execution_provider=setup.execution_provider)
+        #backtester.execute_order(settings=setup.goal,
+        #                         order=requests,
+        #                         data_provider=setup.data_provider,
+        #                         execution_provider=setup.execution_provider)
+        backtester.execute()
 
     performance = backtester.calculate_performance(execution_provider=setup.execution_provider)
 

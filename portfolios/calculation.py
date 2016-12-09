@@ -50,6 +50,13 @@ def create_portfolio_weights(instruments, min_weights, abs_min):
     pweights = np.array(pweights)
     return pweights
 
+def create_portfolio_max_weights(instruments, max_weights, abs_max):
+    pweights = []
+    for tid in instruments:
+        pweights.append(min(max_weights.get(tid, abs_max), abs_max))
+    pweights = np.array(pweights)
+    return pweights
+
 
 def build_instruments(data_provider):
     """
@@ -286,7 +293,7 @@ class Unsatisfiable(Exception):
         return self.msg
 
 
-def optimize_settings(settings, idata, data_provider, execution_provider):
+def optimize_settings(settings, idata, data_provider, execution_provider, risk_setting=None):
     """
     Calculates the portfolio weights for a given settings object
     :param settings: GoalSettings object
@@ -298,21 +305,19 @@ def optimize_settings(settings, idata, data_provider, execution_provider):
     result = calc_opt_inputs(settings=settings,
                              idata=idata,
                              data_provider=data_provider,
-                             execution_provider=execution_provider)
-    xs, lam, constraints, settings_instruments, settings_symbol_ixs, lcovars = result
+                             execution_provider=execution_provider,
+                             risk_setting=risk_setting)
+    xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, lcovars, mu = result
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Optimising settings using lambda: {}, \ncovars: {}".format(lam, lcovars))
 
-    mu = settings_instruments[INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL]
-    weights, cost = markowitz_optimizer_3(xs, lcovars.values, lam, mu.values, constraints)
+    weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, constraints)
 
-    if not weights.any():
-        raise Unsatisfiable("Could not find an appropriate allocation for Settings: {}".format(settings))
-
-    return weights, cost, xs, lam, constraints, settings_instruments, settings_symbol_ixs, lcovars
+    return weights, cost, xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, \
+           lcovars, mu
 
 
-def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_overrides=None):
+def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_overrides=None, risk_setting=None):
     '''
     Calculates the inputs suitable for our portfolio optimiser based on global data and details from the settings
     object.
@@ -321,6 +326,7 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
     :param metric_overrides:
     :return:
     '''
+
     # Get the global instrument data
     covars, instruments, masks = idata
 
@@ -330,13 +336,10 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
         raise Unsatisfiable("No assets available for settings: {} given it's constraints.".format(settings))
     xs, constraints = get_core_constraints(len(settings_symbol_ixs))
     mconstraints = get_metric_constraints(settings=settings,
-                                               cvx_masks=cvx_masks,
-                                               xs=xs,
-                                               overrides=metric_overrides)
-    risk_profile, lam = get_lambda(settings, data_provider)
-
+                                          cvx_masks=cvx_masks,
+                                          xs=xs,
+                                          overrides=metric_overrides)
     constraints += mconstraints
-
     settings_instruments = instruments.iloc[settings_symbol_ixs]
 
     # Add the constraint that they must be over the current lots held less than 1 year.
@@ -347,12 +350,30 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
                                         abs_min=0)
     constraints += [xs >= pweights]
 
+    tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(settings.goal, data_provider.get_current_date())
+    max_weights = create_portfolio_max_weights(settings_instruments['id'].values,
+                                               max_weights=tax_max_weights,
+                                               abs_max=1)
+    constraints += [xs <= max_weights]
+
+    risk_profile, lam = get_lambda(settings, data_provider, risk_setting)
+    modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
+                                                              settings_instruments=settings_instruments,
+                                                              xs=xs,
+                                                              risk_profile=risk_profile)
+
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Got constraints for settings: {}. Active symbols:{}".format(settings, settings_symbol_ixs))
 
-    lcovars = covars.iloc[settings_symbol_ixs, settings_symbol_ixs]
+    constraints_without_model = list(constraints)
+    constraints += modelportfolio_constraints
 
-    return xs, lam, constraints, settings_instruments, settings_symbol_ixs, lcovars
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug("Got constraints for settings: {}. Active symbols:{}".format(settings, settings_symbol_ixs))
+
+    lcovars = covars.iloc[settings_symbol_ixs, settings_symbol_ixs].values
+    mu = settings_instruments[INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL].values
+    return xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, lcovars, mu
 
 
 def extract_risk_setting(settings):
@@ -425,13 +446,14 @@ def calculate_portfolio_old(settings, data_provider, execution_provider, idata=N
         logger.debug("Calculating portfolio for settings: {}".format(settings))
 
     odata = optimize_settings(settings, idata, data_provider, execution_provider)
-    weights, cost, xs, lam, constraints, settings_instruments, settings_symbol_ixs, lcovars = odata
+    weights, cost, xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, \
+    settings_symbol_ixs, lcovars, mu = odata
     # Find the orderable weights. We don't align as it's too cpu intensive ATM.
     # We do however need to do the 3% cutoff so we don't end up with tiny weights.
     weights, cost = make_orderable(weights,
                                    cost,
                                    xs,
-                                   lcovars.values,
+                                   lcovars,
                                    settings_instruments[INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL].values,
                                    lam,
                                    constraints,
@@ -480,7 +502,7 @@ def get_lambda(settings, data_provider, risk_setting=None):
     return risk_profile, lambda_risk
 
 
-def calculate_portfolio(settings, data_provider, execution_provider, idata=None, risk_setting=None):
+def calculate_portfolio(settings, data_provider, execution_provider, retry=True, idata=None, risk_setting=None):
     """
     Calculates the instrument weights to use for a given goal settings.
     :param settings: goal.active_settings to calculate the portfolio for.
@@ -495,55 +517,12 @@ def calculate_portfolio(settings, data_provider, execution_provider, idata=None,
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Calculating portfolio for settings: {}".format(settings))
 
-    covars, instruments, masks = idata
-
-    # Convert the settings into a constraint based on a mask for the instruments appropriate for the settings given
-    settings_symbol_ixs, cvx_masks = get_settings_masks(settings=settings, masks=masks)
-    if len(settings_symbol_ixs) == 0:
-        raise Unsatisfiable("No assets available for settings: {} given it's constraints.".format(settings))
-
-    xs, constraints = get_core_constraints(len(settings_symbol_ixs))
-    mconstraints = get_metric_constraints(settings=settings, cvx_masks=cvx_masks, xs=xs)
-
-    constraints += mconstraints
-
-    settings_instruments = instruments.iloc[settings_symbol_ixs]
-    lcovars = covars.iloc[settings_symbol_ixs, settings_symbol_ixs].values
-
-    risk_profile, lam = get_lambda(settings, data_provider, risk_setting)
-
-    modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
-                                                              settings_instruments=settings_instruments,
-                                                              xs=xs,
-                                                              risk_profile=risk_profile)
-
-    # this is old - because we use tax lots - do we really need condition not to sell something held less than 1 year,
-    # when we radically change goal? probably not
-
-    '''
-    # Add the constraint that they must be over the current lots held less than 1 year.
-    tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(settings.goal,
-                                                                            data_provider.get_current_date())
-    pweights = create_portfolio_weights(settings_instruments['id'].values,
-                                        min_weights=tax_min_weights,
-                                        abs_min=0)
-    constraints += [xs >= pweights]'''
-
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug("Got constraints for settings: {}. Active symbols:{}".format(settings, settings_symbol_ixs))
-
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug("Optimising settings using lambda: {}, \ncovars: {}".format(lam, lcovars))
-
-    mu = settings_instruments[INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL].values
-
-    constraints_without_model = list(constraints)
-    constraints += modelportfolio_constraints
-
-    weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, constraints)
+    odata = optimize_settings(settings, idata, data_provider, execution_provider, risk_setting)
+    weights, cost, xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, \
+    lcovars, mu = odata
 
     decrease = 1
-    while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0:
+    while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0 and retry:
         modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
             settings_instruments=settings_instruments,
             xs=xs,
@@ -608,7 +587,8 @@ def calculate_portfolios(setting, data_provider, execution_provider):
                                         data_provider=data_provider,
                                         execution_provider=execution_provider,
                                         idata=idata,
-                                        risk_setting=risk_score)
+                                        risk_setting=risk_score
+                                        )
 
             # Convert to our statistics for our portfolio.
             portfolios.append((risk_score, stats))

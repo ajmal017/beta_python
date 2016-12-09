@@ -5,7 +5,7 @@ from django.db.models import Sum, F
 from django.db.models.functions import Coalesce
 from main.management.commands.rebalance import get_weights
 
-from main.models import MarketOrderRequest, Ticker, PositionLot
+from main.models import MarketOrderRequest, Ticker, PositionLot, ExecutionRequest, Execution
 from .abstract import ExecutionProviderAbstract
 
 logger = logging.getLogger('betasmartz.execution_provider_django')
@@ -16,11 +16,11 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
         pass
 
     def create_market_order(self, account):
-        order = MarketOrderRequest(account=account)
+        order = MarketOrderRequest.objects.create(account=account)
         return order
 
     def create_execution_request(self, reason, goal, asset, volume, order, limit_price):
-        pass
+        return ExecutionRequest.objects.create(reason=reason, goal=goal, asset=asset, volume=volume, order=order)
 
     def get_asset_weights_without_tax_winners(self, goal):
         lots = PositionLot.objects \
@@ -52,3 +52,27 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
         for l in lots:
             weights[l['tid']] = l['value'] / bal
         return weights
+
+    def get_assets_sold_less_30d_ago(self, goal, today):
+        month_ago = today - timedelta(days=31)
+        assets = Execution.objects.\
+                filter(executed__gte=month_ago,
+                       distributions__transaction__from_goal__id=goal.id,
+                       distributions__execution__asset__state=Ticker.State.ACTIVE.value).\
+                annotate(tid=F('distributions__execution__asset__id')).\
+                values_list('tid', flat=True)
+
+        lots = PositionLot.objects.\
+            filter(execution_distribution__transaction__from_goal__id=goal.id,
+                   execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value).\
+            annotate(tid=F('execution_distribution__execution__asset__id')).values('tid').\
+            annotate(value=Coalesce(Sum(F('quantity') * F('execution_distribution__execution__asset__unit_price')), 0))
+
+        weights = dict()
+        bal = goal.available_balance
+        for l in lots:
+            if l['tid'] in assets:
+                weights[l['tid']] = l['value']/bal
+
+        return weights
+

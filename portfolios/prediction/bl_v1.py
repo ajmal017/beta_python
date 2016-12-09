@@ -1,12 +1,15 @@
 import logging
 from collections import defaultdict
 import itertools
-
+from django.contrib.contenttypes.models import ContentType
 import pandas as pd
 import numpy as np
+from django.db.models import F, Value, Max
+from django.db.models.functions import Concat
 
 from portfolios.algorithms.bl import bl_model
 from portfolios.algorithms.covar import lw_covars
+from main.models import Ticker, MarketCap, MarketIndex
 
 logger = logging.getLogger("portfolios.prediction.bl_v1")
 
@@ -102,11 +105,25 @@ def get_market_weights(instruments):
     :param instruments: The instruments table
     :return: A pandas series indexed as the instruments table containing the initial unoptimised instrument weights.
     """
-    interested = instruments['mkt_cap']
-    total_market = interested.sum()
-    if total_market == 0:
-        return pd.Series([0]*len(interested), index=interested.index)
-    return interested / total_market
+    #ticker_ids = [int(s) for s in instruments.index.tolist() if str(s).isdigit()]
+
+    #blabels = target_instruments['id'].unique() #we need benchmark, for now just use fund
+
+    # Get all the benchmarks and fund instruments
+    #bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
+
+
+    market_caps = list()
+    for symbol in instruments.index.tolist():
+        index = MarketIndex.objects.filter(trackers__symbol=symbol)[0]
+        m_cap = MarketCap.objects.filter(instrument_object_id=index.id,
+                                         instrument_content_type=ContentType.objects.get_for_model(index))\
+                                 .order_by('-date')\
+                                 .values_list('value', flat=True)\
+                                 .first()
+        market_caps.append(m_cap)
+
+    return list(np.array(market_caps) / sum(market_caps))
 
 
 def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
@@ -121,22 +138,22 @@ def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
     """
 
     # Get the indexes for the benchmarks for each of the funds
-    blabels = target_instruments['id'].unique() #we need benchmark, for now just use fund
+    #blabels = target_instruments['id'].unique() #we need benchmark, for now just use fund
 
     # Get all the benchmarks and fund instruments
-    bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
+    #bl_instruments = instruments.loc[blabels.tolist() + target_instruments.index.tolist()]
 
     # Get the market weights for the benchmarks for each of the funds, and the funds.
     # The market caps for the funds should be zero.
-    market_caps = get_market_weights(bl_instruments)
+    market_caps = get_market_weights(instruments)
 
     # Get the views appropriate for the settings
-    views, vers = get_views(portfolio_set, bl_instruments)
+    views, vers = get_views(portfolio_set, instruments)
 
     # Pass the data to the BL algorithm to get the the mu and sigma for the optimiser
-    lcovars = covars.loc[bl_instruments['id'], bl_instruments['id']]
+    lcovars = covars.loc[instruments['id'], instruments['id']]
     mu, sigma = bl_model(lcovars.values,
-                         market_caps.values,
+                         market_caps,
                          views,
                          vers,
                          samples)
@@ -147,12 +164,12 @@ def run_bl(instruments, covars, target_instruments, samples, portfolio_set):
             samples,
             lcovars.index.tolist(),
             lcovars.values.tolist(),
-            market_caps.values.tolist(),
+            market_caps,
             mu.tolist(),
             sigma.tolist())
         )
 
     # modify the mu and sigma to only be the funds, then return just those.
-    return mu[len(blabels):], sigma[len(blabels):, len(blabels):]
+    return mu, sigma
 
 
