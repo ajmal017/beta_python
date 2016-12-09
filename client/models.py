@@ -58,7 +58,11 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     employment_status = models.IntegerField(choices=constants.EMPLOYMENT_STATUSES,
                                             null=True, blank=True)
     income = models.FloatField(verbose_name="Income ($)", default=0)
-    occupation = models.CharField(max_length=255, null=True, blank=True)
+    occupation = models.CharField(choices=constants.OCCUPATION_TYPES,
+                                  max_length=20, null=True, blank=True)
+    industry_sector = models.CharField(choices=constants.INDUSTRY_TYPES,
+                                       max_length=20, null=True, blank=True)
+    student_loan = models.NullBooleanField(null=True, blank=True)
     employer = models.CharField(max_length=255, null=True, blank=True)
     smoker = models.NullBooleanField(null=True, blank=True)
     daily_exercise = models.PositiveIntegerField(null=True, blank=True,
@@ -261,6 +265,7 @@ class ClientAccount(models.Model):
     account_name = models.CharField(max_length=255, default='PERSONAL')
     primary_owner = models.ForeignKey('Client',
                                       related_name="primary_accounts")
+    account_number = models.CharField(max_length=16, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     token = models.CharField(max_length=36, editable=False)
     # The confirmed field indicates the account is fully ready to be used by the client.

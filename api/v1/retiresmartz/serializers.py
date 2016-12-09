@@ -365,7 +365,7 @@ class RetirementPlanEincWritableSerializer(serializers.ModelSerializer):
 
 class RetirementAdviceReadSerializer(ReadOnlyModelSerializer):
     """
-        Read-Only RetirementAdvice serializer, used for 
+        Read-Only RetirementAdvice serializer, used for
         get request for retirement-plans advice-feed endpoint
     """
 
@@ -378,15 +378,13 @@ class RetirementAdviceReadSerializer(ReadOnlyModelSerializer):
             'trigger',
             'text',
             'read',
-            'action',
-            'action_url',
-            'action_data',
+            'actions',
         )
 
 
 class RetirementAdviceWritableSerializer(serializers.ModelSerializer):
     """
-        UPDATE PUT/POST RetirementAdvice serializer, used for 
+        UPDATE PUT/POST RetirementAdvice serializer, used for
         put requests for retirement-plans advice-feed endpoint
     """
     class Meta:
@@ -511,6 +509,7 @@ class AddRolloverAccount(NewAccountFabricBase):
         account = ClientAccount.objects.create(
             account_type=account_type,
             account_name=dict(constants.ACCOUNT_TYPES)[account_type],
+            account_number=account_number,
             primary_owner=client,
             default_portfolio_set=client.advisor.default_portfolio_set,
             confirmed=True,

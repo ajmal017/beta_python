@@ -1,4 +1,5 @@
 import decimal
+import logging
 from datetime import datetime, time
 from decimal import Decimal
 
@@ -7,7 +8,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models.aggregates import Sum
 from django.db.models.query_utils import Q
 from django.utils import timezone
-from django.utils.timezone import now
 from pinax.eventlog.models import Log
 from rest_framework import serializers
 from rest_framework.response import Response
@@ -18,6 +18,8 @@ from common.constants import DEC_2PL, EPOCH_TM
 from main.event import Event
 from main.models import ActivityLog, ActivityLogEvent, Goal, HistoricalBalance, \
     Transaction
+
+logger = logging.getLogger(__name__)
 
 # Make unsafe float operations with decimal fail
 decimal.getcontext().traps[decimal.FloatOperation] = True
@@ -140,10 +142,13 @@ def parse_event_logs(request, logs, transactions, goal):
         if aid is None:
             continue
 
-        result = {
-            'type': aid,
-            'time': int((timezone.make_naive(tx.executed) - EPOCH_TM).total_seconds())
-        }
+        try:
+            result = {
+                'type': aid,
+                'time': int((timezone.make_naive(tx.executed) - EPOCH_TM).total_seconds())
+            }
+        except AttributeError as e:
+            logger.error(e, exc_info=True)
 
         if goal is None:
             # account level, so we need to work out the goal.

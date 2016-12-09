@@ -9,7 +9,7 @@ from api.v1.tests.factories import AdvisorFactory, EmailInviteFactory
 from client.models import EmailInvite
 from django.test import Client as DjangoClient
 from common.constants import GROUP_SUPPORT_STAFF
-from main.constants import ACCOUNT_TYPE_PERSONAL, EMPLOYMENT_STATUS_FULL_TIME, GENDER_MALE
+from main.constants import ACCOUNT_TYPE_PERSONAL, EMPLOYMENT_STATUS_EMMPLOYED, GENDER_MALE
 from main.models import ExternalAsset, User
 from .factories import AccountTypeRiskProfileGroupFactory, AddressFactory, \
     ClientAccountFactory, ClientFactory, ExternalAssetFactory, GoalFactory, \
@@ -256,13 +256,17 @@ class ClientTests(APITestCase):
         # lets test income update
         old_income = self.betasmartz_client.income
         new_income = old_income + 5000.0
-        new_occupation = 'Super Hero'
+        new_occupation = '11-0000'
+        new_industry_sector = 'NAICS 11'
+        new_student_loan = True
         new_employer = 'League of Extraordinary Gentlemen'
         new_civil_status = 1  # 0 single, 1 married
         new_date_of_birth = date(1990, 1, 1)
         data = {
             'income': new_income,
             'occupation': new_occupation,
+            'industry_sector': new_industry_sector,
+            'student_loan': new_student_loan,
             'employer': new_employer,
             'civil_status': new_civil_status,
             'date_of_birth': new_date_of_birth,
@@ -275,11 +279,15 @@ class ClientTests(APITestCase):
         response = self.client.put(url, data)
         self.betasmartz_client.refresh_from_db()  # Refresh after the put.
         self.assertEqual(response.status_code, status.HTTP_200_OK,
-                         msg='200 for authenticated put request to update client income, occupation, employer, and civil status')
+                         msg='200 for authenticated put request to update client income, occupation, industry_sector, student_loan, employer, and civil status')
         self.assertTrue(response.data['id'] == self.betasmartz_client.id)
         self.assertTrue(response.data['income'] == new_income)
         self.assertTrue(response.data['occupation'] == new_occupation)
+        self.assertTrue(response.data['industry_sector'] == new_industry_sector)
+        self.assertTrue(response.data['student_loan'] == new_student_loan)
         self.assertTrue(self.betasmartz_client.occupation == new_occupation)
+        self.assertTrue(self.betasmartz_client.industry_sector == new_industry_sector)
+        self.assertTrue(self.betasmartz_client.student_loan == new_student_loan)
         self.assertTrue(response.data['employer'] == new_employer)
         self.assertTrue(response.data['civil_status'] == new_civil_status)
         self.assertEqual(response.data['date_of_birth'], str(new_date_of_birth))
@@ -307,7 +315,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -363,7 +371,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -394,7 +402,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -430,7 +438,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -469,7 +477,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -507,7 +515,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",
@@ -550,7 +558,7 @@ class ClientTests(APITestCase):
             "advisor_agreement": True,
             "betasmartz_agreement": True,
             "date_of_birth": date(2016, 9, 21),
-            "employment_status": EMPLOYMENT_STATUS_FULL_TIME,
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
             "gender": GENDER_MALE,
             "income": 1234,
             "phone_num": "+1-234-234-2342",

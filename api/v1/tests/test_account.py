@@ -8,7 +8,7 @@ from main.constants import ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_ROTH401K
 from main.event import Event
 from main.models import ActivityLogEvent, AccountType
 from main.tests.fixture import Fixture1
-from .factories import GroupFactory
+from .factories import GroupFactory, SecurityAnswerFactory, ClientAccountFactory
 
 
 class AccountTests(APITestCase):
@@ -23,6 +23,7 @@ class AccountTests(APITestCase):
         data = {
             'account_type': ACCOUNT_TYPE_PERSONAL,
             'account_name': 'Test Account',
+            'account_number': '1234567890',
             'primary_owner': client.id,
         }
         old_count = ClientAccount.objects.count()
@@ -38,12 +39,14 @@ class AccountTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(ClientAccount.objects.count(), 1)
         self.assertTrue('id' in response.data)
-        self.assertEqual(response.data['account_name'], 'Test Account')
+        self.assertEqual(response.data['account_name'], data['account_name'])
+        self.assertEqual(response.data['account_number'], data['account_number'])
 
         # Don't let them create a second personal account
         data = {
             'account_type': ACCOUNT_TYPE_PERSONAL,
             'account_name': 'Test Account 2',
+            'account_number': '1234567890',
             'primary_owner': client.id,
         }
         response = self.client.post(url, data)
@@ -66,19 +69,36 @@ class AccountTests(APITestCase):
         self.assertTrue('are not user creatable' in str(response.content))
 
     def test_update_account(self):
-        url = '/api/v1/accounts/' + str(Fixture1.personal_account1().id)
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/' + str(account.id)
         test_name = 'Holy Pingalicious Test Account'
-        self.assertNotEqual(Fixture1.personal_account1().account_name, test_name)
+        account_number = '1234512345'
+        self.assertNotEqual(account.account_name, test_name)
+        sa1 = SecurityAnswerFactory.create(user=account.primary_owner.user, question='question one')
+        sa2 = SecurityAnswerFactory.create(user=account.primary_owner.user, question='question two')
+
         data = {
             'account_name': test_name,
         }
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {
+            'account_name': test_name,
+            'question_one': sa1.pk,
+            'answer_one': 'test',
+            'question_two': sa2.pk,
+            'answer_two': 'test',
+            'account_number': account_number,
+        }
         old_count = ClientAccount.objects.count()
-        self.client.force_authenticate(user=Fixture1.client1_user())
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(ClientAccount.objects.count(), old_count)  # No extra account created
         self.assertTrue('id' in response.data)  # Correct response serializer used
         self.assertEqual(response.data['account_name'], test_name)  # New value returned
+        self.assertEqual(response.data['account_number'], account.account_number)  # account number can't be modified on update.
         self.assertEqual(Fixture1.personal_account1().account_name, test_name)  # Value in db actually changed
 
     def test_get_no_activity(self):

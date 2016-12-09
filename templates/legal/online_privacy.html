@@ -1,8 +1,7 @@
 {% extends 'layouts_new/base.html' %}
 
 {% block main_content %}
-<div class="container">
-<button onclick="goBack()" class='btn btn-primary pull-right'>Back</button>
+<div class="container legal">
 <h1>Online Privacy & Tracking</h1>
 
 <h2>Privacy Online</h2>
@@ -20,13 +19,6 @@
 
 <h2>Data Security Online</h2>
 <p>To protect your personal information from unauthorized access and use, we use security measures that comply with federal law. These measures include computer safeguards and secured files and buildings.</p>
-{% endblock %}
+</div>
 
-
-{% block foot_js %}
-<script type='text/javascript'>
-	function goBack() {
-		window.history.back();
-	}
-</script>
 {% endblock %}

@@ -22,12 +22,13 @@ from api.v1.views import ReadOnlyApiViewMixin
 from common.constants import EPOCH_DT, EPOCH_TM
 from common.utils import dt2ed
 from main.event import Event
-from main.models import DailyPrice, Goal, GoalType, HistoricalBalance, Ticker, Transaction, GoalSetting
+from main.models import DailyPrice, Goal, GoalSetting, GoalType, \
+    HistoricalBalance, Ticker, Transaction
 from main.risk_profiler import risk_data
 from portfolios.calculation import Unsatisfiable, \
     calculate_portfolio, calculate_portfolios, current_stats_from_weights
-from portfolios.providers.execution.django import ExecutionProviderDjango
 from portfolios.providers.data.django import DataProviderDjango
+from portfolios.providers.execution.django import ExecutionProviderDjango
 from support.models import SupportRequest
 from . import serializers
 from ..permissions import IsAdvisorOrClient

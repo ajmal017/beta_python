@@ -1,10 +1,9 @@
 {% extends 'layouts_new/base.html' %}
 
 {% block main_content %}
-<div class="container">
-<button onclick="goBack()" class='btn btn-primary pull-right'>Back</button>
-<h1>Privacy Policy</h1>
-Effective September 2016
+<div class="container legal">
+<h1 class="page-title">Privacy Policy</h1>
+<p>Effective September 2016</p>
 
 <h2>What does BetaSmartz do with your personal information?</h2>
 
@@ -20,7 +19,7 @@ Effective September 2016
 
 <p>All financial companies need to share customers' personal information to run their everyday business. In the section below, we list the reasons financial companies can share their customers' personal information; the reasons BetaSmartz chooses to share; and whether you can limit this sharing.</p>
 
-<table>
+<table class="table table-responsive table-striped">
 	<tr>
 		<th>
 			Reasons we can share your personal information
@@ -77,14 +76,14 @@ Please note:
 <p>If you are a new customer, we can begin sharing your information 30 days from the date we sent this notice. When you are no longer our customer, we continue to share your information as described in this notice. However, you can contact us at any time to limit our sharing.</p>
 
 <h2>Who is providing this notice?</h2>
-BetaSmartz Advisory LLC (also "BetaSmartz") and its affiliates. See list of affiliates below.
+<p>BetaSmartz Advisory LLC (also "BetaSmartz") and its affiliates. See list of affiliates below.</p>
 
 <h2>How does BetaSmartz protect my personal information?</h2>
-To protect your personal information from unauthorized access and use, we use security measures that comply with federal law. These measures include computer safeguards and secured files and buildings. 
+<p>To protect your personal information from unauthorized access and use, we use security measures that comply with federal law. These measures include computer safeguards and secured files and buildings.</p>
 
 <h2>How does Schwab collect my personal information?</h2>
 <p>
-	We collect your personal information, for example, when you 
+	We collect your personal information, for example, when you
 	<ul>
 		<li>open an account or give us your income information</li>
 		<li>seek advice about your investments or tell us about your investment or retirement portfolio</li>
@@ -108,7 +107,7 @@ To protect your personal information from unauthorized access and use, we use se
 <p>Your choices will apply to everyone on your account.</p>
 
 <h2>Definitions</h2>
-<p><b>Affiliates</b>. Companies related by common ownership or control. They can be financial and nonfinancial companies. 
+<p><b>Affiliates</b>. Companies related by common ownership or control. They can be financial and nonfinancial companies.
 Our affiliates include companies with a BetaSmartz name; financial companies such as BetaSmartz Global Pte. Ltd., and BetaSmartz Pty Ltd.</p>
 
 <p>
@@ -125,13 +124,4 @@ Our affiliates include companies with a BetaSmartz name; financial companies suc
 <h2>State and International Laws</h2>
 <p>If you are a Vermont resident, we will automatically limit sharing of your information. Nevada law requires us to disclose that you may request to be placed on BetaSmartz’s internal "do not call" list at any time by emailing <a href="mailto:support@betasmartz.com">support@betasmartz.com</a>, and that we are providing this notice to you pursuant to state law, and that you may obtain further information by contacting the Nevada Attorney General, 555 E. Washington Ave., Suite 3900, Las Vegas, NV 89101; phone 702-486-3132; email <a href="mailto:BCPINFO@ag.state.nv.us">BCPINFO@ag.state.nv.us</a>.</p>
 </div>
-{% endblock %}
-
-
-{% block foot_js %}
-<script type='text/javascript'>
-	function goBack() {
-		window.history.back();
-	}
-</script>
 {% endblock %}

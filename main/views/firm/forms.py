@@ -1,4 +1,3 @@
-from django.utils.timezone import now
 import json
 
 from django import forms
@@ -9,19 +8,21 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse_lazy
 from django.http import Http404
 from django.shortcuts import HttpResponseRedirect, get_object_or_404
-from django.views.generic import CreateView, View, TemplateView
+from django.utils.timezone import now
+from django.views.generic import CreateView, TemplateView, View
 from django.views.generic.edit import ProcessFormView
-from main.models import Firm, User, AuthorisedRepresentative, \
-    FirmData, Transaction, Ticker, Platform, Goal
+
+from main.constants import AUTHORIZED_REPRESENTATIVE, INVITATION_ADVISOR, \
+    INVITATION_SUPERVISOR, INVITATION_TYPE_DICT, PERSONAL_DATA_FIELDS, \
+    SUCCESS_MESSAGE
+from main.forms import BetaSmartzGenericUserSignupForm, PERSONAL_DATA_WIDGETS
+from main.models import AuthorisedRepresentative, Firm, FirmData, Goal, \
+    Platform, Ticker, Transaction, User
 from main.optimal_goal_portfolio import solve_shares_re_balance
-from ..base import AdminView
-from ..base import LegalView
+from notifications.models import Notify
+from ..base import AdminView, LegalView
 from ...forms import EmailInvitationForm
 from ...models import EmailInvitation, Section
-from main.constants import SUCCESS_MESSAGE, INVITATION_ADVISOR, \
-    AUTHORIZED_REPRESENTATIVE, INVITATION_SUPERVISOR, INVITATION_TYPE_DICT, \
-    PERSONAL_DATA_FIELDS
-from main.forms import PERSONAL_DATA_WIDGETS, BetaSmartzGenericUserSignupForm
 
 __all__ = ["InviteLegalView", "AuthorisedRepresentativeSignUp", 'FirmDataView', "EmailConfirmationView",
            'Confirmation', 'AdminInviteSupervisorView', 'AdminInviteAdvisorView', "GoalRebalance"]
@@ -239,7 +240,7 @@ class FirmDataForm(forms.ModelForm):
 class FirmDataView(CreateView, LegalView):
     form_class = FirmDataForm
     template_name = 'registration/firm_details_form.html'
-    success_url = '/firm/support/forms'
+    success_url = reverse_lazy('support-forms')
 
     def get_object(self):
         if hasattr(self.firm, 'firm_details'):
@@ -254,6 +255,18 @@ class FirmDataView(CreateView, LegalView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         return ProcessFormView.post(self, request, *args, **kwargs)
+
+    def form_valid(self, form):
+        try:
+            details = self.firm.firm_details
+        except ObjectDoesNotExist:
+            details = None
+        Notify.SUBMIT_FORM.send(
+            actor=self.request.user,
+            target=self.firm,
+            action_object=details
+        )
+        return super(FirmDataView, self).form_valid(form)
 
 
 class EmailConfirmationView(View):

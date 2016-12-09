@@ -256,6 +256,7 @@ class ClientAccountFactory(factory.django.DjangoModelFactory):
     primary_owner = factory.SubFactory(ClientFactory)
     account_type = 0  # 0 for personal account type
     account_name = factory.Sequence(lambda n: 'ClientAccount %d' % n)
+    account_number = '1234567890'
     default_portfolio_set = factory.SubFactory(PortfolioSetFactory)
     confirmed = True
     cash_balance = factory.LazyAttribute(lambda n: float(random.randrange(10000000)) / 100)
@@ -395,7 +396,7 @@ class PortfolioFactory(factory.django.DjangoModelFactory):
             # A list of groups were passed in, use them
             for item in items:
                 self.items.add(item)
-                
+
 
 class InvestmentTypeFactory(factory.django.DjangoModelFactory):
     class Meta:

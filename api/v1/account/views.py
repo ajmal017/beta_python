@@ -114,3 +114,12 @@ class AccountViewSet(ApiViewMixin,
                 emsg = 'US Retirement account types are not user creatable.'
                 return Response({'error': emsg}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(AccountViewSet, self).create(request)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        updated = serializer.update(instance, serializer.validated_data)
+        return Response(self.serializer_response_class(updated).data)

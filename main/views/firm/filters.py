@@ -1,3 +1,4 @@
+import datetime
 from dateutil.relativedelta import relativedelta
 import logging
 from django import forms
@@ -12,6 +13,7 @@ from main.models import Advisor, Goal, GoalMetric
 from client.models import Client
 
 ATTRS_ONCHANGE= {'onchange': 'this.form.submit();'}
+ATTRS_PERIOD_CHANGE = {'onchange': 'handlePeriodChange(this);'}
 
 logger = logging.getLogger('main.views.firm.filters')
 
@@ -40,8 +42,10 @@ class PeriodFilter(filters.ChoiceFilter):
     PERIOD_CHOICES = (
         (None, '- Time period -'),
         (None, 'All time'),
-        ('30', '1mo'),
-        ('365', '1yr'),
+        ('1mo', '1mo'),
+        ('1yr', '1yr'),
+        ('ytd', 'YTD'),
+        ('custom', 'Custom'),
     )
 
     def __init__(self, *args, **kwargs):
@@ -49,15 +53,57 @@ class PeriodFilter(filters.ChoiceFilter):
         super(PeriodFilter, self).__init__(*args, **kwargs)
 
     def filter(self, qs, value):
-        if not value:
+        if not value or value == 'custom' or value == 'ytd':
             return qs
 
+        switcher = {
+            '1mo': 30,
+            '1yr': 365
+        }
         dt = now().today()
-        dt = dt - relativedelta(days=int(value))
+        dt = dt - relativedelta(days=switcher[value])
 
         qs = qs.filter(timestamp__gte=dt)
         return qs
 
+class YTDPeriodFilter(filters.DateFilter):
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.get('instance', None)
+
+        kwargs.update(initial={
+            'ytd': datetime.datetime.now()
+        })
+
+        super(YTDPeriodFilter, self).__init__(*args, **kwargs)
+
+    def filter(self, qs, value):
+        if not value:
+            return qs
+
+        dt = value + relativedelta(days=1)
+
+        qs = qs.filter(timestamp__lte = dt, timestamp__gte = dt - relativedelta(days=365))
+        return qs
+
+class CustomStartFilter(filters.DateFilter):
+    def filter(self, qs, value):
+        if not value:
+            return qs
+
+        dt = value
+
+        qs = qs.filter(timestamp__gte=dt)
+        return qs
+
+class CustomEndFilter(filters.DateFilter):
+    def filter(self, qs, value):
+        if not value:
+            return qs
+
+        dt = value + relativedelta(days=1)
+
+        qs = qs.filter(timestamp__lt=dt)
+        return qs
 
 class UserGroupFilter(filters.ChoiceFilter):
     _GROUPS_DEFAULT = ('Advisors', 'Clients') # 'Supervisors'
@@ -137,12 +183,15 @@ class FirmActivityFilterSet(filters.FilterSet):
 
     group = UserGroupFilter(widget=forms.Select(attrs=ATTRS_ONCHANGE),
         groups=('Advisors', 'Clients', 'Supervisors'))
-    timestamp = PeriodFilter(widget=forms.Select(attrs=ATTRS_ONCHANGE))
+    period = PeriodFilter(widget=forms.Select(attrs=ATTRS_PERIOD_CHANGE))
+    ytd = YTDPeriodFilter(widget=forms.TextInput())
+    start = CustomStartFilter(widget=forms.TextInput())
+    end = CustomEndFilter(widget=forms.TextInput())
     verb = filters.ChoiceFilter(choices=VERB_CHOICES, widget=forms.Select(attrs=ATTRS_ONCHANGE))
 
     class Meta:
         model = Notification
-        fields = ['group', 'verb', 'timestamp']
+        fields = ['group', 'verb', 'period', 'ytd', 'start', 'end']
 
 
 class FirmAnalyticsOverviewFilterSet(filters.FilterSet):

@@ -8,21 +8,17 @@ INVITATION_CLOSED = 4
 EMAIL_INVITATION_STATUSES = (
     (INVITATION_PENDING, 'Pending'), (INVITATION_SUBMITTED, 'Submitted'),
     (INVITATION_ACTIVE, 'Active'), (INVITATION_CLOSED, 'Closed'))
-EMPLOYMENT_STATUS_FULL_TIME = 0
-EMPLOYMENT_STATUS_PART_TIME = 1
+EMPLOYMENT_STATUS_EMMPLOYED = 0
+EMPLOYMENT_STATUS_UNEMPLOYED = 1
 EMPLOYMENT_STATUS_SELF_EMPLOYED = 2
-EMPLOYMENT_STATUS_STUDENT = 3
-EMPLOYMENT_STATUS_RETIRED = 4
-EMPLOYMENT_STATUS_HOMEMAKER = 5
-EMPLOYMENT_STATUS_UNEMPLOYED = 6
+EMPLOYMENT_STATUS_RETIRED = 3
+EMPLOYMENT_STATUS_NOT_LABORFORCE = 4
 EMPLOYMENT_STATUSES = (
-    (EMPLOYMENT_STATUS_FULL_TIME, 'Employed (full-time)'),
-    (EMPLOYMENT_STATUS_PART_TIME, 'Employed (part-time)'),
+    (EMPLOYMENT_STATUS_EMMPLOYED, 'Employed'),
+    (EMPLOYMENT_STATUS_UNEMPLOYED, 'Unmployed'),
     (EMPLOYMENT_STATUS_SELF_EMPLOYED, 'Self-employed'),
-    (EMPLOYMENT_STATUS_STUDENT, 'Student'),
     (EMPLOYMENT_STATUS_RETIRED, 'Retired'),
-    (EMPLOYMENT_STATUS_HOMEMAKER, 'Homemaker'),
-    (EMPLOYMENT_STATUS_UNEMPLOYED, "Not employed"),
+    (EMPLOYMENT_STATUS_NOT_LABORFORCE, 'Not in labor force'),
 )
 INVITATION_ADVISOR = 0
 AUTHORIZED_REPRESENTATIVE = 1
@@ -234,3 +230,52 @@ PERFORMER_GROUP_CHOICE = (
 GENDER_MALE = "Male"
 GENDER_FEMALE = "Female"
 GENDERS = ((GENDER_MALE, "Male"), (GENDER_FEMALE, "Female"))
+
+OCCUPATION_TYPES = (
+    ('11-0000', 'Management'),
+    ('13-0000', 'Business and Financial Operations'),
+    ('15-0000', 'Computer and Mathematical'),
+    ('17-0000', 'Architecture and Engineering'),
+    ('19-0000', 'Life, Physical, and Social Science'),
+    ('21-0000', 'Community and Social Services'),
+    ('23-0000', 'Legal'),
+    ('25-0000', 'Education, Training, and Library'),
+    ('27-0000', 'Arts, Design, Entertainment, Sports, and Media'),
+    ('29-0000', 'Healthcare Practitioners and Technical'),
+    ('31-0000', 'Healthcare Support'),
+    ('33-0000', 'Protective Service'),
+    ('35-0000', 'Food Preparation and Serving Related'),
+    ('37-0000', 'Building and Grounds Cleaning and Maintenance'),
+    ('39-0000', 'Personal Care and Service'),
+    ('41-0000', 'Sales and Related'),
+    ('43-0000', 'Office and Administrative Support'),
+    ('45-0000', 'Farming, Fishing, and Forestry'),
+    ('47-0000', 'Construction and Extraction'),
+    ('49-0000', 'Installation, Maintenance, and Repair'),
+    ('51-0000', 'Production'),
+    ('53-0000', 'Transportation and Material Moving'),
+    ('55-0000', 'Military Specific')
+)
+
+INDUSTRY_TYPES = (
+    ('NAICS 11',	'Agriculture, Forestry, Fishing and Hunting'),
+    ('NAICS 21',	'Mining, Quarrying, and Oil and Gas Extraction'),
+    ('NAICS 23',	'Construction'),
+    ('NAICS 31-33', 'Manufacturing'),
+    ('NAICS 42',	'Wholesale Trade'),
+    ('NAICS 44-45', 'Retail Trade '),
+    ('NAICS 48-49', 'Transportation and Warehousing'),
+    ('NAICS 22',	'Utilities'),
+    ('NAICS 51',	'Information'),
+    ('NAICS 52',	'Finance and Insurance '),
+    ('NAICS 53',	'Real Estate and Rental and Leasing '),
+    ('NAICS 531', 'Real Estate '),
+    ('NAICS 54',	'Professional, Scientific, and Technical Services '),
+    ('NAICS 55',	'Management of Companies and Enterprises '),
+    ('NAICS 56',	'Administrative and Support and Waste Management and Remediation Services'),
+    ('NAICS 61',	'Educational Services'),
+    ('NAICS 62',	'Health Care and Social Assistance'),
+    ('NAICS 71',	'Arts, Entertainment, and Recreation'),
+    ('NAICS 72',	'Accommodation and Food Services '),
+    ('NAICS 81',	'Other Services')
+)

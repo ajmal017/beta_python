@@ -11,7 +11,7 @@ else:
     SITE_URL = "https://{}.betasmartz.com".format(environment)
     DEBUG = True
     TEMPLATE_DEBUG = True
-
+    ALLOWED_HOSTS = ["{}.betasmartz.com".format(environment)]
 
 DATABASES = {
     'default': {

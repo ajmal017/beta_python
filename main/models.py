@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
 from enum import Enum, unique
 
 import numpy as np
@@ -8,6 +8,7 @@ import scipy.stats as st
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, Group, \
     PermissionsMixin, UserManager, send_mail
+from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -40,6 +41,7 @@ from main.constants import ACCOUNT_TYPES_COUNTRY, ACCOUNT_UNKNOWN
 from main.finance import mod_dietz_rate
 from main.managers import AccountTypeQuerySet
 from main.risk_profiler import validate_risk_score
+from notifications.models import Notify
 from portfolios.returns import get_price_returns
 from . import constants
 from .abstract import FinancialInstrument, NeedApprobation, \
@@ -47,8 +49,7 @@ from .abstract import FinancialInstrument, NeedApprobation, \
 from .fields import ColorField
 from .managers import ExternalAssetQuerySet, GoalQuerySet, PositionLotQuerySet
 from .slug import unique_slugify
-import numpy as np
-from pinax.eventlog.models import log
+
 logger = logging.getLogger('main.models')
 
 
@@ -2707,3 +2708,29 @@ class Inflation(models.Model):
 
     def __str__(self):
         return '{0.month}/{0.year}: {0.value}'.format(self)
+
+
+@receiver(user_logged_in)
+def user_logged_in_notification(sender, user: User, **kwargs):
+    user_types = ['client', 'advisor', 'supervisor',
+                  'authorised_representative']
+    for ut in user_types:
+        try:
+            Notify.SYSTEM_LOGIN.send(getattr(user, ut))
+            break
+        except ObjectDoesNotExist:
+            pass
+
+
+@receiver(user_logged_out)
+def user_logged_out_notification(sender, user: User, **kwargs):
+    if user is not None:
+        # user was authenticated
+        user_types = ['client', 'advisor', 'supervisor',
+                      'authorised_representative']
+        for ut in user_types:
+            try:
+                Notify.SYSTEM_LOGOUT.send(getattr(user, ut))
+                break
+            except ObjectDoesNotExist:
+                pass

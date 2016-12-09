@@ -1,30 +1,31 @@
-from datetime import datetime, date
 import logging
+from datetime import datetime
+
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
-from django.db.models import Avg, F, Q, Sum
+from django.db.models import F, Q, Sum
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   TemplateView, UpdateView)
 from functools import reduce
 from operator import itemgetter
-from django.utils import timezone
 
 from client.models import Client
 from main.constants import (INVITATION_ADVISOR, INVITATION_SUPERVISOR,
                             INVITATION_TYPE_DICT)
 from main.forms import BetaSmartzGenericUserSignupForm, EmailInvitationForm
-from main.models import (Advisor, EmailInvitation, Goal, GoalMetric, GoalType,
-                         Supervisor, Transaction, User, PositionLot, Ticker)
+from main.models import Advisor, EmailInvitation, Goal, GoalMetric, GoalType, \
+    PositionLot, Supervisor, Ticker, Transaction, User
 from main.views.base import LegalView
-from notifications.models import Notification
+from notifications.models import Notification, Notify
 from support.models import SupportRequest
 from .filters import FirmActivityFilterSet, FirmAnalyticsAdvisorsFilterSet, \
-    FirmAnalyticsClientsFilterSet, FirmAnalyticsOverviewFilterSet, \
-    FirmAnalyticsGoalsAdvisorsFilterSet, FirmAnalyticsGoalsClientsFilterSet
+    FirmAnalyticsClientsFilterSet, FirmAnalyticsGoalsAdvisorsFilterSet, \
+    FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsOverviewFilterSet
 
 logger = logging.getLogger('main.views.firm.dashboard')
 
@@ -126,6 +127,12 @@ class FirmSupervisorsCreate(CreateView, LegalView):
     success_url = "/firm/supervisors"
 
     def get_success_url(self):
+        supervisor = self.object.supervisor
+        Notify.CREATE_SUPERVISOR.send(
+            actor=self.firm,
+            target=supervisor,
+            description='Can write' if supervisor.can_write else 'Read only'
+        )
         messages.success(self.request, "New supervisor created successfully")
         return super(FirmSupervisorsCreate, self).get_success_url()
 

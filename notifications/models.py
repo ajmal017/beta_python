@@ -1,11 +1,12 @@
-from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
-from django import get_version
-from django.utils import timezone
-
 from distutils.version import StrictVersion
 
+from django import get_version
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 from django.utils.timezone import now
+
+from common.structures import ChoiceEnum
 
 if StrictVersion(get_version()) >= StrictVersion('1.8.0'):
     from django.contrib.contenttypes.fields import GenericForeignKey
@@ -232,53 +233,75 @@ if EXTRA_DATA is None:
     EXTRA_DATA = getattr(settings, 'NOTIFICATIONS_USE_JSONFIELD', False)
 
 
-def notify_handler(verb, **kwargs):
+def notify_handler(verb, actor, recipient, public,  description, timestamp,
+                   level, target=None, action_object=None, **extra_data):
     """
     Handler function to create Notification instance upon action signal call.
     """
 
-    # Pull the options out of kwargs
-    kwargs.pop('signal', None)
-    recipient = kwargs.pop('recipient')
-    actor = kwargs.pop('sender')
-    optional_objs = [
-        (kwargs.pop(opt, None), opt)
-        for opt in ('target', 'action_object')
-    ]
-    public = bool(kwargs.pop('public', True))
-    description = kwargs.pop('description', None)
-    timestamp = kwargs.pop('timestamp', now())
-    level = kwargs.pop('level', Notification.LEVELS.info)
-
     # Check if User or Group
     if isinstance(recipient, Group):
         recipients = recipient.user_set.all()
+    elif isinstance(recipient, (list, tuple)):
+        recipients = recipient
     else:
         recipients = [recipient]
 
     for recipient in recipients:
-        newnotify = Notification(
+        notification = Notification(
             recipient=recipient,
-            actor_content_type=ContentType.objects.get_for_model(actor),
-            actor_object_id=actor.pk,
+            actor=actor,
             verb=text_type(verb),
             public=public,
             description=description,
             timestamp=timestamp,
             level=level,
+            target=target,
+            action_object = action_object,
         )
 
-        # Set optional objects
-        for obj, opt in optional_objs:
-            if obj is not None:
-                setattr(newnotify, '%s_object_id' % opt, obj.pk)
-                setattr(newnotify, '%s_content_type' % opt,
-                        ContentType.objects.get_for_model(obj))
+        if len(extra_data) and EXTRA_DATA:
+            notification.data = extra_data
 
-        if len(kwargs) and EXTRA_DATA:
-            newnotify.data = kwargs
+        notification.save()
 
-        newnotify.save()
+
+class Notify(ChoiceEnum):
+    SYSTEM_LOGIN = 'logged in',
+    SYSTEM_LOGOUT = 'logged out',
+
+    ADVISOR_INVITE_NEW_CLIENT = 'invited a new client'
+    ADVISOR_RESEND_INVITE = 'resent invite'
+
+    ADVISOR_CREATE_GROUP = 'created group'
+    ADVISOR_REMOVE_GROUP = 'removed group'
+    ADVISOR_CLIENT_AGREEMENT_DOWNLOAD = "downloaded client's agreement"
+
+    ADVISOR_ADD_SECONDARY_ADVISOR = 'added secondary advisor'
+    ADVISOR_REMOVE_SECONDARY_ADVISOR = 'removed secondary advisor'
+
+    SUBMIT_FORM = 'submitted new form'
+    UPDATE_FORM = 'updated form'
+
+    CREATE_SUPERVISOR = 'created supervisor'
+
+    UPDATE_PERSONAL_INFO = 'updated personal info'
+
+    def send(self, actor, target=None, recipient=None, action_object=None,
+             public=True, description=None, timestamp=None,
+             level=Notification.LEVELS.info):
+
+        if recipient is None:
+            try:
+                recipient = actor.user
+            except AttributeError:
+                recipient = actor
+
+        if timestamp is None:
+            timestamp = now()
+
+        notify_handler(self.value, actor, recipient, public, description,
+                       timestamp, level, target, action_object)
 
 
 # connect the signal
