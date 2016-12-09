@@ -149,11 +149,26 @@ class AccountViewSet(ApiViewMixin,
 class AccountBeneficiaryViewSet(ApiViewMixin,
                                 NestedViewSetMixin,
                                 mixins.UpdateModelMixin,
+                                mixins.DestroyModelMixin,
                                 viewsets.ReadOnlyModelViewSet):
     model = AccountBeneficiary
     queryset = AccountBeneficiary.objects.all()
     permission_classes = (IsAdvisorOrClient,)
     serializer_response_class = serializers.AccountBeneficiarySerializer
+
+    def get_queryset(self):
+        """
+        Because this viewset can have a primary owner and signatories,
+        we don't use the queryset parsing features from NestedViewSetMixin as
+        it only allows looking at one field for the parent.
+        :return:
+        """
+        qs = super(AccountBeneficiaryViewSet, self).get_queryset()
+
+        # show "permissioned" records only
+        user = SupportRequest.target_user(self.request)
+        qs.filter(Q(account__primary_owner__user=user) | Q(account__primary_owner__advisor__user=user) )
+        return qs
 
     def get_serializer_class(self):
         if self.request.method == 'PUT':

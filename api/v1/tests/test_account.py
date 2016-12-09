@@ -239,3 +239,13 @@ class AccountTests(APITestCase):
         self.client.force_authenticate(user=account.primary_owner.user)
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_delete_beneficiary(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
