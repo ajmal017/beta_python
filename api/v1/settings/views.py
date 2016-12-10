@@ -100,6 +100,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
                    "id": af.id,
                    "name": af.name,
                    "description": af.description,
+                   "upper_limit": af.upper_limit,
                    "values": [{
                                   "id": v.id,
                                   "name": v.name,

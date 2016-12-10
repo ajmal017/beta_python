@@ -14,7 +14,7 @@ from main.models import AccountGroup, ActivityLog, \
     ActivityLogEvent, Advisor, AuthorisedRepresentative, Dividend, \
     EventMemo, Firm, FirmData, Goal, GoalMetric, GoalMetricGroup, GoalSetting, \
     GoalType, MarketIndex, Performer, Portfolio, PortfolioItem, PortfolioSet, \
-    ProxyAssetClass, ProxyTicker, \
+    ProxyAssetClass, ProxyTicker, AssetFeature, \
     Transaction, User, View, InvestmentType, FiscalYear, Ticker, PositionLot, AssetFeePlan, Inflation
 
 
@@ -333,6 +333,12 @@ class InflationAdmin(ImportExportModelAdmin):
     list_display = 'year', 'month', 'value'
     resource_class = InflationResource
 
+class AssetFeaturesAdmin(admin.ModelAdmin):
+    model = AssetFeature
+    list_display = ('name', 'description', 'upper_limit')
+    list_editable = ('upper_limit',)
+
+
 admin.site.register(AccountGroup)
 admin.site.register(Inflation, InflationAdmin)
 admin.site.register(advisor_models.ChangeDealerGroup, AdvisorChangeDealerGroupAdmin)
@@ -359,6 +365,7 @@ admin.site.register(FiscalYear, FiscalYearAdmin)
 admin.site.register(Ticker, TickerAdmin)
 admin.site.register(PositionLot, PositionLotAdmin)
 admin.site.register(AssetFeePlan, AssetFeePlanAdmin)
+admin.site.register(AssetFeature, AssetFeaturesAdmin)
 
 
 if settings.DEBUG:

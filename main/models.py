@@ -1948,6 +1948,7 @@ class AssetFeature(models.Model):
 
     name = models.CharField(max_length=127, unique=True, help_text="This should be a noun such as 'Region'.")
     description = models.TextField(blank=True, null=True)
+    upper_limit = models.FloatField(null=True, blank=True, validators=[MinValueValidator(0.0), MaxValueValidator(1.0)])
 
     @cached_property
     def active(self):
