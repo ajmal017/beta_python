@@ -230,12 +230,12 @@ class ClientFactory(factory.django.DjangoModelFactory):
     residential_address = factory.SubFactory(AddressFactory)
     occupation = factory.Sequence(lambda n: 'Occupation %d' % n)
     employer = factory.Sequence(lambda n: 'Employer %d' % n)
-    income = factory.LazyAttribute(lambda n: float(random.randrange(1000000)))
+    income = factory.LazyAttribute(lambda n: float(random.randrange(100000, 1000000)))
     risk_profile_group = factory.SubFactory(RiskProfileGroupFactory)
     # risk_profile_responses = factory.SubFactory(RiskProfileAnswerFactory)
     # lets use a random date from last 18-70 years for dob
     date_of_birth = factory.LazyAttribute(lambda n: random_date(datetime.now().date() - relativedelta(years=70),
-                                                                datetime.now().date() - relativedelta(years=18)))
+                                                                datetime.now().date() - relativedelta(years=18, days=1)))
     is_confirmed = True
     is_accepted = True
 
