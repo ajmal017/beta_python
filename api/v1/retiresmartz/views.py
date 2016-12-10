@@ -478,7 +478,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         if plan.paid_days > 0:
             # Average retirement income is 116 per day as of September 2016, working until age 80
             cash_flows.append(InflatedCashFlow(amount=116*plan.paid_days,
-                                               today=date(2016, 9, 1),
+                                               today=today,
                                                start_date=retire_date,
                                                end_date=plan.client.date_of_birth + relativedelta(years=80)))
 
