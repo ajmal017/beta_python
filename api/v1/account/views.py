@@ -181,6 +181,12 @@ class AccountBeneficiaryViewSet(ApiViewMixin,
             # Default for get and other requests is the read only serializer
             return serializers.AccountBeneficiarySerializer
 
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user != instance.account.primary_owner.user and request.user != instance.account.primary_owner.advisor.user:
+            raise PermissionDenied()
+        super(AccountBeneficiaryViewSet, self).get(request, *args, **kwargs)
+
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         kwargs['partial'] = True
