@@ -138,6 +138,7 @@ class AccountTests(APITestCase):
 
     def test_get_beneficiaries(self):
         beneficiary = AccountBeneficiaryFactory.create()
+        beneficiary2 = AccountBeneficiaryFactory.create(account=beneficiary.account)
         url = '/api/v1/accounts/{}/beneficiaries'.format(beneficiary.account.id)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -146,6 +147,7 @@ class AccountTests(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]['id'], beneficiary.id)
         self.assertEqual(response.data[0]['name'], beneficiary.name)
         self.assertEqual(response.data[0]['share'], beneficiary.share)
