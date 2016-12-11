@@ -282,3 +282,15 @@ class AccountTests(APITestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_different_client_beneficiary(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        account = ClientAccountFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
