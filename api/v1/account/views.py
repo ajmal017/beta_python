@@ -1,6 +1,6 @@
 from django.db.models.query_utils import Q
 from rest_framework import viewsets, mixins, status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.response import Response
@@ -9,13 +9,16 @@ from api.v1.permissions import IsAdvisorOrClient
 from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
 
-from client.models import ClientAccount
+from client.models import ClientAccount, AccountBeneficiary
 from main import constants
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
 from main.models import AccountType
 from support.models import SupportRequest
-
+import logging
 from . import serializers
+
+
+logger = logging.getLogger('api.v1.account.views')
 
 
 class AccountViewSet(ApiViewMixin,
@@ -120,6 +123,77 @@ class AccountViewSet(ApiViewMixin,
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
         serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        updated = serializer.update(instance, serializer.validated_data)
+        return Response(self.serializer_response_class(updated).data)
+
+    @detail_route(methods=['get', 'post'], url_path='beneficiaries')
+    def beneficiaries(self, request, pk=None, **kwargs):
+        instance = self.get_object()
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        if request.user != instance.primary_owner.user and request.user != instance.primary_owner.advisor.user:
+            raise PermissionDenied()
+        if request.method == 'POST':
+            # create new beneficiary and add to account
+            request.data['account'] = instance.id
+            serializer = serializers.AccountBeneficiaryCreateSerializer(data=request.data, partial=partial, context={'request': request})
+            serializer.is_valid(raise_exception=True)
+            beneficiary = serializer.save()
+            beneficiaries = AccountBeneficiary.objects.filter(account=instance)
+            serializer = serializers.AccountBeneficiarySerializer(beneficiaries, many=True)
+            return Response(serializer.data)
+        beneficiaries = AccountBeneficiary.objects.filter(account=instance)
+        serializer = serializers.AccountBeneficiarySerializer(beneficiaries, many=True)
+        return Response(serializer.data)
+
+
+class AccountBeneficiaryViewSet(ApiViewMixin,
+                                NestedViewSetMixin,
+                                mixins.UpdateModelMixin,
+                                mixins.DestroyModelMixin,
+                                viewsets.ReadOnlyModelViewSet):
+    model = AccountBeneficiary
+    queryset = AccountBeneficiary.objects.all()
+    permission_classes = (IsAdvisorOrClient,)
+    serializer_response_class = serializers.AccountBeneficiarySerializer
+
+    def get_queryset(self):
+        """
+        Because this viewset can have a primary owner and signatories,
+        we don't use the queryset parsing features from NestedViewSetMixin as
+        it only allows looking at one field for the parent.
+        :return:
+        """
+        qs = super(AccountBeneficiaryViewSet, self).get_queryset()
+
+        # show "permissioned" records only
+        user = SupportRequest.target_user(self.request)
+        qs.filter(Q(account__primary_owner__user=user) | Q(account__primary_owner__advisor__user=user) )
+        return qs
+
+    def get_serializer_class(self):
+        if self.request.method == 'PUT':
+            return serializers.AccountBeneficiaryUpdateSerializer
+        elif self.request.method == 'POST':
+            return serializers.AccountBeneficiaryCreateSerializer
+        else:
+            # Default for get and other requests is the read only serializer
+            return serializers.AccountBeneficiarySerializer
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user != instance.account.primary_owner.user and request.user != instance.account.primary_owner.advisor.user:
+            raise PermissionDenied()
+        super(AccountBeneficiaryViewSet, self).get(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        if request.user != instance.account.primary_owner.user and request.user != instance.account.primary_owner.advisor.user:
+            raise PermissionDenied()
+        serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'account': instance.account, 'beneficiary': instance})
         serializer.is_valid(raise_exception=True)
         updated = serializer.update(instance, serializer.validated_data)
         return Response(self.serializer_response_class(updated).data)

@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
-
+from django.utils import timezone
 from client.models import AccountTypeRiskProfileGroup, ClientAccount
 from common.constants import GROUP_SUPPORT_STAFF
 from main import constants
@@ -8,7 +8,9 @@ from main.constants import ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_ROTH401K
 from main.event import Event
 from main.models import ActivityLogEvent, AccountType
 from main.tests.fixture import Fixture1
-from .factories import GroupFactory, SecurityAnswerFactory, ClientAccountFactory
+from .factories import GroupFactory, SecurityAnswerFactory, \
+    ClientAccountFactory, AccountBeneficiaryFactory
+from dateutil.relativedelta import relativedelta
 
 
 class AccountTests(APITestCase):
@@ -133,3 +135,150 @@ class AccountTests(APITestCase):
         self.assertEqual(response.data[3], {'balance': 3000.0,
                                             'time': 978307200,
                                             'type': ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED).activity_log.id}) # Balance
+
+    def test_get_beneficiaries(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        beneficiary2 = AccountBeneficiaryFactory.create(account=beneficiary.account)
+        url = '/api/v1/accounts/{}/beneficiaries'.format(beneficiary.account.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]['id'], beneficiary.id)
+        self.assertEqual(response.data[0]['name'], beneficiary.name)
+        self.assertEqual(response.data[0]['share'], beneficiary.share)
+
+    def test_create_beneficiary(self):
+        account = ClientAccountFactory.create()
+        data = {
+            'type': 0,
+            'name': 'tester9',
+            'relationship': 1,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 0.5,
+        }
+        url = '/api/v1/accounts/{}/beneficiaries'.format(account.id)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]['name'], 'tester9')
+        self.assertEqual(response.data[0]['share'], 0.5)
+
+    def test_get_beneficiary(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], beneficiary.id)
+        self.assertEqual(response.data['name'], beneficiary.name)
+        self.assertEqual(response.data['share'], beneficiary.share)
+
+    def test_update_beneficiary(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        data = {
+            'id': beneficiary.id,
+            'name': beneficiary.name,
+            'relationship': 2,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 0.1,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
+        response = self.client.put(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['id'], beneficiary.id)
+        self.assertEqual(response.data['name'], beneficiary.name)
+        self.assertEqual(response.data['share'], 0.1)
+        self.assertEqual(response.data['relationship'], 2)
+
+    def test_update_beneficiary_share_too_high(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        data = {
+            'id': beneficiary.id,
+            'name': beneficiary.name,
+            'relationship': 2,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 1.5,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
+        response = self.client.put(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_beneficiary_share_too_high(self):
+        account = ClientAccountFactory.create()
+        data = {
+            'type': 0,
+            'name': 'tester9',
+            'relationship': 1,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 1.5,
+        }
+        url = '/api/v1/accounts/{}/beneficiaries'.format(account.id)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_delete_beneficiary(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_update_different_client_beneficiaries(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        account = ClientAccountFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        data = {
+            'id': beneficiary.id,
+            'name': beneficiary.name,
+            'relationship': 2,
+            'birthdate': timezone.now().date() - relativedelta(years=40),
+            'share': 0.1,
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.put(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_different_client_beneficiary(self):
+        beneficiary = AccountBeneficiaryFactory.create()
+        account = ClientAccountFactory.create()
+        url = '/api/v1/clients/{}/beneficiaries/{}'.format(beneficiary.account.primary_owner.id, beneficiary.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -5,7 +5,7 @@ from nested_admin.nested import NestedModelAdmin, NestedTabularInline
 
 from client.models import (AccountTypeRiskProfileGroup, Client, ClientAccount,
     RiskProfileAnswer, RiskProfileGroup, RiskProfileQuestion, RiskCategory,
-    EmailInvite)
+    EmailInvite, AccountBeneficiary)
 from main.admin import approve_application
 
 
@@ -78,6 +78,11 @@ class EmailInviteAdmin(admin.ModelAdmin):
     list_display = ('email', 'status', 'reason', 'modified_at')
 
 
+class AccountBeneficiaryAdmin(admin.ModelAdmin):
+    model = AccountBeneficiary
+    list_display = ('type', 'name', 'relationship', 'birthdate', 'share', 'account')
+
+
 admin.site.register(Client, ClientAdmin)
 admin.site.register(ClientAccount, ClientAccountAdmin)
 admin.site.register(RiskProfileGroup, RiskProfileGroupAdmin)
@@ -87,3 +92,4 @@ admin.site.register(RiskProfileQuestion, RiskProfileQuestionAdmin)
 admin.site.register(RiskProfileAnswer, RiskProfileAnswerAdmin)
 admin.site.register(RiskCategory, RiskCategoryAdmin)
 admin.site.register(EmailInvite, EmailInviteAdmin)
+admin.site.register(AccountBeneficiary, AccountBeneficiaryAdmin)

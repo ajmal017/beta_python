@@ -3,11 +3,68 @@ from rest_framework import serializers
 from api.v1.serializers import (NoCreateModelSerializer,
                                 NoUpdateModelSerializer,
                                 ReadOnlyModelSerializer)
-from client.models import ClientAccount
+from client.models import ClientAccount, AccountBeneficiary
 import logging
 from user.models import SecurityAnswer
 
 logger = logging.getLogger('api.v1.account.serializers')
+
+
+class AccountBeneficiarySerializer(ReadOnlyModelSerializer):
+    class Meta:
+        model = AccountBeneficiary
+
+
+class AccountBeneficiaryUpdateSerializer(serializers.ModelSerializer):
+    """
+    For PUT update requests
+    """
+    class Meta:
+        model = AccountBeneficiary
+        fields = (
+            'type',
+            'name',
+            'relationship',
+            'birthdate',
+            'share',
+        )
+
+    def validate(self, data):
+        account = self.context.get('account')
+        beneficiary = self.context.get('beneficiary')
+        if 'type' in data:
+            beneficiaries = AccountBeneficiary.objects.filter(account=account, type=data['type'])
+        else:
+            beneficiaries = AccountBeneficiary.objects.filter(account=account, type=beneficiary.type)
+        shares = [b.share for b in beneficiaries if b.id != beneficiary.id]
+        shares.append(data['share'])
+        if sum(shares) > 1.0:
+            raise serializers.ValidationError({'share': 'Beneficiaries for account would be over 100%'})
+        return data
+
+
+class AccountBeneficiaryCreateSerializer(serializers.ModelSerializer):
+    """
+    For POST create requests
+    """
+    class Meta:
+        model = AccountBeneficiary
+        fields = (
+            'type',
+            'name',
+            'relationship',
+            'birthdate',
+            'share',
+            'account',
+        )
+
+    def validate(self, data):
+        beneficiaries = AccountBeneficiary.objects.filter(account=data['account'], type=data['type'])
+        shares = [b.share for b in beneficiaries]
+        shares.append(data['share'])
+        if sum(shares) > 1.0:
+            raise serializers.ValidationError({'share': 'Beneficiaries for account would be over 100%'})
+        return data
 
 
 class ClientAccountSerializer(ReadOnlyModelSerializer):
@@ -58,6 +115,7 @@ class ClientAccountUpdateSerializer(NoCreateModelSerializer):
         fields = (
             'account_name',
             'tax_loss_harvesting_status',
+
             'question_one',
             'answer_one',
             'question_two',
