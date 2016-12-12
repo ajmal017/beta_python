@@ -6,7 +6,8 @@ from django.test import TestCase
 from common.utils import months_between
 from main.models import Inflation
 from retiresmartz.calculator.cashflows import InflatedCashFlow, ReverseMortgage, EmploymentIncome
-
+import pandas as pd
+from retiresmartz.calculator.social_security import calculate_payments
 
 class CashFlowTests(TestCase):
     def setUp(self):
@@ -56,6 +57,8 @@ class CashFlowTests(TestCase):
         # Make sure a reset allows previous dates again, and we get the same result
         cf.reset()
         self.assertEqual(ret_val, cf.on(self.retirement))
+        time_series = self.get_time_series(cf)
+        self.assertTrue(isinstance(time_series, pd.DataFrame))
 
     def test_reverse_mortgage(self):
         cf = ReverseMortgage(home_value=200000,
@@ -89,6 +92,8 @@ class CashFlowTests(TestCase):
         # Make sure a reset allows previous dates again, and we get the same result
         cf.reset()
         self.assertEqual(ret_val, cf.on(self.retirement))
+        time_series = self.get_time_series(cf)
+        self.assertTrue(isinstance(time_series, pd.DataFrame))
 
     def test_employment_income(self):
         cf = EmploymentIncome(income=4000,
@@ -113,3 +118,25 @@ class CashFlowTests(TestCase):
         # Make sure a reset allows previous dates again, and we get the same result
         cf.reset()
         self.assertAlmostEqual(predicted, cf.on(self.retirement), 4)
+        time_series = self.get_time_series(cf)
+        self.assertTrue(isinstance(time_series, pd.DataFrame))
+
+    def test_ss(self):
+        ss_all = calculate_payments(self.dob, 4000)
+        ss_income = ss_all.get(self.retirement, None)
+        if ss_income is None:
+            ss_income = ss_all[sorted(ss_all)[0]]
+        ss_payments = InflatedCashFlow(ss_income, self.today, self.retirement, self.death)
+        time_series = self.get_time_series(ss_payments)
+        self.assertTrue(isinstance(time_series, pd.DataFrame))
+
+    def get_time_series(self, cf):
+        cf.reset()
+        date = self.today
+        cash_flows = dict()
+        while date <= self.death:
+            cash_flows[date] = cf.on(date)
+            date += relativedelta(years=1)
+        time_series = pd.DataFrame.from_dict(cash_flows,orient='index')
+        time_series.sort_index(inplace=True)
+        return time_series
