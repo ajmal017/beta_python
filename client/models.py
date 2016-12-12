@@ -278,6 +278,10 @@ class ClientAccount(models.Model):
     from which other data can be attached.
     It is the primary financial entity in the Betasmartz system.
     """
+    class Status(ChoiceEnum):
+        open = (0, 'Open')
+        pending_close = (1, 'Pending Close From Admin')
+        closed = (2, 'Closed')
     account_group = models.ForeignKey('main.AccountGroup',
                                       related_name="accounts_all",
                                       null=True)
@@ -310,10 +314,7 @@ class ClientAccount(models.Model):
                                          help_text='Other clients authorised '
                                                    'to operate the account.',
                                          blank=True)
-    # beneficiaries = models.ManyToManyField('AccountBeneficiary',
-    #                                        related_name='accounts',
-    #                                        help_text='Account beneficiaries.',
-    #                                        blank=True)
+    status = models.IntegerField(null=True, choices=Status.choices(), default=0)
     # also has ib_account foreign key to IBAccount
     # also has apex_account foreign key to APEXAccount
 
@@ -778,3 +779,45 @@ class RiskCategory(models.Model):
 
     def __str__(self):
         return '[<{}] {}'.format(self.upper_bound, self.name)
+
+
+class CloseAccountRequest(models.Model):
+    class CloseChoice(ChoiceEnum):
+        liquidate = 0, 'Liquidate assets'
+        transfer_to_account = 1, 'Transfer assets to another account'
+        transfer_to_custodian = 2, 'Transfer assets to another custodian'
+        direct_custody = 3, 'Take direct custody of your assets'
+
+    account = models.ForeignKey('ClientAccount', on_delete=models.CASCADE)
+    close_choice = models.IntegerField(null=True, choices=CloseChoice.choices())
+    account_transfer_form = models.FileField(blank=True, null=True)
+
+    def send_advisor_email(self):
+
+        subject = "Close Client Account Request"
+
+        context = {
+            'account': self.account,
+        }
+
+        if self.close_choice == CloseAccountRequest.CloseChoice.liquidate.value:
+            send_mail(subject,
+                      '',
+                      None,
+                      [self.account.primary_owner.advisor.user.email],
+                      html_message=render_to_string(
+                          'email/advisor_liquidate_account.html', context))
+        elif self.close_choice == CloseAccountRequest.CloseChoice.transfer_to_custodian.value:
+            send_mail(subject,
+                      '',
+                      None,
+                      [self.account.primary_owner.advisor.user.email],
+                      html_message=render_to_string(
+                          'email/advisor_transfer_custodian_account.html', context))
+        elif self.close_choice == CloseAccountRequest.CloseChoice.direct_custody.value:
+            send_mail(subject,
+                      '',
+                      None,
+                      [self.account.primary_owner.advisor.user.email],
+                      html_message=render_to_string(
+                          'email/advisor_transfer_direct_account.html', context))

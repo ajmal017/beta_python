@@ -294,3 +294,20 @@ class AccountTests(APITestCase):
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_close_account(self):
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 0,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        print(response.content)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)

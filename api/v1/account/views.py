@@ -9,7 +9,7 @@ from api.v1.permissions import IsAdvisorOrClient
 from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
 
-from client.models import ClientAccount, AccountBeneficiary
+from client.models import ClientAccount, AccountBeneficiary, CloseAccountRequest
 from main import constants
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
 from main.models import AccountType
@@ -145,6 +145,30 @@ class AccountViewSet(ApiViewMixin,
             return Response(serializer.data)
         beneficiaries = AccountBeneficiary.objects.filter(account=instance)
         serializer = serializers.AccountBeneficiarySerializer(beneficiaries, many=True)
+        return Response(serializer.data)
+
+    @detail_route(methods=['post'], url_path='close')
+    def close(self, request, pk=None, **kwargs):
+        instance = self.get_object()
+        serializer = serializers.CloseAccountRequestSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        close_account = serializer.save()
+        close_account.account.status = 1
+        close_account.account.save()
+        # close choice check
+        logger.error(close_account.close_choice)
+        if close_account.close_choice == CloseAccountRequest.CloseChoice.liquidate.value:
+            # email Advisor
+            close_account.send_advisor_email()
+
+            # lock account so no action can be taken on it by client anymore
+            pass
+        elif close_account.close_choice == CloseAccountRequest.CloseChoice.transfer_to_account.value:
+            pass
+        elif close_account.close_choice == CloseAccountRequest.CloseChoice.transfer_to_custodian.value:
+            close_account.send_advisor_email()
+        else:  # take direct custody
+            close_account.send_advisor_email()
         return Response(serializer.data)
 
 
