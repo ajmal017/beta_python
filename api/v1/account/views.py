@@ -9,7 +9,7 @@ from api.v1.permissions import IsAdvisorOrClient
 from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
 
-from client.models import ClientAccount, AccountBeneficiary
+from client.models import ClientAccount, AccountBeneficiary, CloseAccountRequest
 from main import constants
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
 from main.models import AccountType
@@ -120,6 +120,8 @@ class AccountViewSet(ApiViewMixin,
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        if instance.status != 0:  # if account is not open, block update from client
+            return Response('Account is not open, cannot update', status=status.HTTP_403_FORBIDDEN)
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
         serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'request': request})
@@ -130,6 +132,8 @@ class AccountViewSet(ApiViewMixin,
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):
         instance = self.get_object()
+        if instance.status != 0:  # if account is not open, block update from client
+            return Response('Account is not open, cannot update', status=status.HTTP_403_FORBIDDEN)
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
         if request.user != instance.primary_owner.user and request.user != instance.primary_owner.advisor.user:
@@ -145,6 +149,27 @@ class AccountViewSet(ApiViewMixin,
             return Response(serializer.data)
         beneficiaries = AccountBeneficiary.objects.filter(account=instance)
         serializer = serializers.AccountBeneficiarySerializer(beneficiaries, many=True)
+        return Response(serializer.data)
+
+    @detail_route(methods=['post'], url_path='close')
+    def close(self, request, pk=None, **kwargs):
+        instance = self.get_object()
+        serializer = serializers.CloseAccountRequestSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        close_account = serializer.save()
+        close_account.account.status = 1
+        close_account.account.save()
+        close_account.send_admin_email()
+        # close choice check
+        if close_account.close_choice == CloseAccountRequest.CloseChoice.liquidate.value:
+            # email Advisor
+            close_account.send_advisor_email()
+        elif close_account.close_choice == CloseAccountRequest.CloseChoice.transfer_to_account.value:
+            pass
+        elif close_account.close_choice == CloseAccountRequest.CloseChoice.transfer_to_custodian.value:
+            close_account.send_advisor_email()
+        else:  # take direct custody
+            close_account.send_advisor_email()
         return Response(serializer.data)
 
 

@@ -11,6 +11,9 @@ from main.tests.fixture import Fixture1
 from .factories import GroupFactory, SecurityAnswerFactory, \
     ClientAccountFactory, AccountBeneficiaryFactory
 from dateutil.relativedelta import relativedelta
+from django.core import mail
+import os
+from django.conf import settings
 
 
 class AccountTests(APITestCase):
@@ -294,3 +297,86 @@ class AccountTests(APITestCase):
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_close_account_liquidate(self):
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 0,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # test liquidate
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_close_account_transfer_internal(self):
+        account = ClientAccountFactory.create()
+        to_account = ClientAccountFactory.create(primary_owner=account.primary_owner)
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 1,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # test liquidate
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        # 400, account_transfer_form required for account transfer close_choice
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as pdf_upload:
+            data['account_transfer_form'] = pdf_upload
+            response = self.client.post(url, data, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_close_account_transfer_custodian(self):
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 2,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # test liquidate
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_close_account_transfer_direct(self):
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 3,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # test liquidate
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 2)

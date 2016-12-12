@@ -3,7 +3,7 @@ from rest_framework import serializers
 from api.v1.serializers import (NoCreateModelSerializer,
                                 NoUpdateModelSerializer,
                                 ReadOnlyModelSerializer)
-from client.models import ClientAccount, AccountBeneficiary
+from client.models import ClientAccount, AccountBeneficiary, CloseAccountRequest
 import logging
 from user.models import SecurityAnswer
 
@@ -158,4 +158,23 @@ class ClientAccountUpdateSerializer(NoCreateModelSerializer):
             logger.error('ClientAccountUpdateSerializer answer two was wrong')
             raise serializers.ValidationError({'answer_two': 'Wrong answer'})
 
+        return data
+
+
+class CloseAccountRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CloseAccountRequest
+        fields = ('account', 'close_choice', 'account_transfer_form')
+
+    def validate(self, data):
+        request = self.context.get('request')
+        user = request.user
+        account_ids = [a.id for a in ClientAccount.objects.filter(primary_owner__user=user)]
+        if data['account'].id not in account_ids:
+            raise serializers.ValidationError({'account': 'User does not own account'})
+        if data['close_choice'] == 1:
+            # internal transfer needs pdf
+            if 'account_transfer_form' not in data:
+                raise serializers.ValidationError({'account_transfer_form': 'Account transfer form pdf file required for account transfer'})
         return data
