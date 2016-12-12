@@ -173,4 +173,8 @@ class CloseAccountRequestSerializer(serializers.ModelSerializer):
         account_ids = [a.id for a in ClientAccount.objects.filter(primary_owner__user=user)]
         if data['account'].id not in account_ids:
             raise serializers.ValidationError({'account': 'User does not own account'})
+        if data['close_choice'] == 1:
+            # internal transfer needs pdf
+            if 'account_transfer_form' not in data:
+                raise serializers.ValidationError({'account_transfer_form': 'Account transfer form pdf file required for account transfer'})
         return data
