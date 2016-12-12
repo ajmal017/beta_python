@@ -791,7 +791,6 @@ class CloseAccountRequest(models.Model):
     account = models.ForeignKey('ClientAccount', on_delete=models.CASCADE)
     close_choice = models.IntegerField(null=True, choices=CloseChoice.choices())
     account_transfer_form = models.FileField(blank=True, null=True)
-    to_account = models.ForeignKey('ClientAccount', null=True, blank=True)
 
     def send_advisor_email(self):
         """Email Client Advisor when an account is closed"""
@@ -830,9 +829,6 @@ class CloseAccountRequest(models.Model):
         context = {
             'account': self.account,
         }
-
-        if self.to_account:
-            context['to_account'] = self.to_account
 
         if self.close_choice == CloseAccountRequest.CloseChoice.liquidate.value:
             send_mail(subject,

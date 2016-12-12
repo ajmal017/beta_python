@@ -322,7 +322,6 @@ class AccountTests(APITestCase):
         data = {
             'account': account.id,
             'close_choice': 1,
-            'to_account': to_account.id,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
