@@ -313,13 +313,16 @@ class AccountTests(APITestCase):
         lookup_account = ClientAccount.objects.get(id=account.id)
         self.assertEqual(lookup_account.status, 1)
         self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 2)
 
     def test_close_account_transfer_internal(self):
         account = ClientAccountFactory.create()
+        to_account = ClientAccountFactory.create(primary_owner=account.primary_owner)
         url = '/api/v1/accounts/{}/close'.format(account.id)
         data = {
             'account': account.id,
             'close_choice': 1,
+            'to_account': to_account.id,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -330,6 +333,8 @@ class AccountTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         lookup_account = ClientAccount.objects.get(id=account.id)
         self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 1)
 
     def test_close_account_transfer_custodian(self):
         account = ClientAccountFactory.create()
@@ -348,6 +353,7 @@ class AccountTests(APITestCase):
         lookup_account = ClientAccount.objects.get(id=account.id)
         self.assertEqual(lookup_account.status, 1)
         self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 2)
 
     def test_close_account_transfer_direct(self):
         account = ClientAccountFactory.create()
@@ -366,3 +372,4 @@ class AccountTests(APITestCase):
         lookup_account = ClientAccount.objects.get(id=account.id)
         self.assertEqual(lookup_account.status, 1)
         self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+        self.assertEqual(len(mail.outbox), 2)

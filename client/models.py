@@ -791,9 +791,10 @@ class CloseAccountRequest(models.Model):
     account = models.ForeignKey('ClientAccount', on_delete=models.CASCADE)
     close_choice = models.IntegerField(null=True, choices=CloseChoice.choices())
     account_transfer_form = models.FileField(blank=True, null=True)
+    to_account = models.ForeignKey('ClientAccount', null=True, blank=True)
 
     def send_advisor_email(self):
-
+        """Email Client Advisor when an account is closed"""
         subject = "Close Client Account Request"
 
         context = {
@@ -819,5 +820,45 @@ class CloseAccountRequest(models.Model):
                       '',
                       None,
                       [self.account.primary_owner.advisor.user.email],
+                      html_message=render_to_string(
+                          'email/advisor_transfer_direct_account.html', context))
+
+    def send_admin_email(self):
+        """Email Betasmartz Admin when an account is closed"""
+        subject = "Close Client Account Request"
+
+        context = {
+            'account': self.account,
+        }
+
+        if self.to_account:
+            context['to_account'] = self.to_account
+
+        if self.close_choice == CloseAccountRequest.CloseChoice.liquidate.value:
+            send_mail(subject,
+                      '',
+                      None,
+                      [settings.ADMIN_EMAIL],
+                      html_message=render_to_string(
+                          'email/advisor_liquidate_account.html', context))
+        elif self.close_choice == CloseAccountRequest.CloseChoice.transfer_to_account.value:
+            send_mail(subject,
+                      '',
+                      None,
+                      [settings.ADMIN_EMAIL],
+                      html_message=render_to_string(
+                          'email/admin_transfer_to_account.html', context))
+        elif self.close_choice == CloseAccountRequest.CloseChoice.transfer_to_custodian.value:
+            send_mail(subject,
+                      '',
+                      None,
+                      [settings.ADMIN_EMAIL],
+                      html_message=render_to_string(
+                          'email/advisor_transfer_custodian_account.html', context))
+        elif self.close_choice == CloseAccountRequest.CloseChoice.direct_custody.value:
+            send_mail(subject,
+                      '',
+                      None,
+                      [settings.ADMIN_EMAIL],
                       html_message=render_to_string(
                           'email/advisor_transfer_direct_account.html', context))

@@ -222,6 +222,8 @@ ANYMAIL = {
 }
 
 
+ADMIN_EMAIL = 'support@betasmartz.com'
+
 # DOCUMENTATION
 SWAGGER_SETTINGS = {
     'exclude_namespaces': [],

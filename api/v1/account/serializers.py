@@ -165,7 +165,7 @@ class CloseAccountRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CloseAccountRequest
-        fields = ('account', 'close_choice', 'account_transfer_form')
+        fields = ('account', 'close_choice', 'account_transfer_form', 'to_account')
 
     def validate(self, data):
         request = self.context.get('request')

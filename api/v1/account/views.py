@@ -120,6 +120,8 @@ class AccountViewSet(ApiViewMixin,
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        if instance.status != 0:  # if account is not open, block update from client
+            return Response('Account is not open, cannot update', status=status.HTTP_403_FORBIDDEN)
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
         serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'request': request})
@@ -130,6 +132,8 @@ class AccountViewSet(ApiViewMixin,
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):
         instance = self.get_object()
+        if instance.status != 0:  # if account is not open, block update from client
+            return Response('Account is not open, cannot update', status=status.HTTP_403_FORBIDDEN)
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
         if request.user != instance.primary_owner.user and request.user != instance.primary_owner.advisor.user:
@@ -155,6 +159,7 @@ class AccountViewSet(ApiViewMixin,
         close_account = serializer.save()
         close_account.account.status = 1
         close_account.account.save()
+        close_account.send_admin_email()
         # close choice check
         if close_account.close_choice == CloseAccountRequest.CloseChoice.liquidate.value:
             # email Advisor
