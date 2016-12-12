@@ -62,6 +62,8 @@ urlpatterns = patterns(
     url(r'^me/profile/?$', client_views.ProfileView.as_view(), name='user-me-profile'),
     url(r'^me/profile/notifications/?$', client_views.EmailNotificationsView.as_view(), name='user-me-profile-notifications'),
 
+    url(r'^user/(?P<pk>\d+)/?$', user_views.UserView.as_view(), name='user-user'),
+
     url(r'^register/?$', client_views.ClientUserRegisterView.as_view(), name='client-user-register'),
     url(r'^invites/(?P<invite_key>\w+)/?$', client_views.InvitesView.as_view(), name='invite-detail'),
 

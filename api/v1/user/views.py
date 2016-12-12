@@ -20,7 +20,7 @@ from client.models import EmailInvite
 
 from support.models import SupportRequest
 from user.autologout import SessionExpire
-from user.models import SecurityAnswer, SecurityQuestion
+from user.models import SecurityAnswer, SecurityQuestion, User
 from . import serializers
 from ..user.serializers import ChangePasswordSerializer, \
     ResetPasswordSerializer, SecurityAnswerCheckSerializer, \
@@ -123,6 +123,89 @@ class MeView(BaseApiView):
         data.update({'role': role})
         return Response(data)
 
+
+class UserView(BaseApiView):
+    serializer_class = serializers.UserSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, pk):
+        """
+        ---
+        # Swagger
+
+        response_serializer: serializers.UserSerializer
+        """
+        user = User.objects.get(pk=pk)
+        if not self.can_access(user, request):
+            raise PermissionDenied("You do not have sufficient permission to view this user")
+
+        data = self.serializer_class(user).data
+
+        if user.is_advisor:
+            role = 'advisor'
+            data['advisor'] = AdvisorSerializer(user.advisor).data
+        elif user.is_client:
+            role = 'client'
+            data['client'] = ClientFieldSerializer(user.client).data
+        elif user.invitation and user.invitation.status == EmailInvite.STATUS_ACCEPTED:
+            role = 'client'
+            data['invitation'] = InvitationSerializer(instance=user.invitation).data
+        else:
+            raise PermissionDenied("User is not in the client or advisor groups, or is not a new user accepting an invitation.")
+        data.update({'role': role})
+        return Response(data)
+
+    @transaction.atomic
+    def put(self, request, pk):
+        """
+        ---
+        # Swagger
+
+        request_serializer: serializers.UserUpdateSerializer
+        response_serializer: serializers.UserSerializer
+        """
+
+        user = User.objects.get(pk=pk)
+        if not self.can_access(user, request):
+            raise PermissionDenied("You do not have sufficient permission to view this user")
+
+        data = self.serializer_class(user).data
+
+        serializer = serializers.UserUpdateSerializer(user,
+                                                      data=request.data,
+                                                      partial=True,
+                                                      context={
+                                                          'request': request,
+                                                      })
+
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.save()
+
+        data = self.serializer_class(user).data
+        if user.is_advisor:
+            role = 'advisor'
+            data['advisor'] = AdvisorSerializer(user.advisor).data
+        elif user.is_client:
+            role = 'client'
+            # If the user wants to update client details, they do it through the specific client endpoint.
+            data['client'] = ClientFieldSerializer(user.client).data
+        else:
+            raise PermissionDenied("User is not in the client or "
+                                   "advisor groups.")
+        data.update({'role': role})
+        return Response(data)
+
+    def can_access(self, user, request):
+        auth_user = SupportRequest.target_user(request)
+        if auth_user.is_support_staff:
+            return True
+
+        if user == auth_user:
+            return True
+        if auth_user.is_advisor and user.is_client and user.client.advisor == auth_user.advisor:
+            return True
+        return False
 
 class LoginView(BaseApiView):
     """
@@ -377,4 +460,3 @@ class SecurityAnswerCheckView(ApiViewMixin, views.APIView):
             return Response('ok', status=status.HTTP_200_OK)
         logger.error('Unauthorized attempt to check answer for user %s and question %s' % (request.user.email, pk))
         return Response({'error': 'unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
-
