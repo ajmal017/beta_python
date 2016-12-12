@@ -3,7 +3,6 @@ import json
 from datetime import date
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core import mail
 from rest_framework import status
 from rest_framework.test import APITestCase

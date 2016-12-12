@@ -11,6 +11,7 @@ from main.tests.fixture import Fixture1
 from .factories import GroupFactory, SecurityAnswerFactory, \
     ClientAccountFactory, AccountBeneficiaryFactory
 from dateutil.relativedelta import relativedelta
+from django.core import mail
 
 
 class AccountTests(APITestCase):
@@ -295,7 +296,7 @@ class AccountTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_close_account(self):
+    def test_close_account_liquidate(self):
         account = ClientAccountFactory.create()
         url = '/api/v1/accounts/{}/close'.format(account.id)
         data = {
@@ -305,9 +306,63 @@ class AccountTests(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+        # test liquidate
         self.client.force_authenticate(user=account.primary_owner.user)
         response = self.client.post(url, data)
-        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         lookup_account = ClientAccount.objects.get(id=account.id)
         self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+
+    def test_close_account_transfer_internal(self):
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 1,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # test liquidate
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)
+
+    def test_close_account_transfer_custodian(self):
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 2,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # test liquidate
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')
+
+    def test_close_account_transfer_direct(self):
+        account = ClientAccountFactory.create()
+        url = '/api/v1/accounts/{}/close'.format(account.id)
+        data = {
+            'account': account.id,
+            'close_choice': 3,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # test liquidate
+        self.client.force_authenticate(user=account.primary_owner.user)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lookup_account = ClientAccount.objects.get(id=account.id)
+        self.assertEqual(lookup_account.status, 1)
+        self.assertEqual(mail.outbox[0].subject, 'Close Client Account Request')

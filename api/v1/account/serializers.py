@@ -171,8 +171,6 @@ class CloseAccountRequestSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
         account_ids = [a.id for a in ClientAccount.objects.filter(primary_owner__user=user)]
-        logger.error(account_ids)
-        logger.error(data['account'].id)
         if data['account'].id not in account_ids:
             raise serializers.ValidationError({'account': 'User does not own account'})
         return data

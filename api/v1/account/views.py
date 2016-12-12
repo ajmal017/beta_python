@@ -156,13 +156,9 @@ class AccountViewSet(ApiViewMixin,
         close_account.account.status = 1
         close_account.account.save()
         # close choice check
-        logger.error(close_account.close_choice)
         if close_account.close_choice == CloseAccountRequest.CloseChoice.liquidate.value:
             # email Advisor
             close_account.send_advisor_email()
-
-            # lock account so no action can be taken on it by client anymore
-            pass
         elif close_account.close_choice == CloseAccountRequest.CloseChoice.transfer_to_account.value:
             pass
         elif close_account.close_choice == CloseAccountRequest.CloseChoice.transfer_to_custodian.value:
