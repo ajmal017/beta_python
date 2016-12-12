@@ -449,7 +449,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         ss_all = calculate_payments(plan.client.date_of_birth, plan.income)
         ss_income = ss_all.get(plan.retirement_age, None)
         if ss_income is None:
-            ss_income = sorted(ss_all)[0]
+            ss_income = ss_all[sorted(ss_all)[0]]
         ss_payments = InflatedCashFlow(ss_income, today, retire_date, death_date)
 
         cash_flows = [ss_payments]
