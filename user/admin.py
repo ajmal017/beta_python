@@ -11,11 +11,13 @@ class SecurityQuestionAdmin(admin.ModelAdmin):
 
 class SecurityAnswerAdmin(admin.ModelAdmin):
     model = SecurityAnswer
-    fields=('question', 'answer')
-    readonly_fields = ('question',)
-    list_display = ('question', 'answer', 'id', 'user_id')
+    list_display = ('question', 'answer', 'id', 'user')
 
     def get_form(self, request, obj=None, **kwargs):
+        if obj: # obj is not None, so this is a change page
+            kwargs['fields'] = ('question', 'answer')
+        else: # obj is None, so this is an add page
+            kwargs['fields'] = ('question', 'answer', 'user')
         form = super(SecurityAnswerAdmin, self).get_form(request, obj, **kwargs)
         def clean_answer(me):
             answer = me.cleaned_data['answer']
