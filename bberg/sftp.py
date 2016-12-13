@@ -86,6 +86,7 @@ def get_response(sftp, rid, responses):
     :return: True if response available and processed, false otherwise.
     """
     replyname = '{}.dat.gz'.format(rid)
+    logger.info('Checking if %s exists' % replyname)
     if sftp.exists(replyname):
         with sftp.open(replyname) as replyfile:
             responses[rid] = decompress(replyfile.read()).decode("utf-8")
@@ -129,7 +130,7 @@ class Sftp(object):
 
     def build_request(self, headers, fields, data):
         """
-        Createsd a request suitable for use with request().
+        Creates a request suitable for use with request().
         :param headers: A dict with the header options to set
         :param fields: A list of the fields we want
         :param data: A list of the lines for the data section.
@@ -161,7 +162,7 @@ class Sftp(object):
 
             while len(pending) > 0:
                 logger.info('Waiting for pending sftp responses. %s pending' % len(pending))
-                sleep(5)
+                sleep(10)
                 pending = [rid for rid in pending if not get_response(sftp, rid, responses)]
                 assert len(pending) + len(responses) == len(requests)
 
