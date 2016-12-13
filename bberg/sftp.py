@@ -9,7 +9,7 @@ import pandas as pd
 import pysftp
 
 logger = logging.getLogger("bberg.sftp")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 
 def send_request(sftp, rid, request):
@@ -160,7 +160,8 @@ class Sftp(object):
                 pending.append(rid)
 
             while len(pending) > 0:
-                sleep(30)
+                logger.info('Waiting for pending sftp responses. %s pending' % len(pending))
+                sleep(5)
                 pending = [rid for rid in pending if not get_response(sftp, rid, responses)]
                 assert len(pending) + len(responses) == len(requests)
 
