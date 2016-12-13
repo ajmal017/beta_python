@@ -442,7 +442,8 @@ class RetiresmartzTests(APITestCase):
                                             retirement_home_price=250000,
                                             paid_days=1,
                                             retirement_age=67,
-                                            selected_life_expectancy=85)
+                                            selected_life_expectancy=85,
+                                            calculated_life_expectancy=85)
 
         # some tickers for portfolio
         bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')

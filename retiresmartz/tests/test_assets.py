@@ -5,15 +5,17 @@ from django.test import TestCase
 
 from common.utils import months_between
 from main.models import Inflation
-from retiresmartz.calculator.assets import TaxPaidAccount
+from retiresmartz.calculator.assets import TaxPaidAccount, TaxDeferredAccount
+import pandas as pd
+from retiresmartz.tests.test_cashflows import get_time_series
 
 
 class AssetTests(TestCase):
     def setUp(self):
         self.dob = datetime.date(1960, 3, 14)
         self.today = datetime.date(2016, 2, 1)
-        self.retirement = datetime.date(2016, 5, 1)
-        self.death = datetime.date(2016, 7, 1)
+        self.retirement = datetime.date(2029, 2, 1)
+        self.death = datetime.date(2054, 6, 1)
 
         # Populate some inflation figures.
         dt = datetime.date(1950, 1, 1)
@@ -24,6 +26,8 @@ class AssetTests(TestCase):
         if hasattr(Inflation, '_cum_data'):
             del Inflation._cum_data
         Inflation.objects.bulk_create(inflations)
+        self.get_balances = lambda asset: get_time_series(asset, self.today, self.death, 'balance')
+        self.get_cash_flows = lambda asset: get_time_series(asset, self.today, self.death, 'on')
 
     def test_tax_paid_account(self):
         ac = TaxPaidAccount(name="Test Account",
@@ -73,3 +77,34 @@ class AssetTests(TestCase):
         # Make sure a reset allows previous dates again, and we get the same result
         ac.reset()
         self.assertAlmostEqual(ac.balance(self.retirement), predicted, 6)
+        time_series = self.get_balances(ac)
+        self.assertTrue(isinstance(time_series, pd.DataFrame))
+
+    def test_tax_deferred_account_as_asset(self):
+        ac = TaxDeferredAccount(name='Example plan',
+                                today=self.today,
+                                dob=self.dob,
+                                tax_rate=0.2,
+                                opening_balance=50000,
+                                growth=0.05,
+                                retirement_date=self.retirement,
+                                end_date=self.death,
+                                contributions=400)
+        time_series = self.get_balances(ac)
+        self.assertTrue(isinstance(time_series, pd.DataFrame))
+
+    def test_tax_deferred_as_cf(self):
+        #self.today = datetime.date(2031, 2, 1)
+        self.retirement = datetime.date(2050, 2, 1)
+
+        ac = TaxDeferredAccount(name='Example plan',
+                                today=self.today,
+                                dob=self.dob,
+                                tax_rate=0.2,
+                                opening_balance=50000,
+                                growth=0.05,
+                                retirement_date=self.retirement,
+                                end_date=self.death,
+                                contributions=400)
+        time_series = self.get_cash_flows(ac)
+        self.assertTrue(isinstance(time_series, pd.DataFrame))
