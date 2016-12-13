@@ -124,5 +124,6 @@ class TaxDeferredAccount(TaxPaidAccount, CashFlow):
         age = relativedelta(dt, self._dob).years
         # We only want to draw the balance down by the required amount, not the required amount plus tax, so we multiply
         # by the tax multiplier so the actual amount withdrawn before tax is the required proportion.
-        amount = self.balance(dt) / IRS_LIFE_EXPECTANCY[age] * self._tax_multiplier
+
+        amount = self.balance(dt) / IRS_LIFE_EXPECTANCY.get(age, 1) * self._tax_multiplier
         return self.withdraw(dt, amount)
