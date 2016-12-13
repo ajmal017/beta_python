@@ -1,6 +1,4 @@
 import logging
-from datetime import date
-
 import numpy as np
 import pandas as pd
 import scipy.stats as st
@@ -22,9 +20,8 @@ from api.v1.account.serializers import ClientAccountSerializer
 from api.v1.goals.serializers import PortfolioSerializer
 from api.v1.permissions import IsClient
 from api.v1.views import ApiViewMixin
-from client.models import Client, ClientAccount
+from client.models import Client
 from common.utils import d2ed
-from main import constants
 from main.event import Event
 from main.models import Ticker
 from portfolios.calculation import Unsatisfiable

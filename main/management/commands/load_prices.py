@@ -169,12 +169,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        if options['verbosity'] == 0:
-            logger.setLevel(min(logging.WARN, logger.level))
-        elif options['verbosity'] == 1:
-            logger.setLevel(min(logging.INFO, logger.level))
-        elif options['verbosity'] >= 2:
-            logger.setLevel(min(logging.DEBUG, logger.level))
+        # if options['verbosity'] == 0:
+        #     logger.setLevel(min(logging.WARN, logger.level))
+        # elif options['verbosity'] == 1:
+        #     logger.setLevel(min(logging.INFO, logger.level))
+        # elif options['verbosity'] >= 2:
+        logger.setLevel(min(logging.DEBUG, logger.level))
 
         load_fx_rates(options['begin_date'], options['end_date'])
         load_price_data(options['begin_date'], options['end_date'])
