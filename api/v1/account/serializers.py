@@ -1,10 +1,18 @@
+import logging
+
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils.functional import curry
+from django.utils.timezone import now
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from api.v1.serializers import (NoCreateModelSerializer,
                                 NoUpdateModelSerializer,
                                 ReadOnlyModelSerializer)
-from client.models import ClientAccount, AccountBeneficiary, CloseAccountRequest
-import logging
+from client.models import AccountBeneficiary, Client, ClientAccount, \
+    CloseAccountRequest
+from main import constants
 from user.models import SecurityAnswer
 
 logger = logging.getLogger('api.v1.account.serializers')
@@ -178,3 +186,134 @@ class CloseAccountRequestSerializer(serializers.ModelSerializer):
             if 'account_transfer_form' not in data:
                 raise serializers.ValidationError({'account_transfer_form': 'Account transfer form pdf file required for account transfer'})
         return data
+
+
+class NewAccountFabricBase(serializers.Serializer):
+    def save(self, request, client) -> ClientAccount:
+        raise NotImplementedError()
+
+
+def new_account_fabric(data: dict) -> NewAccountFabricBase:
+    account_serializers = {
+        JointAccountConfirmation: [constants.ACCOUNT_TYPE_JOINT],
+        AddTrustAccount: [constants.ACCOUNT_TYPE_TRUST],
+        AddRolloverAccount: [
+            constants.ACCOUNT_TYPE_401K,
+            constants.ACCOUNT_TYPE_ROTH401K,
+            constants.ACCOUNT_TYPE_IRA,
+            constants.ACCOUNT_TYPE_ROTHIRA,
+            constants.ACCOUNT_TYPE_SEPIRA,
+            constants.ACCOUNT_TYPE_SIMPLEIRA,
+            constants.ACCOUNT_TYPE_403B,
+            constants.ACCOUNT_TYPE_PENSION,
+            constants.ACCOUNT_TYPE_401A,
+            constants.ACCOUNT_TYPE_457,
+            constants.ACCOUNT_TYPE_PROFITSHARING,
+            constants.ACCOUNT_TYPE_THRIFTSAVING,
+        ],
+    }
+    try:
+        at = data['account_type']
+        for klass, types in account_serializers.items():
+            if at in types:
+                return klass(data=data)
+    except KeyError:
+        pass
+    raise ValidationError({'account_type': 'Invalid account type.'})
+
+
+class AddRolloverAccount(NewAccountFabricBase):
+    provider = serializers.CharField()
+    account_type = serializers.ChoiceField(choices=constants.ACCOUNT_TYPES)
+    account_number = serializers.CharField()
+    amount = serializers.FloatField()
+    signature = serializers.CharField()
+
+    def save(self, request, client):
+        data = self.validated_data
+        account_type = data['account_type']
+        account = ClientAccount.objects.create(
+            account_type=account_type,
+            account_name=dict(constants.ACCOUNT_TYPES)[account_type],
+            account_number=data['account_number'],
+            primary_owner=client,
+            default_portfolio_set=client.advisor.default_portfolio_set,
+            confirmed=True,
+        )
+        # TODO save source account rollover data
+        return account
+
+
+class JointAccountConfirmation(NewAccountFabricBase):
+    email = serializers.EmailField()
+    ssn = serializers.CharField()
+
+    client = None
+
+    def validate(self, attrs):
+        try:
+            self.client = Client.objects.get(user__email=attrs['email'])
+            if self.client.regional_data['ssn'] != attrs['ssn']:
+                raise ValueError
+        except (Client.DoesNotExist, TypeError, KeyError, ValueError):
+            raise ValidationError({'email': 'User cannot be found.'})
+        return attrs
+
+    def save(self, request, client):
+        cosignee = self.client
+        account = ClientAccount.objects.create(
+            account_type=constants.ACCOUNT_TYPE_JOINT,
+            account_name='JOINT {:%Y-%m-%d %H:%M:%S}'.format(now()),
+            primary_owner=client,
+            default_portfolio_set=client.advisor.default_portfolio_set,
+        )
+        account.signatories = [cosignee]
+        account.save()
+        context = RequestContext(request, {
+            'sender': client,
+            'cosignee': cosignee,
+            'account': account,
+            'link': '',
+            # 'link': reverse('api:v1:client-retirement-plans-joint-confirm',
+            #                 kwargs={'parent_lookup_client': client.id, }),
+        })
+        render = curry(render_to_string, context=context)
+        # cosignee.user.email_user(
+        #     render('email/client/joint-confirm/subject.txt').strip(),
+        #     message=render('email/client/joint-confirm/message.txt'),
+        #     html_message=render('email/client/joint-confirm/message.html'),
+        # )
+        return account
+
+
+class AddTrustAccount(NewAccountFabricBase):
+    trust_legal_name = serializers.CharField()
+    trust_nickname = serializers.CharField()
+    trust_state = serializers.CharField()
+    establish_date = serializers.DateField()
+    ein = serializers.CharField(required=False)
+    ssn = serializers.CharField(required=False)
+    address = serializers.CharField()
+    city = serializers.CharField()
+    state = serializers.CharField()
+    zip = serializers.CharField()
+
+    def validate(self, attrs):
+        if not (attrs['ein'] or attrs['ssn']):
+            raise ValidationError({
+                'ein': 'Either EIN or SSN must present.',
+                'ssn': 'Either EIN or SSN must present.',
+            })
+        return attrs
+
+    def save(self, request, client):
+        data = self.validated_data
+        account = ClientAccount.objects.create(
+            account_type=constants.ACCOUNT_TYPE_TRUST,
+            account_name=data['trust_nickname'],
+            primary_owner=client,
+            default_portfolio_set=client.advisor.default_portfolio_set,
+            confirmed=True,
+        )
+        # todo save trust info
+        return account

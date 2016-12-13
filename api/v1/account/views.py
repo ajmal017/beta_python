@@ -1,30 +1,25 @@
+import logging
+
+from django.db import transaction
 from django.db.models.query_utils import Q
-from rest_framework import viewsets, mixins, status
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import detail_route, list_route
-from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
-from rest_framework_extensions.mixins import NestedViewSetMixin
+from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
+from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from api.v1.permissions import IsAdvisorOrClient
 from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
-
-from client.models import ClientAccount, AccountBeneficiary, CloseAccountRequest
-from main import constants
-from main.constants import US_RETIREMENT_ACCOUNT_TYPES
-from main.models import AccountType
+from client.models import AccountBeneficiary, ClientAccount, \
+    CloseAccountRequest
 from support.models import SupportRequest
-import logging
 from . import serializers
-
 
 logger = logging.getLogger('api.v1.account.views')
 
 
-class AccountViewSet(ApiViewMixin,
-                     NestedViewSetMixin,
-                     mixins.UpdateModelMixin,
-                     mixins.CreateModelMixin,
+class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
                      viewsets.ReadOnlyModelViewSet):
     model = ClientAccount
     # We define the queryset because our get_queryset calls super so the Nested queryset works.
@@ -33,9 +28,7 @@ class AccountViewSet(ApiViewMixin,
 
     permission_classes = (IsAdvisorOrClient,)
 
-    # Set the response serializer because we want to use the 'get' serializer for responses from the 'create' methods.
-    # See api/v1/views.py
-    serializer_response_class = serializers.ClientAccountSerializer
+    serializer_class = serializers.ClientAccountSerializer
 
     # Override this method so we can also look for accounts from signatories
     def filter_queryset_by_parents_lookups(self, queryset):
@@ -58,15 +51,6 @@ class AccountViewSet(ApiViewMixin,
                 raise NotFound()
         else:
             return queryset
-
-    def get_serializer_class(self):
-        if self.request.method == 'PUT':
-            return serializers.ClientAccountUpdateSerializer
-        elif self.request.method == 'POST':
-            return serializers.ClientAccountCreateSerializer
-        else:
-            # Default for get and other requests is the read only serializer
-            return serializers.ClientAccountSerializer
 
     def get_queryset(self):
         """
@@ -94,40 +78,21 @@ class AccountViewSet(ApiViewMixin,
         account = self.get_object()
         return activity.get(request, account)
 
-    def create(self, request):
-        """
-        only allow one personal account per client
-        """
+    @transaction.atomic
+    def create_new_account(self, request):
+        client = request.user.client
 
-        klass = self.get_serializer_class()
-        serializer = klass(data=request.data)
-
+        serializer = serializers.new_account_fabric(request.data)
         if serializer.is_valid():
-            owner = serializer.validated_data['primary_owner']
-            other_personals = owner.primary_accounts.filter(account_type=constants.ACCOUNT_TYPE_PERSONAL)
-            if serializer.validated_data['account_type'] == constants.ACCOUNT_TYPE_PERSONAL \
-                    and other_personals.count() >= 1:
-                return Response({'error': 'Limit 1 personal account'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-            firm = serializer.validated_data['primary_owner'].advisor.firm
-            if not firm.account_types.filter(id=serializer.validated_data['account_type']).exists():
-                emsg = 'Account Type: {} is not active for {}'
-                a_t = AccountType.objects.filter(id=serializer.validated_data['account_type']).first()
-                return Response({'error': emsg.format(a_t, firm)}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-            if serializer.validated_data['account_type'] in US_RETIREMENT_ACCOUNT_TYPES:
-                emsg = 'US Retirement account types are not user creatable.'
-                return Response({'error': emsg}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(AccountViewSet, self).create(request)
+            account = serializer.save(request, client)
+            return account
+            # return Response(ClientAccountSerializer(instance=account).data)
+        return Response({'error': serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.status != 0:  # if account is not open, block update from client
-            return Response('Account is not open, cannot update', status=status.HTTP_403_FORBIDDEN)
-        kwargs['partial'] = True
-        partial = kwargs.pop('partial', False)
-        serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        updated = serializer.update(instance, serializer.validated_data)
-        return Response(self.serializer_response_class(updated).data)
+    @list_route(methods=['POST'])
+    def rollover(self, request):
+        return self.create_new_account(request)
 
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):

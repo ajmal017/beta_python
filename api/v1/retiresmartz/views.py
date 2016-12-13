@@ -16,6 +16,7 @@ from rest_framework.reverse import reverse
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
+import api.v1.account.serializers
 from api.v1.account.serializers import ClientAccountSerializer
 from api.v1.goals.serializers import PortfolioSerializer
 from api.v1.permissions import IsClient
@@ -510,7 +511,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         if str(client.id) != kwargs['parent_lookup_client']:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        serializer = serializers.new_account_fabric(request.data)
+        serializer = api.v1.account.serializers.new_account_fabric(request.data)
         if serializer.is_valid():
             account = serializer.save(request, client)
             return Response(ClientAccountSerializer(instance=account).data)
