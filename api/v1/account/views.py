@@ -210,7 +210,8 @@ class AccountBeneficiaryViewSet(ApiViewMixin,
         instance = self.get_object()
         if request.user != instance.account.primary_owner.user and request.user != instance.account.primary_owner.advisor.user:
             raise PermissionDenied()
-        return super(AccountBeneficiaryViewSet, self).destroy(request, *args, **kwargs)
+        super(AccountBeneficiaryViewSet, self).destroy(request, *args, **kwargs)
+        return Response('null', status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

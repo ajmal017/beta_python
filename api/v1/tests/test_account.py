@@ -253,7 +253,8 @@ class AccountTests(APITestCase):
 
         self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'null')
 
     def test_update_different_client_beneficiaries(self):
         beneficiary = AccountBeneficiaryFactory.create()
