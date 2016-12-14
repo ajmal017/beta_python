@@ -29,7 +29,7 @@ def load_fx_rates(begin_date, end_date):
     seconds = []
     coi = Ticker.objects.values_list('currency', flat=True).distinct()
     for curr in coi:
-        if curr == settings.SYSTEM_CURRENCY or curr in seconds:
+        if curr in seconds:
             continue
         currs.append((settings.SYSTEM_CURRENCY, curr))
         seconds.append(curr)
