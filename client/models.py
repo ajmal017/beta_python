@@ -1,25 +1,29 @@
 import logging
 import uuid
-from itertools import chain
 from datetime import datetime
+from itertools import chain
+
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.validators import MaxValueValidator, MinValueValidator, ValidationError
 from django.db import models
 from django.db.models import PROTECT
-from django.db.models.aggregates import Min, Max, Sum
+from django.db.models.aggregates import Max, Min, Sum
 from django.template.loader import render_to_string
+from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext as _
-from django.utils.functional import cached_property
 from jsonfield.fields import JSONField
+from rest_framework.reverse import reverse
+
+from common.structures import ChoiceEnum
 from main import constants
 from main.abstract import NeedApprobation, NeedConfirmation, PersonalData
-from main.models import AccountGroup, Goal, Platform
-from .managers import ClientAccountQuerySet, ClientQuerySet
 from main.finance import mod_dietz_rate
+from main.models import AccountGroup, Goal, Platform
 from retiresmartz.models import RetirementAdvice, RetirementPlan
-from common.structures import ChoiceEnum
+from .managers import ClientAccountQuerySet, ClientQuerySet
+
 logger = logging.getLogger('client.models')
 
 
@@ -858,3 +862,26 @@ class CloseAccountRequest(models.Model):
                       [settings.ADMIN_EMAIL],
                       html_message=render_to_string(
                           'email/advisor_transfer_direct_account.html', context))
+
+
+class JointAccountConfirmationModel(models.Model):
+    primary_owner = models.ForeignKey('client.Client', related_name='owner_confirmation')
+    cosignee = models.ForeignKey('client.Client', related_name='cosignee_confirmation')
+    account = models.ForeignKey('client.ClientAccount', related_name='joint_confirmation')
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_confirmed = models.DateTimeField(blank=True, null=True)
+    token = models.CharField(max_length=64)
+
+    @property
+    def url(self):
+        return reverse('confirm-joint-account', kwargs={
+            'token': self.token,
+        })
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.token:
+            self.token = generate_token()
+        super(JointAccountConfirmationModel, self).save(force_insert,
+                                                        force_update,
+                                                        using, update_fields)

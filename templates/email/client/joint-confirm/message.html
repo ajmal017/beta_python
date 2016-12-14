@@ -1,5 +1,15 @@
 <html>
 <body>
+<h1>Dear {{ confirmation.cosignee.user.first_name }},</h1>
+
+<p>Click this <a href="{{ request.scheme }}://{{ request.get_host }}{% url "confirm-joint-account" token=confirmation.token %}">link</a> to confirm that you
+  agree to create
+  a joint account with {{ confirmation.primary_owner.full_name }}.</p>
+
+<p>
+  Regards,<br>
+  Betasmartz team.
+</p>
 
 </body>
 </html>

@@ -1,24 +1,20 @@
 import logging
+
 import numpy as np
 import pandas as pd
 import scipy.stats as st
 from dateutil.relativedelta import relativedelta
-from django.conf import settings
-from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import detail_route, list_route
+from rest_framework.decorators import detail_route
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from api.v1.account.serializers import ClientAccountSerializer
 from api.v1.goals.serializers import PortfolioSerializer
-from api.v1.permissions import IsClient
 from api.v1.views import ApiViewMixin
 from client.models import Client
 from common.utils import d2ed
@@ -500,66 +496,6 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         pser = PortfolioSerializer(instance=settings.portfolio)
 
         return Response({'portfolio': pser.data, 'projection': proj_data})
-
-    @list_route(methods=['post'], url_path='add-account',
-                permission_classes=[IsClient])
-    @transaction.atomic
-    def add_account(self, request, *args, **kwargs):
-        client = request.user.client
-
-        if str(client.id) != kwargs['parent_lookup_client']:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        serializer = serializers.new_account_fabric(request.data)
-        if serializer.is_valid():
-            account = serializer.save(request, client)
-            return Response(ClientAccountSerializer(instance=account).data)
-        return Response({'error': serializer.errors},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    # TODO clarify the confirmation process before proceeding
-    # @list_route(methods=['get'], permission_classes=[])
-    # @transaction.atomic
-    # def joint_confirm(self, request, token):
-    #     try:
-    #         account = ClientAccount.objects.get(token=token)
-    #         account.confirmed = True
-    #         account.save(update_fields=['confirmed'])
-    #     except ClientAccount.DoesNotExist:
-    #         return Response(status=status.HTTP_403_FORBIDDEN)
-    #
-    #     sender = account.primary_owner
-    #     cosignee = account.signatories.first()
-    #     advisors = {sender.advisor, cosignee.advisor}
-    #
-    #     context = RequestContext(request, {
-    #         'sender': sender,
-    #         'cosignee': cosignee,
-    #         'account': account,
-    #     })
-    #     render = curry(render_to_string, context=context)
-    #     base_path = 'email/client/joint-confirmed'
-    #
-    #     # notify primary owner account confirmed
-    #     client_path = '%s/%s' % (base_path, 'client')
-    #     sender.user.email_user(
-    #         subject=render('%s/subject.txt' % client_path).strip(),
-    #         message=render('%s/message.txt' % client_path),
-    #         html_message=render('%s/message.html' % client_path),
-    #         from_email=settings.DEFAULT_FROM_EMAIL,
-    #     )
-    #
-    #     # notify advisor(s) account confirmed
-    #     advisor_path = '%s/%s' % (base_path, 'advisor')
-    #     send_mail(
-    #         subject=render('%s/subject.txt' % advisor_path).strip(),
-    #         message=render('%s/message.txt' % advisor_path),
-    #         html_message=render('%s/message.html' % advisor_path),
-    #         from_email=settings.DEFAULT_FROM_EMAIL,
-    #         recipient_list=list(a.user.email for a in advisors)
-    #     )
-    #
-    #     return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
