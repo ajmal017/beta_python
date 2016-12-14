@@ -1,5 +1,7 @@
 import os
 
+from main import constants
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS as TCP
@@ -265,5 +267,12 @@ FEMALE_LIFE_EXPECTANCY = 84
 
 # What is the system currency?
 SYSTEM_CURRENCY = 'USD'
+
+# all
+AUTOCONFIRMED_ACCOUNTS = tuple(at for at, _ in constants.ACCOUNT_TYPES
+                               if at not in [
+                                   # make these not auto confirmed
+                                   constants.ACCOUNT_TYPE_JOINT,
+                               ])
 
 from local_settings import *

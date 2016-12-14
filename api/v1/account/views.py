@@ -122,6 +122,14 @@ class AccountViewSet(ApiViewMixin,
                 return Response({'error': emsg}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(AccountViewSet, self).create(request)
 
+    def perform_create(self, serializer):
+        object = super(AccountViewSet, self).perform_create(serializer)  # type: ClientAccount
+        autoconfirm = object.account_type in settings.AUTOCONFIRMED_ACCOUNTS
+        if autoconfirm and not object.confirmed:
+            object.confirmed = True
+            object.save()
+        return object
+
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.status != 0:  # if account is not open, block update from client

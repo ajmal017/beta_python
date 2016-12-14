@@ -13,6 +13,7 @@ from api.v1.serializers import (NoCreateModelSerializer,
 from client.models import AccountBeneficiary, Client, ClientAccount, \
     CloseAccountRequest, JointAccountConfirmationModel
 from main import constants
+from django.conf import settings
 from user.models import SecurityAnswer
 
 logger = logging.getLogger('api.v1.account.serializers')
@@ -238,7 +239,7 @@ class AddRolloverAccount(NewAccountFabricBase):
             account_number=data['account_number'],
             primary_owner=client,
             default_portfolio_set=client.advisor.default_portfolio_set,
-            confirmed=True,
+            confirmed=account_type in settings.AUTOCONFIRMED_ACCOUNTS,
         )
         # TODO save source account rollover data
         return account
@@ -271,12 +272,13 @@ class AddTrustAccount(NewAccountFabricBase):
 
     def save(self, request, client):
         data = self.validated_data
+        account_type = constants.ACCOUNT_TYPE_TRUST
         account = ClientAccount.objects.create(
-            account_type=constants.ACCOUNT_TYPE_TRUST,
+            account_type=account_type,
             account_name=data['trust_nickname'],
             primary_owner=client,
             default_portfolio_set=client.advisor.default_portfolio_set,
-            confirmed=True,
+            confirmed=account_type in settings.AUTOCONFIRMED_ACCOUNTS,
         )
         # todo save trust info
         return account
