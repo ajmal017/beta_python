@@ -80,8 +80,7 @@ class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
 
     @transaction.atomic
     def create_new_account(self, request):
-        client = request.user.client
-
+        client = SupportRequest.target_user(self.request).client
         serializer = serializers.new_account_fabric(request.data)
         if serializer.is_valid():
             account = serializer.save(request, client)
