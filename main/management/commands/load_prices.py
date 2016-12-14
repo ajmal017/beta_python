@@ -34,6 +34,7 @@ def load_fx_rates(begin_date, end_date):
         currs.append((settings.SYSTEM_CURRENCY, curr))
         seconds.append(curr)
 
+    logger.info('Currency pairs found: %s' % currs)
     # Get the new rates
     rates_frame = get_fx_rates(currs, begin_date, end_date)
 
