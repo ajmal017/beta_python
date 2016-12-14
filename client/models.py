@@ -614,6 +614,7 @@ class RiskProfileQuestion(models.Model):
     text = models.TextField()
     explanation = models.TextField()
     image = models.ImageField(_('question_image'), blank=True, null=True)
+    figure = models.TextField(blank=True, null=True)
 
     # Also has property 'answers' which is all the predefined answers for
     # this question.
