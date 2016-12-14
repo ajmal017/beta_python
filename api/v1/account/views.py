@@ -93,6 +93,10 @@ class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
     def rollover(self, request):
         return self.create_new_account(request)
 
+    @list_route(methods=['POST'])
+    def trust(self, request):
+        return self.create_new_account(request)
+
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):
         instance = self.get_object()

@@ -244,6 +244,44 @@ class AddRolloverAccount(NewAccountFabricBase):
         return account
 
 
+class AddTrustAccount(NewAccountFabricBase):
+    trust_legal_name = serializers.CharField()
+    trust_nickname = serializers.CharField()
+    trust_state = serializers.CharField()
+    establish_date = serializers.DateField()
+    ein = serializers.CharField(required=False)
+    ssn = serializers.CharField(required=False)
+    address = serializers.CharField()
+    city = serializers.CharField()
+    state = serializers.CharField()
+    zip = serializers.CharField()
+
+    def validate(self, attrs):
+        if not (attrs['ein'] or attrs['ssn']):
+            raise ValidationError({
+                'ein': 'Either EIN or SSN must present.',
+                'ssn': 'Either EIN or SSN must present.',
+            })
+        if attrs['ein'] and attrs['ssn']:
+            raise ValidationError({
+                'ein': 'Only EIN or SSN must present.',
+                'ssn': 'Only EIN or SSN must present.',
+            })
+        return attrs
+
+    def save(self, request, client):
+        data = self.validated_data
+        account = ClientAccount.objects.create(
+            account_type=constants.ACCOUNT_TYPE_TRUST,
+            account_name=data['trust_nickname'],
+            primary_owner=client,
+            default_portfolio_set=client.advisor.default_portfolio_set,
+            confirmed=True,
+        )
+        # todo save trust info
+        return account
+
+
 class JointAccountConfirmation(NewAccountFabricBase):
     email = serializers.EmailField()
     ssn = serializers.CharField()
@@ -283,37 +321,4 @@ class JointAccountConfirmation(NewAccountFabricBase):
         #     message=render('email/client/joint-confirm/message.txt'),
         #     html_message=render('email/client/joint-confirm/message.html'),
         # )
-        return account
-
-
-class AddTrustAccount(NewAccountFabricBase):
-    trust_legal_name = serializers.CharField()
-    trust_nickname = serializers.CharField()
-    trust_state = serializers.CharField()
-    establish_date = serializers.DateField()
-    ein = serializers.CharField(required=False)
-    ssn = serializers.CharField(required=False)
-    address = serializers.CharField()
-    city = serializers.CharField()
-    state = serializers.CharField()
-    zip = serializers.CharField()
-
-    def validate(self, attrs):
-        if not (attrs['ein'] or attrs['ssn']):
-            raise ValidationError({
-                'ein': 'Either EIN or SSN must present.',
-                'ssn': 'Either EIN or SSN must present.',
-            })
-        return attrs
-
-    def save(self, request, client):
-        data = self.validated_data
-        account = ClientAccount.objects.create(
-            account_type=constants.ACCOUNT_TYPE_TRUST,
-            account_name=data['trust_nickname'],
-            primary_owner=client,
-            default_portfolio_set=client.advisor.default_portfolio_set,
-            confirmed=True,
-        )
-        # todo save trust info
         return account
