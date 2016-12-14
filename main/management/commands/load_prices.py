@@ -11,7 +11,7 @@ from main.models import Ticker, MarketIndex, DailyPrice, ExchangeRate
 from portfolios.api.bloomberg import get_fund_hist_data as bl_getter, get_fx_rates
 
 logger = logging.getLogger("load_prices")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 api_map = {'portfolios.api.bloomberg': bl_getter}
 
