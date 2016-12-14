@@ -14,6 +14,7 @@ import sys
 import json
 import subprocess
 import logging
+import re
 
 logger = logging.getLogger('pdf_parsers.tax_return')
 
@@ -110,7 +111,7 @@ def parse_text(string):
 
 def parse_vector_pdf(fl):
     res = get_pdf_content_lines(fl)
-    return parse_text(', '.join(res))
+    return parse_text('\n'.join(res))
 
 
 def parse_scanned_pdf(fl):
@@ -129,6 +130,28 @@ def parse_scanned_pdf(fl):
     txt = ''.join(txt)
     return parse_text(txt)
 
+def parse_address(addr_str):
+    # addr_str format:
+    # {Street Address}\n
+    # {City}, {State Code} {Zip code}
+    address = {
+        "address1": '',
+        "address2": '',
+        "city": '',
+        "state": '',
+        "post_code": ''
+    }
+    # '  ' => '\n', '\n\n+' => '\n'
+    addr_list1 = re.sub('\\n+', '\n', addr_str.replace('  ', '\n')).split('\n')
+    address['address1'] = addr_list1[0].strip(' ,') # TODO: check if address1 can be split for address2
+    if len(addr_list1) >= 2:
+        addr_list2 = addr_list1[1].strip().split(',')
+        address['city'] = addr_list2[0].strip()
+        if len(addr_list2) >= 2:
+            addr_list3 = addr_list2[1].strip().split(' ')
+            address['state'] = addr_list3[0].strip()
+            address['post_code'] = addr_list3[1].strip()
+    return address
 
 def clean_results(results):
     clean_output = {}
@@ -138,7 +161,7 @@ def clean_results(results):
     clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
     # logger.error(results['sections'][0])
     # logger.error(results['sections'][0]['fields']['ADDRESS'])
-    clean_output['ADDRESS'] = results['sections'][0]['fields']['ADDRESS']
+    clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
     clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TOTAL INCOME']
 
