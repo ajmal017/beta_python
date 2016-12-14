@@ -97,7 +97,7 @@ def get_response(sftp, rid, responses):
 
 
 def get_errors(sftp, rid, responses):
-    errorname = '{}.err'.format(rid)
+    errorname = '{}.req.err'.format(rid)
     logger.info('Checking if %s exists' % errorname)
     if sftp.exists(errorname):
         with sftp.open(errorname) as errorfile:
