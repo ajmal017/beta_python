@@ -4,7 +4,8 @@ from django.db import transaction
 from django.db.models.query_utils import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import detail_route, list_route
-from rest_framework.exceptions import NotFound, PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied, \
+    ValidationError
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
@@ -16,7 +17,7 @@ from client.models import AccountBeneficiary, ClientAccount, \
 from support.models import SupportRequest
 from . import serializers
 
-logger = logging.getLogger('api.v1.account.views')
+logger = logging.getLogger(__name__)
 
 
 class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
@@ -84,8 +85,8 @@ class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
         serializer = serializers.new_account_fabric(request.data)
         if serializer.is_valid():
             account = serializer.save(request, client)
-            return account
-            # return Response(ClientAccountSerializer(instance=account).data)
+            response_serializer = self.get_serializer_class()
+            return Response(response_serializer(instance=account).data)
         return Response({'error': serializer.errors},
                         status=status.HTTP_400_BAD_REQUEST)
 
@@ -96,6 +97,14 @@ class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
     @list_route(methods=['POST'])
     def trust(self, request):
         return self.create_new_account(request)
+
+    @list_route(methods=['POST'])
+    def joint(self, request):
+        try:
+            return self.create_new_account(request)
+        except ValidationError as e:
+            return Response({'error': e.detail},
+                            status=status.HTTP_400_BAD_REQUEST)
 
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):

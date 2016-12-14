@@ -1,9 +1,9 @@
 import logging
 
+from django.db.models import Q
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.functional import curry
-from django.utils.timezone import now
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -11,7 +11,7 @@ from api.v1.serializers import (NoCreateModelSerializer,
                                 NoUpdateModelSerializer,
                                 ReadOnlyModelSerializer)
 from client.models import AccountBeneficiary, Client, ClientAccount, \
-    CloseAccountRequest
+    CloseAccountRequest, JointAccountConfirmationModel
 from main import constants
 from user.models import SecurityAnswer
 
@@ -299,26 +299,37 @@ class JointAccountConfirmation(NewAccountFabricBase):
 
     def save(self, request, client):
         cosignee = self.client
+        existing_accounts = ClientAccount.objects.filter(
+            Q(primary_owner=client) | Q(primary_owner=cosignee),
+            Q(signatories__in=[client]) | Q(signatories__in=[cosignee]),
+            account_type=constants.ACCOUNT_TYPE_JOINT,
+        )
+        existing_accounts.delete()
+        if existing_accounts:
+            raise ValidationError({
+                'account_type': 'Only one joint account allowed.'
+            })
+
         account = ClientAccount.objects.create(
             account_type=constants.ACCOUNT_TYPE_JOINT,
-            account_name='JOINT {:%Y-%m-%d %H:%M:%S}'.format(now()),
+            account_name='JOINT',
             primary_owner=client,
             default_portfolio_set=client.advisor.default_portfolio_set,
         )
         account.signatories = [cosignee]
         account.save()
+        jacm = JointAccountConfirmationModel.objects.create(
+            primary_owner=client,
+            cosignee=cosignee,
+            account=account,
+        )
         context = RequestContext(request, {
-            'sender': client,
-            'cosignee': cosignee,
-            'account': account,
-            'link': '',
-            # 'link': reverse('api:v1:client-retirement-plans-joint-confirm',
-            #                 kwargs={'parent_lookup_client': client.id, }),
+            'confirmation': jacm,
         })
         render = curry(render_to_string, context=context)
-        # cosignee.user.email_user(
-        #     render('email/client/joint-confirm/subject.txt').strip(),
-        #     message=render('email/client/joint-confirm/message.txt'),
-        #     html_message=render('email/client/joint-confirm/message.html'),
-        # )
+        cosignee.user.email_user(
+            render('email/client/joint-confirm/subject.txt').strip(),
+            message=render('email/client/joint-confirm/message.txt'),
+            html_message=render('email/client/joint-confirm/message.html'),
+        )
         return account

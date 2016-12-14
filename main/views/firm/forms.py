@@ -1,17 +1,23 @@
 import json
 
-from django import forms
+from django import forms, http
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse_lazy
 from django.http import Http404
-from django.shortcuts import HttpResponseRedirect, get_object_or_404
+from django.shortcuts import HttpResponseRedirect, get_object_or_404, \
+    render_to_response
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils.functional import curry
 from django.utils.timezone import now
 from django.views.generic import CreateView, TemplateView, View
 from django.views.generic.edit import ProcessFormView
 
+from client.models import JointAccountConfirmationModel
 from main.constants import AUTHORIZED_REPRESENTATIVE, INVITATION_ADVISOR, \
     INVITATION_SUPERVISOR, INVITATION_TYPE_DICT, PERSONAL_DATA_FIELDS, \
     SUCCESS_MESSAGE
@@ -24,8 +30,10 @@ from ..base import AdminView, LegalView
 from ...forms import EmailInvitationForm
 from ...models import EmailInvitation, Section
 
-__all__ = ["InviteLegalView", "AuthorisedRepresentativeSignUp", 'FirmDataView', "EmailConfirmationView",
-           'Confirmation', 'AdminInviteSupervisorView', 'AdminInviteAdvisorView', "GoalRebalance"]
+__all__ = ["InviteLegalView", "AuthorisedRepresentativeSignUp", 'FirmDataView',
+           "EmailConfirmationView", 'Confirmation',
+           'AdminInviteSupervisorView', 'AdminInviteAdvisorView',
+           "GoalRebalance", "confirm_joint_account"]
 
 
 class AuthorisedRepresentativeProfileForm(forms.ModelForm):
@@ -443,3 +451,50 @@ class GoalRebalance(TemplateView, AdminView):
         self.goal.save()
 
         return HttpResponseRedirect('/admin/main/goal')
+
+
+def confirm_joint_account(request, token):
+    try:
+        jacm = JointAccountConfirmationModel.objects.get(
+            token=token,
+            date_confirmed__isnull=True,
+        )
+    except JointAccountConfirmationModel.DoesNotExist:
+        return http.HttpResponseForbidden()
+
+    jacm.date_confirmed = now()
+    jacm.save(update_fields=['date_confirmed'])
+
+    account = jacm.account
+    account.confirmed = True
+    account.save(update_fields=['confirmed'])
+
+    sender = jacm.primary_owner
+    cosignee = jacm.cosignee
+
+    def send(user, path, **context):
+        render = curry(render_to_string,
+                       context=(RequestContext(request, context)))
+        user.email_user(
+            subject=render('%s/subject.txt' % path).strip(),
+            message=render('%s/message.txt' % path),
+            html_message=render('%s/message.html' % path),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+        )
+
+    base_path = 'email/client/joint-confirmed'
+
+    # notify primary owner account confirmed
+    send(sender.user, '%s/%s' % (base_path, 'client'), confirmation=jacm)
+
+    # notify advisor(s) account confirmed
+    context = {'confirmation': jacm, 'advisor': sender.advisor,
+               'client': sender, }
+    advisor_path = '%s/%s' % (base_path, 'advisor')
+    send(sender.advisor.user, advisor_path, **context)
+    if sender.advisor != cosignee.advisor:
+        send(cosignee.advisor.user, advisor_path, **context)
+
+    return render_to_response('firm/confirm-joint-account.html', {
+        'confirmation': jacm,
+    })
