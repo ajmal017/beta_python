@@ -304,7 +304,6 @@ class JointAccountConfirmation(NewAccountFabricBase):
             Q(signatories__in=[client]) | Q(signatories__in=[cosignee]),
             account_type=constants.ACCOUNT_TYPE_JOINT,
         )
-        existing_accounts.delete()
         if existing_accounts:
             raise ValidationError({
                 'account_type': 'Only one joint account allowed.'

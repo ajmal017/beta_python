@@ -1,6 +1,6 @@
 Dear {{ confirmation.primary_owner.user.first_name }},
 
-    {{ confirmation.primary_owner.full_name }} agreed to create a joint account
+    {{ confirmation.cosignee.full_name }} agreed to create a joint account
     with you and this message is to inform you the account has been created.
 
 Regards,

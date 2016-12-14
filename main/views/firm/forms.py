@@ -460,7 +460,9 @@ def confirm_joint_account(request, token):
             date_confirmed__isnull=True,
         )
     except JointAccountConfirmationModel.DoesNotExist:
-        return http.HttpResponseForbidden()
+        return render_to_response('firm/confirm-joint-account.html', {
+            'error': True,
+        }, status=403)
 
     jacm.date_confirmed = now()
     jacm.save(update_fields=['date_confirmed'])
