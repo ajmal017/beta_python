@@ -364,7 +364,21 @@ class InviteTests(APITestCase):
 
         # PUT: /api/v1/invites/:key
         # Tax transcript upload and parsing
-        expected_tax_transcript_data = {'SPOUSE NAME': 'SPOUSE M LAST', 'SPOUSE SSN': '222-22-2222', 'ADDRESS': '999 AVENUE RD  CITY, ST 10.000-90.00-800', 'NAME': 'FIRST M', 'SSN': '111-11-1111', 'FILING STATUS': 'Married Filing Joint', 'TOTAL INCOME': '$0.00'}
+        expected_tax_transcript_data = {
+            'SPOUSE NAME': 'SPOUSE M LAST',
+            'SPOUSE SSN': '222-22-2222',
+            'ADDRESS': {
+                'address1': '999 AVENUE RD',
+                'address2': '',
+                'city': 'CITY',
+                'post_code': '10.000-90.00-800',
+                'state': 'ST'
+            },
+            'NAME': 'FIRST M',
+            'SSN': '111-11-1111',
+            'FILING STATUS': 'Married Filing Joint',
+            'TOTAL INCOME': '$0.00'
+        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
@@ -386,7 +400,21 @@ class InviteTests(APITestCase):
                          msg='invitation status ACCEPTED')
 
         # re-upload tax transcript
-        expected_tax_transcript_data = {'SPOUSE NAME': 'SPOUSE M LAST', 'SPOUSE SSN': '222-22-2222', 'ADDRESS': '999 AVENUE RD  CITY, ST 10.000-90.00-800', 'NAME': 'FIRST M', 'SSN': '111-11-1111', 'FILING STATUS': 'Married Filing Joint', 'TOTAL INCOME': '$0.00'}
+        expected_tax_transcript_data = {
+            'SPOUSE NAME': 'SPOUSE M LAST',
+            'SPOUSE SSN': '222-22-2222',
+            'ADDRESS': {
+                'address1': '999 AVENUE RD',
+                'address2': '',
+                'city': 'CITY',
+                'post_code': '10.000-90.00-800',
+                'state': 'ST'
+            },
+            'NAME': 'FIRST M',
+            'SSN': '111-11-1111',
+            'FILING STATUS': 'Married Filing Joint',
+            'TOTAL INCOME': '$0.00'
+        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
