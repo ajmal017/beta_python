@@ -108,7 +108,7 @@ class RetiresmartzTestCase(TestCase):
         self.assertEqual(contributions[exp_len:], unassigned)
 
     def test_determine_accounts_100k_income(self):
-        account_number = 33
+        account_number = 34
 
         # full time employed personal 100k income
         account_contributions = determine_accounts(self.plan)
@@ -133,7 +133,7 @@ class RetiresmartzTestCase(TestCase):
                                  (7, 6600))
 
     def test_determine_accounts_150k_income(self):
-        account_number = 33
+        account_number = 34
 
         # full time employed personal 150k income
         account_contributions = determine_accounts(self.plan6)

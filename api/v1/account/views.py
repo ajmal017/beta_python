@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models.query_utils import Q
 from rest_framework import mixins, status, viewsets
@@ -14,13 +15,19 @@ from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
 from client.models import AccountBeneficiary, ClientAccount, \
     CloseAccountRequest
+from main import constants
+from main.models import AccountType
 from support.models import SupportRequest
 from . import serializers
 
 logger = logging.getLogger(__name__)
 
 
-class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
+
+class AccountViewSet(ApiViewMixin,
+                     NestedViewSetMixin,
+                     mixins.UpdateModelMixin,
+                     mixins.CreateModelMixin,
                      viewsets.ReadOnlyModelViewSet):
     model = ClientAccount
     # We define the queryset because our get_queryset calls super so the Nested queryset works.
@@ -30,6 +37,9 @@ class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
     permission_classes = (IsAdvisorOrClient,)
 
     serializer_class = serializers.ClientAccountSerializer
+    # Set the response serializer because we want to use the 'get' serializer for responses from the 'create' methods.
+    # See api/v1/views.py
+    serializer_response_class = serializers.ClientAccountSerializer
 
     # Override this method so we can also look for accounts from signatories
     def filter_queryset_by_parents_lookups(self, queryset):
@@ -52,6 +62,15 @@ class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
                 raise NotFound()
         else:
             return queryset
+
+    def get_serializer_class(self):
+        if self.request.method == 'PUT':
+            return serializers.ClientAccountUpdateSerializer
+        elif self.request.method == 'POST':
+            return serializers.ClientAccountCreateSerializer
+        else:
+            # Default for get and other requests is the read only serializer
+            return serializers.ClientAccountSerializer
 
     def get_queryset(self):
         """
@@ -78,6 +97,41 @@ class AccountViewSet(ApiViewMixin, NestedViewSetMixin,
     def activity(self, request, pk=None, **kwargs):
         account = self.get_object()
         return activity.get(request, account)
+
+    def create(self, request):
+        """
+        only allow one personal account per client
+        """
+
+        klass = self.get_serializer_class()
+        serializer = klass(data=request.data)
+
+        if serializer.is_valid():
+            owner = serializer.validated_data['primary_owner']
+            other_personals = owner.primary_accounts.filter(account_type=constants.ACCOUNT_TYPE_PERSONAL)
+            if serializer.validated_data['account_type'] == constants.ACCOUNT_TYPE_PERSONAL \
+                    and other_personals.count() >= 1:
+                return Response({'error': 'Limit 1 personal account'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            firm = serializer.validated_data['primary_owner'].advisor.firm
+            if not firm.account_types.filter(id=serializer.validated_data['account_type']).exists():
+                emsg = 'Account Type: {} is not active for {}'
+                a_t = AccountType.objects.filter(id=serializer.validated_data['account_type']).first()
+                return Response({'error': emsg.format(a_t, firm)}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            if serializer.validated_data['account_type'] in constants.US_RETIREMENT_ACCOUNT_TYPES:
+                emsg = 'US Retirement account types are not user creatable.'
+                return Response({'error': emsg}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super(AccountViewSet, self).create(request)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.status != 0:  # if account is not open, block update from client
+            return Response('Account is not open, cannot update', status=status.HTTP_403_FORBIDDEN)
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer_class()(data=request.data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        updated = serializer.update(instance, serializer.validated_data)
+        return Response(self.serializer_response_class(updated).data)
 
     @transaction.atomic
     def create_new_account(self, request):
