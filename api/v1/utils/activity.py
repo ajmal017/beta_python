@@ -75,6 +75,8 @@ def parse_event_logs(request, logs, transactions, goal):
                 for branch in locstr.split('.'):
                     if in_trans:
                         item = getattr(item, branch, NA)
+                        if branch == 'amount':
+                            item = round(item, 2)
                     else:
                         item = item.get(branch, NA)
                         if branch == 'transaction':
