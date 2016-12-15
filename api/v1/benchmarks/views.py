@@ -55,14 +55,23 @@ class ReturnsView(ApiViewMixin, generics.ListAPIView):
         last_price = None
         last_date = None
         for row in daily_prices:
-            try:
-                price = (((row.price - last_price) / last_price) /
-                         (row.date - last_date).days)
-                prices.append(((row.date - EPOCH_DT).days, price))
-            except TypeError:
-                pass
+            # logger.error(row.instrument.data_api_param)
+            # logger.error(row.price)
+            # logger.error(row.date)
+            if row.instrument.data_api_param == 'H15T1Y Index':
+                # H15T1Y Index is the US 1 Year Treasury rate, should not have
+                # inflation calculations run on its prices
+                prices.append(((row.date - EPOCH_DT).days, row.price))
+            else:
+                try:
+                    price = (((row.price - last_price) / last_price) /
+                             (row.date - last_date).days)
+                    prices.append(((row.date - EPOCH_DT).days, price))
+                except TypeError:
+                    pass
             last_price = row.price
             last_date = row.date
+        # logger.error(prices)
         return prices
 
     def list(self, request, *args, **kwargs):

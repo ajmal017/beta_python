@@ -2404,6 +2404,9 @@ class DailyPrice(models.Model):
     date = models.DateField(db_index=True)
     price = models.FloatField(null=True)
 
+    def __str__(self):
+        return "{} {} {}".format(self.instrument, self.date, self.price)
+
 
 class MarketCap(models.Model):
     """
