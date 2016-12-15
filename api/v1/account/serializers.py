@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.db.models import Q
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -13,7 +14,6 @@ from api.v1.serializers import (NoCreateModelSerializer,
 from client.models import AccountBeneficiary, Client, ClientAccount, \
     CloseAccountRequest, JointAccountConfirmationModel
 from main import constants
-from django.conf import settings
 from user.models import SecurityAnswer
 
 logger = logging.getLogger('api.v1.account.serializers')
@@ -233,6 +233,8 @@ class AddRolloverAccount(NewAccountFabricBase):
     def save(self, request, client):
         data = self.validated_data
         account_type = data['account_type']
+        if client.primary_accounts.filter(account_type=account_type).exists():
+            raise ValidationError('Only one Rollover account can be created.')
         account = ClientAccount.objects.create(
             account_type=account_type,
             account_name=dict(constants.ACCOUNT_TYPES)[account_type],
@@ -250,20 +252,22 @@ class AddTrustAccount(NewAccountFabricBase):
     trust_nickname = serializers.CharField()
     trust_state = serializers.CharField()
     establish_date = serializers.DateField()
-    ein = serializers.CharField(required=False)
-    ssn = serializers.CharField(required=False)
+    ein = serializers.CharField(required=False, allow_blank=True)
+    ssn = serializers.CharField(required=False, allow_blank=True)
     address = serializers.CharField()
     city = serializers.CharField()
     state = serializers.CharField()
     zip = serializers.CharField()
 
     def validate(self, attrs):
-        if not (attrs['ein'] or attrs['ssn']):
+        ein = attrs.get('ein', None)
+        ssn = attrs.get('ssn', None)
+        if not (ein or ssn):
             raise ValidationError({
                 'ein': 'Either EIN or SSN must present.',
                 'ssn': 'Either EIN or SSN must present.',
             })
-        if attrs['ein'] and attrs['ssn']:
+        if ein and ssn:
             raise ValidationError({
                 'ein': 'Only EIN or SSN must present.',
                 'ssn': 'Only EIN or SSN must present.',
@@ -273,6 +277,8 @@ class AddTrustAccount(NewAccountFabricBase):
     def save(self, request, client):
         data = self.validated_data
         account_type = constants.ACCOUNT_TYPE_TRUST
+        if client.primary_accounts.filter(account_type=account_type).exists():
+            raise ValidationError('Only one Trust account can be created.')
         account = ClientAccount.objects.create(
             account_type=account_type,
             account_name=data['trust_nickname'],

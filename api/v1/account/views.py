@@ -36,7 +36,6 @@ class AccountViewSet(ApiViewMixin,
 
     permission_classes = (IsAdvisorOrClient,)
 
-    serializer_class = serializers.ClientAccountSerializer
     # Set the response serializer because we want to use the 'get' serializer for responses from the 'create' methods.
     # See api/v1/views.py
     serializer_response_class = serializers.ClientAccountSerializer
@@ -146,9 +145,12 @@ class AccountViewSet(ApiViewMixin,
         client = SupportRequest.target_user(self.request).client
         serializer = serializers.new_account_fabric(request.data)
         if serializer.is_valid():
-            account = serializer.save(request, client)
-            response_serializer = self.get_serializer_class()
-            return Response(response_serializer(instance=account).data)
+            try:
+                account = serializer.save(request, client)
+            except ValidationError as e:
+                return Response({'error': e.detail},
+                                status=status.HTTP_400_BAD_REQUEST)
+            return Response(self.serializer_response_class(instance=account).data)
         return Response({'error': serializer.errors},
                         status=status.HTTP_400_BAD_REQUEST)
 
@@ -162,11 +164,7 @@ class AccountViewSet(ApiViewMixin,
 
     @list_route(methods=['POST'])
     def joint(self, request):
-        try:
-            return self.create_new_account(request)
-        except ValidationError as e:
-            return Response({'error': e.detail},
-                            status=status.HTTP_400_BAD_REQUEST)
+        return self.create_new_account(request)
 
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):
