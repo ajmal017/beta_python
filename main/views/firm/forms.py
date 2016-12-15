@@ -495,6 +495,11 @@ def confirm_joint_account(request, token):
     advisor_path = '%s/%s' % (base_path, 'advisor')
     send(sender.advisor.user, advisor_path, **context)
     if sender.advisor != cosignee.advisor:
+        sender.secondary_advisors.add(cosignee.advisor)
+        sender.save(update_fields=['secondary_advisors'])
+        cosignee.secondary_advisors.add(sender.advisor)
+        cosignee.save(update_fields=['secondary_advisors'])
+
         send(cosignee.advisor.user, advisor_path, **context)
 
     return render_to_response('firm/confirm-joint-account.html', {
