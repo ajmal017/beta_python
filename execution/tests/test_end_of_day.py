@@ -14,6 +14,8 @@ from execution.end_of_day import *
 from execution.end_of_day import get_execution_requests, transform_execution_requests
 from main.models import ExternalInstrument, InvestmentType
 from main.tests.fixture import Fixture1
+from main.management.commands.rebalance import reduce_cash
+from api.v1.tests.factories import TickerFactory
 
 
 class BaseTest(TestCase):
@@ -241,3 +243,14 @@ class BaseTest(TestCase):
                                                      ticker__symbol='SPY')
         self.assertTrue(instrument1.instrument_id == 'SPY_APEX')
         self.assertTrue(instrument2.instrument_id == 'SPY_IB')
+
+    def test_reduce_cash(self):
+        goal1 = Fixture1.goal1()
+        goal1.cash_balance = 1000
+        cash_available = goal1.cash_balance
+        ticker = TickerFactory.create()
+        ticker.latest_tick = 2
+        volume = 2000
+        cash_available, volume = reduce_cash(volume, ticker, cash_available)
+        self.assertAlmostEqual(cash_available, 1.03)
+        self.assertTrue(volume == 497)

@@ -25,6 +25,7 @@ logger = logging.getLogger('rebalance')
 TAX_BRACKET_LESS1Y = 0.3
 TAX_BRACKET_MORE1Y = 0.2
 MAX_WEIGHT_SUM = 1.0001
+SAFETY_MARGIN = 0.005 #used for buying - we use limit prices higher by 0.005 from the last recorded price
 
 
 def optimise_up(opt_inputs, min_weights, max_weights=None):
@@ -118,7 +119,24 @@ def build_positions(goal, weights, instruments):
     return res
 
 
-def create_request(goal, new_positions, reason, execution_provider, data_provider):
+def reduce_cash(volume, ticker, cash_available):
+    amount_to_buy = (ticker.latest_tick * (1+SAFETY_MARGIN)) * volume
+    if cash_available > amount_to_buy:
+        cash_available -= amount_to_buy
+    else:
+        for v in range(volume + 1):
+            amount_to_buy = (ticker.latest_tick * (1+SAFETY_MARGIN)) * v
+            if cash_available > amount_to_buy:
+                continue
+            else:
+                volume = max(v - 1, 0)
+                amount_to_buy = (ticker.latest_tick * (1 + SAFETY_MARGIN)) * volume
+                cash_available -= amount_to_buy
+                break
+    return cash_available, volume
+
+
+def create_request(goal, new_positions, reason, execution_provider, data_provider, allowed_side):
     """
     Create a MarketOrderRequest for the position changes that will take the goal's existing positions to the new
     positions specified.
@@ -132,27 +150,42 @@ def create_request(goal, new_positions, reason, execution_provider, data_provide
     requests = []
     new_positions = copy.copy(new_positions)
 
+    cash_available = goal.cash_balance
+
     # Change any existing positions
     positions = goal.get_positions_all()
     for position in positions:
 
         new_pos = new_positions.pop(position['ticker_id'], 0)
-        if new_pos - position['quantity'] == 0:
-            continue
+
+        volume = new_pos - position['quantity']
+
         ticker = data_provider.get_ticker(tid=position['ticker_id'])
+
+        if allowed_side == 1:
+            cash_available, volume = reduce_cash(volume, ticker, cash_available)
+
+        if volume == 0 or np.sign(volume) != allowed_side:
+            continue
+
         request = execution_provider.create_execution_request(reason=reason,
                                                               goal=goal,
                                                               asset=ticker,
-                                                              volume=new_pos - position['quantity'],
+                                                              volume=volume,
                                                               order=order,
                                                               limit_price=None)
         requests.append(request)
 
     # Any remaining new positions.
     for tid, pos in new_positions.items():
-        if pos == 0:
-            continue
         ticker = data_provider.get_ticker(tid=tid)
+
+        if allowed_side == 1:
+            cash_available, volume = reduce_cash(pos, ticker, cash_available)
+
+        if pos == 0 or np.sign(pos) != allowed_side:
+            continue
+
         request = execution_provider.create_execution_request(reason=reason,
                                                               goal=goal,
                                                               asset=ticker,
@@ -418,8 +451,8 @@ def get_weight_max_per_asset(held_weights, tax_weights):
         if w[0] in tax_weights:
             max_weights[w[0]] = max(float(tax_weights[w[0]]), float(w[1]))
         else:
-            min_weights[w[0]] = float(w[1])
-    return min_weights
+            max_weights[w[0]] = float(w[1])
+    return max_weights
 
 
 def perturbate(goal, idata, data_provider, execution_provider):
@@ -513,14 +546,11 @@ def rebalance(goal, idata, data_provider, execution_provider):
         #A goal is a portfolio? If the rebalance is being made by goal it could be inneficient from a cost perspective
 
     _, instruments, _ = idata
-    new_positions = build_positions(goal, weights, instruments)
-    #idata[2] is a matrix containing latest instrument price
-    order, requests = create_request(goal, new_positions, reason,
-                                     execution_provider=execution_provider, data_provider=data_provider)
-    transaction_cost = np.sum([abs(r.volume) for r in requests]) * 0.005
-    # So, the rebalance could not be in place if the excecution algo might not determine how much it will cost to rebalance.
 
-    return order
+    # using limit prices - higher by treshold (e.g. 0.5%) than real market prices
+    # update latest prices from instruments here - to be 0.5% higher than latest_tick
+
+    return weights, instruments, reason
 
 
 def archive_goal(goal):
