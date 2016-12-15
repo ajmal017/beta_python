@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0081_assetfeature_upper_limit'),
+        ('main', '0082_auto_20161214_1318'),
     ]
 
     operations = [
