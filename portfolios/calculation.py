@@ -522,6 +522,7 @@ def calculate_portfolio(settings, data_provider, execution_provider, retry=True,
     lcovars, mu = odata
 
     decrease = 1
+    modelportfolio_constraints = [1]
     while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0 and retry:
         modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
             settings_instruments=settings_instruments,
