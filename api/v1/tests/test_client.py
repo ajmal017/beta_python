@@ -337,6 +337,9 @@ class ClientTests(APITestCase):
         self.assertEqual(regional_data_load['ssn'], regional_data['ssn'])
         self.assertEqual(regional_data_load['politically_exposed'], regional_data['politically_exposed'])
 
+        self.assertEqual(usr.client.accounts_all.count(), 1)
+        self.assertTrue(usr.client.accounts_all.get().confirmed)
+
         # check onboarding status is complete
         lookup_invite = EmailInvite.objects.get(user=usr)
         self.assertEqual(lookup_invite.status, EmailInvite.STATUS_COMPLETE)
