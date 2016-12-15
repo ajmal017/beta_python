@@ -972,6 +972,7 @@ class Ticker(FinancialInstrument):
                                    message="Invalid symbol format")])
     ordering = models.IntegerField(db_index=True)
     unit_price = models.FloatField(default=10)
+    latest_tick = models.FloatField(default=0)
     asset_class = models.ForeignKey(AssetClass, related_name="tickers")
     ethical = models.BooleanField(default=False,
                                   help_text='Is this an ethical instrument?')
@@ -995,6 +996,10 @@ class Ticker(FinancialInstrument):
 
     # Also may have 'features' property from the AssetFeatureValue model.
     # also has external_instruments foreign key - to get instrument_id per institution
+
+    def update_latest_tick(self, price):
+        self.latest_tick = price
+        self.save()
 
     def __str__(self):
         return self.symbol
