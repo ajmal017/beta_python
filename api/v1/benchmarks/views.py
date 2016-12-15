@@ -8,6 +8,9 @@ from common.constants import EPOCH_DT
 from main.models import MarketIndex
 from .serializers import BenchmarkSerializer
 from ..views import ApiViewMixin
+import logging
+
+logger = logging.getLogger('api.v1.benchmarks.views')
 
 
 class AvailableListView(ApiViewMixin, generics.ListAPIView):
