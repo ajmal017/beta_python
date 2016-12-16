@@ -87,32 +87,26 @@
       <div class="table-responsive">
         <table class="table" id="activity">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>User name</th>
-              <th>Email</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Description</th>
-            </tr>
+          <tr>
+            <th>Who</th>
+            <th>Did</th>
+            <th>What</th>
+            <th>When</th>
+            <th>Comment</th>
+          </tr>
           </thead>
           <tbody>
-            {% for item in filter %}
-              <tr>
-                <td>{{ item.actor.pk }}</td>
-                <td>{{ item.actor.get_full_name }}</td>
-                <td><a href="mailto:{{ item.actor.email }}">{{ item.actor.email }}</a></td>
-                <td>{{ item.timestamp|date:'d/m/y' }}</td>
-                <td>{{ item.timestamp|date:'H:i' }}</td>
-                <td>{{ item.verb }}<!-- : {{ item.description }} --></td>
-              </tr>
-            {% empty %}
-              <tr class="text-center">
-                <td colspan="5">
-                  No entries
-                </td>
-              </tr>
-            {% endfor %}
+          {% for item in filter %}
+            <tr>
+              <td>
+                {{ item.actor }} (<a href="mailto:{{ item.recipient.email }}">{{ item.recipient.email }}</a>)
+              </td>
+              <td>{{ item.verb }}</td>
+              <td>{{ item.target|default_if_none:"&mdash;" }} <br> {{ item.action_object|default_if_none:"&mdash;" }}</td>
+              <td>{{ item.timestamp|date:'d-M-y H:i' }}</td>
+              <td>{{ item.description|default_if_none:"&mdash;" }}</td>
+            </tr>
+          {% endfor %}
           </tbody>
         </table>
       </div>
