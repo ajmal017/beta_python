@@ -55,9 +55,6 @@ class ReturnsView(ApiViewMixin, generics.ListAPIView):
         last_price = None
         last_date = None
         for row in daily_prices:
-            # logger.error(row.instrument.data_api_param)
-            # logger.error(row.price)
-            # logger.error(row.date)
             if row.instrument.data_api_param == 'H15T1Y Index':
                 # H15T1Y Index is the US 1 Year Treasury rate, should not have
                 # inflation calculations run on its prices
@@ -69,8 +66,8 @@ class ReturnsView(ApiViewMixin, generics.ListAPIView):
                     prices.append(((row.date - EPOCH_DT).days, price))
                 except TypeError:
                     pass
-            last_price = row.price
-            last_date = row.date
+                last_price = row.price
+                last_date = row.date
         # logger.error(prices)
         return prices
 
