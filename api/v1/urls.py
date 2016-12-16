@@ -91,6 +91,10 @@ urlpatterns = patterns(
     url(r'^invites/(?P<pk>\d+)/resend/?$', client_views.ClientResendInviteView.as_view(), name='resend-invite'),
 
     url(r'^support-requests/?$', support_views.RequestAdvisorSupportView.as_view(), name='support-requests'),
+
+    url(r'^quovo/external-accounts/?$', client_views.ExternalAccountsView.as_view(), name='external-accounts'),
+    url(r'^quovo/iframe-token/?$', client_views.IframeTokenView.as_view(), name='iframe-token'),
 )
 
 urlpatterns += router.urls
+?
