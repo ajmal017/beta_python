@@ -268,6 +268,8 @@ FEMALE_LIFE_EXPECTANCY = 84
 # What is the system currency?
 SYSTEM_CURRENCY = 'USD'
 
+SYSTEM_CURRENCY_SYMBOL = '$'
+
 # all
 AUTOCONFIRMED_ACCOUNTS = tuple(at for at, _ in constants.ACCOUNT_TYPES
                                if at not in [

@@ -2627,29 +2627,29 @@ class ActivityLogEvent(models.Model):
             return ale
 
         if event == Event.GOAL_DIVIDEND_DISTRIBUTION:
-            alog = ActivityLog.objects.create(name='Dividend Transaction',
-                                              format_str='Dividend payment of {{}}{} into goal'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Dividends',
+                                              format_str='Dividend payment of {}{{}} into goal'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_DEPOSIT_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Deposit Transaction',
-                                              format_str='Deposit of {{}}{} from Account to Goal'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Deposits',
+                                              format_str='Deposit of {}{{}} from Account to Goal'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_WITHDRAWAL_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Withdrawal Transaction',
-                                              format_str='Withdrawal of {{}}{} from Goal to Account'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Withdrawals',
+                                              format_str='Withdrawal of {}{{}} from Goal to Account'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_REBALANCE_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Rebalance Transaction', format_str='Rebalance Applied')
+            alog = ActivityLog.objects.create(name='Rebalances', format_str='Rebalance Applied')
         elif event == Event.GOAL_TRANSFER_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Transfer Transaction', format_str='Transfer Applied')
+            alog = ActivityLog.objects.create(name='Transfer', format_str='Transfer Applied')
         elif event == Event.GOAL_FEE_LEVIED:
-            alog = ActivityLog.objects.create(name='Goal Fee Transaction',
-                                              format_str='Fee of {{}}{} applied'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Fees',
+                                              format_str='Fee of {}{{}} applied'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_ORDER_DISTRIBUTION:
             alog = ActivityLog.objects.create(name='Order Distribution Transaction', format_str='Order Distributed')
         elif event == Event.GOAL_BALANCE_CALCULATED:
-            alog = ActivityLog.objects.create(name='Daily Balance', format_str='Daily Balance')
+            alog = ActivityLog.objects.create(name='Balance', format_str='Daily Balance')
         else:
             alog = ActivityLog.objects.create(name=event.name, format_str='DEFAULT_TEXT: {}'.format(event.name))
 
