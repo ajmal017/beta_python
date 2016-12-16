@@ -1,3 +1,4 @@
+import csv
 import logging
 from datetime import datetime
 
@@ -7,8 +8,10 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.db.models import F, Q, Sum
 from django.db.models.functions import Coalesce
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   TemplateView, UpdateView)
 from functools import reduce
@@ -653,10 +656,29 @@ class FirmActivityView(ListView, LegalView):
     def get_context_data(self, **kwargs):
         qs = self.get_queryset()
         f = FirmActivityFilterSet(self.request.GET, queryset=qs)
-
         return {
             'filter': f,
         }
+
+    def post(self, request):
+        self.request = request
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = \
+            'attachment; filename="firm-activity-%s.csv"' % now().strftime('%Y%m%d-%H%M%S')
+
+        writer = csv.writer(response)
+        writer.writerow(['Who', 'Did', 'What', 'When', 'Comment'])
+
+        data = self.get_context_data()
+        for item in iter(data['filter']):  # type: Notification
+            writer.writerow([
+                item.actor,
+                item.verb,
+                '%s / %s' % (item.target or '-', item.action_object or '-'),
+                item.timestamp.strftime('%d-%b-%Y %H:%M'),
+                item.description,
+            ])
+        return response
 
 
 class FirmApplicationView(TemplateView, LegalView):
