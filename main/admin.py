@@ -376,7 +376,7 @@ if settings.DEBUG:
     class DailyPriceAdmin(GenericAdminModelAdmin):
         model = DailyPrice
         list_display = (
-        'date', 'price', 'instrument_content_type', 'instrument_object_id')
+        'date', 'price', 'instrument', 'instrument_content_type', 'instrument_object_id')
         # sortable = 'date'
         # extra = 0
         generic_fk_fields = [{
