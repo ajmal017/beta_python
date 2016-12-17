@@ -1926,6 +1926,9 @@ class HistoricalBalance(models.Model):
     date = models.DateField()
     balance = models.FloatField()
 
+    class Meta:
+        unique_together = 'goal', 'date'
+
 
 class AssetFeature(models.Model):
     @unique
