@@ -6,9 +6,9 @@ logger = logging.getLogger('ssa.ssa')
 
 
 def parse_retirement_paragraph(soup):
-    ret_age = int(soup.find(id='ret_age').split(' ')[0])
-    ret_date = int(soup.find(id='ret_date').strip(' '))
-    ret_amount = float(soup.find(id='ret_amount').strip(' '))
+    ret_age = int(soup.find(id='ret_age').string.split(' ')[0])
+    ret_date = int(soup.find(id='ret_date').string.strip(' '))
+    ret_amount = float(soup.find(id='ret_amount').string.strip(' ').replace(',', ''))
     return ret_age, ret_date, ret_amount
 
 
