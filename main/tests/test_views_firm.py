@@ -273,6 +273,13 @@ class FirmAnalyticsMixinTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_get_firm_users_filter(self):
+        url = reverse('firm:analytics') + '?users=' + str(self.betasmartz_client.user.pk) + '&worth=&risk=40'
+        rep = AuthorisedRepresentativeFactory.create()
+        self.client.login(username=rep.user.email, password='test')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_get_firm_analytics_worth_and_risk_filter(self):
         # /firm/analytics?worth=affluent&risk=0&risk=20&advisor=&client=
         url = reverse('firm:analytics') + '?worth=affluent&risk=0&risk=20&advisor=&client='
