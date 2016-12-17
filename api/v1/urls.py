@@ -67,6 +67,8 @@ urlpatterns = patterns(
     url(r'^register/?$', client_views.ClientUserRegisterView.as_view(), name='client-user-register'),
     url(r'^invites/(?P<invite_key>\w+)/?$', client_views.InvitesView.as_view(), name='invite-detail'),
 
+    url(r'^user-names/?$', user_views.UserNamesView.as_view(), name='user-names'),
+
     url(r'^region/(?P<pk>\d+)/?$', address_views.RegionView.as_view(), name='region-detail'),
 
     url(r'^firm/(?P<pk>\d+)/?$', firm_views.FirmSingleView.as_view(), name='firm-single'),

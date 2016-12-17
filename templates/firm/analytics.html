@@ -10,32 +10,35 @@
 
 {% block main_content %}
   <div class="container">
-    <div class="row m-t">
+    <form class="row m-t">
       <div class="col-sm-offset-3 col-sm-6">
-        {% include "firm/partials/menu-analytics.html" %}
+        <div class="row">
+          <div class="col-sm-3 text-right">
+            <h4 style='padding-top: 8px;'>Filter by:</h4></li>
+          </div>
+          <div class="col-sm-9">
+            {% bootstrap_field users_filter.form.users show_label=False show_help=False %}
+          </div>
+
+          <div class="hidden">
+              <!-- Semi-hidden fields -->
+            {% bootstrap_field filter.form.worth show_label=False show_help=False %}
+            {% bootstrap_field filter.form.risk show_label=False show_help=False %}
+          </div>
+        </div>
       </div>
 
-      <form>
-        <!-- RESERVED
-        {% comment %}
-        <div class="col-sm-3">
-          {% bootstrap_field filter.form.group show_label=False show_help=False %}
-        </div>
-        {% endcomment %}
-        -->
-        <div class="col-sm-3">
-          {% bootstrap_field filter.form.worth show_label=False show_help=False %}
-        </div>
-
-        <!-- Semi-hidden fields -->
-        <span class="hidden">
-          {% bootstrap_field filter.form.risk show_label=False show_help=False %}
-
-          {% bootstrap_field advisor_filter.form.advisor show_label=False show_help=False %}
-          {% bootstrap_field client_filter.form.client show_label=False show_help=False %}
-        </span>
-      </form>
-    </div>
+      <!-- RESERVED
+      {% comment %}
+      <div class="col-sm-3">
+        {% bootstrap_field filter.form.group show_label=False show_help=False %}
+      </div>
+      {% endcomment %}
+      -->
+      <div class="col-sm-3">
+        {% bootstrap_field filter.form.worth show_label=False show_help=False %}
+      </div>
+    </form>
 
     <div class="row">
       <div class="col-sm-3" style='position:relative; top:-52px;'>
@@ -115,6 +118,52 @@
 
 {% block scripts %}
 {{ block.super }}
+
+<script type='text/javascript'>
+$(document).ready(function(){
+  // Sonstructs the suggestion engine
+  var users = new Bloodhound({
+    datumTokenizer: Bloodhound.tokenizers.whitespace,
+    queryTokenizer: Bloodhound.tokenizers.whitespace,
+    remote: {
+      url: '/api/v1/user-names/?search=%QUERY',
+      wildcard: '%QUERY',
+      transform: function(res) {
+        return res.data;
+      }
+    }
+  });
+  users.initialize();
+
+  var $users_input = $('#id_users');
+  $users_input.tagsinput({
+    tagClass: function(item) {
+      switch (item.role) {
+        case 'advisor': return 'label label-danger';
+        case 'client': return 'label label-primary';
+      }
+    },
+    itemValue: 'id',
+    itemText: 'name',
+    typeaheadjs: {
+      name: 'users',
+      displayKey: 'name',
+      source: users.ttAdapter()
+    }
+  });
+  var filtered_users_json = {{filtered_users_json|safe}};
+  for(user of filtered_users_json) {
+    $users_input.tagsinput('add', user);
+  }
+  var submitForm = function() {
+    $(this).closest('form').submit();
+  }
+  $users_input
+    .on('itemAdded', submitForm)
+    .on('itemRemoved', submitForm);
+});
+</script>
+
 <script src="{% static 'js_new/randomColor.js' %}" type="text/javascript"></script>
 {% include "firm/partials/chart-worth.html" %}
 {% include "firm/partials/chart-events.html" %}
@@ -167,7 +216,7 @@
   $(document).on('change', '#id_worth', function() {
     $('.loading').show();
   });
-
+  /*
   $('#id_advisor').closest('form').submit(function(e) {
     e.preventDefault();
     $('.loading').show();
@@ -179,6 +228,7 @@
     $('.loading').show();
     this.submit();
   });
+  */
 </script>
-{% endblock %}
 
+{% endblock %}

@@ -28,6 +28,7 @@ from ..user.serializers import ChangePasswordSerializer, \
 
 from ..client.serializers import InvitationSerializer
 from ..views import ApiViewMixin, BaseApiView
+from django.db.models import Q
 
 logger = logging.getLogger('api.v1.user.views')
 
@@ -460,3 +461,31 @@ class SecurityAnswerCheckView(ApiViewMixin, views.APIView):
             return Response('ok', status=status.HTTP_200_OK)
         logger.error('Unauthorized attempt to check answer for user %s and question %s' % (request.user.email, pk))
         return Response({'error': 'unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class UserNamesView(ApiViewMixin, ListAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = serializers.UserNamesListSerializer
+    def list(self, request):
+        """
+        ---
+        # Swagger
+        request_serializer: serializers.UserNamesListSerializer
+        response_serializer: serializers.UserNamesListSerializer
+
+        """
+        keyword = request.GET.get('search')
+        if keyword is None or len(keyword) < 2:
+            return Response([])
+
+        qs_filtered_users = User.objects.filter(
+            Q(first_name__icontains=keyword) | Q(last_name__icontains=keyword),
+            Q(client__is_confirmed=True) | Q(advisor__is_confirmed=True)
+        )
+
+        if not qs_filtered_users.exists:
+            return Response([])
+
+        serializer = self.serializer_class
+        data = serializer(qs_filtered_users, many=True).data
+        return Response(data)

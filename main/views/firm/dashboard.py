@@ -28,7 +28,8 @@ from notifications.models import Notification, Notify
 from support.models import SupportRequest
 from .filters import FirmActivityFilterSet, FirmAnalyticsAdvisorsFilterSet, \
     FirmAnalyticsClientsFilterSet, FirmAnalyticsGoalsAdvisorsFilterSet, \
-    FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsOverviewFilterSet
+    FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsOverviewFilterSet, \
+    FirmAnalyticsGoalsUsersFilterSet
 
 logger = logging.getLogger('main.views.firm.dashboard')
 
@@ -270,6 +271,18 @@ class FirmAnalyticsMixin(object):
                 if self.client_filter.data.get('client'):
                     qs = qs.filter_by_clients(clients)
 
+            if hasattr(self, 'users_filter'):
+                users = self.users_filter.qs
+                user_ids = self.users_filter.data.get('users')
+                if user_ids:
+                    ids_list = list(map(int, user_ids.split(',')))
+                    advisors = Advisor.objects.filter(Q(user_id__in=ids_list))
+                    if advisors:
+                        qs = qs.filter_by_advisors(advisors)
+                    clients = Client.objects.filter(Q(user_id__in=ids_list))
+                    if clients:
+                        qs = qs.filter_by_clients(clients)
+
             if hasattr(self, 'filter'):
                 data = self.filter.data
                 risk = None
@@ -491,6 +504,7 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
         self.filter = FirmAnalyticsOverviewFilterSet(self.request.GET)
         self.advisor_filter = FirmAnalyticsGoalsAdvisorsFilterSet(self.request.GET)
         self.client_filter = FirmAnalyticsGoalsClientsFilterSet(self.request.GET)
+        self.users_filter = FirmAnalyticsGoalsUsersFilterSet(self.request.GET)
         positions = self.get_context_positions()
         risks = self.get_context_risks()
         worth = self.get_context_worth()
@@ -505,6 +519,8 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
             'filter': self.filter,
             'advisor_filter': self.advisor_filter,
             'client_filter': self.client_filter,
+            'users_filter': self.users_filter,
+            'filtered_users_json': self.get_context_users,
             'risks': risks,
             'worth': worth,
             'events': events,
@@ -515,7 +531,7 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
         """
         Les:
         Risk stat cards get their values from the GoalMetric model.
-        The risk score is the GoalMetric.configured_val when 
+        The risk score is the GoalMetric.configured_val when
         GoalMetric.metric_type == GoalMetric.METRIC_TYPE_RISK_SCORE.
 
         Get the metrics for a goal from
@@ -553,6 +569,17 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
 
         return data
 
+    def get_context_users(self):
+        users = self.users_filter.qs
+        data = []
+        if self.users_filter.data.get('users'):
+            for user in users:
+                data.append({
+                    'id': user.pk,
+                    'name': user.full_name,
+                    'role': user.role
+                })
+        return data
 
 class FirmAnalyticsOverviewMetricView(FirmAnalyticsMixin, TemplateView, LegalView):
     template_name = "firm/partials/modal-analytics-metric-content.html"

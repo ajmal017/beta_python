@@ -130,6 +130,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         return self.get_full_name()
 
+    @property
+    def role(self):
+        if self.is_advisor:
+            return 'advisor'
+        elif self.is_client:
+            return 'client'
+        elif self.is_supervisor:
+            return 'supervisor'
+        elif self.is_authorised_representative:
+            return 'authorized_representative'
+        else:
+            return 'none'
+
     @cached_property
     def is_advisor(self):
         """
