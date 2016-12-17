@@ -6,6 +6,10 @@ logger = logging.getLogger('ssa.ssa')
 
 
 def parse_retirement_paragraph(soup):
+    """
+    given beautiful soup from quickcalc return the
+    retirement int age, int date (year) and float amount
+    """
     ret_age = int(soup.find(id='ret_age').string.split(' ')[0])
     ret_date = int(soup.find(id='ret_date').string.strip(' '))
     ret_amount = float(soup.find(id='ret_amount').string.strip(' ').replace(',', ''))
@@ -15,6 +19,10 @@ def parse_retirement_paragraph(soup):
 def ssa_quickcalc_soup(earnings, last_earn, last_year_earn,
                        retire_month, retire_year, dob_month,
                        dob_day, dob_year):
+    """
+    submits post to quickcalc script and returns beautiful
+    soup of response
+    """
     url = 'https://www.ssa.gov/cgi-bin/benefit6.cgi'
     data = {
         'earnings': earnings,
