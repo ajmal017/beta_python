@@ -123,8 +123,8 @@ TEMPLATE_CONTEXT_PROCESSORS = TCP + (
 
 # QUOVO INTEGRATION
 QUOVO_API_BASE = 'https://api.quovo.com/v2/'
-#QUOVO_USERNAME = <Betasmartz Quovo Username>
-#QUOVO_PASSWORD = <Betasmartz Quovo Password>
+QUOVO_USERNAME = 'betasmartz_prod_api'
+QUOVO_PASSWORD = 'askljfhasjed934rikah'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
