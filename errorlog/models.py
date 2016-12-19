@@ -1,8 +1,8 @@
 import logging
 
-import requests
 from django.conf import settings
 from django.db import models
+from jira import JIRA
 from jsonfield.fields import JSONField
 
 from common.structures import ChoiceEnum
@@ -58,28 +58,21 @@ class JiraTicket(models.Model):
                 '%s: %s' % (k, v) for k, v in error.details.items())
         except (AttributeError, TypeError):
             details = ''
-        # TODO auth
-        response = requests.post(
-            url='https://betasmartz.atlassian.net/rest/api/2/issue',
-            json={
-                "fields": {
-                    "project": {
-                        "id": settings.JIRA_ERROR_PROJECT_ID,
-                    },
-                    "summary": error.header,
-                    "description": error.message,
-                    "issuetype": {
-                        "id": settings.JIRA_ISSUE_TYPE_ID,
-                    },
-                    "labels": [
-                        error.get_source_display(),
-                    ],
-                    "environment": details,
-                }
-            }
-        )
-        if response.status_code == 200:
-            return cls.objects.create(message=error.message,
-                                      ticket=response.content)
-        logger.error('Cannot create a JIRA ticket %d(%s)',
-                     response.status_code, response.content)
+
+        jira = JIRA(settings.JIRA_SERVER,
+                    basic_auth=(settings.JIRA_USERNAME,
+                                settings.JIRA_PASSWORD))
+
+        try:
+            issue = jira.create_issue(project=settings.JIRA_ERROR_PROJECT_ID,
+                                      summary=error.header,
+                                      description=error.message,
+                                      issuetype=settings.JIRA_ISSUE_TYPE,
+                                      labels=[error.get_source_display()],
+                                      environment=details)
+            return cls.objects.create(ticket=issue.permalink(),
+                                      header=error.header,
+                                      message=error.message,
+                                      task=issue.key)
+        except Exception as e:
+            logger.error('Cannot create a JIRA ticket (%s)', e)

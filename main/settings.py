@@ -279,9 +279,11 @@ AUTOCONFIRMED_ACCOUNTS = tuple(at for at, _ in constants.ACCOUNT_TYPES
                                ])
 
 # Create jira tickets with errors
-JIRA_ENABLED = False
-JIRA_CONSUMER_KEY='35vKL2BVh6y8hbAAhLKkZpYag6seHq6iyliI34Paf8fbtj4g'
+JIRA_ENABLED = True
+JIRA_SERVER = 'https://betasmartz.atlassian.net'
+JIRA_USERNAME = 'errorbot@betasmartz.com'
+JIRA_PASSWORD = '#$MKVzWj&fg6q'
 JIRA_ERROR_PROJECT_ID = 10400
-JIRA_ISSUE_TYPE_ID = 10102
+JIRA_ISSUE_TYPE = {'name': 'Bug'}
 
 from local_settings import *
