@@ -30,6 +30,14 @@ class ErrorLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     jira_ticket = models.ForeignKey('JiraTicket', blank=True, null=True)
 
+    def __str__(self):
+        msg = "{source}: {title}"
+        if self.jira_ticket:
+            msg += " ({jira_ticket})"
+        return msg.format(source=self.get_source_display(),
+                          title=self.header,
+                          jira_ticket=self.jira_ticket)
+
 
 class JiraTicket(models.Model):
     ticket = models.URLField(blank=True, null=True)
@@ -39,6 +47,9 @@ class JiraTicket(models.Model):
 
     class Meta:
         index_together = 'header', 'message'
+
+    def __str__(self):
+        return self.task
 
     @classmethod
     def create(cls, error: ErrorLog) -> 'JiraTicket':
