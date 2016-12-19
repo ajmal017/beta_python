@@ -1,12 +1,20 @@
 from django.conf import settings
 import os
 import requests
+import logging
+logger = logging.getLogger('main.quovo')
 
 api_base = settings.QUOVO_API_BASE
 username = settings.QUOVO_USERNAME
 password = settings.QUOVO_PASSWORD
 SESSION_TOKEN_KEY = "token"
 TOKEN_NAME = "main_token"
+
+
+class ErrorResp:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
 
 def _create_user(req, username, fullname):
     resp = _make_request(req, "users", {'username': username, 'name': fullname})
@@ -57,7 +65,10 @@ def _make_request(req, endpoint, data=None):
             return requests.post(url, headers=headers, data=data)
     except Exception as e:
         # Log this somewhere
-        pass
+        logger.error(e)
+        # return a value so resp.status_code checks don't error out
+        return ErrorResp(status_code=500)
+
 
 def _user_exists(req, username):
     resp = _make_request(req, "users?username=" + username)
