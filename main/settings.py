@@ -67,7 +67,8 @@ INSTALLED_APPS = (
     'retiresmartz',
     'swift',
     'anymail',
-    'execution'
+    'execution',
+    'errorlog',
 )
 
 TEST_WITHOUT_MIGRATIONS_COMMAND = 'django_nose.management.commands.test.Command'
@@ -276,5 +277,11 @@ AUTOCONFIRMED_ACCOUNTS = tuple(at for at, _ in constants.ACCOUNT_TYPES
                                    # make these not auto confirmed
                                    constants.ACCOUNT_TYPE_JOINT,
                                ])
+
+# Create jira tickets with errors
+JIRA_ENABLED = False
+JIRA_CONSUMER_KEY='35vKL2BVh6y8hbAAhLKkZpYag6seHq6iyliI34Paf8fbtj4g'
+JIRA_ERROR_PROJECT_ID = 10400
+JIRA_ISSUE_TYPE_ID = 10102
 
 from local_settings import *

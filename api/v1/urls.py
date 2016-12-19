@@ -10,6 +10,8 @@ from .retiresmartz import views as retiresmartz_views
 from .firm import views as firm_views
 from .address import views as address_views
 from .support import views as support_views
+from .errorlog import views as errorlog_views
+
 from api.v1.user.views import PasswordResetView
 
 router = ExtendedSimpleRouter(trailing_slash=False)
@@ -93,6 +95,8 @@ urlpatterns = patterns(
     url(r'^invites/(?P<pk>\d+)/resend/?$', client_views.ClientResendInviteView.as_view(), name='resend-invite'),
 
     url(r'^support-requests/?$', support_views.RequestAdvisorSupportView.as_view(), name='support-requests'),
+
+    url(r'^error/?$', errorlog_views.LogErrorView.as_view(), name='error-log'),
 )
 
 urlpatterns += router.urls
