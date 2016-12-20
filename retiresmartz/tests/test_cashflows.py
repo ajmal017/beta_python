@@ -156,7 +156,8 @@ class CashFlowTests(TestCase):
                                          retirement_income=1000,
                                          retirement_date=self.retirement,
                                          today=self.today,
-                                         end_date=self.death)
+                                         end_date=self.death,
+                                         replacement_ratio=1)
         cash_flows = dict()
         for date, desired_amount in cf:
             cash_flows[date] = desired_amount
