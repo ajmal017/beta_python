@@ -1,3 +1,4 @@
+import csv
 import logging
 from datetime import datetime
 
@@ -7,8 +8,10 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.db.models import F, Q, Sum
 from django.db.models.functions import Coalesce
+from django.http import HttpResponse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.timezone import now
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   TemplateView, UpdateView)
 from functools import reduce
@@ -25,7 +28,8 @@ from notifications.models import Notification, Notify
 from support.models import SupportRequest
 from .filters import FirmActivityFilterSet, FirmAnalyticsAdvisorsFilterSet, \
     FirmAnalyticsClientsFilterSet, FirmAnalyticsGoalsAdvisorsFilterSet, \
-    FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsOverviewFilterSet
+    FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsOverviewFilterSet, \
+    FirmAnalyticsGoalsUsersFilterSet
 
 logger = logging.getLogger('main.views.firm.dashboard')
 
@@ -267,6 +271,18 @@ class FirmAnalyticsMixin(object):
                 if self.client_filter.data.get('client'):
                     qs = qs.filter_by_clients(clients)
 
+            if hasattr(self, 'users_filter'):
+                users = self.users_filter.qs
+                user_ids = self.users_filter.data.get('users')
+                if user_ids:
+                    ids_list = list(map(int, user_ids.split(',')))
+                    advisors = Advisor.objects.filter(Q(user_id__in=ids_list))
+                    if advisors:
+                        qs = qs.filter_by_advisors(advisors)
+                    clients = Client.objects.filter(Q(user_id__in=ids_list))
+                    if clients:
+                        qs = qs.filter_by_clients(clients)
+
             if hasattr(self, 'filter'):
                 data = self.filter.data
                 risk = None
@@ -488,6 +504,7 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
         self.filter = FirmAnalyticsOverviewFilterSet(self.request.GET)
         self.advisor_filter = FirmAnalyticsGoalsAdvisorsFilterSet(self.request.GET)
         self.client_filter = FirmAnalyticsGoalsClientsFilterSet(self.request.GET)
+        self.users_filter = FirmAnalyticsGoalsUsersFilterSet(self.request.GET)
         positions = self.get_context_positions()
         risks = self.get_context_risks()
         worth = self.get_context_worth()
@@ -502,6 +519,8 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
             'filter': self.filter,
             'advisor_filter': self.advisor_filter,
             'client_filter': self.client_filter,
+            'users_filter': self.users_filter,
+            'filtered_users_json': self.get_context_users,
             'risks': risks,
             'worth': worth,
             'events': events,
@@ -512,7 +531,7 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
         """
         Les:
         Risk stat cards get their values from the GoalMetric model.
-        The risk score is the GoalMetric.configured_val when 
+        The risk score is the GoalMetric.configured_val when
         GoalMetric.metric_type == GoalMetric.METRIC_TYPE_RISK_SCORE.
 
         Get the metrics for a goal from
@@ -550,6 +569,17 @@ class FirmAnalyticsOverviewView(FirmAnalyticsMixin, TemplateView, LegalView):
 
         return data
 
+    def get_context_users(self):
+        users = self.users_filter.qs
+        data = []
+        if self.users_filter.data.get('users'):
+            for user in users:
+                data.append({
+                    'id': user.pk,
+                    'name': user.full_name,
+                    'role': user.role
+                })
+        return data
 
 class FirmAnalyticsOverviewMetricView(FirmAnalyticsMixin, TemplateView, LegalView):
     template_name = "firm/partials/modal-analytics-metric-content.html"
@@ -653,10 +683,29 @@ class FirmActivityView(ListView, LegalView):
     def get_context_data(self, **kwargs):
         qs = self.get_queryset()
         f = FirmActivityFilterSet(self.request.GET, queryset=qs)
-
         return {
             'filter': f,
         }
+
+    def post(self, request):
+        self.request = request
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = \
+            'attachment; filename="firm-activity-%s.csv"' % now().strftime('%Y%m%d-%H%M%S')
+
+        writer = csv.writer(response)
+        writer.writerow(['Who', 'Did', 'What', 'When', 'Comment'])
+
+        data = self.get_context_data()
+        for item in iter(data['filter']):  # type: Notification
+            writer.writerow([
+                item.actor,
+                item.verb,
+                '%s / %s' % (item.target or '-', item.action_object or '-'),
+                item.timestamp.strftime('%d-%b-%Y %H:%M'),
+                item.description,
+            ])
+        return response
 
 
 class FirmApplicationView(TemplateView, LegalView):

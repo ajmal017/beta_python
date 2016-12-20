@@ -130,6 +130,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         return self.get_full_name()
 
+    @property
+    def role(self):
+        if self.is_advisor:
+            return 'advisor'
+        elif self.is_client:
+            return 'client'
+        elif self.is_supervisor:
+            return 'supervisor'
+        elif self.is_authorised_representative:
+            return 'authorized_representative'
+        else:
+            return 'none'
+
     @cached_property
     def is_advisor(self):
         """
@@ -1413,16 +1426,16 @@ class InvalidStateError(Exception):
 class Goal(models.Model):
     class State(ChoiceEnum):
         # The goal is currently active and ready for action.
-        ACTIVE = 0
+        ACTIVE = 0, 'Active'
         # A request to archive the goal has been made, but is waiting approval.
         # The goal can be reinstated by simply changing the state back to ACTIVE
-        ARCHIVE_REQUESTED = 1
+        ARCHIVE_REQUESTED = 1, 'Archive Requested'
         # A request to archive the goal has been approved, and is currently in process.
         # No further actions can be performed on the goal to reactivate it.
-        CLOSING = 2
+        CLOSING = 2, 'Closing'
         # The goal no longer owns any assets, and has a zero balance.
         # This goal is archived. No further actions can be performed on the goal
-        ARCHIVED = 3
+        ARCHIVED = 3, 'Archived'
 
     account = models.ForeignKey('client.ClientAccount', related_name="all_goals")
     name = models.CharField(max_length=100)
@@ -1926,6 +1939,9 @@ class HistoricalBalance(models.Model):
     date = models.DateField()
     balance = models.FloatField()
 
+    class Meta:
+        unique_together = 'goal', 'date'
+
 
 class AssetFeature(models.Model):
     @unique
@@ -2404,6 +2420,9 @@ class DailyPrice(models.Model):
     date = models.DateField(db_index=True)
     price = models.FloatField(null=True)
 
+    def __str__(self):
+        return "{} {} {}".format(self.instrument, self.date, self.price)
+
 
 class MarketCap(models.Model):
     """
@@ -2624,29 +2643,29 @@ class ActivityLogEvent(models.Model):
             return ale
 
         if event == Event.GOAL_DIVIDEND_DISTRIBUTION:
-            alog = ActivityLog.objects.create(name='Dividend Transaction',
-                                              format_str='Dividend payment of {{}}{} into goal'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Dividends',
+                                              format_str='Dividend payment of {}{{}} into goal'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_DEPOSIT_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Deposit Transaction',
-                                              format_str='Deposit of {{}}{} from Account to Goal'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Deposits',
+                                              format_str='Deposit of {}{{}} from Account to Goal'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_WITHDRAWAL_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Withdrawal Transaction',
-                                              format_str='Withdrawal of {{}}{} from Goal to Account'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Withdrawals',
+                                              format_str='Withdrawal of {}{{}} from Goal to Account'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_REBALANCE_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Rebalance Transaction', format_str='Rebalance Applied')
+            alog = ActivityLog.objects.create(name='Rebalances', format_str='Rebalance Applied')
         elif event == Event.GOAL_TRANSFER_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Transfer Transaction', format_str='Transfer Applied')
+            alog = ActivityLog.objects.create(name='Transfer', format_str='Transfer Applied')
         elif event == Event.GOAL_FEE_LEVIED:
-            alog = ActivityLog.objects.create(name='Goal Fee Transaction',
-                                              format_str='Fee of {{}}{} applied'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Fees',
+                                              format_str='Fee of {}{{}} applied'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_ORDER_DISTRIBUTION:
             alog = ActivityLog.objects.create(name='Order Distribution Transaction', format_str='Order Distributed')
         elif event == Event.GOAL_BALANCE_CALCULATED:
-            alog = ActivityLog.objects.create(name='Daily Balance', format_str='Daily Balance')
+            alog = ActivityLog.objects.create(name='Balance', format_str='Daily Balance')
         else:
             alog = ActivityLog.objects.create(name=event.name, format_str='DEFAULT_TEXT: {}'.format(event.name))
 

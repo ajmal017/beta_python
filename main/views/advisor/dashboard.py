@@ -6,7 +6,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse_lazy
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
+from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect, \
+    JsonResponse
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -17,10 +18,11 @@ from django.views.generic import CreateView, DetailView, ListView, \
 from address.models import Address, Region
 from client.models import Client, ClientAccount
 from main.constants import (INVITATION_CLIENT)
-from main.models import (AccountGroup, Advisor,
-                         Platform, User)
+from main.models import AccountGroup, Advisor, Goal, Platform, PortfolioSet, \
+    User
 from main.views.base import AdvisorView, ClientView
 from notifications.models import Notify
+from user.autologout import SessionExpire
 
 
 class AdvisorClientInviteNewView(TemplateView, AdvisorView):
@@ -218,8 +220,31 @@ class AdvisorAccountGroupDetails(DetailView, AdvisorView):
 
     def get_context_data(self, **kwargs):
         c = super(AdvisorAccountGroupDetails, self).get_context_data(**kwargs)
-        c["object"] = self.object
+        c.update({
+            'object': self.object,
+            'portfolios': PortfolioSet.objects.all(),
+        })
         return c
+
+    def post(self, request, **kwargs):
+        goal_id = request.POST.get('goal_id', None)
+        portfolio_id = request.POST.get('portfolio_id', None)
+        if goal_id and portfolio_id:
+            try:
+                goal = Goal.objects.get(pk=goal_id)
+                portfolio = PortfolioSet.objects.get(pk=portfolio_id)
+                if goal.portfolio_set_id != portfolio_id:
+                    goal.portfolio_set = portfolio
+                    goal.save(update_fields=['portfolio_set'])
+            except ObjectDoesNotExist:
+                pass
+        # FIXME: hack, emulates ApiRenderer output
+        return JsonResponse({
+            'meta': {
+                'session_expires_on': SessionExpire(request).expire_time(),
+            },
+            'error': []
+        })
 
 
 class AdvisorAccountGroupClients(DetailView, AdvisorView):

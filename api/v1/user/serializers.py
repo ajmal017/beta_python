@@ -373,3 +373,15 @@ class PhoneNumberValidationSerializer(serializers.Serializer):
         if not num.is_valid():
             raise serializers.ValidationError('Invalid phone number')
         return number
+
+
+class UserNamesListSerializer(serializers.ModelSerializer):
+    """
+    List user names queried
+    For read (GET) requests only
+    """
+    name = serializers.CharField(source='full_name', read_only=True)
+    role = serializers.CharField(read_only=True)
+    class Meta:
+        model = User
+        fields = ('id', 'name', 'role')

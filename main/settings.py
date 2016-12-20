@@ -67,7 +67,8 @@ INSTALLED_APPS = (
     'retiresmartz',
     'swift',
     'anymail',
-    'execution'
+    'execution',
+    'errorlog',
 )
 
 TEST_WITHOUT_MIGRATIONS_COMMAND = 'django_nose.management.commands.test.Command'
@@ -268,11 +269,21 @@ FEMALE_LIFE_EXPECTANCY = 84
 # What is the system currency?
 SYSTEM_CURRENCY = 'USD'
 
+SYSTEM_CURRENCY_SYMBOL = '$'
+
 # all
 AUTOCONFIRMED_ACCOUNTS = tuple(at for at, _ in constants.ACCOUNT_TYPES
                                if at not in [
                                    # make these not auto confirmed
                                    constants.ACCOUNT_TYPE_JOINT,
                                ])
+
+# Create jira tickets with errors
+JIRA_ENABLED = True
+JIRA_SERVER = 'https://betasmartz.atlassian.net'
+JIRA_USERNAME = 'errorbot@betasmartz.com'
+JIRA_PASSWORD = '#$MKVzWj&fg6q'
+JIRA_ERROR_PROJECT_ID = 10400
+JIRA_ISSUE_TYPE = {'name': 'Bug'}
 
 from local_settings import *
