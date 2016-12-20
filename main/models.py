@@ -1426,16 +1426,16 @@ class InvalidStateError(Exception):
 class Goal(models.Model):
     class State(ChoiceEnum):
         # The goal is currently active and ready for action.
-        ACTIVE = 0
+        ACTIVE = 0, 'Active'
         # A request to archive the goal has been made, but is waiting approval.
         # The goal can be reinstated by simply changing the state back to ACTIVE
-        ARCHIVE_REQUESTED = 1
+        ARCHIVE_REQUESTED = 1, 'Archive Requested'
         # A request to archive the goal has been approved, and is currently in process.
         # No further actions can be performed on the goal to reactivate it.
-        CLOSING = 2
+        CLOSING = 2, 'Closing'
         # The goal no longer owns any assets, and has a zero balance.
         # This goal is archived. No further actions can be performed on the goal
-        ARCHIVED = 3
+        ARCHIVED = 3, 'Archived'
 
     account = models.ForeignKey('client.ClientAccount', related_name="all_goals")
     name = models.CharField(max_length=100)
