@@ -491,7 +491,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         asset_values, income_values = calculator.calculate(rdcf)
 
         # Convert these returned values to a format for the API
-        catd = pd.concat([asset_values.sum(axis=1), income_values['actual'], income_values['desired']], axis=1)
+        catd = pd.concat([asset_values, income_values['actual'], income_values['desired']], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
 

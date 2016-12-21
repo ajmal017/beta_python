@@ -636,7 +636,7 @@ class RetiresmartzTests(APITestCase):
 
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
-        plan = RetirementPlanFactory.create(income=100000,
+        plan = RetirementPlanFactory.create(income=150000,
                                             desired_income=81000,
                                             btc=4000,
                                             retirement_home_price=250000,
