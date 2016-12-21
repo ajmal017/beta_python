@@ -427,7 +427,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
 
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
-        performance = settings.portfolio.er + z_mult * settings.portfolio.stdev
+        performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
 
         today = timezone.now().date()
         retire_date = max(today, plan.client.date_of_birth + relativedelta(years=plan.retirement_age))
