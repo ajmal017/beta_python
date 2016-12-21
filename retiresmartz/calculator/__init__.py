@@ -116,11 +116,21 @@ class Calculator(object):
         asset_values = pd.DataFrame(columns=[a.name for a in self._assets])
         income_values = pd.DataFrame(columns=['desired', 'actual'])
 
+        cash_flow_names = list()
+        for cf in self._cash_flows:
+            cash_flow_names.append(str(cf))
+        cash_flow_names.append('desired')
+        cash_flow_names.append('gap')
+        all_incomes = pd.DataFrame(columns=cash_flow_names)
+
         for date, desired_amount in desired_cash_flow_calculator:
             cf_amount_total = 0
             for cf in self._cash_flows:
                 cf_amount = cf.on(date)
                 cf_amount_total += cf_amount
+                all_incomes.loc[date, str(cf)] = cf_amount
+
+            all_incomes.loc[date, 'desired'] = desired_amount
 
             amount_needed = desired_amount - cf_amount_total
             asset_value = [0] * len(self._assets)
@@ -132,5 +142,6 @@ class Calculator(object):
 
             asset_values.loc[date] = asset_value
             income_values.loc[date] = [desired_amount, desired_amount - amount_needed]
+            all_incomes.loc[date, 'gap'] = desired_amount - cf_amount_total
 
         return asset_values, income_values

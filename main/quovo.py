@@ -64,7 +64,6 @@ def _make_request(req, endpoint, data=None):
             # Assume a POST request for now
             return requests.post(url, headers=headers, data=data)
     except Exception as e:
-        # Log this somewhere
         logger.error(e)
         # return a value so resp.status_code checks don't error out
         return ErrorResp(status_code=500)

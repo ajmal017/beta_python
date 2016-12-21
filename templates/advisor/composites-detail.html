@@ -55,26 +55,68 @@
         <table class="table" id="accounts">
           <thead>
           <tr>
-            <th>Client</th>
             <th>Account</th>
-            <th>Status</th>
-            <th>Balance</th>
-            <th>Return</th>
-            <th>&nbsp;</th>
+            <th>Pricing Plan*</th>
+            <th>Login</th>
           </tr>
           </thead>
           <tbody>
           {% for account in object.accounts.all %}
             <tr>
-              <td><a href="{% url "advisors:clients:detail" account.primary_owner.id %}">{{ account.primary_owner }}</a></td>
               <td>{{ account.name }}</td>
-              <td>{% if account.on_track %}<span style='color:green;'>On Track</span>{% else %}<span style='color:red;'>Off Track</span>{% endif %}</td>
-              <td>{{ account.total_balance|currency }}</td>
-              <td>{{ account.total_returns|currency }}</td>
-              <td>
-                <a href="{% url "client:account" account.primary_owner.id account.id %}"
-                   class="btn btn-primary-outline btn-xs"
-                   target="_blank">Login</a>
+              <td>&mdash;</td>
+              <td><a
+                  href="{% url "client:account" account.primary_owner.id account.id %}"
+                  class="btn btn-primary-outline btn-xs"
+                  target="_blank">Login</a></td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <table class="table goals">
+                  <thead>
+                  <tr>
+                    <th>Goal Name</th>
+                    <th>Status</th>
+                    <th>Balance</th>
+                    <th>Return</th>
+                    <th>Portfolio Strategy*</th>
+                    <th>Auto Frequency</th>
+                    <th>Auto Amount</th>
+                    <th>Term</th>
+                    <th>Target</th>
+                    <th></th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {% for goal in account.all_goals.all %}
+                    <tr>
+                      <td>{{ goal.name }}</td>
+                      <td>{{ goal.get_state_display }}</td>
+                      <td>{{ goal.total_balance|currency }}</td>
+                      <td>{{ goal.total_return|currency }}</td>
+                      <td>
+                        <form method="post" class="portfolio">
+                          {% csrf_token %}
+                          <input type="hidden" name="goal_id"
+                                 value="{{ goal.id }}">
+                          <select name="portfolio_id" title="Portfolio" data-original-value="{{ goal.portfolio_set.id }}">
+                            {% for portfolio in portfolios %}
+                              <option value="{{ portfolio.id }}"
+                                  {% if portfolio == goal.portfolio_set %}
+                                      selected{% endif %}>{{ portfolio.name }}</option>
+                            {% endfor %}
+                          </select>
+                          <a class="save-portfolio">Save</a>
+                        </form>
+                      </td>
+                      <td>{{ goal.auto_frequency }}</td>
+                      <td>{{ goal.auto_amount }}</td>
+                      <td>{{ goal.get_term }}</td>
+                      <td>{{ goal.active_settings.target|currency }}</td>
+                    </tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
               </td>
             </tr>
           {% endfor %}
@@ -82,119 +124,32 @@
         </table>
       </div>
     </div>
-
-      {% comment %}
-      <div class="row">
-        <div class="col-sm-9">
-          <h4 class="m-b-0">{{ account.account_type_name|default:'Undefined account type' }}</h4>
-          <div>
-            <a href="{% url 'advisor:composites-detail-clients' object.pk %}">{{ account.primary_owner.full_name }}</a>
-            /
-            Pricing plan: {{ account.fee }}
-            bps <a data-remote="true" data-target="#formPricingPlan" href="{% url 'advisor:composites-client-accounts-fee' account.pk %}"><span class="icon icon-pencil"></span></a>
-          </div>
-        </div>
-        <div class="col-sm-3 text-sm-right">
-          <div class="form-group">
-            <a class="btn btn-info-outline" href="{% url 'client:app' account.primary_owner.pk %}" target="_blank">Log in</a>
-          </div>
-        </div>
-      </div>
-
-      <div id="formPricingPlannn"></div>
-
-      <div class="row">
-        <div class="col-sm-4 m-b">
-          <div class="statcard statcard-default">
-            <div class="p-a">
-              <span class="statcard-desc">Total balance</span>
-              <h2>
-                {{ account.total_balance|currency }}
-                <!-- <small class="delta-indicator delta-positive">5%</small> -->
-              </h2>
-            </div>
-          </div>
-        </div>
-        <div class="col-sm-4 m-b">
-          <div class="statcard statcard-default">
-            <div class="p-a">
-              <span class="statcard-desc">Total returns</span>
-              <h2>
-                {{ account.total_returns|percentage }}
-                <!-- <small class="delta-indicator delta-negative">2%</small> -->
-              </h2>
-            </div>
-          </div>
-        </div>
-        <div class="col-sm-4 m-b">
-          <div class="statcard statcard-default">
-            <div class="p-a">
-              <span class="statcard-desc">Total allocation</span>
-              <h2>
-                {{ account.stocks_percentage|percentage:0 }}&nbsp;<small>stocks</small>
-                {{ account.bonds_percentage|percentage:0 }}&nbsp;<small>bonds</small>
-                <!-- <small class="delta-indicator delta-positive">3%</small> -->
-              </h2>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel panel-default">
-        <div class="table-responsive">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Goal name</th>
-                <th>Status</th>
-                <th>Balance</th>
-                <th>Return</th>
-                <th>Stocks/Bonds</th>
-                <th>Auto<br>frequency</th>
-                <th>Auto<br>amount</th>
-                <th>Term</th>
-                <th>Target</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for goal in account.goals.all %}
-                <tr>
-                  <td>
-                     {{ goal.name }}
-                  </td>
-                  <td>
-                    {% if goal.on_track == True %}
-                      <span class="text-success">On track</span>
-                    {% else %}
-                      <span class="text-danger">Off track</span>
-                    {% endif %}
-                  </td>
-                  <td>{{ goal.total_balance|currency }}</td>
-                  <td>{{ goal.total_return|percentage }}</td>
-                  <td>
-                    {{ goal.stocks_percentage|percentage }} / {{ goal.bonds_percentage|percentage }}
-                  </td>
-                  <td>{{ goal.auto_frequency }}</td>
-                  <td>{{ goal.auto_amount|intcomma }}</td>
-                  <td>{{ goal.auto_term }}</td>
-                  <td>{{ goal.target|currency }}</td>
-                </tr>
-               {% empty %}
-                <tr>
-                  <td colspan="9" class="text-center">
-                    No entries
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    {% endcomment %}
-
   </div>
 
   <script type="text/javascript">
-
+  (function () {
+      $("table.goals tbody tr").find(".save-portfolio")
+          .hide()
+          .click(function () {
+              var form = $(this).closest("form");
+              $.post(location.href, {
+                  "csrfmiddlewaretoken": form.find("[name=csrfmiddlewaretoken]").val(),
+                  "goal_id": form.find("[name=goal_id]").val(),
+                  "portfolio_id": form.find("[name=portfolio_id] option:selected").val()
+              }, function (r) {
+                  form.find(".save-portfolio").hide();
+              });
+          })
+          .end()
+          .find("select").change(function (e) {
+          var select = $(e.currentTarget),
+              submit = select.closest("tr").find(".save-portfolio");
+          if (select.find("option:selected").val() == select.data("originalValue")) {
+              submit.hide();
+          } else {
+              submit.show();
+          }
+      })
+  }());
   </script>
 {% endblock %}

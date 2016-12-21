@@ -2,24 +2,26 @@ from django.contrib.auth import authenticate, login as auth_login
 from rest_framework import viewsets, views, mixins
 from rest_framework import exceptions, parsers, status
 from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import detail_route
 from api.v1.client.serializers import EmailNotificationsSerializer, \
     PersonalInfoSerializer
 from api.v1.permissions import IsClient
-from api.v1.views import ApiViewMixin
-from main.models import ExternalAsset, User
+from api.v1.views import ApiViewMixin, ReadOnlyApiViewMixin
+from main.models import ExternalAsset, User, Goal
+from notifications.models import Notify
 from user.models import SecurityAnswer
-from client.models import Client, EmailInvite
+from client.models import Client, EmailInvite, ClientAccount
 from support.models import SupportRequest
 from api.v1.user.serializers import UserSerializer
 from api.v1.retiresmartz.serializers import RetirementPlanEincSerializer, RetirementPlanEincWritableSerializer
 from retiresmartz.models import RetirementPlan, RetirementPlanEinc, RetirementAdvice
 from django.views.generic.detail import SingleObjectMixin
 from . import serializers
+from api.v1.goals.serializers import GoalSerializer
 import logging
 import json
 from retiresmartz import advice_responses
@@ -231,6 +233,17 @@ class ClientViewSet(ApiViewMixin,
         #         advice.save()
         return Response(self.serializer_response_class(updated).data)
 
+    @detail_route(methods=['get'])
+    def goals(self, request, pk=None, **kwargs):
+        """
+        Return list of goals from all accounts of the given client
+        """
+        instance = self.get_object()
+        accounts = ClientAccount.objects.filter(primary_owner=instance)
+        goals = Goal.objects.filter(account__in=accounts)
+        serializer = GoalSerializer(goals, many=True)
+        return Response(serializer.data)
+
 
 class InvitesView(ApiViewMixin, views.APIView):
     permission_classes = []
@@ -367,7 +380,7 @@ class ClientResendInviteView(SingleObjectMixin, views.APIView):
         return Response('ok', status=status.HTTP_200_OK)
 
 
-class ExternalAccountsView(APIView):
+class ExternalAccountsView(ReadOnlyApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
 
     def get(self, request, *args, **kwargs):
@@ -375,7 +388,7 @@ class ExternalAccountsView(APIView):
         return Response(data)
 
 
-class IframeTokenView(APIView):
+class IframeTokenView(ReadOnlyApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
 
     def get(self, request, *args, **kwargs):

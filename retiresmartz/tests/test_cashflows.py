@@ -112,16 +112,16 @@ class CashFlowTests(TestCase):
         self.assertTrue(isinstance(time_series, pd.DataFrame))
 
     def test_employment_income(self):
-        cf = EmploymentIncome(income=4000,
+        cf = EmploymentIncome(income=150000,
                               growth=0.01,
                               today=self.today,
                               end_date=self.retirement)
 
         # Make sure we can use the calculator as of today
-        self.assertEqual(cf.on(self.today), 4000)
+        self.assertEqual(cf.on(self.today), 150000)
 
         # Make sure we can get it on the end date and it is inflated correctly
-        predicted = 4000 * (((1.01 ** (1/12)) + 0.001) ** months_between(self.today, self.retirement))
+        predicted = 150000 * ((1+(0.01/12)) ** months_between(self.today, self.retirement))
         self.assertAlmostEqual(cf.on(self.retirement), predicted, 4)
 
         # Make sure after end date it returns zero
@@ -156,7 +156,8 @@ class CashFlowTests(TestCase):
                                          retirement_income=1000,
                                          retirement_date=self.retirement,
                                          today=self.today,
-                                         end_date=self.death)
+                                         end_date=self.death,
+                                         replacement_ratio=1)
         cash_flows = dict()
         for date, desired_amount in cf:
             cash_flows[date] = desired_amount

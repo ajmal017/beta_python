@@ -58,7 +58,8 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
         assets = Execution.objects.\
                 filter(executed__gte=month_ago,
                        distributions__transaction__from_goal__id=goal.id,
-                       distributions__execution__asset__state=Ticker.State.ACTIVE.value).\
+                       distributions__execution__asset__state=Ticker.State.ACTIVE.value,
+                       amount__lt=0).\
                 annotate(tid=F('distributions__execution__asset__id')).\
                 values_list('tid', flat=True)
 

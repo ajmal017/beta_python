@@ -9,7 +9,7 @@ from django.utils.timezone import now
 
 from notifications.models import Notification
 
-from main.models import Advisor, Goal, GoalMetric
+from main.models import Advisor, Goal, GoalMetric, User
 from client.models import Client
 
 ATTRS_ONCHANGE= {'onchange': 'this.form.submit();'}
@@ -173,6 +173,15 @@ class RiskFilter(filters.MultipleChoiceFilter):
         return qs
 
 
+class UsersFilter(filters.CharFilter):
+    def filter(self, queryset, value):
+        if not value:
+            return queryset
+
+        ids = list(map(int, value.split(',')))
+        return queryset.filter(pk__in=ids)
+
+
 class FirmActivityFilterSet(filters.FilterSet):
     VERB_CHOICES = (
         (None, '- Activity -'),
@@ -216,7 +225,7 @@ class FirmAnalyticsAdvisorsFilterSet(filters.FilterSet):
 
 class FirmAnalyticsClientsFilterSet(filters.FilterSet):
     search = SearchFilter(widget=forms.TextInput(
-        attrs=dict({'placeholder': 'Search...'}, **ATTRS_ONCHANGE)),
+        attrs=dict({'placeholder': 'Search...'})),
         lookup_fields=['user__first_name', 'user__last_name', 'user__email'])
 
     class Meta:
@@ -236,9 +245,18 @@ class FirmAnalyticsGoalsAdvisorsFilterSet(filters.FilterSet):
 
 class FirmAnalyticsGoalsClientsFilterSet(filters.FilterSet):
     client = SearchFilter(widget=forms.TextInput(
-        attrs=dict({'placeholder': 'Client'}, **ATTRS_ONCHANGE)),
+        attrs=dict({'placeholder': 'Client'})),
         lookup_fields=['user__first_name', 'user__last_name', 'user__email'])
 
     class Meta:
         model = Client
         fields = ['client']
+
+
+class FirmAnalyticsGoalsUsersFilterSet(filters.FilterSet):
+    users = UsersFilter(widget=forms.TextInput(
+        attrs=dict({'placeholder': 'Advisors & Clients'})))
+
+    class Meta:
+        model = User
+        fields = ['users']

@@ -620,3 +620,24 @@ class ClientTests(APITestCase):
                          msg='200 for authenticated put request to update client smoker field')
         self.assertEqual(response.data['id'], self.betasmartz_client.id)
         self.assertEqual(response.data['smoker'], True)
+
+    def test_get_all_client_goals(self):
+        """
+        should list all goals from all accounts
+        """
+        # goal from another account
+        second_account = ClientAccountFactory.create(primary_owner=self.betasmartz_client)
+        goal = GoalFactory.create(account=second_account)
+
+        url = '/api/v1/clients/{}/goals'.format(self.betasmartz_client.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # make sure goals are listed in data
+        self.assertEqual(response.data[0]['id'], self.goal1.id)
+        self.assertEqual(response.data[1]['id'], self.goal2.id)
+        self.assertEqual(response.data[2]['id'], goal.id)

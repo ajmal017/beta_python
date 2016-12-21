@@ -137,6 +137,8 @@ def reduce_cash(volume, ticker, cash_available):
 
 
 def create_request(goal, new_positions, reason, execution_provider, data_provider, allowed_side):
+    # be smarter - do it proportionatelly
+
     """
     Create a MarketOrderRequest for the position changes that will take the goal's existing positions to the new
     positions specified.
@@ -466,6 +468,8 @@ def perturbate(goal, idata, data_provider, execution_provider):
     # Optimise the portfolio adding appropriate constraints so there can be no removals from assets.
     # This will use any available cash to rebalance if possible.
     held_weights = get_held_weights(goal)
+
+    # we can break this up into 4 rules
     tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(goal, data_provider.get_current_date())
     min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
 
@@ -477,7 +481,8 @@ def perturbate(goal, idata, data_provider, execution_provider):
     weights = optimise_up(opt_inputs, min_weights, max_weights)
 
     if weights is None:
-        # relax constraints and allow to sell tax winners
+        # relax constraints and allow to sell short term losses, then relax and allow long term losses,
+        # then relax and allow to sell long term gains, relax and allow to sell short term gains
         tax_min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)
         min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
 

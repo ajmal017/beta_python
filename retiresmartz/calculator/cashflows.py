@@ -68,6 +68,9 @@ class ReverseMortgage(CashFlow):
     def _for_date(self, date: datetime.date) -> float:
         return self.monthly_payment
 
+    def __str__(self):
+        return "ReverseMortgage"
+
 
 class InflatedCashFlow(CashFlow):
     def __init__(self,
@@ -89,6 +92,9 @@ class InflatedCashFlow(CashFlow):
     def _for_date(self, date: datetime.date) -> float:
         return self._amount * (1 + Inflation.between(self._today, date))
 
+    def __str__(self):
+        return "InflatedCashFlow" + ",amount" + str(self._amount)
+
 
 class EmploymentIncome(CashFlow):
     def __init__(self, income: float, growth: float, today: datetime.date, end_date: datetime.date):
@@ -99,7 +105,8 @@ class EmploymentIncome(CashFlow):
         :param end_date: The time the income will stop
         :param growth: Expected annual income growth above CPI. 0.01 = 1%
         """
-        self._growth_factor = (1 + growth) ** (1/12)
+        #self._growth_factor = (1 + growth) ** (1/12) i think this is correct, andrew does not
+        self._growth_factor = 1 + (growth / 12)
         self.start_date = today
         self._last_date = today
         self.end_date = end_date
@@ -110,7 +117,7 @@ class EmploymentIncome(CashFlow):
         tdt = self._last_date + relativedelta(months=1)
         while tdt <= date:
             # Grow the income for the month
-            self._current_income *= (self._growth_factor + Inflation.between(self._last_date, tdt))
+            self._current_income *= self._growth_factor
             self._last_date = tdt
             tdt = self._last_date + relativedelta(months=1)
         return self._current_income
@@ -119,3 +126,6 @@ class EmploymentIncome(CashFlow):
         super().reset()
         self._last_date = self.start_date
         self._current_income = self._income
+
+    def __str__(self):
+        return "EmploymentIncome"

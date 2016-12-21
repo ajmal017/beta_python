@@ -437,15 +437,15 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         income_calc = EmploymentIncome(income=plan.income / 12,
                                        growth=0.01,
                                        today=today,
-                                       end_date=retire_date)
+                                       end_date=retire_date - relativedelta(days=1))
 
         ss_all = calculate_payments(plan.client.date_of_birth, plan.income)
         ss_income = ss_all.get(plan.retirement_age, None)
         if ss_income is None:
             ss_income = ss_all[sorted(ss_all)[0]]
-        ss_payments = InflatedCashFlow(ss_income, today, retire_date, death_date)
 
-        cash_flows = [ss_payments]
+        cash_flows = list()
+        cash_flows.append(InflatedCashFlow(amount=ss_income, today=today, start_date=retire_date, end_date=death_date))
 
         # TODO: Call the logic that determines the retirement accounts to figure out what accounts to use.
         # TODO: Get the tax rate to use when withdrawing from the account at retirement
@@ -479,8 +479,10 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         rdcf = RetiresmartzDesiredCashFlow(current_income=income_calc,
                                            retirement_income=plan.desired_income / 12,
                                            today=today,
-                                           retirement_date=retire_date,
-                                           end_date=death_date)
+                                           retirement_date=retire_date - relativedelta(days=1),
+                                           end_date=death_date,
+                                           replacement_ratio=plan.replacement_ratio
+                                           )
         # Add the income cash flow to the list of cash flows.
         cash_flows.append(rdcf)
 
@@ -489,9 +491,9 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         asset_values, income_values = calculator.calculate(rdcf)
 
         # Convert these returned values to a format for the API
-        catd = pd.concat([asset_values.sum(axis=1), income_values['actual']], axis=1)
+        catd = pd.concat([asset_values, income_values['actual'], income_values['desired']], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
-        proj_data = [(d2ed(d), a, i) for d, a, i in catd.iloc[locs, :].itertuples()]
+        proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
 
         pser = PortfolioSerializer(instance=settings.portfolio)
 

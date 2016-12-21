@@ -19,6 +19,7 @@ from .factories import AssetClassFactory, ContentTypeFactory, GroupFactory, \
     RetirementPlanFactory, TickerFactory, RetirementAdviceFactory
 from django.utils import timezone
 from pinax.eventlog.models import log
+from retiresmartz.calculator.social_security import calculate_payments
 
 mocked_now = datetime(2016, 1, 1)
 
@@ -632,3 +633,58 @@ class RetiresmartzTests(APITestCase):
         self.assertNotEqual(response.data['expenses'], None)
         self.assertEqual(response.data['expenses'][0]['id'], 1)
         self.assertEqual(response.data['expenses'][0]['amt'], 10000)
+
+    @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
+    def test_retirement_plan_calculate_notgenerated(self):
+        plan = RetirementPlanFactory.create(income=150000,
+                                            desired_income=81000,
+                                            btc=4000,
+                                            retirement_home_price=250000,
+                                            paid_days=1,
+                                            retirement_age=67,
+                                            selected_life_expectancy=85,
+                                            calculated_life_expectancy=85,
+                                            expected_return_confidence=0.5)
+        plan.client.date_of_birth = date(1960, 1, 1)
+        plan.client.save()
+
+        # some tickers for portfolio
+        bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')
+        stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
+
+        TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='IPO')
+        fund = TickerFactory.create(symbol='rest')
+
+        # Add the asset classes to the advisor's default portfolio set
+        plan.client.advisor.default_portfolio_set.asset_classes.add(bonds_asset_class, stocks_asset_class, fund.asset_class)
+
+
+        # Set the markowitz bounds for today
+        self.m_scale = MarkowitzScaleFactory.create()
+
+        # populate the data needed for the optimisation
+        # We need at least 500 days as the cycles go up to 70 days and we need at least 7 cycles.
+        populate_prices(500, asof=mocked_now.date())
+        populate_cycle_obs(500, asof=mocked_now.date())
+        populate_cycle_prediction(asof=mocked_now.date())
+        populate_inflation(asof=mocked_now.date())
+
+        url = '/api/v1/clients/{}/retirement-plans/{}/calculate'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+
+        # We should be ready to calculate properly
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('portfolio' in response.data)
+        self.assertTrue('projection' in response.data)
+        self.assertEqual(len(response.data['projection']), 50)
+
+    def test_get_social_security(self):
+        ss_all = calculate_payments(date(1960, 1, 1), 100000)
+        ss_income = ss_all.get(67, None)
+        if ss_income is None:
+            ss_income = ss_all[sorted(ss_all)[0]]
+
+        self.assertTrue(ss_income == 2487)
