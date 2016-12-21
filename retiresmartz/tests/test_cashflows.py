@@ -121,7 +121,7 @@ class CashFlowTests(TestCase):
         self.assertEqual(cf.on(self.today), 4000)
 
         # Make sure we can get it on the end date and it is inflated correctly
-        predicted = 4000 * (((1.01 ** (1/12)) + 0.001) ** months_between(self.today, self.retirement))
+        predicted = 4000 * ((1+(0.01/12)) ** months_between(self.today, self.retirement))
         self.assertAlmostEqual(cf.on(self.retirement), predicted, 4)
 
         # Make sure after end date it returns zero
