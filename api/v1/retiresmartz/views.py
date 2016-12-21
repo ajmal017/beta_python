@@ -450,6 +450,16 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         # TODO: Call the logic that determines the retirement accounts to figure out what accounts to use.
         # TODO: Get the tax rate to use when withdrawing from the account at retirement
         # For now we assume we want a tax deferred 401K
+        acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
+                                      tax_rate=0.0,
+                                      name='401k',
+                                      today=today,
+                                      opening_balance=plan.opening_tax_deferred_balance,
+                                      growth=performance,
+                                      retirement_date=retire_date,
+                                      end_date=death_date,
+                                      contributions=plan.btc / 12)
+
         #acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
         #                              tax_rate=0.0,
         #                              name='401k',
@@ -458,17 +468,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         #                              growth=0.01,
         #                              retirement_date=retire_date,
         #                              end_date=death_date,
-        #                              contributions=plan.btc / 12)
-
-        acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
-                                      tax_rate=0.0,
-                                      name='401k',
-                                      today=today,
-                                      opening_balance=plan.opening_tax_deferred_balance,
-                                      growth=0.01,
-                                      retirement_date=retire_date,
-                                      end_date=death_date,
-                                      contributions=4000 / 12)
+        #                              contributions=4000 / 12)
 
         assets = [acc_401k]
 
@@ -497,7 +497,6 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         cash_flows.append(rdcf)
 
         calculator = Calculator(cash_flows=cash_flows, assets=assets)
-
         asset_values, income_values = calculator.calculate(rdcf)
 
         # Convert these returned values to a format for the API
