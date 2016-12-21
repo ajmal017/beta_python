@@ -641,3 +641,25 @@ class ClientTests(APITestCase):
         self.assertEqual(response.data[0]['id'], self.goal1.id)
         self.assertEqual(response.data[1]['id'], self.goal2.id)
         self.assertEqual(response.data[2]['id'], goal.id)
+
+    def test_update_client_employer_type(self):
+        """
+
+
+        """
+        url = '/api/v1/clients/%s' % self.betasmartz_client.id
+        # lets test income update
+        data = {
+            'employer_type': 3,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
+        }
+        self.client.force_authenticate(self.user)
+        response = self.client.put(url, data)
+        self.betasmartz_client.refresh_from_db()  # Refresh after the put.
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='200 for authenticated put request to update client employer type field')
+        self.assertEqual(response.data['id'], self.betasmartz_client.id)
+        self.assertEqual(response.data['employer_type'], 3)
