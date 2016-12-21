@@ -455,7 +455,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                                       name='401k',
                                       today=today,
                                       opening_balance=plan.opening_tax_deferred_balance,
-                                      growth=performance,
+                                      growth=0.01,
                                       retirement_date=retire_date,
                                       end_date=death_date,
                                       contributions=plan.btc / 12)
