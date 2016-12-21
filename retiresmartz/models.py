@@ -317,6 +317,13 @@ class RetirementPlan(TimestampedModel):
         # TODO: Sum the complete amount that is expected to be in the retirement plan accounts on account opening.
         return 0
 
+    @property
+    def replacement_ratio(self):
+        partner_income = 0
+        if self.partner_data is not None:
+            partner_income = self.partner_plan.income
+        return self.desired_income / (self.income + partner_income)
+
 
 @receiver(post_save, sender=RetirementPlan)
 def resolve_retirement_invitations(sender, instance, created, **kwargs):

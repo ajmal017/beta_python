@@ -18,7 +18,8 @@ class RetiresmartzDesiredCashFlow(DesiredCashFlow, CashFlow):
                  retirement_income: float,
                  today: datetime.date,
                  retirement_date: datetime.date,
-                 end_date: datetime.date):
+                 end_date: datetime.date,
+                 replacement_ratio: float):
         """
         Initialises the DesiredCashFlow Calculator
         :param current_income: Pre-retirement income cash-flow calculator
@@ -30,6 +31,7 @@ class RetiresmartzDesiredCashFlow(DesiredCashFlow, CashFlow):
         self._current_income = current_income
         self._retirement_income = retirement_income
         self._today = today
+        self._replacement_ratio = replacement_ratio
         self._retirement_date = retirement_date
         self._stop_date = end_date
         self._cur_payment = current_income
@@ -43,13 +45,17 @@ class RetiresmartzDesiredCashFlow(DesiredCashFlow, CashFlow):
         return self
 
     def next(self) -> (datetime.date, float):
-            if self._current_date <= self._retirement_date:
-                self._cur_payment = self._current_income.on(self._current_date)
-            else:
-                self._cur_payment = self._retirement_income * (1 + Inflation.between(self._today, self._current_date))
             self._current_date += relativedelta(months=1)
             if self._current_date > self._stop_date:
                 raise StopIteration()
+
+            if self._current_date < self._retirement_date:
+                self._cur_payment = self._current_income.on(self._current_date)
+            else:
+                if self._current_date - relativedelta(months=1) < self._retirement_date and \
+                                        self._current_date + relativedelta(months=1) > self._retirement_date:
+                    self._retirement_income = self._cur_payment * self._replacement_ratio
+                self._cur_payment = self._retirement_income * (1 + Inflation.between(self._retirement_date, self._current_date))
             return self._current_date, self._cur_payment
 
     def _for_date(self, date: datetime.date):
