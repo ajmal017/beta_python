@@ -1480,7 +1480,7 @@ class Goal(models.Model):
     objects = GoalQuerySet.as_manager()
 
     class Meta:
-        ordering = ['order']
+        ordering = 'state', 'order'
         unique_together = ('account', 'name')
 
     def __str__(self):
