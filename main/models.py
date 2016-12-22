@@ -1503,6 +1503,11 @@ class Goal(models.Model):
         return super(Goal, self).save(force_insert, force_update, using,
                                       update_fields)
 
+    @property
+    def is_active(self):
+        return self.state in [self.State.ACTIVE.value,
+                              self.State.ARCHIVE_REQUESTED.value]
+
     def archive(self):
         """
         Flags a goal as CLOSING, which will trigger the daily process to clear it.
