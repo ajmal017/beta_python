@@ -13,7 +13,6 @@ import sys
 import json
 import subprocess
 import logging
-import re
 
 logger = logging.getLogger('pdf_parsers.social_security')
 
@@ -29,35 +28,40 @@ def get_pdf_content_lines(pdf_file_path):
 # for each item to extract its string, the value is found between
 # the pairs in the list e.g. SSN is found between "SSN:", "SPOUSE SSN:"
 keywords = {
-    "SSN": ["SSN:", "SPOUSE SSN:"],
-    "SPOUSE SSN": ["SPOUSE SSN:", "NAME(S)"],
-    "NAME": ["RETURN:", "ADDRESS:"],
-    "SPOUSE NAME": ["RETURN:", "ADDRESS:"],
-    "ADDRESS": ["ADDRESS:", "FILING STATUS:"],
-    "FILING STATUS": ["FILING STATUS:", "FORM NUMBER:"],
-    "TOTAL INCOME": ["TOTAL INCOME:", "TOTAL INCOME PER COMPUTER:"]
+    'Retirement': ['*Retirement', '*Disability'],
+    'Disability': ['*Disability', '*Family'],
+    'Family': ['*Family', '*Survivors'],
+    'Survivors': ['*Survivors', 'Medicare'],
+    'Medicare': ['Medicare', '*'],
 }
 
 output = {
     "sections": [
         {
-            "name": "Introduction",
+            "name": "Estimated Benefits",
             "fields": {
-                "SSN": "",
-                "SPOUSE SSN": "",
-                "NAME": "",
-                "SPOUSE NAME": "",
-                "ADDRESS": "",
-                "FILING STATUS": ""
+                "Retirement": "",
+                'Disability': '',
+                'Family': '',
+                'Survivors': '',
+                'Medicare': '',
             }
         },
         {
-            "name": "Income",
-            "fields": {
-                "TOTAL INCOME": "",
-
+            'name': 'Estimated Earnings',
+            'fields': {
+                'LastYear': '',
             }
-        }
+        },
+        {
+            'name': 'Estimated Paid',
+            'fields': {
+                'PaidThisYear': '',
+                'EmployerPaidThisYear': '',
+                'PaidLastYear': '',
+                'EmployerPaidLastYear': '',
+            }
+        },
     ]
 }
 
@@ -76,20 +80,6 @@ def parse_item(key, s):
     start = sub_str[0]
     end = sub_str[1]
     result = find_between(s, start, end)
-    if key == "NAME" and "&" in result:
-        result = result.split("&")[0]
-    if key == 'SPOUSE NAME':
-        if "&" in result:
-            result = result.split("&")[1]
-            if "\n" in result:
-                for i in result.splitlines()[1:]:
-                    if i and "\n" not in i:
-                        output["sections"][0]["fields"]["ADDRESS"] = i
-                        break
-
-                result = result.splitlines()[0]
-        else:
-            result = ''
 
     return result.lstrip().rstrip().lstrip('.').rstrip('.').rstrip('\n')
 
@@ -101,9 +91,6 @@ def parse_text(string):
             res = parse_item(k, string)
             if output["sections"][i]["fields"][k] == "":
                 output["sections"][i]["fields"][k] = res
-            else:
-                if k == "ADDRESS":
-                    output["sections"][i]["fields"][k] = res
         i += 1
     return output
 
@@ -130,41 +117,13 @@ def parse_scanned_pdf(fl):
     return parse_text(txt)
 
 
-def parse_address(addr_str):
-    # addr_str format:
-    # {Street Address}\n
-    # {City}, {State Code} {Zip code}
-    address = {
-        "address1": '',
-        "address2": '',
-        "city": '',
-        "state": '',
-        "post_code": ''
-    }
-    # '  ' => '\n', '\n\n+' => '\n'
-    addr_list1 = re.sub('\\n+', '\n', addr_str.replace('  ', '\n')).split('\n')
-    address['address1'] = addr_list1[0].strip(' ,') # TODO: check if address1 can be split for address2
-    if len(addr_list1) >= 2:
-        addr_list2 = addr_list1[1].strip().split(',')
-        address['city'] = addr_list2[0].strip()
-        if len(addr_list2) >= 2:
-            addr_list3 = addr_list2[1].strip().split(' ')
-            address['state'] = addr_list3[0].strip()
-            address['post_code'] = addr_list3[1].strip()
-    return address
-
-
 def clean_results(results):
     clean_output = {}
-    clean_output['SSN'] = results['sections'][0]['fields']['SSN']
-    clean_output['SPOUSE SSN'] = results['sections'][0]['fields']['SPOUSE SSN']
-    clean_output['NAME'] = results['sections'][0]['fields']['NAME']
-    clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
-    # logger.error(results['sections'][0])
-    # logger.error(results['sections'][0]['fields']['ADDRESS'])
-    clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
-    clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
-    clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TOTAL INCOME']
+    clean_output['Retirement'] = results['sections'][0]['fields']['Retirement']
+    clean_output['Disability'] = results['sections'][0]['fields']['Disability']
+    clean_output['Family'] = results['sections'][0]['fields']['Family']
+    clean_output['Survivors'] = results['sections'][0]['fields']['Survivors']
+    clean_output['Medicare'] = results['sections'][0]['fields']['Medicare']
 
     return clean_output
 
