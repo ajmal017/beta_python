@@ -1,5 +1,40 @@
 {% extends "layouts_new/base.html" %}
+{% load static from staticfiles %}
 {% load i18n humanize filters pricing_plan %}
+
+{% block foot_js %}
+  <script type="application/javascript" src="{% static "js/widgets.js" %}"></script>
+  <script type="application/javascript">
+  $(function () {
+      betasmartz.widgets.searchTable("table.goals", undefined, {
+          "initialSorting": []
+      });
+
+      $("table.goals tbody tr").find(".save-portfolio")
+          .hide()
+          .click(function () {
+              var form = $(this).closest("form");
+              $.post(location.href, {
+                  "csrfmiddlewaretoken": form.find("[name=csrfmiddlewaretoken]").val(),
+                  "goal_id": form.find("[name=goal_id]").val(),
+                  "portfolio_id": form.find("[name=portfolio_id] option:selected").val()
+              }, function (r) {
+                  form.find(".save-portfolio").hide();
+              });
+          })
+          .end()
+          .find("select").change(function (e) {
+          var select = $(e.currentTarget),
+              submit = select.closest("tr").find(".save-portfolio");
+          if (select.find("option:selected").val() == select.data("originalValue")) {
+              submit.hide();
+          } else {
+              submit.show();
+          }
+      });
+  });
+  </script>
+{% endblock %}
 
 {% block main_content %}
   <div class="container">
@@ -84,7 +119,6 @@
                     <th>Auto Amount</th>
                     <th>Term</th>
                     <th>Target</th>
-                    <th></th>
                   </tr>
                   </thead>
                   <tbody>
@@ -127,31 +161,4 @@
       </div>
     </div>
   </div>
-
-  <script type="text/javascript">
-  (function () {
-      $("table.goals tbody tr").find(".save-portfolio")
-          .hide()
-          .click(function () {
-              var form = $(this).closest("form");
-              $.post(location.href, {
-                  "csrfmiddlewaretoken": form.find("[name=csrfmiddlewaretoken]").val(),
-                  "goal_id": form.find("[name=goal_id]").val(),
-                  "portfolio_id": form.find("[name=portfolio_id] option:selected").val()
-              }, function (r) {
-                  form.find(".save-portfolio").hide();
-              });
-          })
-          .end()
-          .find("select").change(function (e) {
-          var select = $(e.currentTarget),
-              submit = select.closest("tr").find(".save-portfolio");
-          if (select.find("option:selected").val() == select.data("originalValue")) {
-              submit.hide();
-          } else {
-              submit.show();
-          }
-      })
-  }());
-  </script>
 {% endblock %}
