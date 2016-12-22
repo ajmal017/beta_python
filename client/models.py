@@ -245,6 +245,22 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
             scores['s_score'] / max_s if max_s > 0 else 0,
         )
 
+    @property
+    def my_pricing_plan(self) -> (float, float):
+        """
+        :return: bps, fixed
+        """
+        firm = self.advisor.firm
+        system_bps, system_fixed = firm.pricing_plan.system_fee
+
+        for obj in [self, self.advisor, firm]:
+            try:
+                pricing_plan = getattr(obj, 'pricing_plan')
+                break
+            except AttributeError:
+                pass
+        return pricing_plan.bps + system_bps, pricing_plan.fixed + system_fixed
+
 
 class IBAccount(models.Model):
     '''

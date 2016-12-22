@@ -1,12 +1,14 @@
 import json
 
-from django import forms, http
+from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse_lazy
+from django.db.models import Q
+from django.forms.models import BaseModelFormSet
 from django.http import Http404
 from django.shortcuts import HttpResponseRedirect, get_object_or_404, \
     render_to_response
@@ -22,8 +24,9 @@ from main.constants import AUTHORIZED_REPRESENTATIVE, INVITATION_ADVISOR, \
     INVITATION_SUPERVISOR, INVITATION_TYPE_DICT, PERSONAL_DATA_FIELDS, \
     SUCCESS_MESSAGE
 from main.forms import BetaSmartzGenericUserSignupForm, PERSONAL_DATA_WIDGETS
-from main.models import AuthorisedRepresentative, Firm, FirmData, Goal, \
-    Platform, Ticker, Transaction, User
+from main.models import AuthorisedRepresentative, Firm, FirmData, \
+    Goal, Platform, PricingPlan, PricingPlanAdvisor, PricingPlanClient, Ticker, \
+    Transaction, User
 from main.optimal_goal_portfolio import solve_shares_re_balance
 from notifications.models import Notify
 from ..base import AdminView, LegalView
@@ -505,3 +508,85 @@ def confirm_joint_account(request, token):
     return render_to_response('firm/confirm-joint-account.html', {
         'confirmation': jacm,
     })
+
+
+class PricingPlanForm(forms.ModelForm):
+    bps = forms.FloatField(required=False, min_value=0)
+    fixed = forms.FloatField(required=False, min_value=0)
+
+    class Meta:
+        model = PricingPlan
+        fields = 'bps', 'fixed'
+
+
+class PricingPlanAdvisorForm(forms.ModelForm):
+    bps = forms.FloatField(required=False, min_value=0)
+    fixed = forms.FloatField(required=False, min_value=0)
+
+    class Meta:
+        model = PricingPlanAdvisor
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('initial', {'bps': '', 'fixed': ''})
+        super(PricingPlanAdvisorForm, self).__init__(*args, **kwargs)
+        pass
+
+
+class PricingPlanClientForm(forms.ModelForm):
+    bps = forms.FloatField(required=False, min_value=0)
+    fixed = forms.FloatField(required=False, min_value=0)
+
+    class Meta:
+        model = PricingPlanClient
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('initial', {'bps': '', 'fixed': ''})
+        super(PricingPlanClientForm, self).__init__(*args, **kwargs)
+        pass
+
+
+class PricingPlanBaseFormset(BaseModelFormSet):
+    def set_firm(self, value):
+        for form in self.forms:
+            person_field = form.fields['person']
+            q = Q(pricing_plan__isnull=True)
+            if form.instance.id:
+                q |= Q(pk=form.instance.person.id)
+            person_field.queryset = person_field.queryset.filter(
+                q,
+                **self._get_firm_kwargs(value),
+            )
+    firm = property(None, set_firm)
+
+    def _get_firm_kwargs(self, firm):
+        raise NotImplementedError()
+
+
+class PricingPlanBaseAdvisorFormset(PricingPlanBaseFormset):
+    def _get_firm_kwargs(self, firm):
+        return {
+            'firm': firm,
+        }
+
+
+class PricingPlanBaseClientFormset(PricingPlanBaseFormset):
+    def _get_firm_kwargs(self, firm):
+        return {
+            'advisor__firm': firm,
+        }
+
+
+PricingPlanAdvisorFormset = forms.modelformset_factory(
+    model=PricingPlanAdvisor,
+    form=PricingPlanAdvisorForm,
+    formset=PricingPlanBaseAdvisorFormset,
+    can_delete=True,
+)
+PricingPlanClientFormset = forms.modelformset_factory(
+    model=PricingPlanClient,
+    form=PricingPlanClientForm,
+    formset=PricingPlanBaseClientFormset,
+    can_delete=True,
+)

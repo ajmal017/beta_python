@@ -2735,6 +2735,67 @@ class Inflation(models.Model):
         return '{0.month}/{0.year}: {0.value}'.format(self)
 
 
+class PricingPlan(models.Model):
+    firm = models.OneToOneField('main.Firm',
+                                related_name='pricing_plan')
+    bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
+    fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
+    system_bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
+    system_fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
+
+    def __str__(self):
+        return str(self.firm)
+
+    @property
+    def system_fee(self) -> (float, float):
+        return self.system_bps, self.system_fixed
+
+    @system_fee.setter
+    def system_fee(self, value):
+        self.system_bps, self.system_fixed = value
+
+    @property
+    def total_bps(self) -> float:
+        return self.bps + self.system_bps
+
+    @property
+    def total_fixed(self) -> float:
+        return self.fixed + self.system_fixed
+
+
+class PricingPlanBase(models.Model):
+    bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
+    fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
+
+    class Meta:
+        abstract = True
+
+    @property
+    def total_bps(self) -> float:
+        return self.bps + self.parent.system_bps
+
+    @property
+    def total_fixed(self) -> float:
+        return self.fixed + self.parent.system_fixed
+
+
+class PricingPlanAdvisor(PricingPlanBase):
+    parent = models.ForeignKey('main.PricingPlan',
+                               related_name='advisor_overrides')
+    person = models.OneToOneField('main.Advisor',
+                                   related_name='pricing_plan')
+
+
+class PricingPlanClient(PricingPlanBase):
+    parent = models.ForeignKey('main.PricingPlan',
+                               related_name='client_overrides')
+    person = models.OneToOneField('client.Client',
+                                  related_name='pricing_plan')
+
+
+# --------------------------------- Signals -----------------------------------
+
+
 @receiver(user_logged_in)
 def user_logged_in_notification(sender, user: User, **kwargs):
     user_types = ['client', 'advisor', 'supervisor',
@@ -2759,3 +2820,9 @@ def user_logged_out_notification(sender, user: User, **kwargs):
                 break
             except ObjectDoesNotExist:
                 pass
+
+
+@receiver(models.signals.post_save, sender=Firm)
+def create_firm_empty_pricing_plan(sender, instance, created, **kwargs):
+    if created:
+        PricingPlan.objects.create(firm=instance)
