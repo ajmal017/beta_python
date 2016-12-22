@@ -1480,7 +1480,7 @@ class Goal(models.Model):
     objects = GoalQuerySet.as_manager()
 
     class Meta:
-        ordering = ['order']
+        ordering = 'state', 'order'
         unique_together = ('account', 'name')
 
     def __str__(self):
@@ -1502,6 +1502,11 @@ class Goal(models.Model):
 
         return super(Goal, self).save(force_insert, force_update, using,
                                       update_fields)
+
+    @property
+    def is_active(self):
+        return self.state in [self.State.ACTIVE.value,
+                              self.State.ARCHIVE_REQUESTED.value]
 
     def archive(self):
         """
@@ -2735,11 +2740,25 @@ class Inflation(models.Model):
         return '{0.month}/{0.year}: {0.value}'.format(self)
 
 
-class PricingPlan(models.Model):
-    firm = models.OneToOneField('main.Firm',
-                                related_name='pricing_plan')
+class PricingPlanBase(models.Model):
     bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
     fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
+
+    class Meta:
+        abstract = True
+
+    @property
+    def total_bps(self) -> float:
+        raise NotImplementedError()
+
+    @property
+    def total_fixed(self) -> float:
+        raise NotImplementedError()
+
+
+class PricingPlan(PricingPlanBase):
+    firm = models.OneToOneField('main.Firm',
+                                related_name='pricing_plan')
     system_bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
     system_fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
 
@@ -2763,10 +2782,7 @@ class PricingPlan(models.Model):
         return self.fixed + self.system_fixed
 
 
-class PricingPlanBase(models.Model):
-    bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
-    fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
-
+class PricingPlanPersonBase(PricingPlanBase):
     class Meta:
         abstract = True
 
@@ -2779,14 +2795,14 @@ class PricingPlanBase(models.Model):
         return self.fixed + self.parent.system_fixed
 
 
-class PricingPlanAdvisor(PricingPlanBase):
+class PricingPlanAdvisor(PricingPlanPersonBase):
     parent = models.ForeignKey('main.PricingPlan',
                                related_name='advisor_overrides')
     person = models.OneToOneField('main.Advisor',
                                    related_name='pricing_plan')
 
 
-class PricingPlanClient(PricingPlanBase):
+class PricingPlanClient(PricingPlanPersonBase):
     parent = models.ForeignKey('main.PricingPlan',
                                related_name='client_overrides')
     person = models.OneToOneField('client.Client',

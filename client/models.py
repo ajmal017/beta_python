@@ -20,7 +20,8 @@ from common.structures import ChoiceEnum
 from main import constants
 from main.abstract import NeedApprobation, NeedConfirmation, PersonalData
 from main.finance import mod_dietz_rate
-from main.models import AccountGroup, Goal, Platform
+from main.models import AccountGroup, Goal, Platform, PricingPlan, \
+    PricingPlanBase
 from retiresmartz.models import RetirementAdvice, RetirementPlan
 from .managers import ClientAccountQuerySet, ClientQuerySet
 
@@ -246,20 +247,14 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
         )
 
     @property
-    def my_pricing_plan(self) -> (float, float):
-        """
-        :return: bps, fixed
-        """
+    def my_pricing_plan(self) -> PricingPlanBase:
         firm = self.advisor.firm
-        system_bps, system_fixed = firm.pricing_plan.system_fee
 
         for obj in [self, self.advisor, firm]:
             try:
-                pricing_plan = getattr(obj, 'pricing_plan')
-                break
+                return getattr(obj, 'pricing_plan')
             except AttributeError:
                 pass
-        return pricing_plan.bps + system_bps, pricing_plan.fixed + system_fixed
 
 
 class IBAccount(models.Model):
