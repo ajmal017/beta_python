@@ -19,7 +19,7 @@ def display(value, field_prefix=None):
             parts.append('<span class="bps">%.0f</span> bps' % bps)
         if fixed:
             parts.append('$<span class="fixed">%s</span>' % floatformat(fixed, 2))
-        return mark_safe(', '.join(parts) or '&mdash;')
+        return mark_safe(', '.join(parts) or 'Free')
     except Exception as e:
         print(e)
 

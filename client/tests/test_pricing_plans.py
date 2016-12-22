@@ -29,9 +29,9 @@ class LogicTests(TestCase):
         self.pricing_plan.save()
 
     def test_no_overrides(self):
-        bps, fixed = self.client.my_pricing_plan
-        self.assertEqual(bps, 110)
-        self.assertEqual(fixed, 55)
+        pp = self.client.my_pricing_plan
+        self.assertEqual(pp.total_bps, 110)
+        self.assertEqual(pp.total_fixed, 55)
 
     def test_client_override(self):
         PricingPlanClient.objects.create(
@@ -40,9 +40,9 @@ class LogicTests(TestCase):
             bps=50,
             fixed=20,
         )
-        bps, fixed = self.client.my_pricing_plan
-        self.assertEqual(bps, 60)
-        self.assertEqual(fixed, 25)
+        pp = self.client.my_pricing_plan
+        self.assertEqual(pp.total_bps, 60)
+        self.assertEqual(pp.total_fixed, 25)
 
     def test_advisor_override(self):
         PricingPlanAdvisor.objects.create(
@@ -51,9 +51,9 @@ class LogicTests(TestCase):
             bps=150,
             fixed=0,
         )
-        bps, fixed = self.client.my_pricing_plan
-        self.assertEqual(bps, 160)
-        self.assertEqual(fixed, 5)
+        pp = self.client.my_pricing_plan
+        self.assertEqual(pp.total_bps, 160)
+        self.assertEqual(pp.total_fixed, 5)
 
     def test_client_and_advisor_override(self):
         PricingPlanClient.objects.create(
@@ -68,6 +68,6 @@ class LogicTests(TestCase):
             bps=150,
             fixed=0,
         )
-        bps, fixed = self.client.my_pricing_plan
-        self.assertEqual(bps, 60)
-        self.assertEqual(fixed, 25)
+        pp = self.client.my_pricing_plan
+        self.assertEqual(pp.total_bps, 60)
+        self.assertEqual(pp.total_fixed, 25)

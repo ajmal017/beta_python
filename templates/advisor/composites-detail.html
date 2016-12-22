@@ -1,5 +1,5 @@
 {% extends "layouts_new/base.html" %}
-{% load i18n humanize filters %}
+{% load i18n humanize filters pricing_plan %}
 
 {% block main_content %}
   <div class="container">
@@ -56,7 +56,7 @@
           <thead>
           <tr>
             <th>Account</th>
-            <th>Pricing Plan*</th>
+            <th>Pricing Plan</th>
             <th>Login</th>
           </tr>
           </thead>
@@ -64,7 +64,7 @@
           {% for account in object.accounts.all %}
             <tr>
               <td>{{ account.name }}</td>
-              <td>&mdash;</td>
+ˆ              <td>{{ account.primary_owner.my_pricing_plan|display:"total" }}</td>
               <td><a
                   href="{% url "client:account" account.primary_owner.id account.id %}"
                   class="btn btn-primary-outline btn-xs"
