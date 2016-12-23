@@ -26,6 +26,7 @@ import logging
 import json
 from retiresmartz import advice_responses
 from main.event import Event
+from api.v1.utils import activity
 
 logger = logging.getLogger('api.v1.client.views')
 
@@ -241,6 +242,14 @@ class ClientViewSet(ApiViewMixin,
         goals = Goal.objects.filter(account__in=accounts)
         serializer = GoalSerializer(goals, many=True)
         return Response(serializer.data)
+
+    @detail_route(methods=['get'])
+    def activity(self, request, pk=None, **kwargs):
+        """
+        Return list of activities from all accounts of the given client
+        """
+        client = self.get_object()
+        return activity.get(request, client)
 
 
 class InvitesView(ApiViewMixin, views.APIView):
