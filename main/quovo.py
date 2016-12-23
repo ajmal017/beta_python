@@ -107,8 +107,7 @@ def get_iframe_token(req, django_user):
     return None
 
 def get_user_accounts(req, django_user):
-    #username = django_user.email
-    username = "testy"  # Here for purposes of showing up in the test view
+    username = django_user.email
     # Test if this user already exists on Quovo
     user = _user_exists(req, username)
     if user:
