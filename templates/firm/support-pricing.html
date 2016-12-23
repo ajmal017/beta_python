@@ -1,7 +1,14 @@
 {% extends "layouts_new/base.html" %}
-{% load i18n %}
-{% load filters %}
+{% load static from staticfiles %}
+{% load i18n filters pricing_plan %}
 
+{% block head_js %}
+  <script src="{% static 'js/client/firm/pricing-plans.js' %}" type="application/javascript"></script>
+{% endblock %}
+
+{% block css %}
+  <link rel="stylesheet" href="{% static "css/images/firm/pricing-plan.css" %}">
+{% endblock %}
 
 {% block main_content %}
   <div class="container">
@@ -17,46 +24,59 @@
 
     <div class="panel panel-default m-t">
       <div class="table-responsive">
+        <form method="post" id="pricing-plans">
+          {% csrf_token %}
+
+          <input type="hidden" name="submit" value="">
+
+          {{ advisor_formset.management_form }}
+          {{ client_formset.management_form }}
+
         <table class="table">
           <thead>
-            <tr>
-              <td width="20%"></td>
-              <td width="20%">Total fee</td>
-              <td width="15%">Platform fee</td>
-              <td width="15%">Firm fee</td>
-              <td width="20%">Custom fee</td>
-              <td width="20%"></td>
-            </tr>
+          <tr>
+            <th>&nbsp;</th>
+            <th>Name</th>
+            <th>Total fee</th>
+            <th>Platform fee</th>
+            <th>Fee</th>
+            <th></th>
+          </tr>
           </thead>
           <tbody>
-            <tr class="tr-middle">
-              <th>Firm</th>
-              <td class="text-danger">{{ fee|default:'125' }}&nbsp;bps</td>
-              <td>25 bps</td>
-              <td>100bps</td>
-              <td><input type="text" class="form-control input-sm"></td>
-              <td class="text-right"><button class="btn btn-primary btn-sm">Save</button></td>
-            </tr>
-            <tr class="tr-middle">
-              <th>Adviser</th>
-              <td class="text-danger">{{ fee|default:'105' }}&nbsp;bps</td>
-              <td>25 bps</td>
-              <td>100bps</td>
-              <td><input type="text" class="form-control input-sm"></td>
-              <td class="text-right"><button class="btn btn-primary btn-sm">Save</button></td>
-            </tr>
-            <tr class="tr-middle">
-              <th>Client</th>
-              <td class="text-danger">{{ fee|default:'145' }}&nbsp;bps</td>
-              <td>25 bps</td>
-              <td>100bps</td>
-              <td><input type="text" class="form-control input-sm"></td>
-              <td class="text-right"><button class="btn btn-primary btn-sm">Save</button></td>
-            </tr>
+          <tr class="firm">
+            <td>Firm</td>
+            <td>{{ firm.name }}</td>
+            <td>{{ firm.pricing_plan|display:"total" }}</td>
+            <td>{{ firm.pricing_plan|display:"system" }}</td>
+            <td>{{ firm.pricing_plan|display }}</td>
+            <td>
+                <div class="column">
+                  {% if firm_form.bps.errors %}
+                    <span class="error">{{ firm_form.bps.errors|join:"; " }}</span>
+                  {% endif %}
+                  <span>{{ firm_form.bps }} bps</span>,
+                </div>
+                <div class="column">
+                  {% if firm_form.fixed.errors %}
+                    <span class="error">{{ firm_form.fixed.errors|join:"; " }}</span>
+                  {% endif %}
+                  <span>${{ firm_form.fixed }}</span>
+                </div>
+                <div class="column">
+                  <button type="submit" data-type="firm">Save</button>
+                </div>
+            </td>
+          </tr>
+
+          {% include "firm/support-pricing-form.html" with type="advisor" formset=advisor_formset firm=firm %}
+
+          {% include "firm/support-pricing-form.html" with type="client" formset=client_formset firm=firm %}
+
           </tbody>
         </table>
+        </form>
       </div>
     </div>
-
   </div>
 {% endblock %}

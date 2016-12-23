@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.db.models import F, Q, Sum
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
@@ -24,12 +24,14 @@ from main.forms import BetaSmartzGenericUserSignupForm, EmailInvitationForm
 from main.models import Advisor, EmailInvitation, Goal, GoalMetric, GoalType, \
     PositionLot, Supervisor, Ticker, Transaction, User
 from main.views.base import LegalView
+from main.views.firm.forms import PricingPlanAdvisorFormset, \
+    PricingPlanClientFormset, PricingPlanForm
 from notifications.models import Notification, Notify
 from support.models import SupportRequest
 from .filters import FirmActivityFilterSet, FirmAnalyticsAdvisorsFilterSet, \
     FirmAnalyticsClientsFilterSet, FirmAnalyticsGoalsAdvisorsFilterSet, \
-    FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsOverviewFilterSet, \
-    FirmAnalyticsGoalsUsersFilterSet
+    FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsGoalsUsersFilterSet, \
+    FirmAnalyticsOverviewFilterSet
 
 logger = logging.getLogger('main.views.firm.dashboard')
 
@@ -714,6 +716,83 @@ class FirmApplicationView(TemplateView, LegalView):
 
 class FirmSupportPricingView(TemplateView, LegalView):
     template_name = "firm/support-pricing.html"
+
+    def _get_person_formset(self, formset_class, prefix, can_add, data=None):
+        formset = formset_class(
+            data=data,
+            prefix=prefix,
+            queryset=formset_class.model.objects.filter(parent__firm=self.firm,
+                                                        person__isnull=False)
+        )
+        formset.extra = can_add and 1 or 0
+        formset.firm = self.firm
+
+        return formset
+
+    def get_advisor_formset(self, data=None):
+        return self._get_person_formset(
+            data=data,
+            formset_class=PricingPlanAdvisorFormset,
+            prefix='advisor',
+            can_add=Advisor.objects.filter(firm=self.firm,
+                                           pricing_plan__isnull=True)
+        )
+
+    def get_client_formset(self, data=None):
+        return self._get_person_formset(
+            data=data,
+            formset_class=PricingPlanClientFormset,
+            prefix='client',
+            can_add=Client.objects.filter(advisor__firm=self.firm,
+                                          pricing_plan__isnull=True)
+        )
+
+    def _get_firm_form(self, data=None, instance=None):
+        return PricingPlanForm(prefix='firm', data=data, instance=instance)
+
+    def get_context_data(self, **kwargs):
+        ctx = super(FirmSupportPricingView, self).get_context_data(**kwargs)
+
+        if 'firm_form' not in ctx:
+            ctx['firm_form'] = self._get_firm_form()
+
+        if 'advisor_formset' not in ctx:
+            ctx['advisor_formset'] = self.get_advisor_formset()
+
+        if 'client_formset' not in ctx:
+            ctx['client_formset'] = self.get_client_formset()
+
+        return ctx
+
+    def post(self, request):
+        save_form = request.POST.get('submit', None)
+        if save_form not in ['firm', 'advisor', 'client']:
+            return HttpResponseRedirect(self.request.get_full_path())
+
+        return getattr(self, 'save_%s' % save_form)(request)
+
+    def save_firm(self, request):
+        form = self._get_firm_form(request.POST, self.firm.pricing_plan)
+        return self._save(request, form, 'firm_form')
+
+    def save_advisor(self, request):
+        formset = self.get_advisor_formset(request.POST)
+        return self._save(request, formset, 'advisor_formset')
+
+    def save_client(self, request):
+        formset = self.get_client_formset(request.POST)
+        return self._save(request, formset, 'client_formset')
+
+    def _save(self, request, form_or_formset, context_name):
+        if form_or_formset.is_valid():
+            form_or_formset.save()
+            return HttpResponseRedirect(request.get_full_path())
+        print(form_or_formset.errors)
+        ctx = {
+            context_name: form_or_formset,
+        }
+        context = self.get_context_data(**ctx)
+        return self.render_to_response(context)
 
 
 class FirmAdvisorClientDetails(DetailView, LegalView):

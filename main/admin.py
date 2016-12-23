@@ -4,18 +4,18 @@ from django.contrib.auth.hashers import make_password
 from django.db.models.fields import TextField
 from django.forms.widgets import Textarea
 from django.shortcuts import HttpResponseRedirect, render_to_response
-
-from genericadmin.admin import BaseGenericModelAdmin, GenericAdminModelAdmin
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from suit.admin import SortableModelAdmin, SortableTabularInline
+
 from advisors import models as advisor_models
-from main.models import AccountGroup, ActivityLog, \
-    ActivityLogEvent, Advisor, AuthorisedRepresentative, Dividend, \
-    EventMemo, Firm, FirmData, Goal, GoalMetric, GoalMetricGroup, GoalSetting, \
-    GoalType, MarketIndex, Performer, Portfolio, PortfolioItem, PortfolioSet, \
-    ProxyAssetClass, ProxyTicker, AssetFeature, \
-    Transaction, User, View, InvestmentType, FiscalYear, Ticker, PositionLot, AssetFeePlan, Inflation
+from genericadmin.admin import BaseGenericModelAdmin, GenericAdminModelAdmin
+from main.models import AccountGroup, ActivityLog, ActivityLogEvent, Advisor, \
+    AssetFeature, AssetFeePlan, AuthorisedRepresentative, Dividend, \
+    EventMemo, Firm, FirmData, FiscalYear, Goal, GoalMetric, GoalMetricGroup, \
+    GoalSetting, GoalType, Inflation, InvestmentType, MarketIndex, Performer, \
+    Portfolio, PortfolioItem, PortfolioSet, PositionLot, PricingPlan, \
+    ProxyAssetClass, ProxyTicker, Ticker, Transaction, User, View
 
 
 class AssetResource(resources.ModelResource):
@@ -196,9 +196,20 @@ def invite_supervisor(modeladmin, request, queryset):
                                     .format(pk=queryset.all()[0].pk))
 
 
+class PricingPlanAdmin(admin.ModelAdmin):
+    list_display = 'firm', 'bps', 'fixed', 'system_bps', 'system_fixed'
+
+
+class PricingPlanInline(admin.TabularInline):
+    model = PricingPlan
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 class FirmAdmin(admin.ModelAdmin):
     list_display = ('name',)
-    inlines = (FirmDataInline,)
+    inlines = (FirmDataInline, PricingPlanInline)
     actions = (invite_authorised_representative, invite_advisor, invite_supervisor)
 
 
@@ -352,6 +363,7 @@ admin.site.register(GoalSetting, GoalSettingAdmin)
 admin.site.register(GoalMetricGroup, GoalMetricGroupAdmin)
 admin.site.register(Dividend)
 admin.site.register(ProxyAssetClass, AssetClassAdmin)
+admin.site.register(PricingPlan, PricingPlanAdmin)
 admin.site.register(Firm, FirmAdmin)
 admin.site.register(Advisor, AdvisorAdmin)
 admin.site.register(AuthorisedRepresentative, AuthorisedRepresentativeAdmin)

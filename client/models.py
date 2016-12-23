@@ -20,7 +20,8 @@ from common.structures import ChoiceEnum
 from main import constants
 from main.abstract import NeedApprobation, NeedConfirmation, PersonalData
 from main.finance import mod_dietz_rate
-from main.models import AccountGroup, Goal, Platform
+from main.models import AccountGroup, Goal, Platform, PricingPlan, \
+    PricingPlanBase
 from retiresmartz.models import RetirementAdvice, RetirementPlan
 from .managers import ClientAccountQuerySet, ClientQuerySet
 
@@ -67,6 +68,8 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                                   max_length=20, null=True, blank=True)
     industry_sector = models.CharField(choices=constants.INDUSTRY_TYPES,
                                        max_length=20, null=True, blank=True)
+    employer_type = models.CharField(choices=constants.EMPLOYER_TYPES,
+                                     max_length=30, null=True, blank=True)
     student_loan = models.NullBooleanField(null=True, blank=True)
     employer = models.CharField(max_length=255, null=True, blank=True)
     smoker = models.NullBooleanField(null=True, blank=True)
@@ -242,6 +245,16 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
             scores['a_score'] / max_a if max_a > 0 else 0,
             scores['s_score'] / max_s if max_s > 0 else 0,
         )
+
+    @property
+    def my_pricing_plan(self) -> PricingPlanBase:
+        firm = self.advisor.firm
+
+        for obj in [self, self.advisor, firm]:
+            try:
+                return getattr(obj, 'pricing_plan')
+            except AttributeError:
+                pass
 
 
 class IBAccount(models.Model):

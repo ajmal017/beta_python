@@ -427,7 +427,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
 
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
-        performance = settings.portfolio.er + z_mult * settings.portfolio.stdev
+        performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
 
         today = timezone.now().date()
         retire_date = max(today, plan.client.date_of_birth + relativedelta(years=plan.retirement_age))
@@ -460,6 +460,16 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                                       end_date=death_date,
                                       contributions=plan.btc / 12)
 
+        #acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
+        #                              tax_rate=0.0,
+        #                              name='401k',
+        #                              today=today,
+        #                              opening_balance=plan.opening_tax_deferred_balance,
+        #                              growth=0.01,
+        #                              retirement_date=retire_date,
+        #                              end_date=death_date,
+        #                              contributions=4000 / 12)
+
         assets = [acc_401k]
 
         if plan.reverse_mortgage and plan.retirement_home_price is not None:
@@ -487,7 +497,6 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         cash_flows.append(rdcf)
 
         calculator = Calculator(cash_flows=cash_flows, assets=assets)
-
         asset_values, income_values = calculator.calculate(rdcf)
 
         # Convert these returned values to a format for the API

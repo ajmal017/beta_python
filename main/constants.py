@@ -130,6 +130,7 @@ ACCOUNT_TYPE_QUALIFIEDNPPLAN = 41
 ACCOUNT_TYPE_QUALIFIEDNPROTHPLAN = 42
 ACCOUNT_TYPE_QUALIFIEDPRIV457PLAN = 43
 ACCOUNT_TYPE_INDIVDUAL401K = 44
+ACCOUNT_TYPE_INDROTH401K = 45
 ACCOUNT_TYPE_OTHER = 99
 
 ACCOUNT_UNKNOWN = 'Other/Unknown'
@@ -175,6 +176,7 @@ ACCOUNT_TYPES = (
     (ACCOUNT_TYPE_QUALIFIEDNPROTHPLAN, "Qualified Nonprofit Roth Plan"),
     (ACCOUNT_TYPE_QUALIFIEDPRIV457PLAN, "Private 457 Plan"),
     (ACCOUNT_TYPE_INDIVDUAL401K, "Individual 401k Account"),
+    (ACCOUNT_TYPE_INDROTH401K, "Individual 401k Roth Account"),
 )
 ACCOUNT_TYPES_COUNTRY = {
     'AU': [
@@ -224,6 +226,7 @@ ACCOUNT_TYPES_COUNTRY = {
         ACCOUNT_TYPE_QUALIFIEDNPROTHPLAN,
         ACCOUNT_TYPE_QUALIFIEDPRIV457PLAN,
         ACCOUNT_TYPE_INDIVDUAL401K,
+        ACCOUNT_TYPE_INDROTH401K,
     ],
 }
 US_RETIREMENT_ACCOUNT_TYPES = [
@@ -298,4 +301,20 @@ INDUSTRY_TYPES = (
     ('NAICS 71',	'Arts, Entertainment, and Recreation'),
     ('NAICS 72',	'Accommodation and Food Services '),
     ('NAICS 81',	'Other Services')
+)
+
+EMPLOYER_OVER_100 = 0
+EMPLOYER_UNDER_100 = 1
+EMPLOYER_OWNER_OR_SPOUSE = 2
+EMPLOYER_PRIVATE_NPO = 3
+EMPLOYER_PUBLIC_NPO = 4
+EMPLOYER_GOVERNMENT = 5
+
+EMPLOYER_TYPES = (
+    (EMPLOYER_OVER_100, 'For-profit business (100+ employees)'),
+    (EMPLOYER_UNDER_100, 'For-profit business (up to 100 employees)'),
+    (EMPLOYER_OWNER_OR_SPOUSE, 'For-profit business (only business owner and spouse)'),
+    (EMPLOYER_PRIVATE_NPO, 'Non-profit private organization'),
+    (EMPLOYER_PUBLIC_NPO, 'Non-profit public organization'),
+    (EMPLOYER_GOVERNMENT, 'Government (Local, State, Federal)'),
 )
