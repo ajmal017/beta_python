@@ -666,8 +666,8 @@ class ClientTests(APITestCase):
         self.assertEqual(response.data['employer_type'], 3)
 
     def test_get_no_activity(self):
-        url = '/api/v1/clients/{}/activity'.format(self.betasmartz_client.id)
-        self.client.force_authenticate(self.user)
+        url = '/api/v1/clients/{}/activity'.format(Fixture1.personal_account1().primary_owner.id)
+        self.client.force_authenticate(user=Fixture1.personal_account1().primary_owner.user)
         response = self.client.get(url)
         self.assertEqual(response.data, [])
 
@@ -680,8 +680,8 @@ class ClientTests(APITestCase):
         ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED)
         ActivityLogEvent.get(Event.GOAL_DEPOSIT_EXECUTED)
 
-        url = '/api/v1/clients/{}/activity'.format(Fixture1.client1().id)
-        self.client.force_authenticate(user=Fixture1.client1().user)
+        url = '/api/v1/clients/{}/activity'.format(Fixture1.personal_account1().primary_owner.id)
+        self.client.force_authenticate(user=Fixture1.personal_account1().primary_owner.user)
         response = self.client.get(url)
         self.assertEqual(len(response.data), 4)
         self.assertEqual(response.data[0], {'goal': 1,
