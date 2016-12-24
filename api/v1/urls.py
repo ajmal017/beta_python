@@ -96,6 +96,8 @@ urlpatterns = patterns(
 
     url(r'^support-requests/?$', support_views.RequestAdvisorSupportView.as_view(), name='support-requests'),
 
+    url(r'^quovo/external-accounts/?$', client_views.ExternalAccountsView.as_view(), name='external-accounts'),
+    url(r'^quovo/iframe-token/?$', client_views.IframeTokenView.as_view(), name='iframe-token'),
     url(r'^error/?$', errorlog_views.LogErrorView.as_view(), name='error-log'),
 )
 

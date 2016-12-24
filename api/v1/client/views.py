@@ -10,7 +10,7 @@ from rest_framework.decorators import detail_route
 from api.v1.client.serializers import EmailNotificationsSerializer, \
     PersonalInfoSerializer
 from api.v1.permissions import IsClient
-from api.v1.views import ApiViewMixin
+from api.v1.views import ApiViewMixin, ReadOnlyApiViewMixin
 from main.models import ExternalAsset, User, Goal
 from notifications.models import Notify
 from user.models import SecurityAnswer
@@ -27,6 +27,8 @@ import json
 from retiresmartz import advice_responses
 from main.event import Event
 from api.v1.utils import activity
+
+from main import quovo
 
 logger = logging.getLogger('api.v1.client.views')
 
@@ -374,10 +376,6 @@ class ProfileView(ApiViewMixin, RetrieveUpdateAPIView):
     def get_object(self):
         return Client.objects.get(user=self.request.user)
 
-    def perform_update(self, serializer):
-        Notify.UPDATE_PERSONAL_INFO.send(self.request.user.client)
-        return super(ProfileView, self).perform_update(serializer)
-
 
 class ClientResendInviteView(SingleObjectMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
@@ -389,3 +387,20 @@ class ClientResendInviteView(SingleObjectMixin, views.APIView):
             return Response('forbidden', status=status.HTTP_403_FORBIDDEN)
         invite.send()
         return Response('ok', status=status.HTTP_200_OK)
+
+
+class ExternalAccountsView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def get(self, request, *args, **kwargs):
+        data = quovo.get_user_accounts(request, request.user)
+        return Response(data)
+
+
+class IframeTokenView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def get(self, request, *args, **kwargs):
+        token = quovo.get_iframe_token(request, request.user)
+        data = {"token": token}
+        return Response(data)
