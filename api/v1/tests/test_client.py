@@ -681,7 +681,7 @@ class ClientTests(APITestCase):
         ActivityLogEvent.get(Event.GOAL_DEPOSIT_EXECUTED)
 
         url = '/api/v1/clients/{}/activity'.format(Fixture1.client1().id)
-        self.client.force_authenticate(user=Fixture1.client1_user())
+        self.client.force_authenticate(user=Fixture1.client1().user)
         response = self.client.get(url)
         self.assertEqual(len(response.data), 4)
         self.assertEqual(response.data[0], {'goal': 1,
