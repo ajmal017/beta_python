@@ -187,10 +187,11 @@ def get(request, obj):
                      Q(content_type=ctm[Goal], object_id__in=goal_ids))
     elif isinstance(obj, Client):
         goal = None
-        accounts = ClientAccount.objects.filter(primary_owner=obj)
+        accounts = ClientAccount.objects.filter(Q(primary_owner=obj) | Q(signatories__id=obj.id))
         account_ids = accounts.values_list('id', flat=True)
-        goals = Goal.objects.filter(account__in=accounts)
-        goal_ids = goals.values_list('id', flat=True)
+        goal_ids = []
+        for account in accounts:
+            goal_ids = goal_ids + list(account.goals.values_list('id', flat=True))
         # Filter for only the events where the object is account or goal
         ctm = ContentType.objects.get_for_models(ClientAccount, Goal)
         el_filter = (Q(content_type=ctm[ClientAccount], object_id__in=account_ids) |
