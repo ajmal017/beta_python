@@ -208,15 +208,19 @@ class RetirementPlan(TimestampedModel):
         :return:
         """
         old_setting = self.goal_setting
-        self.goal_setting = new_setting
-        self.save()
-        if old_setting is not None:
-            old_group = old_setting.metric_group
-            custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
-            last_user = old_group.settings.count() == 1
-            old_setting.delete()
-            if custom_group and last_user:
-                old_group.delete()
+        if not old_setting.was_agreed:
+            self.goal_setting = new_setting
+            self.save()
+            if old_setting is not None:
+                old_group = old_setting.metric_group
+                custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
+                last_user = old_group.settings.count() == 1
+                old_setting.delete()
+                if custom_group and last_user:
+                    old_group.delete()
+        else:
+            pass
+            #TODO - let the user know that he has agreed on plan
 
     @cached_property
     def spendable_income(self):
