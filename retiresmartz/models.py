@@ -208,7 +208,7 @@ class RetirementPlan(TimestampedModel):
         :return:
         """
         old_setting = self.goal_setting
-        if not old_setting.was_agreed:
+        if old_setting is not None and not old_setting.was_agreed:
             self.goal_setting = new_setting
             self.save()
             if old_setting is not None:
