@@ -30,7 +30,6 @@ class AccountTests(APITestCase):
             'account_name': 'Test Account',
             'account_number': '1234567890',
             'primary_owner': client.id,
-            'asset_fee_plan': Fixture1.asset_fee_plan1(),
         }
         old_count = ClientAccount.objects.count()
         self.client.force_authenticate(user=Fixture1.client1_user())
