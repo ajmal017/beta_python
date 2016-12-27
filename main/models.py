@@ -1794,7 +1794,7 @@ class Goal(models.Model):
             er = 1 + self.selected_settings.portfolio.er
             stdev = self.selected_settings.portfolio.stdev
 
-        # use naïve dates for calculations
+        # use naive dates for calculations
         current_time = now().replace(tzinfo=None)
         # Get the predicted cash-flow events until the provided future date
         cf_events = [(current_time, self.total_balance)]
