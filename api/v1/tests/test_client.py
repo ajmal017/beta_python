@@ -699,3 +699,16 @@ class ClientTests(APITestCase):
         self.assertEqual(response.data[3], {'balance': 3000.0,
                                             'time': 978307200,
                                             'type': ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED).activity_log.id}) # Balance
+    def test_external_accounts(self):
+        url = '/api/v1/quovo/external-accounts'
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+        self.assertContains(response,'data')
+
+    def test_iframe_token(self):
+        url = '/api/v1/quovo/iframe-token'
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+        self.assertContains(response,'data')
