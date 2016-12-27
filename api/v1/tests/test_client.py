@@ -663,3 +663,19 @@ class ClientTests(APITestCase):
                          msg='200 for authenticated put request to update client employer type field')
         self.assertEqual(response.data['id'], self.betasmartz_client.id)
         self.assertEqual(response.data['employer_type'], 3)
+
+    def test_external_accounts(self):
+        url = '/api/v1/quovo/external-accounts'
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+        self.assertContains(response,'data')
+
+    def test_iframe_token(self):
+        url = '/api/v1/quovo/iframe-token'
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+        self.assertContains(response,'data')
+
+

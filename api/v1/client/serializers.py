@@ -32,6 +32,9 @@ class ClientSerializer(ReadOnlyModelSerializer):
     class Meta:
         model = Client
 
+    def get(self,*args,**kwargs):
+        import ipdb;ipdb.set_trace()
+
     def get_reason(self, obj):
         if hasattr(obj.user, 'invitation'):
             return obj.user.invitation.reason
