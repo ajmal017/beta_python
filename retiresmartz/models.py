@@ -209,7 +209,6 @@ class RetirementPlan(TimestampedModel):
         """
         old_setting = self.goal_setting
         self.goal_setting = new_setting
-        print (not(old_setting and old_setting.retirement_plan.agreed_on))
         if not(old_setting and old_setting.retirement_plan.agreed_on):
              self.save()
 
