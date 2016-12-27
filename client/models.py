@@ -318,7 +318,7 @@ class ClientAccount(models.Model):
     tax_loss_harvesting_status = models.CharField(max_length=255, choices=(
         ("USER_OFF", "USER_OFF"),
         ("USER_ON", "USER_ON")), default="USER_OFF")
-    asset_fee_plan = models.ForeignKey('main.AssetFeePlan', null=True)
+    asset_fee_plan = models.ForeignKey('main.AssetFeePlan')
     default_portfolio_set = models.ForeignKey('main.PortfolioSet')
     cash_balance = models.FloatField(default=0,
                                      help_text='The amount of cash in this '
@@ -354,6 +354,8 @@ class ClientAccount(models.Model):
             self.token = str(uuid.uuid4())
         if self.confirmed != self.__was_confirmed:
             self.on_confirmed_modified()
+        if self.asset_fee_plan_id is None:
+            self.asset_fee_plan_id = 1
         ret_value = super(ClientAccount, self).save(force_insert, force_update, using, update_fields)
         self.__was_confirmed = self.confirmed
         return ret_value
