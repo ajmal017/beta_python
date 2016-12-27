@@ -432,11 +432,14 @@ class Fixture1:
 
     @classmethod
     def goal1(cls):
-        return Goal.objects.get_or_create(account=Fixture1.personal_account1(),
-                                          name='goal1',
-                                          type=Fixture1.goal_type1(),
-                                          portfolio_set=Fixture1.portfolioset1(),
-                                          selected_settings=Fixture1.settings1())[0]
+        params = {
+            'account': Fixture1.personal_account1(),
+            'name': 'goal1',
+            'type': Fixture1.goal_type1(),
+            'portfolio_set': Fixture1.portfolioset1(),
+            'selected_settings': Fixture1.settings1()
+        }
+        return Goal.objects.get_or_create(id=1, defaults=params)[0]
 
     @classmethod
     def goal2(cls):

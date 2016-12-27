@@ -5,6 +5,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import detail_route
 from api.v1.client.serializers import EmailNotificationsSerializer, \
@@ -26,6 +27,7 @@ import logging
 import json
 from retiresmartz import advice_responses
 from main.event import Event
+from api.v1.utils import activity
 
 from main import quovo
 
@@ -244,6 +246,14 @@ class ClientViewSet(ApiViewMixin,
         serializer = GoalSerializer(goals, many=True)
         return Response(serializer.data)
 
+    @detail_route(methods=['get'])
+    def activity(self, request, pk=None, **kwargs):
+        """
+        Return list of activities from all accounts of the given client
+        """
+        client = self.get_object()
+        return activity.get(request, client)
+
 
 class InvitesView(ApiViewMixin, views.APIView):
     permission_classes = []
@@ -382,16 +392,19 @@ class ClientResendInviteView(SingleObjectMixin, views.APIView):
 
 class ExternalAccountsView(ReadOnlyApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer, )
 
     def get(self, request, *args, **kwargs):
         data = quovo.get_user_accounts(request, request.user)
-        return Response(data)
+
+        return Response({'data':data})
 
 
 class IframeTokenView(ReadOnlyApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer,)
 
     def get(self, request, *args, **kwargs):
         token = quovo.get_iframe_token(request, request.user)
         data = {"token": token}
-        return Response(data)
+        return Response({'data':data})
