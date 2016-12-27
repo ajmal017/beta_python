@@ -38,6 +38,10 @@ main() {
     then
         DBPW='OOJNVuo2ojamscop9j092'
         REDDB=8
+    elif [[ ${2} == 'ipdev' ]]
+    then
+        DBPW='Nuion4582nN9a1@'
+        REDDB=9
     elif [[ ${2} == 'production' ]]
     then
         # production deployment on separate machine

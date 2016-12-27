@@ -9,6 +9,7 @@ ADD /dev.sh /docker-entrypoint-initdb.d/dev.sh
 ADD /demo.sh /docker-entrypoint-initdb.d/demo.sh
 ADD /demostaging.sh /docker-entrypoint-initdb.d/demostaging.sh
 ADD /ipdemostaging.sh /docker-entrypoint-initdb.d/ipdemostaging.sh
+ADD /ipdev.sh /docker-entrypoint-initdb.d/ipdev.sh
 ADD /prod.sh /docker-entrypoint-initdb.d/prod.sh
 ADD /aus.sh /docker-entrypoint-initdb.d/aus.sh
 ADD /beta.sh /docker-entrypoint-initdb.d/beta.sh
@@ -24,6 +25,7 @@ RUN chmod +x /docker-entrypoint-initdb.d/dev.sh
 RUN chmod +x /docker-entrypoint-initdb.d/demo.sh
 RUN chmod +x /docker-entrypoint-initdb.d/demostaging.sh
 RUN chmod +x /docker-entrypoint-initdb.d/ipdemostaging.sh
+RUN chmod +x /docker-entrypoint-initdb.d/ipdev.sh
 RUN chmod +x /docker-entrypoint-initdb.d/prod.sh
 RUN chmod +x /docker-entrypoint-initdb.d/aus.sh
 RUN chmod +x /docker-entrypoint-initdb.d/beta.sh
