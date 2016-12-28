@@ -55,6 +55,12 @@ main() {
         DBPW=${DEMO_DBPW}
         POSTGRES_PASSWORD=${PRODUCTION_POSTGRES}
         REDDB=2
+    elif [[ ${2} == 'ipdemo' ]]
+    then
+        # ipdemo deploys on production machine
+        DBPW=${IPDEMO_DBPW}
+        POSTGRES_PASSWORD=${PRODUCTION_POSTGRES}
+        REDDB=3
     else
         echo "Unsupported auto-deployment for domain: ${2}" >&2
 	exit 1
