@@ -4,36 +4,7 @@
 
 {% block foot_js %}
   <script type="application/javascript" src="{% static "js/widgets.js" %}"></script>
-  <script type="application/javascript">
-  $(function () {
-      betasmartz.widgets.searchTable("table.goals", undefined, {
-          "initialSorting": []
-      });
-
-      $("table.goals tbody tr").find(".save-portfolio")
-          .hide()
-          .click(function () {
-              var form = $(this).closest("form");
-              $.post(location.href, {
-                  "csrfmiddlewaretoken": form.find("[name=csrfmiddlewaretoken]").val(),
-                  "goal_id": form.find("[name=goal_id]").val(),
-                  "portfolio_id": form.find("[name=portfolio_id] option:selected").val()
-              }, function (r) {
-                  form.find(".save-portfolio").hide();
-              });
-          })
-          .end()
-          .find("select").change(function (e) {
-          var select = $(e.currentTarget),
-              submit = select.closest("tr").find(".save-portfolio");
-          if (select.find("option:selected").val() == select.data("originalValue")) {
-              submit.hide();
-          } else {
-              submit.show();
-          }
-      });
-  });
-  </script>
+  <script type="application/javascript" src="{% static "js/advisor/composites-detail.js" %}"></script>
 {% endblock %}
 
 {% block main_content %}
@@ -114,7 +85,7 @@
                     <th>Status</th>
                     <th>Balance</th>
                     <th>Return</th>
-                    <th>Portfolio Strategy*</th>
+                    <th>Portfolio Strategy</th>
                     <th>Auto Frequency</th>
                     <th>Auto Amount</th>
                     <th>Term</th>
@@ -134,14 +105,14 @@
                           {% csrf_token %}
                           <input type="hidden" name="goal_id"
                                  value="{{ goal.id }}">
-                          <select name="portfolio_id" title="Portfolio" data-original-value="{{ goal.portfolio_set.id }}">
+                          <select name="portfolio_id" title="Portfolio" class="form-control" data-original-value="{{ goal.portfolio_set.id }}">
                             {% for portfolio in portfolios %}
                               <option value="{{ portfolio.id }}"
                                   {% if portfolio == goal.portfolio_set %}
                                       selected{% endif %}>{{ portfolio.name }}</option>
                             {% endfor %}
                           </select>
-                          <a class="save-portfolio">Save</a>
+                          <a class="save-portfolio btn btn-success btn-xs hidden">Save</a>
                         </form>
                         {% endif %}
                       </td>
