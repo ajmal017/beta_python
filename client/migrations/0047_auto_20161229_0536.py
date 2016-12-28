@@ -14,7 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='clientaccount',
             name='asset_fee_plan',
-            field=models.ForeignKey(default=0, to='main.AssetFeePlan'),
-            preserve_default=False,
+            field=models.ForeignKey(to='main.AssetFeePlan'),
         ),
     ]
