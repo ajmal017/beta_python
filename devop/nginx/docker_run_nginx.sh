@@ -9,6 +9,8 @@ docker run --link demo_betasmartz_app:demo \
            --link betastaging_betasmartz_app:betastaging \
            --link staging_betasmartz_app:staging \
            --link demostaging_betasmartz_app:demostaging \
+           --link ipdemostaging_betasmartz_app:ipdemostaging \
+           --link ipdev_betasmartz_app:ipdev \
            -v /home/bsmartz/v2_static:/betasmartz/v2/collected_static \
            -v /home/bsmartz/v2_media:/betasmartz/v2/media \
            -v /home/bsmartz/aus_media:/betasmartz/aus/media \

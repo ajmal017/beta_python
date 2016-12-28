@@ -3,6 +3,7 @@
 # mount deployed environments to the nginx
 docker run --link production_betasmartz_app:production \
            --link demo_betasmartz_app:demo \
+           --link ipdemo_betasmartz_app:ipdemo \
            -v /home/bsmartz/ui_dist:/betasmartz/ui_dist/ \
            -v /home/bsmartz/nginx_conf:/etc/nginx/conf.d \
            -v /home/bsmartz/nginx_ssl:/etc/nginx/ssl \

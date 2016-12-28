@@ -14,5 +14,7 @@ docker start beta_betasmartz_app
 docker start betastaging_betasmartz_app
 docker start staging_betasmartz_app
 docker start demostaging_betasmartz_app
+docker start ipdemostaging_betasmartz_app
+docker start ipdev_betasmartz_app
 
 docker start nginx
