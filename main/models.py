@@ -1000,6 +1000,9 @@ class Ticker(FinancialInstrument):
     benchmark_object_id = models.PositiveIntegerField(null=True,
                                                       verbose_name='Benchmark Instrument')
     benchmark = GenericForeignKey('benchmark_content_type', 'benchmark_object_id')
+    manager_benchmark = models.ManyToManyField('MarketIndex',
+                                               related_name='manager_tickers',
+                                               through='ManagerBenchmarks')
     daily_prices = GenericRelation('DailyPrice',
                                    content_type_field='instrument_content_type',
                                    object_id_field='instrument_object_id')
@@ -1140,6 +1143,15 @@ class Ticker(FinancialInstrument):
 @receiver(post_save, sender=Ticker)
 def populate_ticker_features(sender, instance, created, **kwargs):
     instance.populate_features()
+
+
+class ManagerBenchmarks(models.Model):
+    ticker = models.ForeignKey('Ticker')
+    market_index = models.ForeignKey('MarketIndex')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = 'ticker', 'market_index'
 
 
 class EmailInvitation(models.Model):
