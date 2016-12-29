@@ -686,5 +686,4 @@ class RetiresmartzTests(APITestCase):
         ss_income = ss_all.get(67, None)
         if ss_income is None:
             ss_income = ss_all[sorted(ss_all)[0]]
-
         self.assertTrue(ss_income == 2487)

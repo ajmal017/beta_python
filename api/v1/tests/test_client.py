@@ -541,6 +541,31 @@ class ClientTests(APITestCase):
         self.assertNotEqual(usr.id, 44)
         self.assertEqual(response.data['user']['id'], usr.id)
 
+    def test_advisor_invite_states_displayed(self):
+        usr_accepted = UserFactory.create()
+        invite_accepted = EmailInviteFactory.create(user=usr_accepted, status=EmailInvite.STATUS_ACCEPTED)
+        self.assertEqual(invite_accepted.get_status_display(),'Accepted')
+
+        usr_completed = UserFactory.create()
+        invite_completed = EmailInviteFactory.create(user=usr_completed, status=EmailInvite.STATUS_COMPLETE)
+        self.assertEqual(invite_completed.get_status_display(),'Complete')
+
+        usr_created = UserFactory.create()
+        invite_created = EmailInviteFactory.create(user=usr_created, status=EmailInvite.STATUS_CREATED)
+        self.assertEqual(invite_created.get_status_display(),'Created')
+
+        usr_expired = UserFactory.create()
+        invite_expired = EmailInviteFactory.create(user=usr_expired, status=EmailInvite.STATUS_EXPIRED)
+        self.assertEqual(invite_expired.get_status_display(),'Expired')
+
+        usr_sent = UserFactory.create()
+        invite_sent = EmailInviteFactory.create(user=usr_sent, status=EmailInvite.STATUS_SENT)
+        self.assertEqual(invite_sent.get_status_display(),'Sent')
+
+
+
+
+
     def test_update_client_tax_filing_status(self):
         """
 
@@ -712,3 +737,4 @@ class ClientTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code,status.HTTP_200_OK)
         self.assertContains(response,'data')
+
