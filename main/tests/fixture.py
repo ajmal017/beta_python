@@ -19,7 +19,7 @@ from main.models import Advisor, AssetClass, DailyPrice, Execution, \
     ExecutionDistribution, ExternalAsset, Firm, Goal, \
     GoalMetricGroup, GoalSetting, GoalType, HistoricalBalance, MarketIndex, \
     PortfolioSet, Region, Ticker, User, ExternalInstrument, \
-    Transaction, MarketOrderRequest, GoalMetric
+    Transaction, MarketOrderRequest, GoalMetric, AssetFeePlan
 from main.risk_profiler import MINIMUM_RISK
 from retiresmartz.models import RetirementPlan
 from api.v1.tests.factories import PortfolioFactory, GoalMetricGroupFactory
@@ -209,6 +209,11 @@ class Fixture1:
         return plan1
 
     @classmethod
+    def asset_fee_plan1(cls):
+        return AssetFeePlan.objects.get_or_create(name='Default Fee Plan',
+                                                description='An example asset fee plan')[0]
+    
+    @classmethod
     def risk_profile_group1(cls):
         return RiskProfileGroup.objects.get_or_create(name='risk_profile_group1')[0]
 
@@ -362,6 +367,7 @@ class Fixture1:
             'primary_owner': Fixture1.client1(),
             'default_portfolio_set': Fixture1.portfolioset1(),
             'confirmed': True,
+            'asset_fee_plan': Fixture1.asset_fee_plan1(),
         }
         return ClientAccount.objects.get_or_create(id=1, defaults=params)[0]
 
@@ -372,6 +378,7 @@ class Fixture1:
             'primary_owner': Fixture1.client2(),
             'default_portfolio_set': Fixture1.portfolioset2(),
             'confirmed': True,
+            'asset_fee_plan': Fixture1.asset_fee_plan1(),
         }
         return ClientAccount.objects.get_or_create(id=2, defaults=params)[0]
 

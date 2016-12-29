@@ -209,14 +209,16 @@ class RetirementPlan(TimestampedModel):
         """
         old_setting = self.goal_setting
         self.goal_setting = new_setting
-        self.save()
+        if not(old_setting and old_setting.retirement_plan.agreed_on):
+             self.save()
+
         if old_setting is not None:
-            old_group = old_setting.metric_group
-            custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
-            last_user = old_group.settings.count() == 1
-            old_setting.delete()
-            if custom_group and last_user:
-                old_group.delete()
+                old_group = old_setting.metric_group
+                custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
+                last_user = old_group.settings.count() == 1
+                old_setting.delete()
+                if custom_group and last_user:
+                    old_group.delete()
 
     @cached_property
     def spendable_income(self):
