@@ -44,13 +44,21 @@
               <td>{{ invite.send_count }}</td>
               <td class="text-xs-right">
                 {% if invite.can_resend %}
-                  <form method="post" action="{% url "advisors:clients:invites-resend" invite.id %}">
+                  <form method="post" action="{% url "advisors:clients:invites-resend" invite.id %}" style='display:inline-block;'>
                     {% csrf_token %}
                     <button type="submit" class="btn btn-primary-outline btn-xs">Resend</button>
                   </form>
                 {% else %}
                     {{ invite.get_status_name }}
                 {% endif %}
+		{% if invite.status == 2 %} {%comment%} 2 - Accepted, we want user then to confirm  {%endcomment%}
+		 <form method="get" action="{% url "advisors:clients:delete" invite.id %}" style='disply:inline-block'> 
+		{% else %}
+		 <form method="post" action="{% url "advisors:clients:delete" invite.id %}" style='display:inline-block;'>
+		   {% csrf_token %}
+		{% endif %}
+		   <button type="submit" class="btn btn-primary-outline btn-xs">Delete</button>
+		</form>
               </td>
             </tr>
             {% empty %}
