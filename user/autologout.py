@@ -2,6 +2,7 @@ from calendar import timegm
 from datetime import datetime
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.utils import timezone
@@ -32,8 +33,14 @@ class SessionExpire:
             now = timegm(timezone.now().utctimetuple())
             if expire_at < now:
                 self.request.session.flush()
+                self.notify_user_its_expired()
             else:
                 self.keep_alive()
+
+    def notify_user_its_expired(self):
+        messages.add_message(self.request, messages.WARNING,
+                             'You have been logged out due to inactivity '
+                             'to prevent unauthorised access.')
 
 
 class SessionExpireMiddleware:

@@ -2,7 +2,7 @@
   {% if messages %}
     <ul class="list-unstyled">
       {% for message in messages %}
-        <li class="alert alert-success alert-dismissible m-b" role="alert">
+        <li class="alert alert-{{ message.level_tag }} alert-dismissible m-b" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
           {{ message }}
         </li>

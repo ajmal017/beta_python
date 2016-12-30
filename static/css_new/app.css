@@ -118,6 +118,10 @@ table thead .active .icon-sort {
   color: black;
 }
 
+.alert-warning {
+  color: #890006;
+}
+
 .legal {
   font-size: 18px;
   margin-top: 30px;

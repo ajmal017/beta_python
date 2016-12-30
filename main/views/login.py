@@ -1,3 +1,6 @@
+import logging
+
+import os
 from django.contrib import messages
 from django.contrib.auth import (
     logout as auth_logout,
@@ -6,16 +9,17 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import (
     login as auth_views_login,
 )
-from django.core.urlresolvers import reverse_lazy
+from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
-from django.shortcuts import redirect
+
 from geolocation.geolocation import check_ip_city
-import logging
-import os
+from user.autologout import SessionExpire
+
 ENVIRONMENT = os.environ.get('ENVIRONMENT', 'dev')
 logger = logging.getLogger('main.views.login')
 
@@ -94,12 +98,12 @@ def login(request, template_name='registration/login.html',
 
         # custom redirect
         redirect_to = request.GET.get('next',
-                                      reverse_lazy('client:page',
+                                      reverse('client:page',
                                                    args=(user.client.id,))
                                       if is_client
-                                      else reverse_lazy('advisor:overview')
+                                      else reverse('advisor:overview')
                                       if is_advisor
-                                      else reverse_lazy('firm:overview')
+                                      else reverse('firm:overview')
                                       if is_representative
                                       else None)
 
@@ -111,4 +115,8 @@ def login(request, template_name='registration/login.html',
 
 def logout(request):
     auth_logout(request)
-    return HttpResponseRedirect(reverse_lazy('login'))
+
+    if 'se' in request.REQUEST:
+        SessionExpire(request).notify_user_its_expired()
+
+    return HttpResponseRedirect(reverse('login'))
