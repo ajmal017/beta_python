@@ -1,16 +1,12 @@
 import json
+
+from django.conf.urls import patterns, url
+from django.contrib import admin
+from django.contrib.contenttypes.admin import GenericStackedInline, GenericTabularInline
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from functools import update_wrapper
 
-from django.contrib import admin
-from django.conf.urls import patterns, url
-from django.conf import settings
-try:
-    from django.contrib.contenttypes.generic import GenericForeignKey,  GenericTabularInline, GenericStackedInline
-except ImportError:
-    from django.contrib.contenttypes.admin import GenericStackedInline, GenericTabularInline
-    from django.contrib.contenttypes.fields import GenericForeignKey
-
-from django.contrib.contenttypes.models import ContentType
 try:
     from django.utils.encoding import force_text 
 except ImportError:

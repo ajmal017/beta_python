@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.db.models import Q
-from django.db.models.loading import get_model
+
 from main.models import GoalMetric
 
 
@@ -66,7 +66,7 @@ class ClientQuerySet(models.query.QuerySet):
         return qs
 
     def filter_by_worth(self, worth=None):
-        Client = get_model('client', 'Client')
+        from client.models import Client
         if worth is None:
             return self
         qs = self
