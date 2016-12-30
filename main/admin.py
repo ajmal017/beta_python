@@ -15,7 +15,8 @@ from main.models import AccountGroup, ActivityLog, ActivityLogEvent, Advisor, \
     EventMemo, Firm, FirmData, FiscalYear, Goal, GoalMetric, GoalMetricGroup, \
     GoalSetting, GoalType, Inflation, InvestmentType, MarketIndex, Performer, \
     Portfolio, PortfolioItem, PortfolioSet, PositionLot, PricingPlan, \
-    ProxyAssetClass, ProxyTicker, Ticker, Transaction, User, View
+    ProxyAssetClass, ProxyTicker, Ticker, Transaction, User, View, \
+    ManagerBenchmarks
 
 
 class AssetResource(resources.ModelResource):
@@ -311,8 +312,12 @@ class FiscalYearAdmin(admin.ModelAdmin):
     model = FiscalYear
 
 
+class ManagerBenchmarksAdmin(admin.TabularInline):
+    model = ManagerBenchmarks
+
+
 class TickerAdmin(admin.ModelAdmin):
-    model = Ticker
+    inlines = ManagerBenchmarksAdmin,
     list_display = (
         'symbol',
         'unit_price',
