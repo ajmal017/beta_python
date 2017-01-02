@@ -356,7 +356,7 @@ def perturbate_mix(goal, opt_inputs):
         except:
             pass
         if weights is not None:
-            return weights
+            return weights, get_weights(desired_lots, goal.available_balance)
 
     return weights, get_weights(desired_lots, goal.available_balance)
 
