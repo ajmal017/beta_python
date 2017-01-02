@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from pinax.eventlog.models import Log
-
+from execution.end_of_day import create_sale
 import address.models as ad
 from api.v1.tests.factories import GoalMetricFactory, TransactionFactory, PositionLotFactory, \
     InvestmentCycleObservationFactory, TickerFactory, AssetFeatureValueFactory, GoalFactory, PortfolioSetFactory, \
@@ -814,13 +814,16 @@ class Fixture1:
                                                 status=Transaction.STATUS_EXECUTED,
                                                 executed=executed,
                                                 amount=quantity*price)
-
-
         distribution = ExecutionDistributionFactory.create(execution=execution,
                                                            transaction=transaction,
                                                            volume=quantity,
                                                            execution_request=er)
-        position_lot = PositionLotFactory.create(quantity=quantity, execution_distribution=distribution)
+
+        if quantity > 0:
+            position_lot = PositionLotFactory.create(quantity=quantity, execution_distribution=distribution)
+        else:
+            create_sale(ticker, quantity, price, distribution)
+            position_lot = None
 
         return_values = list()
         return_values.extend((mor, execution, transaction, distribution, position_lot))

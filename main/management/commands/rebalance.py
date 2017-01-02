@@ -447,12 +447,10 @@ def get_largest_min_weight_per_asset(held_weights, tax_weights):
     return min_weights
 
 
-def get_weight_max_per_asset(held_weights, tax_weights):
+def get_tax_max_weights(held_weights, tax_weights):
     max_weights = dict()
     for w in held_weights.items():
         if w[0] in tax_weights:
-            max_weights[w[0]] = max(float(tax_weights[w[0]]), float(w[1]))
-        else:
             max_weights[w[0]] = float(w[1])
     return max_weights
 
@@ -474,11 +472,11 @@ def perturbate(goal, idata, data_provider, execution_provider):
     min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
 
     tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-    max_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_max_weights)
+    #max_weights = get_tax_max_weights(held_weights=held_weights, tax_weights=tax_max_weights)
 
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
 
-    weights = optimise_up(opt_inputs, min_weights, max_weights)
+    weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
     if weights is None:
         # relax constraints and allow to sell short term losses, then relax and allow long term losses,

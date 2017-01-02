@@ -69,11 +69,22 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
             annotate(tid=F('execution_distribution__execution__asset__id')).values('tid').\
             annotate(value=Coalesce(Sum(F('quantity') * F('execution_distribution__execution__asset__unit_price')), 0))
 
+        lot_ids = PositionLot.objects.\
+            filter(execution_distribution__transaction__from_goal__id=goal.id,
+                   execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value).\
+            annotate(tid=F('execution_distribution__execution__asset__id')).values_list('tid', flat=True)
+
+
         weights = dict()
         bal = goal.available_balance
         for l in lots:
             if l['tid'] in assets:
                 weights[l['tid']] = l['value']/bal
+
+        # add max constraints for assets we do not have in portfolio currently
+        for a in assets:
+            if a not in lot_ids:
+                weights[a] = 0
 
         return weights
 
