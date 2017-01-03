@@ -150,7 +150,6 @@ class RebalanceTest(test.TestCase):
         executed = datetime(year=2016, month=5, day=15)
         for i in range(3, 5):
             Fixture1.create_execution_details(self.goal, self.tickers[i], -self.quantities[i],self.tickers[i].unit_price, executed)
-            #create_sale(self.tickers[i], self.quantities[i], self.tickers[i].unit_price, self.execution_details[i][3])
             self.goal.cash_balance += self.tickers[i].unit_price * abs(self.quantities[i])
 
         items = PortfolioItem.objects.all()
@@ -168,3 +167,9 @@ class RebalanceTest(test.TestCase):
 
         weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
         self.assertAlmostEqual(weights[4], 0)
+
+    def test_TLH(self):
+        # out of currently held lots identify lots losing above some treshold - calculate lost weight - as PCT of portfolio value
+        # set max constraint for those lots to PCT - as if we had sold those lots completely
+
+        self.assertTrue(True)

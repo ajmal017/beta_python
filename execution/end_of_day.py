@@ -206,11 +206,11 @@ def process_apex_fills():
         etna_order.save()
 
 
-def create_sale(ticker_id, volume, current_price, execution_distribution):
-    # start selling PositionLots from 1st until quantity sold == volume
+def get_position_lots_by_tax_lot(ticker_id, current_price, execution_distribution):
     year_ago = timezone.now() - timedelta(days=366)
     position_lots = PositionLot.objects \
-                    .filter(execution_distribution__execution__asset_id=ticker_id)\
+                    .filter(execution_distribution__execution__asset_id=ticker_id,
+                            execution_distribution__execution_request__goal_id=execution_distribution.execution_request.goal_id)\
                     .filter(quantity__gt=0)\
                     .annotate(price_entry=F('execution_distribution__execution__price'),
                               executed=F('execution_distribution__execution__executed'),
@@ -221,6 +221,12 @@ def create_sale(ticker_id, volume, current_price, execution_distribution):
                       output_field=FloatField())) \
                     .annotate(unit_tax_cost=(current_price - F('price_entry')) * F('tax_bracket')) \
                     .order_by('unit_tax_cost')
+    return position_lots
+
+
+def create_sale(ticker_id, volume, current_price, execution_distribution):
+    # start selling PositionLots from 1st until quantity sold == volume
+    position_lots = get_position_lots_by_tax_lot(ticker_id, current_price, execution_distribution)
 
     left_to_sell = abs(volume)
     for lot in position_lots:
