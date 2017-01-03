@@ -7,7 +7,7 @@ import logging
 
 import copy
 import numpy as np
-
+from main.models import Ticker
 from portfolios.algorithms.markowitz import markowitz_optimizer_3
 from portfolios.providers.execution.abstract import Reason, ExecutionProviderAbstract
 from portfolios.calculation import \
@@ -26,7 +26,7 @@ TAX_BRACKET_LESS1Y = 0.3
 TAX_BRACKET_MORE1Y = 0.2
 MAX_WEIGHT_SUM = 1.0001
 SAFETY_MARGIN = 0.005 #used for buying - we use limit prices higher by 0.005 from the last recorded price
-
+LOT_LOSS_TLH = 0.005 # loss incurred by tax lot that triggers tax harvesting
 
 def optimise_up(opt_inputs, min_weights, max_weights=None):
     """
@@ -289,6 +289,23 @@ def get_tax_lots(goal):
                     .order_by('unit_tax_cost')
     return position_lots
 
+def get_position_lots_by_tax_lot(ticker_id, current_price, goal_id):
+    year_ago = timezone.now() - timedelta(days=366)
+    position_lots = PositionLot.objects \
+                    .filter(execution_distribution__execution__asset_id=ticker_id,
+                            execution_distribution__execution_request__goal_id=goal_id)\
+                    .filter(quantity__gt=0)\
+                    .annotate(price_entry=F('execution_distribution__execution__price'),
+                              executed=F('execution_distribution__execution__executed'),
+                              ticker_id=F('execution_distribution__execution__asset_id'))\
+                    .annotate(tax_bracket=Case(
+                      When(executed__gt=year_ago, then=Value(TAX_BRACKET_LESS1Y)),
+                      When(executed__lte=year_ago, then=Value(TAX_BRACKET_MORE1Y)),
+                      output_field=FloatField())) \
+                    .annotate(unit_tax_cost=(current_price - F('price_entry')) * F('tax_bracket')) \
+                    .order_by('unit_tax_cost')
+    return position_lots
+
 
 def get_metric_tickers(metric_id):
     return GoalMetric.objects \
@@ -454,6 +471,32 @@ def get_tax_max_weights(held_weights, tax_weights):
             max_weights[w[0]] = float(w[1])
     return max_weights
 
+def perform_TLH(goal):
+    ticker_ids = get_held_weights(goal).keys()
+
+    max_weights = dict()
+    min_weights = dict()
+    for ticker_id in ticker_ids:
+        current_price = Ticker.objects.get(id=ticker_id).unit_price
+        position_lots = get_position_lots_by_tax_lot(ticker_id, current_price, goal.id)
+
+        max_weights[ticker_id] = get_held_weights(goal)[ticker_id] #sum lots weight
+
+        for lot in position_lots:
+            current_lot_weight = (current_price * lot.quantity)/goal.available_balance
+            if lot.execution_distribution.execution.price > current_price and \
+                    ((lot.execution_distribution.execution.price - current_price) * lot.quantity)/goal.available_balance > LOT_LOSS_TLH:
+                max_weights[ticker_id] = max_weights[ticker_id] - current_lot_weight
+
+        if max_weights[ticker_id] == get_held_weights(goal)[ticker_id]:
+            max_weights.pop(ticker_id, None)
+
+        if ticker_id in max_weights:
+            # fill in minimum weight for highly correlated asset - of same asset class, same specs (SRI, ), but respect 30-day wash-sale rule
+            # if no asset can be found - remove max_weight contstraint
+            pass
+
+    return max_weights
 
 def perturbate(goal, idata, data_provider, execution_provider):
     """
@@ -472,7 +515,9 @@ def perturbate(goal, idata, data_provider, execution_provider):
     min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
 
     tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-    #max_weights = get_tax_max_weights(held_weights=held_weights, tax_weights=tax_max_weights)
+
+    max_TLH_weights = perform_TLH(goal)
+
 
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
 

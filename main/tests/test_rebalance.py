@@ -172,4 +172,14 @@ class RebalanceTest(test.TestCase):
         # out of currently held lots identify lots losing above some treshold - calculate lost weight - as PCT of portfolio value
         # set max constraint for those lots to PCT - as if we had sold those lots completely
 
+        GoalMetricFactory.create(group=self.goal_settings.metric_group, feature=self.equity,
+                                 type=GoalMetric.METRIC_TYPE_RISK_SCORE,
+                                 rebalance_type=GoalMetric.REBALANCE_TYPE_ABSOLUTE,
+                                 rebalance_thr=0.5, configured_val=0.5)
+
+        self.t4.unit_price = 10
+
+        #weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
+
+
         self.assertTrue(True)
