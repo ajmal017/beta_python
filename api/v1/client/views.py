@@ -312,6 +312,10 @@ class ClientUserRegisterView(ApiViewMixin, views.APIView):
     serializer_class = serializers.ClientUserRegistrationSerializer
 
     def post(self, request):
+        user = SupportRequest.target_user(request)
+        if user.is_authenticated():
+            raise exceptions.PermissionDenied("Another user is already logged in.")
+
         serializer = serializers.ClientUserRegistrationSerializer(data=request.data)
         if not serializer.is_valid(raise_exception=True):
             logger.error('Error accepting invitation: %s' % serializer.errors['non_field_errors'][0])
