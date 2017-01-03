@@ -178,8 +178,9 @@ class RebalanceTest(test.TestCase):
                                  rebalance_thr=0.5, configured_val=0.5)
 
         self.t4.unit_price = 10
+        self.t4.save()
 
-        #weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
+        weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
 
 
         self.assertTrue(True)

@@ -17,9 +17,9 @@ from main.models import GoalMetric, PositionLot
 from collections import defaultdict
 from django.db.models import Sum, F, Case, When, Value, FloatField
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date, datetime
 from portfolios.management.commands.measure_goals import get_risk_score
-
+from portfolios.returns import get_return_history
 logger = logging.getLogger('rebalance')
 
 TAX_BRACKET_LESS1Y = 0.3
@@ -27,6 +27,7 @@ TAX_BRACKET_MORE1Y = 0.2
 MAX_WEIGHT_SUM = 1.0001
 SAFETY_MARGIN = 0.005 #used for buying - we use limit prices higher by 0.005 from the last recorded price
 LOT_LOSS_TLH = 0.005 # loss incurred by tax lot that triggers tax harvesting
+CORRELATION_LENGTH = 365 # number of days for calculation of correlation
 
 def optimise_up(opt_inputs, min_weights, max_weights=None):
     """
@@ -471,7 +472,7 @@ def get_tax_max_weights(held_weights, tax_weights):
             max_weights[w[0]] = float(w[1])
     return max_weights
 
-def perform_TLH(goal):
+def perform_TLH(goal, data_provider):
     ticker_ids = get_held_weights(goal).keys()
 
     max_weights = dict()
@@ -492,11 +493,31 @@ def perform_TLH(goal):
             max_weights.pop(ticker_id, None)
 
         if ticker_id in max_weights:
-            # fill in minimum weight for highly correlated asset - of same asset class, same specs (SRI, ), but respect 30-day wash-sale rule
-            # if no asset can be found - remove max_weight contstraint
+            tickers = get_tickers_with_same_specs(ticker_id)
+            best_match = find_highest_correlated(ticker_id, tickers, data_provider)
+
+            # fill in minimum weight for highly correlated asset - of same asset class, same specs (SRI, ), different index tracked, but respect 30-day wash-sale rule
+            # if no asset can be found - remove max_weight constraint
             pass
 
     return max_weights
+
+def find_highest_correlated(ticker_id, tickers, data_provider):
+    return_history, _ = get_return_history(tickers, data_provider.get_current_date() - timedelta(days=CORRELATION_LENGTH), data_provider.get_current_date())
+    for t in return_history.columns:
+        if t != ticker_id:
+            return_history[ticker_id].corr(return_history[t])
+    return None
+
+
+
+def get_tickers_with_same_specs(ticker_id):
+    ticker = Ticker.objects.get(id=ticker_id)
+    # TODO need to add benchmark - different than actual ticker - i.e. benchmark!=ticker.benchmark
+    tickers = Ticker.objects\
+        .filter(asset_class=ticker.asset_class, ethical=ticker.ethical, state=Ticker.State.ACTIVE.value)
+    return tickers
+
 
 def perturbate(goal, idata, data_provider, execution_provider):
     """
@@ -516,7 +537,7 @@ def perturbate(goal, idata, data_provider, execution_provider):
 
     tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
 
-    max_TLH_weights = perform_TLH(goal)
+    max_TLH_weights = perform_TLH(goal, data_provider)
 
 
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
