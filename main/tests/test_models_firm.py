@@ -13,7 +13,7 @@ class FirmModelTests(TestCase):
     def setUp(self):
         for atid, _ in constants.ACCOUNT_TYPES:
             AccountTypeRiskProfileGroupFactory.create(account_type=atid)
-        self.today = today = date(2016, 5, 1)
+        self.today = today = datetime.utcnow().date()
         self.older_fiscal_year = FiscalYearFactory.create()
         self.older_fiscal_year2 = FiscalYearFactory.create()
         self.current_fiscal_year = FiscalYearFactory.create(year=today.year,
@@ -41,7 +41,7 @@ class FirmModelTests(TestCase):
                                               status=Transaction.STATUS_EXECUTED,
                                               from_goal=self.goal1, to_goal=self.goal2,
                                               amount=500,
-                                              executed=today - relativedelta(months=1))
+                                              executed=today - relativedelta(days=1))
 
         # add new advisor to firm
         # add new clientacounts for advisor and fees
@@ -54,7 +54,7 @@ class FirmModelTests(TestCase):
                                               status=Transaction.STATUS_EXECUTED,
                                               to_goal=self.goal3,
                                               amount=800,
-                                              executed=self.older_fiscal_year.begin_date + relativedelta(months=1))
+                                              executed=self.older_fiscal_year.begin_date + relativedelta(days=1))
 
     def current_fiscal_year(self):
         self.assertNotEqual(self.firm.get_current_fiscal_year(),
@@ -71,7 +71,7 @@ class FirmModelTests(TestCase):
                                             status=Transaction.STATUS_EXECUTED,
                                             to_goal=self.goal1,
                                             amount=100,
-                                            executed=self.today - relativedelta(days=5))
+                                            executed=self.today - relativedelta(days=1))
         self.assertEqual(self.firm.fees_ytd, new_fee.amount + expected_fees_ytd)
 
     def test_total_fees(self):
