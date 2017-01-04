@@ -50,7 +50,8 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'retirement_lifestyles': self.retirement_lifestyles(request).data,
             'constants': self.constants(request).data,
             'industry_types': self.industry_types(request).data,
-            'occupation_types': self.occupation_types(request).data
+            'occupation_types': self.occupation_types(request).data,
+            'employer_types': self.employer_types(request).data
         }
         return Response(data)
 
@@ -191,6 +192,17 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     def occupation_types(self, request):
         res = []
         itd = dict(constants.OCCUPATION_TYPES)
+        for key in sorted(itd):
+            res.append({
+                "id": key,
+                "name": itd[key]
+            })
+        return Response(res)
+
+    @list_route(methods=['get'], url_path='employer-types', permission_classes=[IsAuthenticated])
+    def employer_types(self, request):
+        res = []
+        itd = dict(constants.EMPLOYER_TYPES)
         for key in sorted(itd):
             res.append({
                 "id": key,
