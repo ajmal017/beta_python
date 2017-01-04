@@ -556,7 +556,7 @@ class InviteTests(APITestCase):
         invite = EmailInvite.objects.get(pk=invite.pk)
 
         self.client.logout()
-        url = reverse('api:v1:resend-invite', args=[invite.pk])
+        url = reverse('api:v1:resend-invite', args=[invite.invite_key])
         response = self.client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
