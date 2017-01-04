@@ -386,10 +386,16 @@ class ClientResendInviteView(SingleObjectMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
     queryset = EmailInvite.objects.all()
 
-    def post(self, request, *args, **kwargs):
-        invite = self.get_object()
+    def post(self, request, invite_key):
+        find_invite = EmailInvite.objects.filter(invite_key=invite_key)
+        if not find_invite.exists:
+            raise exceptions.NotFound("Invitation not found.")
+
+        invite = find_invite.get()
+
         if invite.user != self.request.user:
-            return Response('forbidden', status=status.HTTP_403_FORBIDDEN)
+            raise exceptions.PermissionDenied("You are not authorized to send invitation.")
+
         invite.send()
         return Response('ok', status=status.HTTP_200_OK)
 
