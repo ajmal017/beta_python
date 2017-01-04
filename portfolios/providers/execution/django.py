@@ -32,7 +32,7 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
             .annotate(tax_gain=F('price')-F('bought_price'))\
             .values('ticker_id', 'tax_gain', 'quantity', 'price')
 
-        lots_no_tax_gain = [lot for lot in lots if lot['tax_gain'] < 0]
+        lots_no_tax_gain = [lot for lot in lots if lot['tax_gain'] > 0]
 
         weights = get_weights(lots_no_tax_gain, goal.available_balance)
         return weights

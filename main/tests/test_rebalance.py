@@ -32,6 +32,9 @@ class RebalanceTest(test.TestCase):
         self.t3 = TickerFactory.create(symbol='TIP', unit_price=100)
         self.t4 = TickerFactory.create(symbol='IEV', unit_price=100)
 
+        self.t5 = TickerFactory.create(symbol='IEV2', unit_price=100, asset_class=self.t4.asset_class)
+
+
         self.equity = AssetFeatureValueFactory.create(name='equity', assets=[self.t1, self.t2])
         self.bond = AssetFeatureValueFactory.create(name='bond', assets=[self.t3, self.t4])
 
@@ -181,6 +184,6 @@ class RebalanceTest(test.TestCase):
         self.t4.save()
 
         weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
-
+        self.assertAlmostEqual(weights[4], 0)
 
         self.assertTrue(True)

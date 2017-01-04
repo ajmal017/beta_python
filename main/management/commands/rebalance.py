@@ -472,7 +472,7 @@ def get_tax_max_weights(held_weights, tax_weights):
             max_weights[w[0]] = float(w[1])
     return max_weights
 
-def perform_TLH(goal, data_provider):
+def perform_TLH(goal, data_provider, wash_sale):
     ticker_ids = get_held_weights(goal).keys()
 
     max_weights = dict()
@@ -497,17 +497,28 @@ def perform_TLH(goal, data_provider):
             best_match = find_highest_correlated(ticker_id, tickers, data_provider)
 
             # fill in minimum weight for highly correlated asset - of same asset class, same specs (SRI, ), different index tracked, but respect 30-day wash-sale rule
-            # if no asset can be found - remove max_weight constraint
-            pass
+            minimum_weight = get_held_weights(goal)[ticker_id]
+            if best_match is not None and best_match not in wash_sale:
+                min_weights[best_match] = minimum_weight
 
-    return max_weights
+            # if no asset can be found - remove max_weight constraint
+            if best_match is None:
+                max_weights.pop(ticker_id, None)
+
+    return min_weights, max_weights
 
 def find_highest_correlated(ticker_id, tickers, data_provider):
     return_history, _ = get_return_history(tickers, data_provider.get_current_date() - timedelta(days=CORRELATION_LENGTH), data_provider.get_current_date())
+    correlations = defaultdict(float)
     for t in return_history.columns:
         if t != ticker_id:
-            return_history[ticker_id].corr(return_history[t])
-    return None
+            correlations[t] = return_history[ticker_id].corr(return_history[t])
+
+    if len(correlations) > 0:
+        max_value = max(correlations, key=lambda key: correlations[key])
+    else:
+        max_value = None
+    return max_value
 
 
 
@@ -518,6 +529,26 @@ def get_tickers_with_same_specs(ticker_id):
         .filter(asset_class=ticker.asset_class, ethical=ticker.ethical, state=Ticker.State.ACTIVE.value)
     return tickers
 
+
+def unify_max_weights(max_weights):
+    unified_weights = defaultdict(float)
+    for w in max_weights:
+        for key, value in w.items():
+            if key in unified_weights and value < unified_weights[key]:
+                pass
+            else:
+                unified_weights[key] = value
+    return unified_weights
+
+def unify_min_weights(min_weights):
+    unified_weights = defaultdict(float)
+    for w in min_weights:
+        for key, value in w.items():
+            if key in unified_weights and value > unified_weights[key]:
+                pass
+            else:
+                unified_weights[key] = value
+    return unified_weights
 
 def perturbate(goal, idata, data_provider, execution_provider):
     """
@@ -534,26 +565,25 @@ def perturbate(goal, idata, data_provider, execution_provider):
     # we can break this up into 4 rules
     tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(goal, data_provider.get_current_date())
     min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
-
     tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-
-    max_TLH_weights = perform_TLH(goal, data_provider)
-
-
+    min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
+    tax_max_weights = unify_max_weights([tax_max_weights, max_TLH_weights])
+    min_weights = unify_min_weights([min_weights, min_TLH_weights])
 
     weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
     if weights is None:
         # relax constraints and allow to sell short term losses, then relax and allow long term losses,
         # then relax and allow to sell long term gains, relax and allow to sell short term gains
-        tax_min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)
-        min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
-
+        min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)
         tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-        max_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_max_weights)
+        min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
+        opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
+        tax_max_weights = unify_max_weights([tax_max_weights, max_TLH_weights])
+        min_weights = unify_min_weights([min_weights, min_TLH_weights])
 
-        weights = optimise_up(opt_inputs, min_weights, max_weights)
+        weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
     if weights is None:
         if sum(held_weights.values()) > MAX_WEIGHT_SUM:
