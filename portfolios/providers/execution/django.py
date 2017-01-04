@@ -24,7 +24,7 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
 
     def get_asset_weights_without_tax_winners(self, goal):
         lots = PositionLot.objects \
-            .filter(execution_distribution__transaction__from_goal=goal,
+            .filter(execution_distribution__transaction__from_goal__id=goal.id,
                     execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value) \
             .annotate(ticker_id=F('execution_distribution__execution__asset__id'),
                       price=F('execution_distribution__execution__asset__unit_price'),
@@ -32,7 +32,7 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
             .annotate(tax_gain=F('price')-F('bought_price'))\
             .values('ticker_id', 'tax_gain', 'quantity', 'price')
 
-        lots_no_tax_gain = [lot for lot in lots if lot['tax_gain'] < 0]
+        lots_no_tax_gain = [lot for lot in lots if lot['tax_gain'] > 0]
 
         weights = get_weights(lots_no_tax_gain, goal.available_balance)
         return weights
@@ -69,11 +69,22 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
             annotate(tid=F('execution_distribution__execution__asset__id')).values('tid').\
             annotate(value=Coalesce(Sum(F('quantity') * F('execution_distribution__execution__asset__unit_price')), 0))
 
+        lot_ids = PositionLot.objects.\
+            filter(execution_distribution__transaction__from_goal__id=goal.id,
+                   execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value).\
+            annotate(tid=F('execution_distribution__execution__asset__id')).values_list('tid', flat=True)
+
+
         weights = dict()
         bal = goal.available_balance
         for l in lots:
             if l['tid'] in assets:
                 weights[l['tid']] = l['value']/bal
+
+        # add max constraints for assets we do not have in portfolio currently
+        for a in assets:
+            if a not in lot_ids:
+                weights[a] = 0
 
         return weights
 

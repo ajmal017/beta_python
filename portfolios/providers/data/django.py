@@ -11,9 +11,14 @@ from .abstract import DataProviderAbstract
 
 
 class DataProviderDjango(DataProviderAbstract):
+    def __init__(self, current_date=None):
+        self.current_date = current_date
 
     def get_current_date(self):
-        return timezone.now().date()
+        if self.current_date is None:
+            return timezone.now().date()
+        else:
+            return self.current_date
 
     def get_fund_price_latest(self, ticker):
         latest_ticker = ticker.daily_prices.order_by('-date').first()

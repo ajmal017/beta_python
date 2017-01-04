@@ -343,8 +343,7 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
     settings_instruments = instruments.iloc[settings_symbol_ixs]
 
     # Add the constraint that they must be over the current lots held less than 1 year.
-    tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(settings.goal,
-                                                                            data_provider.get_current_date())
+    tax_min_weights = execution_provider.get_asset_weights_without_tax_winners(settings.goal)
     pweights = create_portfolio_weights(settings_instruments['id'].values,
                                         min_weights=tax_min_weights,
                                         abs_min=0)

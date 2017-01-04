@@ -490,7 +490,7 @@ class TickerFactory(factory.django.DjangoModelFactory):
     benchmark = factory.SubFactory(MarketIndexFactory)
     region = factory.SubFactory(MainRegionFactory)
     data_api_param = factory.Sequence(lambda n: str(n))
-
+    state = Ticker.State.ACTIVE.value
 
 class TransactionFactory(factory.django.DjangoModelFactory):
     """
