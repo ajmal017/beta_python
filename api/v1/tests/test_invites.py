@@ -11,9 +11,11 @@ from common.constants import GROUP_SUPPORT_STAFF
 from main.constants import ACCOUNT_TYPE_PERSONAL
 from .factories import AdvisorFactory, SecurityQuestionFactory, EmailInviteFactory
 from .factories import AccountTypeRiskProfileGroupFactory, AddressFactory, \
-    ClientAccountFactory, ClientFactory, GroupFactory, RegionFactory, RiskProfileGroupFactory
+    ClientAccountFactory, ClientFactory, GroupFactory, RegionFactory, \
+    RiskProfileGroupFactory, UserFactory
 from client.models import EmailInvite
 from main.constants import EMPLOYMENT_STATUS_EMMPLOYED, GENDER_MALE
+from main.models import User
 
 
 class InviteTests(APITestCase):
@@ -29,6 +31,26 @@ class InviteTests(APITestCase):
         self.advisor = AdvisorFactory.create()
         self.question_one = SecurityQuestionFactory.create()
         self.question_two = SecurityQuestionFactory.create()
+
+    def test_prevent_register_when_another_user_is_loggedin(self):
+        user = UserFactory.create()
+        user.groups_add(User.GROUP_CLIENT)
+        self.betasmartz_client = ClientFactory.create(user=user)
+        self.client.force_authenticate(user=self.betasmartz_client.user)
+        url = reverse('api:v1:client-user-register')
+        data = {
+            'first_name': 'test',
+            'last_name': 'user',
+            'invite_key': '1234567890',
+            'password': 'test',
+            'question_one': 'what is the first answer?',
+            'question_one_answer': 'answer one',
+            'question_two': 'what is the second answer?',
+            'question_two_answer': 'answer two',
+        }
+        response = self.client.post(url, dict(data, question_one=''))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN,
+                         msg='403 forbidden')
 
     def tearDown(self):
         self.client.logout()
@@ -91,6 +113,8 @@ class InviteTests(APITestCase):
         self.assertEqual(lookup_invite.onboarding_data['login']['steps'][0]['secondarySecurityAnswer'], '')
 
     def test_register_answers_validate(self):
+        self.client.logout()
+
         invite = EmailInviteFactory.create(status=EmailInvite.STATUS_SENT)
 
         url = reverse('api:v1:client-user-register')
@@ -305,6 +329,8 @@ class InviteTests(APITestCase):
                          msg='/api/v1/me works for newly authenticated user')
 
     def test_onboard_after_register(self):
+        self.client.logout()
+
         # Bring an invite key, get logged in as a new user
         invite = EmailInviteFactory.create(status=EmailInvite.STATUS_SENT)
 
@@ -463,6 +489,7 @@ class InviteTests(APITestCase):
 
     def test_complete_invitation(self):
 
+        self.client.logout()
         # Bring an invite key, get logged in as a new user
         invite = EmailInviteFactory.create(status=EmailInvite.STATUS_SENT,
                                            reason=EmailInvite.REASON_PERSONAL_INVESTING)
@@ -529,7 +556,7 @@ class InviteTests(APITestCase):
         invite = EmailInvite.objects.get(pk=invite.pk)
 
         self.client.logout()
-        url = reverse('api:v1:resend-invite', args=[invite.pk])
+        url = reverse('api:v1:resend-invite', args=[invite.invite_key])
         response = self.client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 

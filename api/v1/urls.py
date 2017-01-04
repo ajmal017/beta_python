@@ -92,7 +92,7 @@ urlpatterns = patterns(
 
     url(r'^keep-alive/?$', user_views.KeepAliveView.as_view(), name='keep-alive'),
 
-    url(r'^invites/(?P<pk>\d+)/resend/?$', client_views.ClientResendInviteView.as_view(), name='resend-invite'),
+    url(r'^invites/(?P<invite_key>\w+)/resend/?$', client_views.ClientResendInviteView.as_view(), name='resend-invite'),
 
     url(r'^support-requests/?$', support_views.RequestAdvisorSupportView.as_view(), name='support-requests'),
 

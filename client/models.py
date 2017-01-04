@@ -775,7 +775,8 @@ class EmailInvite(models.Model):
                                         context)
         send_mail(subject, '', None, [self.email], html_message=html_message)
         self.last_sent_at = now()
-        self.status = self.STATUS_SENT
+        if self.status != self.STATUS_ACCEPTED and self.status != self.STATUS_COMPLETE:
+            self.status = self.STATUS_SENT
         self.send_count += 1
 
         self.save(update_fields=['last_sent_at', 'send_count', 'status'])

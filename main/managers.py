@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 from django.db.models import QuerySet
 from django.db.models.query_utils import Q
 from django.utils.timezone import now
+from django.db.models.loading import get_model
 
 logger = logging.getLogger('main.managers')
 
@@ -237,7 +238,7 @@ class PositionLotQuerySet(QuerySet):
         return qs
 
     def filter_by_worth(self, worth=None):
-        Client = get_model('client', 'Client')
+        from client.models import Client
         qs = self
         if worth is None:
             return self
