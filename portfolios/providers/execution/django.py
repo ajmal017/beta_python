@@ -24,7 +24,7 @@ class ExecutionProviderDjango(ExecutionProviderAbstract):
 
     def get_asset_weights_without_tax_winners(self, goal):
         lots = PositionLot.objects \
-            .filter(execution_distribution__transaction__from_goal=goal,
+            .filter(execution_distribution__transaction__from_goal__id=goal.id,
                     execution_distribution__execution__asset__state=Ticker.State.ACTIVE.value) \
             .annotate(ticker_id=F('execution_distribution__execution__asset__id'),
                       price=F('execution_distribution__execution__asset__unit_price'),
