@@ -3,6 +3,7 @@ from django import test
 from main.tests.fixture import Fixture1
 from main.models import PortfolioItem
 from execution.end_of_day import create_sale
+from unittest.mock import patch
 from django.utils import timezone
 from api.v1.tests.factories import GoalFactory, PositionLotFactory, TickerFactory, \
     TransactionFactory, GoalSettingFactory, GoalMetricFactory, AssetFeatureValueFactory, \
@@ -11,7 +12,7 @@ from main.models import Transaction, GoalMetric
 from portfolios.providers.execution.django import ExecutionProviderDjango
 from portfolios.providers.data.django import DataProviderDjango
 from main.management.commands.rebalance import perturbate_mix, process_risk, perturbate_withdrawal, perturbate_risk, \
-    get_weights, get_tax_lots, calc_opt_inputs, rebalance
+    get_weights, get_tax_lots, calc_opt_inputs, rebalance, get_tax_lots
 
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction
 from unittest.mock import MagicMock
@@ -22,7 +23,6 @@ from portfolios.calculation import get_instruments
 from datetime import datetime, date
 
 mocked_now = datetime(year=2016,month=6,day=1)
-
 
 class RebalanceTest(test.TestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
@@ -45,9 +45,9 @@ class RebalanceTest(test.TestCase):
                                        cash_balance=100, portfolio_set=portfolio_set)
 
         self.tickers = [self.t1, self.t2, self.t3, self.t4, self.t4]
-        self.prices = [4, 4, 90, 90, 90]
+        self.prices = [4, 4, 90, 90, 95]
         self.quantities = [5, 5, 5, 5, 5]
-        self.executed = [date(2016, 1, 1), date(2016, 1, 1), date(2016, 1, 1), date(2016, 1, 1), date(2016, 1, 1)]
+        self.executed = [date(2015, 1, 1), date(2016, 1, 1), date(2015, 1, 1), date(2016, 1, 1), date(2016, 1, 1)]
 
         self.execution_details = []
         for i in range(5):
@@ -66,12 +66,6 @@ class RebalanceTest(test.TestCase):
 
         self.portfolio = PortfolioFactory.create(setting=self.goal_settings)
         self.current_weights = get_held_weights(self.goal)
-
-        items = [PortfolioItem(portfolio=self.portfolio,
-                               asset=Ticker.objects.get(id=key),
-                               weight=value,
-                               volatility=self.idata[0].loc[key, key]) for key, value in self.current_weights.items()]
-        PortfolioItem.objects.bulk_create(items)
 
     def test_perturbate_mix1(self):
         GoalMetricFactory.create(group=self.goal_settings.metric_group, feature=self.equity,
@@ -135,7 +129,7 @@ class RebalanceTest(test.TestCase):
         #weights = perturbate_risk(goal=self.goal)
         self.assertTrue(True)
 
-    @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
+    #@mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def setup_performance_history(self):
         populate_prices(400, asof=mocked_now)
         populate_cycle_obs(400, asof=mocked_now)
@@ -155,26 +149,14 @@ class RebalanceTest(test.TestCase):
             Fixture1.create_execution_details(self.goal, self.tickers[i], -self.quantities[i],self.tickers[i].unit_price, executed)
             self.goal.cash_balance += self.tickers[i].unit_price * abs(self.quantities[i])
 
-        items = PortfolioItem.objects.all()
-        for i in items:
-            i.delete()
-            i.save()
-
-        self.current_weights = get_held_weights(self.goal)
-
-        items = [PortfolioItem(portfolio=self.portfolio,
-                               asset=Ticker.objects.get(id=key),
-                               weight=value,
-                               volatility=self.idata[0].loc[key, key]) for key, value in self.current_weights.items()]
-        PortfolioItem.objects.bulk_create(items)
-
         weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
         self.assertAlmostEqual(weights[4], 0)
 
     def test_TLH(self):
         # out of currently held lots identify lots losing above some treshold - calculate lost weight - as PCT of portfolio value
         # set max constraint for those lots to PCT - as if we had sold those lots completely
-
+        self.goal.account.tax_loss_harvesting_consent = True
+        self.goal.account.save()
         GoalMetricFactory.create(group=self.goal_settings.metric_group, feature=self.equity,
                                  type=GoalMetric.METRIC_TYPE_RISK_SCORE,
                                  rebalance_type=GoalMetric.REBALANCE_TYPE_ABSOLUTE,
@@ -186,4 +168,30 @@ class RebalanceTest(test.TestCase):
         weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
         self.assertAlmostEqual(weights[4], 0)
 
-        self.assertTrue(True)
+        self.goal.account.tax_loss_harvesting_consent = False
+        self.goal.account.save()
+        weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
+        self.assertAlmostEqual(weights[5], 0)
+
+
+    def test_ST_loss_LT_loss_LT_gain_ST_gain(self, *args):
+        self.prices = [4, 4, 90, 90, 90]
+
+        self.t1.unit_price = 1
+        self.t2.unit_price = 1
+        self.t3.unit_price = 200
+        self.t4.unit_price = 200
+        self.t1.save()
+        self.t2.save()
+        self.t3.save()
+        self.t4.save()
+
+        with patch.object(timezone, 'now', return_value=mocked_now):
+            lots = get_tax_lots(self.goal)
+
+        #test asserts - that order is correct
+        self.assertTrue(lots[0]['id'] == 2) #ST loss
+        self.assertTrue(lots[1]['id'] == 1) #LT loss
+        self.assertTrue(lots[2]['id'] == 3) #LT gain
+        self.assertTrue(lots[3]['id'] == 5) #ST gain smaller
+        self.assertTrue(lots[4]['id'] == 4) #ST gain bigger
