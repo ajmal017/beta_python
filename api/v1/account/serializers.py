@@ -123,6 +123,7 @@ class ClientAccountUpdateSerializer(NoCreateModelSerializer):
         model = ClientAccount
         fields = (
             'account_name',
+            'tax_loss_harvesting_consent',
             'tax_loss_harvesting_status',
 
             'question_one',
