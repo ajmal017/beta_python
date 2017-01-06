@@ -79,8 +79,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'user.autologout.SessionExpireMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'user.autologout.SessionExpireMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
 )
