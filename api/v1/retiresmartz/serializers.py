@@ -122,6 +122,20 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     height = serializers.SerializerMethodField(required=False)
     drinks = serializers.SerializerMethodField(required=False)
 
+    balance = serializers.FloatField()
+    home_value = serializers.SerializerMethodField(required=False)
+    home_growth = serializers.SerializerMethodField(required=False)
+    ss_fra_todays = serializers.SerializerMethodField(required=False)
+    ss_fra_retirement = serializers.SerializerMethodField(required=False)
+    state_tax_after_credits = serializers.SerializerMethodField(required=False)
+    state_tax_effrate = serializers.SerializerMethodField(required=False)
+    pension_name = serializers.SerializerMethodField(required=False)
+    pension_amount = serializers.SerializerMethodField(required=False)
+    pension_start_date = serializers.SerializerMethodField(required=False)
+    employee_contributions_last_year = serializers.SerializerMethodField(required=False)
+    employer_contributions_last_year = serializers.SerializerMethodField(required=False)
+    total_contributions_last_year = serializers.SerializerMethodField(required=False)
+
     class Meta:
         model = RetirementPlan
         # Goal setting is an internal field that doesn't need to be shared externally.
@@ -151,6 +165,42 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     def get_drinks(self, obj):
         return obj.client.drinks
 
+    def get_home_value(self, obj):
+        return obj.client.home_value
+
+    def get_home_growth(self, obj):
+        return obj.client.home_growth
+
+    def get_ss_fra_todays(self, obj):
+        return obj.client.ss_fra_todays
+
+    def get_ss_fra_retirement(self, obj):
+        return obj.client.ss_fra_retirement
+
+    def get_state_tax_after_credits(self, obj):
+        return obj.client.state_tax_after_credits
+
+    def get_state_tax_effrate(self, obj):
+        return obj.client.state_tax_effrate
+
+    def get_pension_name(self, obj):
+        return obj.client.pension_name
+
+    def get_pension_amount(self, obj):
+        return obj.client.pension_amount
+
+    def get_pension_start_date(self, obj):
+        return obj.client.pension_start_date
+
+    def get_employee_contributions_last_year(self, obj):
+        return obj.client.employee_contributions_last_year
+
+    def get_employer_contributions_last_year(self, obj):
+        return obj.client.employer_contributions_last_year
+
+    def get_total_contributions_last_year(self, obj):
+        return obj.client.total_contributions_last_year
+
 
 class RetirementPlanWritableSerializer(serializers.ModelSerializer):
     expenses = serializers.JSONField(required=False,
@@ -176,6 +226,20 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
     weight = serializers.FloatField(source='client.weight', required=False)
     height = serializers.FloatField(source='client.height', required=False)
     drinks = serializers.IntegerField(source='client.drinks', required=False)
+
+    balance = serializers.FloatField(required=False)
+    home_value = serializers.FloatField(source='client.home_value', required=False)
+    home_growth = serializers.FloatField(source='client.home_growth', required=False)
+    ss_fra_todays = serializers.FloatField(source='client.ss_fra_todays', required=False)
+    ss_fra_retirement = serializers.FloatField(source='client.ss_fra_retirement', required=False)
+    state_tax_after_credits = serializers.FloatField(source='client.state_tax_after_credits', required=False)
+    state_tax_effrate = serializers.FloatField(source='client.state_tax_effrate', required=False)
+    pension_name = serializers.CharField(source='client.pension_name', required=False)
+    pension_amount = serializers.FloatField(source='client.pension_amount', required=False)
+    pension_start_date = serializers.DateField(source='client.pension_start_date', required=False)
+    employee_contributions_last_year = serializers.FloatField(source='client.employee_contributions_last_year', required=False)
+    employer_contributions_last_year = serializers.FloatField(source='client.employer_contributions_last_year', required=False)
+    total_contributions_last_year = serializers.FloatField(source='client.total_contributions_last_year', required=False)
 
     class Meta:
         model = RetirementPlan
@@ -214,6 +278,19 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             'weight',
             'height',
             'drinks',
+            'balance',
+            'home_value',
+            'home_growth',
+            'ss_fra_todays',
+            'ss_fra_retirement',
+            'state_tax_after_credits',
+            'state_tax_effrate',
+            'pension_name',
+            'pension_amount',
+            'pension_start_date',
+            'employee_contributions_last_year',
+            'employer_contributions_last_year',
+            'total_contributions_last_year',
 
         )
 
@@ -317,6 +394,43 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                 instance.client.daily_exercise = validated_data['client']['daily_exercise']
                 instance.client.save()
 
+            if 'home_value' in validated_data['client']:
+                instance.client.home_value = validated_data['client']['home_value']
+                instance.client.save()
+            if 'home_growth' in validated_data['client']:
+                instance.client.home_growth = validated_data['client']['home_growth']
+                instance.client.save()
+            if 'ss_fra_todays' in validated_data['client']:
+                instance.client.ss_fra_todays = validated_data['client']['ss_fra_todays']
+                instance.client.save()
+            if 'ss_fra_retirement' in validated_data['client']:
+                instance.client.ss_fra_retirement = validated_data['client']['ss_fra_retirement']
+                instance.client.save()
+            if 'state_tax_after_credits' in validated_data['client']:
+                instance.client.state_tax_after_credits = validated_data['client']['state_tax_after_credits']
+                instance.client.save()
+            if 'state_tax_effrate' in validated_data['client']:
+                instance.client.state_tax_effrate = validated_data['client']['state_tax_effrate']
+                instance.client.save()
+            if 'pension_name' in validated_data['client']:
+                instance.client.pension_name = validated_data['client']['pension_name']
+                instance.client.save()
+            if 'pension_amount' in validated_data['client']:
+                instance.client.pension_amount = validated_data['client']['pension_amount']
+                instance.client.save()
+            if 'pension_start_date' in validated_data['client']:
+                instance.client.pension_start_date = validated_data['client']['pension_start_date']
+                instance.client.save()
+            if 'employee_contributions_last_year' in validated_data['client']:
+                instance.client.employee_contributions_last_year = validated_data['client']['employee_contributions_last_year']
+                instance.client.save()
+            if 'employer_contributions_last_year' in validated_data['client']:
+                instance.client.employer_contributions_last_year = validated_data['client']['employer_contributions_last_year']
+                instance.client.save()
+            if 'total_contributions_last_year' in validated_data['client']:
+                instance.client.total_contributions_last_year = validated_data['client']['total_contributions_last_year']
+                instance.client.save()
+
         for attr, value in validated_data.items():
             if str(attr) != 'client':
                 # civil_status update is on client
@@ -394,5 +508,3 @@ class RetirementAdviceWritableSerializer(serializers.ModelSerializer):
         if request.method == 'PUT':
             for field in self.fields.values():
                 field.required = False
-
-
