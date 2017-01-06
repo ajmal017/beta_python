@@ -342,12 +342,13 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
     constraints += mconstraints
     settings_instruments = instruments.iloc[settings_symbol_ixs]
 
+    # TODO this should be included for pure portfolio optimization, but gradually - sometimes it might fail as conditions too stringent, we need to start relaxing conditions once this fails
     # Add the constraint that they must be over the current lots held less than 1 year.
-    tax_min_weights = execution_provider.get_asset_weights_without_tax_winners(settings.goal)
-    pweights = create_portfolio_weights(settings_instruments['id'].values,
-                                        min_weights=tax_min_weights,
-                                        abs_min=0)
-    constraints += [xs >= pweights]
+    #tax_min_weights = execution_provider.get_asset_weights_without_tax_winners(settings.goal)
+    #pweights = create_portfolio_weights(settings_instruments['id'].values,
+    #                                    min_weights=tax_min_weights,
+    #                                    abs_min=0)
+    #constraints += [xs >= pweights]
 
     tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(settings.goal, data_provider.get_current_date())
     max_weights = create_portfolio_max_weights(settings_instruments['id'].values,
