@@ -167,11 +167,14 @@ class RebalanceTest(test.TestCase):
 
         weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
         self.assertAlmostEqual(weights[4], 0)
+        self.assertTrue(weights[5] > 0)
+        weight_5 = weights[5]
 
         self.goal.account.tax_loss_harvesting_consent = False
         self.goal.account.save()
         weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
-        self.assertAlmostEqual(weights[5], 0)
+        self.assertNotAlmostEqual(weights[4], 0)
+        self.assertNotAlmostEqual(weights[5], weight_5)
 
 
     def test_ST_loss_LT_loss_LT_gain_ST_gain(self, *args):
