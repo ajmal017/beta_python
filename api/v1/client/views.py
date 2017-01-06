@@ -184,6 +184,8 @@ class ClientViewSet(ApiViewMixin,
                     advice = RetirementAdvice(plan=plan, trigger=e)
                     advice.text = advice_responses.get_smoking_yes(advice)
                     advice.save()
+                    plan.calculated_life_expectancy -= 7
+                    plan.save()
                 elif updated.smoker is False:
                     e = Event.RETIRESMARTZ_IS_NOT_A_SMOKER.log(None,
                                                                user=updated.user,
@@ -191,8 +193,11 @@ class ClientViewSet(ApiViewMixin,
                     advice = RetirementAdvice(plan=plan, trigger=e)
                     advice.text = advice_responses.get_smoking_no(advice)
                     advice.save()
-                    plan.selected_life_expectancy += 7
-                    plan.save()
+
+                    if updated.smoker is False and orig.smoker is True:
+                        diff = min(85 - plan.calculated_life_expectancy, 7)
+                        plan.calculated_life_expectancy += diff
+                        plan.save()
 
             if updated.daily_exercise != orig.daily_exercise:
                 # exercise only
@@ -202,6 +207,20 @@ class ClientViewSet(ApiViewMixin,
                 advice = RetirementAdvice(plan=plan, trigger=e)
                 advice.text = advice_responses.get_exercise_only(advice)
                 advice.save()
+
+                # increase calculated_life_expectancy
+                if updated.daily_exercise == 20 and orig.daily_exercise < 20:
+                    diff = min(85 - plan.calculated_life_expectancy, 2.2)
+                    plan.calculated_life_expectancy += diff
+                    plan.save()
+                elif updated.daily_exercise > 20 and orig.daily_exercise == 20:
+                    diff = min(85 - plan.calculated_life_expectancy, 1)
+                    plan.calculated_life_expectancy += diff
+                    plan.save()
+                elif updated.daily_exercise > 20 and orig.daily_exercise < 20:
+                    diff = min(85 - plan.calculated_life_expectancy, 3.2)
+                    plan.calculated_life_expectancy += diff
+                    plan.save()
 
             # frontend posts one at a time, weight then height, not together in one post
             if (updated.weight != orig.weight or updated.height != orig.height):
