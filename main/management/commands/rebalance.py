@@ -268,11 +268,13 @@ def perturbate_withdrawal(goal):
 
 
 def get_tax_lots(goal):
+    # probably we need to change this to order by ST loss, LT loss, LT gain, ST gain, but maybe this is more optimal even.
     '''
     returns position lots sorted by increasing unit tax cost for a given goal
     :param goal
     :return:
     '''
+    order_by = ['LT_ST_gain_loss', 'unit_tax_cost']
     year_ago = timezone.now() - timedelta(days=366)
     position_lots = PositionLot.objects\
                     .filter(execution_distribution__transaction__from_goal=goal)\
@@ -286,8 +288,14 @@ def get_tax_lots(goal):
                       When(executed__lte=year_ago, then=Value(TAX_BRACKET_MORE1Y)),
                       output_field=FloatField())) \
                     .annotate(unit_tax_cost=(F('price') - F('price_entry')) * F('tax_bracket')) \
-                    .values('id', 'price_entry', 'quantity', 'executed', 'unit_tax_cost', 'ticker_id', 'price') \
-                    .order_by('unit_tax_cost')
+                    .annotate(LT_ST_gain_loss=Case(
+                      When(executed__gt=year_ago, unit_tax_cost__lte=0, then=Value(-2)),  #ST loss
+                      When(executed__lte=year_ago, unit_tax_cost__lte=0, then=Value(-1)), #LT loss
+                      When(executed__lte=year_ago, unit_tax_cost__gt=0, then=Value(1)),   #LT gain
+                      When(executed__gt=year_ago, unit_tax_cost__gt=0, then=Value(2)),    #ST gain
+                      output_field=FloatField()))\
+                   .values('id', 'price_entry', 'quantity', 'executed', 'unit_tax_cost', 'ticker_id', 'price','LT_ST_gain_loss') \
+                   .order_by(*order_by)
     return position_lots
 
 def get_position_lots_by_tax_lot(ticker_id, current_price, goal_id):
@@ -562,23 +570,30 @@ def perturbate(goal, idata, data_provider, execution_provider):
     # This will use any available cash to rebalance if possible.
     held_weights = get_held_weights(goal)
 
-    # we can break this up into 4 rules
+    # do not sell anything
     tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(goal, data_provider.get_current_date())
-    min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
+    min_weights = held_weights
     tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-    min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
+
+    min_TLH_weights = dict()
+    max_TLH_weights = dict()
+    if goal.account.tax_loss_harvesting_consent:
+        min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
+
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
     tax_max_weights = unify_max_weights([tax_max_weights, max_TLH_weights])
     min_weights = unify_min_weights([min_weights, min_TLH_weights])
-
     weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
     if weights is None:
-        # relax constraints and allow to sell short term losses, then relax and allow long term losses,
-        # then relax and allow to sell long term gains, relax and allow to sell short term gains
         min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)
         tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-        min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
+
+        min_TLH_weights = dict()
+        max_TLH_weights = dict()
+        if goal.account.tax_loss_harvesting_consent:
+            min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
+
         opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
         tax_max_weights = unify_max_weights([tax_max_weights, max_TLH_weights])
         min_weights = unify_min_weights([min_weights, min_TLH_weights])
