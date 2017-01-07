@@ -179,6 +179,9 @@ class RetirementPlan(TimestampedModel):
     goal_setting = models.OneToOneField(GoalSetting, null=True, related_name='retirement_plan', on_delete=PROTECT)
     partner_data = JSONField(null=True, blank=True)
 
+    # balance of retirement account number
+    balance = models.FloatField(null=True, blank=True)
+
     # Install the custom manager that knows how to filter.
     objects = RetirementPlanQuerySet.as_manager()
 

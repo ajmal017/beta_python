@@ -141,6 +141,41 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['height'], 30)
 
+    def test_update_additional_fields(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'home_value': 123456.7,
+            'home_growth': 0.1,
+            'ss_fra_todays': 12345.6,
+            'ss_fra_retirement': 1234.5,
+            'state_tax_after_credits': 12345.6,
+            'state_tax_effrate': 0.1,
+            'pension_name': 'pension name',
+            'pension_amount': 12345.6,
+            'pension_start_date': date(2017, 1, 1),
+            'employee_contributions_last_year': 23456.7,
+            'employer_contributions_last_year': 34567.8,
+            'total_contributions_last_year': 1234567.8
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['home_value'], data['home_value'])
+        self.assertEqual(response.data['home_growth'], data['home_growth'])
+        self.assertEqual(response.data['ss_fra_todays'], data['ss_fra_todays'])
+        self.assertEqual(response.data['ss_fra_retirement'], data['ss_fra_retirement'])
+        self.assertEqual(response.data['state_tax_after_credits'], data['state_tax_after_credits'])
+        self.assertEqual(response.data['state_tax_effrate'], data['state_tax_effrate'])
+        self.assertEqual(response.data['pension_name'], data['pension_name'])
+        self.assertEqual(response.data['pension_amount'], data['pension_amount'])
+        self.assertEqual(response.data['pension_start_date'], data['pension_start_date'])
+        self.assertEqual(response.data['employee_contributions_last_year'], data['employee_contributions_last_year'])
+        self.assertEqual(response.data['employer_contributions_last_year'], data['employer_contributions_last_year'])
+        self.assertEqual(response.data['total_contributions_last_year'], data['total_contributions_last_year'])
+
+        # try one more update to validate against
+
     def test_get_plan(self):
         """
         Test clients are able to access their own retirement plan by id.

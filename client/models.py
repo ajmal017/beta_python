@@ -88,6 +88,43 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     risk_profile_responses = models.ManyToManyField('RiskProfileAnswer')
     other_income = models.IntegerField(null=True, blank=True)
 
+    # User entered value of their home
+    home_value = models.FloatField(null=True, blank=True)
+
+    # Default growth rate applied to the users home_value
+    home_growth = models.FloatField(null=True, blank=True)
+
+    # Social security estimated benefit in todays dollars based on full retirement age (fra)
+    ss_fra_todays = models.FloatField(null=True, blank=True)
+
+    # Social security estimated benefit in retirement dollars based on full retirement age (fra)
+    ss_fra_retirement = models.FloatField(null=True, blank=True)
+
+    # State tax levied against income
+    state_tax_after_credits = models.FloatField(null=True, blank=True)
+
+    # State tax effective rate
+    state_tax_effrate = models.FloatField(null=True, blank=True)
+
+    # Name of pension or annuity income stream number
+    pension_name = models.CharField(max_length=255, null=True, blank=True)
+
+    # Amount of pension income in todays dollars for number
+    pension_amount = models.FloatField(null=True, blank=True)
+
+    # Start date of retirement income stream number
+    pension_start_date = models.DateField(null=True, blank=True)
+
+    # last tax year employee contributions into retirement account number
+    employee_contributions_last_year = models.FloatField(null=True, blank=True)
+
+    # last tax year employer contributions into retirement account number #
+    employer_contributions_last_year = models.FloatField(null=True, blank=True)
+
+    # total of all contributions last year into retirement account number
+    total_contributions_last_year = models.FloatField(null=True, blank=True)
+
+
     objects = ClientQuerySet.as_manager()
 
     def __str__(self):
