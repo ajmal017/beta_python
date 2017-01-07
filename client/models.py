@@ -114,6 +114,13 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     def net_worth(self):
         return self._net_worth()
 
+    @cached_property
+    def bmi(self):
+        if self.height is None or self.weight is None:
+            return None
+        cm_to_m2 = self.height * 0.0001
+        return self.weight / cm_to_m2
+
     @property
     def accounts_all(self):
         # TODO: Make this work
@@ -232,6 +239,13 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                 calculated_life_expectancy -= 2.2
             else:
                 calculated_life_expectancy -= 1.8
+
+        if self.bmi:
+            if self.bmi > 30:
+                if self.gender == GENDER_MALE:
+                    calculated_life_expectancy -= 5.7
+                else:
+                    calculated_life_expectancy -= 5.8
 
         return calculated_life_expectancy
 

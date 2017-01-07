@@ -18,6 +18,7 @@ from .factories import AccountTypeRiskProfileGroupFactory, AddressFactory, \
     SecurityAnswerFactory
 from main.tests.fixture import Fixture1
 
+
 class ClientTests(APITestCase):
     def setUp(self):
         self.support_group = GroupFactory(name=GROUP_SUPPORT_STAFF)

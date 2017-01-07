@@ -206,11 +206,9 @@ class ClientViewSet(ApiViewMixin,
                 # increase calculated_life_expectancy
                 if orig.daily_exercise is None:
                     orig.daily_exercise = 0
-                if updated.daily_exercise == 20 and orig.daily_exercise < 20:
-                    plan.save()
-                elif updated.daily_exercise > 20 and orig.daily_exercise == 20:
-                    plan.save()
-                elif updated.daily_exercise > 20 and orig.daily_exercise < 20:
+                if (updated.daily_exercise == 20 and orig.daily_exercise < 20) or \
+                   (updated.daily_exercise > 20 and orig.daily_exercise == 20) or \
+                   (updated.daily_exercise > 20 and orig.daily_exercise < 20):
                     plan.save()
 
             if updated.drinks != orig.drinks:
@@ -239,6 +237,7 @@ class ClientViewSet(ApiViewMixin,
                 advice = RetirementAdvice(plan=plan, trigger=e)
                 advice.text = advice_responses.get_weight_and_height_only(advice)
                 advice.save()
+
 
             if life_expectancy_field_updated and (updated.daily_exercise and
                updated.weight and updated.height and updated.smoker is not None and
