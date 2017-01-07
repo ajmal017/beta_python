@@ -102,7 +102,6 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
             # daily growth not annual
             assets_worth += float(a.get_growth_valuation(to_date=today))
         # Sum personal type Betasmartz Accounts - the total balance for the account is
-        # ClientAccount.cash_balance + Goal.total_balance for all goals for the account.
         personal_accounts_worth = 0.0
         for ca in self.primary_accounts.filter(account_type=constants.ACCOUNT_TYPE_PERSONAL):
             personal_accounts_worth += ca.cash_balance
@@ -124,8 +123,6 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     @property
     def accounts_all(self):
         # TODO: Make this work
-        # return self.primary_accounts.get_queryset() |
-        # self.signatories.select_related('account')
         return self.primary_accounts
 
     @property
