@@ -13,7 +13,6 @@ from api.v1.client.serializers import EmailNotificationsSerializer, \
 from api.v1.permissions import IsClient
 from api.v1.views import ApiViewMixin, ReadOnlyApiViewMixin
 from main.models import ExternalAsset, User, Goal
-from notifications.models import Notify
 from user.models import SecurityAnswer
 from client.models import Client, EmailInvite, ClientAccount
 from support.models import SupportRequest
@@ -28,7 +27,6 @@ import json
 from retiresmartz import advice_responses
 from main.event import Event
 from api.v1.utils import activity
-
 from main import quovo
 
 logger = logging.getLogger('api.v1.client.views')
@@ -170,12 +168,12 @@ class ClientViewSet(ApiViewMixin,
         updated = serializer.update(instance, serializer.validated_data)
 
         # RetirementAdvice Triggers
+        life_expectancy_field_updated = (updated.daily_exercise != orig.daily_exercise or
+                                         updated.weight != orig.weight or
+                                         updated.height != orig.height or
+                                         updated.smoker != orig.smoker or
+                                         updated.drinks != orig.drinks)
         for plan in RetirementPlan.objects.filter(client=updated, agreed_on=None):
-            life_expectancy_field_updated = (updated.daily_exercise != orig.daily_exercise or
-                                             updated.weight != orig.weight or
-                                             updated.height != orig.height or
-                                             updated.smoker != orig.smoker or
-                                             updated.drinks != orig.drinks)
             if updated.smoker != orig.smoker:
                 if updated.smoker:
                     e = Event.RETIRESMARTZ_IS_A_SMOKER.log(None,
@@ -184,8 +182,7 @@ class ClientViewSet(ApiViewMixin,
                     advice = RetirementAdvice(plan=plan, trigger=e)
                     advice.text = advice_responses.get_smoking_yes(advice)
                     advice.save()
-                    plan.calculated_life_expectancy -= 7
-                    plan.save()
+                    plan.save()  # save to update calculated_life_expectancy on plan
                 elif updated.smoker is False:
                     e = Event.RETIRESMARTZ_IS_NOT_A_SMOKER.log(None,
                                                                user=updated.user,
@@ -195,9 +192,7 @@ class ClientViewSet(ApiViewMixin,
                     advice.save()
 
                     if updated.smoker is False and orig.smoker is True:
-                        diff = min(85 - plan.calculated_life_expectancy, 7)
-                        plan.calculated_life_expectancy += diff
-                        plan.save()
+                        plan.save()  # save to update calculated_life_expectancy on plan
 
             if updated.daily_exercise != orig.daily_exercise:
                 # exercise only
@@ -209,18 +204,31 @@ class ClientViewSet(ApiViewMixin,
                 advice.save()
 
                 # increase calculated_life_expectancy
+                if orig.daily_exercise is None:
+                    orig.daily_exercise = 0
                 if updated.daily_exercise == 20 and orig.daily_exercise < 20:
-                    diff = min(85 - plan.calculated_life_expectancy, 2.2)
-                    plan.calculated_life_expectancy += diff
                     plan.save()
                 elif updated.daily_exercise > 20 and orig.daily_exercise == 20:
-                    diff = min(85 - plan.calculated_life_expectancy, 1)
-                    plan.calculated_life_expectancy += diff
                     plan.save()
                 elif updated.daily_exercise > 20 and orig.daily_exercise < 20:
-                    diff = min(85 - plan.calculated_life_expectancy, 3.2)
-                    plan.calculated_life_expectancy += diff
                     plan.save()
+
+            if updated.drinks != orig.drinks:
+                if updated.drinks > 1:
+                    e = Event.RETIRESMARTZ_DRINKS_MORE_THAN_ONE.log(None,
+                                                         user=updated.user,
+                                                         obj=updated)
+                    advice = RetirementAdvice(plan=plan, trigger=e)
+                    advice.text = advice_responses.get_drinks_more_than_one(advice)
+                    advice.save()
+                else:
+                    e = Event.RETIRESMARTZ_DRINKS_ONE_OR_LESS.log(None,
+                                                         user=updated.user,
+                                                         obj=updated)
+                    advice = RetirementAdvice(plan=plan, trigger=e)
+                    advice.text = advice_responses.get_drinks_one_or_less(advice)
+                    advice.save()
+                plan.save()
 
             # frontend posts one at a time, weight then height, not together in one post
             if (updated.weight != orig.weight or updated.height != orig.height):

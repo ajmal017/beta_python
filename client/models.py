@@ -24,6 +24,7 @@ from main.models import AccountGroup, Goal, Platform, PricingPlan, \
     PricingPlanBase
 from retiresmartz.models import RetirementAdvice, RetirementPlan
 from .managers import ClientAccountQuerySet, ClientQuerySet
+from main.constants import GENDER_MALE
 
 logger = logging.getLogger('client.models')
 
@@ -206,10 +207,33 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                 return False
         return True
 
-    @property
+    @cached_property
     def life_expectancy(self):
-        # TODO: Return a better extimate of life expectancy
-        return 85
+        average_life_expectancy = 85
+        calculated_life_expectancy = float(average_life_expectancy)
+        if self.smoker:
+            if self.gender == GENDER_MALE:
+                diff = 7.7
+            else:
+                diff = 7.3
+            calculated_life_expectancy -= diff
+
+        if self.daily_exercise is None:
+            self.daily_exercise = 0
+        if self.daily_exercise == 20:
+            calculated_life_expectancy += 2.2
+        elif self.daily_exercise > 20:
+            calculated_life_expectancy += 3.2
+
+        if self.drinks is None:
+            self.drinks = 0
+        if self.drinks > 1:
+            if self.gender == GENDER_MALE:
+                calculated_life_expectancy -= 2.2
+            else:
+                calculated_life_expectancy -= 1.8
+
+        return calculated_life_expectancy
 
     def get_risk_profile_bas_scores(self):
         """
