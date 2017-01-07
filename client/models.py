@@ -24,6 +24,7 @@ from main.models import AccountGroup, Goal, Platform, PricingPlan, \
     PricingPlanBase
 from retiresmartz.models import RetirementAdvice, RetirementPlan
 from .managers import ClientAccountQuerySet, ClientQuerySet
+from main.constants import GENDER_MALE
 
 logger = logging.getLogger('client.models')
 
@@ -101,7 +102,6 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
             # daily growth not annual
             assets_worth += float(a.get_growth_valuation(to_date=today))
         # Sum personal type Betasmartz Accounts - the total balance for the account is
-        # ClientAccount.cash_balance + Goal.total_balance for all goals for the account.
         personal_accounts_worth = 0.0
         for ca in self.primary_accounts.filter(account_type=constants.ACCOUNT_TYPE_PERSONAL):
             personal_accounts_worth += ca.cash_balance
@@ -113,11 +113,16 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     def net_worth(self):
         return self._net_worth()
 
+    @cached_property
+    def bmi(self):
+        if self.height is None or self.weight is None:
+            return None
+        cm_to_m2 = self.height * 0.0001
+        return self.weight / cm_to_m2
+
     @property
     def accounts_all(self):
         # TODO: Make this work
-        # return self.primary_accounts.get_queryset() |
-        # self.signatories.select_related('account')
         return self.primary_accounts
 
     @property
@@ -206,10 +211,40 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                 return False
         return True
 
-    @property
+    @cached_property
     def life_expectancy(self):
-        # TODO: Return a better extimate of life expectancy
-        return 85
+        average_life_expectancy = 85
+        calculated_life_expectancy = float(average_life_expectancy)
+        if self.smoker:
+            if self.gender == GENDER_MALE:
+                diff = 7.7
+            else:
+                diff = 7.3
+            calculated_life_expectancy -= diff
+
+        if self.daily_exercise is None:
+            self.daily_exercise = 0
+        if self.daily_exercise == 20:
+            calculated_life_expectancy += 2.2
+        elif self.daily_exercise > 20:
+            calculated_life_expectancy += 3.2
+
+        if self.drinks is None:
+            self.drinks = 0
+        if self.drinks > 1:
+            if self.gender == GENDER_MALE:
+                calculated_life_expectancy -= 2.2
+            else:
+                calculated_life_expectancy -= 1.8
+
+        if self.bmi:
+            if self.bmi > 30:
+                if self.gender == GENDER_MALE:
+                    calculated_life_expectancy -= 5.7
+                else:
+                    calculated_life_expectancy -= 5.8
+
+        return calculated_life_expectancy
 
     def get_risk_profile_bas_scores(self):
         """

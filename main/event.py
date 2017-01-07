@@ -76,6 +76,9 @@ class Event(ChoiceEnum):
 
     RETIRESMARTZ_CONTRIB_UP_SPENDING_DOWN = (32, ['prev_btc', 'new_btc'], 'retiresmartz.RetirementPlan')
 
+    RETIRESMARTZ_DRINKS_MORE_THAN_ONE = (33, [], 'client.Client')
+    RETIRESMARTZ_DRINKS_ONE_OR_LESS = (34, [], 'client.Client')
+
     # TODO: Update `list_of_event_logging_data` & `required object type` below.
     # ONLY CONFIRMED ALLOCATION CHANGES
     ALLOCATION_CHANGED = (50, [], 'main.Goal')

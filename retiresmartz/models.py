@@ -12,7 +12,6 @@ from jsonfield.fields import JSONField
 from pinax.eventlog.models import Log
 
 from common.structures import ChoiceEnum
-from main.event import Event
 from main.models import TransferPlan, GoalSetting, GoalMetricGroup
 from main.risk_profiler import GoalSettingRiskProfile
 from retiresmartz.managers import RetirementAdviceQueryset
@@ -20,8 +19,6 @@ from .managers import RetirementPlanQuerySet
 from main import constants
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from pinax.eventlog.models import log
-from retiresmartz import advice_responses
 from django.utils.functional import cached_property
 import json
 from main.abstract import TimestampedModel

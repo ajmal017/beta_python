@@ -223,10 +223,11 @@ class RetiresmartzAdviceTests(APITestCase):
         lookup_advice = RetirementAdvice.objects.get(plan=self.plan2)
         self.assertEqual(response.data['results'][0]['id'], lookup_advice.id)
         self.assertEqual(response.data['results'][0]['plan'], self.plan2.id)
+        lookup_plan = RetirementPlan.objects.get(pk=self.plan2.id)
+        self.assertEqual(lookup_plan.calculated_life_expectancy, 77)
 
     def test_smoker_no(self):
         pre_save_count = RetirementAdvice.objects.count()
-        self.plan2.selected_life_expectancy = 80
         data = {
             'smoker': False,
             'question_one': self.sa1.pk,
@@ -244,10 +245,10 @@ class RetiresmartzAdviceTests(APITestCase):
         lookup_advice = RetirementAdvice.objects.get(plan=self.plan)
         self.assertEqual(response.data['results'][0]['id'], lookup_advice.id)
         self.assertEqual(response.data['results'][0]['plan'], self.plan.id)
-        lookup_plan = RetirementPlan.objects.get(pk=self.plan2.id)
-        self.assertEqual(lookup_plan.selected_life_expectancy, 87)
+        self.assertEqual(lookup_advice.plan.calculated_life_expectancy, 85)
 
     def test_exercise_only(self):
+        pre_save_count = RetirementAdvice.objects.count()
         data = {
             'daily_exercise': 20,
             'question_one': self.sa1.pk,
@@ -262,6 +263,8 @@ class RetiresmartzAdviceTests(APITestCase):
         response = self.client.get(self.advice_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
+        lookup_plan = RetirementPlan.objects.get(pk=self.plan.id)
+        self.assertEqual(lookup_plan.calculated_life_expectancy, 87)
 
     def test_weight_and_height_only(self):
         data = {
@@ -326,6 +329,24 @@ class RetiresmartzAdviceTests(APITestCase):
     #     self.assertEqual(response.status_code, status.HTTP_200_OK)
     #     self.assertEqual(len(response.data['results']), 3)
 
+    def test_drinks_only(self):
+        data = {
+            'drinks': 5,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
+        }
+        self.client.force_authenticate(user=self.plan.client.user)
+        response = self.client.put(self.client_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(self.advice_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+        lookup_plan = RetirementPlan.objects.get(pk=self.plan.id)
+        self.assertEqual(lookup_plan.calculated_life_expectancy, 82)
+
     def test_all_wellbeing_entries(self):
         data = {
             'weight': 145,
@@ -344,7 +365,7 @@ class RetiresmartzAdviceTests(APITestCase):
 
         response = self.client.get(self.advice_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 4)
+        self.assertEqual(len(response.data['results']), 5)
 
     def test_protective_risk_move(self):
         plan = RetirementPlanFactory.create(desired_risk=.5,
