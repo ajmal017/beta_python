@@ -1,3 +1,8 @@
+'''
+monthly inflation (annualized), taken from 'Retirement Modelling
+V3.xlsx' (tab 'Inflation Forecast')
+'''
+
 inflation_level = [0.0160	,
 0.0160	,
 0.0160	,
