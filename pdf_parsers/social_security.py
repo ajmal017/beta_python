@@ -112,7 +112,7 @@ def parse_scanned_pdf(fl):
 
     os.system("convert -density 300 -alpha Off {0} {1}/img.tiff".format(fl, tmp_pdfs))
     os.system("tesseract {0}/img.tiff {0}/out".format(tmp_pdfs))
-    cmd = "sed -i -e 's/—/-/g' {0}/out.txt".format(tmp_pdfs)
+    cmd = "touch {0}/out.txt && sed -i -e 's/—/-/g' {0}/out.txt".format(tmp_pdfs)
     os.system(cmd)
     with open("{0}/out.txt".format(tmp_pdfs), 'r') as f:
         txt = f.read()
