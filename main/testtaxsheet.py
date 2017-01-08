@@ -1,5 +1,5 @@
 import pandas as pd
-import inflation
+from main import inflation
 
 '''
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
