@@ -129,6 +129,11 @@ def clean_results(results):
     clean_output['Family'] = results['sections'][0]['fields']['Family']
     clean_output['Survivors'] = results['sections'][0]['fields']['Survivors']
     clean_output['Medicare'] = results['sections'][0]['fields']['Medicare']
+    clean_output['LastYear'] = results['sections'][1]['fields']['LastYear']
+    clean_output['PaidThisYear'] = results['sections'][2]['fields']['PaidThisYear']
+    clean_output['EmployerPaidThisYear'] = results['sections'][2]['fields']['EmployerPaidThisYear']
+    clean_output['PaidLastYear'] = results['sections'][2]['fields']['PaidLastYear']
+    clean_output['EmployerPaidLastYear'] = results['sections'][2]['fields']['EmployerPaidLastYear']
 
     return clean_output
 
