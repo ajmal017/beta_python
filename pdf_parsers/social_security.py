@@ -33,6 +33,11 @@ keywords = {
     'Family': ['*Family', '*Survivors'],
     'Survivors': ['*Survivors', 'Medicare'],
     'Medicare': ['Medicare', '*'],
+    'LastYear': ['You paid:', ''],
+    'PaidThisYear': ['', ''],
+    'EmployerPaidThisYear': ['', ''],
+    'PaidLastYear': ['', ''],
+    'EmployerPaidLastYear': ['', ''],
 }
 
 output = {
@@ -101,7 +106,7 @@ def parse_vector_pdf(fl):
 
 
 def parse_scanned_pdf(fl):
-    tmp_pdfs = "temp"
+    tmp_pdfs = "tmp"
     if not os.path.exists(tmp_pdfs):
         os.makedirs(tmp_pdfs)
 
