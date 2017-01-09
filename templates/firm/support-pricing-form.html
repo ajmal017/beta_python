@@ -1,5 +1,5 @@
 {% load static from staticfiles %}
-{% load pricing_plan %}
+{% load pricing_plan app_filters %}
 
 
 {% for form in formset %}
@@ -12,7 +12,8 @@
         {{ form.instance.person }}
         <input type="hidden" name="{{ form.person.html_name }}" value="{{ form.instance.person.id }}">
       {% else %}
-        {{ form.person }}
+        {{ form.person|add_class:"hidden" }}
+        <input type="text" class="form-control autocomplete" placeholder="Enter a name...">
       {% endif %}
       {{ form.id }}
       <input type="hidden" class="form-parent" value="{{ firm.pricing_plan.id }}">

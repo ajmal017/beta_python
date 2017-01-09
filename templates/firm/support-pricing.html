@@ -2,13 +2,17 @@
 {% load static from staticfiles %}
 {% load i18n filters pricing_plan %}
 
+{% block css %}
+  <link rel="stylesheet" href="{% static "css/images/firm/pricing-plan.css" %}">
+  <link rel="stylesheet" href="{% static "css/jquery-ui.min.css" %}">
+{% endblock %}
+
+
 {% block head_js %}
+  <script src="{% static "js/jquery-ui.min.js" %}" type="application/javascript"></script>
   <script src="{% static 'js/client/firm/pricing-plans.js' %}" type="application/javascript"></script>
 {% endblock %}
 
-{% block css %}
-  <link rel="stylesheet" href="{% static "css/images/firm/pricing-plan.css" %}">
-{% endblock %}
 
 {% block main_content %}
   <div class="container">
