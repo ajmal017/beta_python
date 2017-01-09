@@ -75,10 +75,8 @@
     </div>
 
     <div class="row">
-      <div class="col-sm-9"></div>
-
       <form>
-        <div class="col-sm-3">
+        <div class="col-sm-4 col-sm-offset-8">
           <div class="form-group">
             <div class="input-group">
               <span class="input-group-addon"><span class="icon icon-magnifying-glass"></span></span>
@@ -91,7 +89,7 @@
 
     <div class="panel panel-default">
       <div class="table-responsive">
-        <table class="table" id='accounts'>
+        <table class="table" id='advisors'>
           <thead>
             <tr>
               <th>#</th>
@@ -169,7 +167,7 @@
   <script type="application/javascript" src="{% static "js/widgets.js" %}"></script>
   <script type="application/javascript">
     $(function () {
-      betasmartz.widgets.searchTable("#accounts", "#search");
+      betasmartz.widgets.searchTable("#advisors", "#search");
     });
   </script>
 {% endblock %}
