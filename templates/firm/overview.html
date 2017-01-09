@@ -9,13 +9,9 @@
           <h3>Overview</h3>
       </div>
 
-      <form>
-        <div class="col-sm-3">
-          <div class="form-group">
-            <input type="search" name="search" placeholder="Search advisors..." value="{{ search }}" class="form-control">
-          </div>
-        </div>
-      </form>
+      <div class="col-sm-3"></div>
+
+      
     </div>
 
     {% if not fiscal_years_added %}
@@ -74,6 +70,21 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-9"></div>
+
+      <form>
+        <div class="col-sm-3">
+          <div class="form-group">
+            <div class="input-group">
+              <span class="input-group-addon"><span class="icon icon-magnifying-glass"></span></span>
+              <input type="search" name="search" placeholder="Search advisors..." value="{{ search }}" class="form-control">
+            </div>
+          </div>
+        </div>
+      </form>
     </div>
 
     <div class="panel panel-default">
