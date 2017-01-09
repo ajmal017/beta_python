@@ -2483,6 +2483,9 @@ class Supervisor(models.Model):
         help_text="A supervisor with 'full access' can perform actions for "
                   "their advisors and clients.")
 
+    def __str__(self):
+        return "Supervisor {} for {}".format(self.user, self.firm)
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
 

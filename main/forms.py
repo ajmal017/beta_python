@@ -40,10 +40,7 @@ class BetaSmartzAgreementForm(forms.ModelForm):
         cleaned_data = super(BetaSmartzAgreementForm, self).clean()
 
         if not (cleaned_data["betasmartz_agreement"] is True):
-            self._errors['betasmartz_agreement'] = mark_safe(
-                '<ul class="errorlist">'
-                '<li>You must accept the BetaSmartz\'s agreement'
-                ' to continue.</li></ul>')
+            self._errors['betasmartz_agreement'] ='You must accept the BetaSmartz\'s agreement'
 
         return cleaned_data
 

@@ -292,3 +292,22 @@ class FirmAnalyticsMixinTests(TestCase):
         self.client.login(username=rep.user.email, password='test')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_create_supervisor(self):
+        url = '/firm/supervisors/create'
+        rep = AuthorisedRepresentativeFactory.create(firm=self.firm)
+
+        data = {
+            'email': 'bruce.wayne@example.com',
+            'first_name': 'Bruce',
+            'middle_name': 'Alfred',
+            'last_name': 'Wayne',
+            'password': 'test',
+            'confirm_password': 'test',
+            'can_write': True,
+            'betasmartz_agreement': True,
+        }
+
+        self.client.login(username=rep.user.email, password='test')
+        response = self.client.post(url, data)
+        self.assertRedirects(response, '/firm/supervisors')

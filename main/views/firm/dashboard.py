@@ -133,11 +133,13 @@ class FirmSupervisorsCreate(CreateView, LegalView):
     success_url = "/firm/supervisors"
 
     def get_success_url(self):
-        supervisor = self.object.supervisor
+        user = self.object
+        logger.error(user)
         Notify.CREATE_SUPERVISOR.send(
             actor=self.firm,
-            target=supervisor,
-            description='Can write' if supervisor.can_write else 'Read only'
+            target=user,
+            recipient=self.request.user,
+            description='Can write' if user.supervisor.can_write else 'Read only'
         )
         messages.success(self.request, "New supervisor created successfully")
         return super(FirmSupervisorsCreate, self).get_success_url()
