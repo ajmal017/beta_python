@@ -1,6 +1,7 @@
 import pandas as pd
 from main import inflation
 
+
 '''
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
@@ -54,3 +55,7 @@ ira_rmo_factor = 26.5
 initial_401k_balance = 50000
 
 inflation_level = inflation.inflation_level
+
+risk_profile_over_cpi = 0.005
+
+projected_income_growth = 0.01

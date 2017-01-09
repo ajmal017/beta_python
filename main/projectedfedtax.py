@@ -1,8 +1,8 @@
 import pdb
 import pandas as pd
 import numpy as np
-import taxsheet
-import testtaxsheet as tst_tx
+from main import taxsheet
+from main import testtaxsheet as tst_tx
 
 class TaxFederal(object):
     '''
@@ -113,7 +113,9 @@ if __name__ == "__main__":
                                   tst_tx.paid_days,
                                   tst_tx.ira_rmo_factor,
                                   tst_tx.initial_401k_balance,
-                                  tst_tx.inflation_level)
+                                  tst_tx.inflation_level,
+                                  tst_tx.risk_profile_over_cpi,
+                                  tst_tx.projected_income_growth)
 
     tst_tx_cls.create_maindf()
 
