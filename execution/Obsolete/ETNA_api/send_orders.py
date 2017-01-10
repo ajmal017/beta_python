@@ -10,7 +10,7 @@ http://stackoverflow.com/questions/30259452/proper-way-to-consume-data-from-rest
 import requests
 from execution.serializers import LoginSerializer, AccountIdSerializer, SecurityETNASerializer, OrderETNASerializer
 from execution.models import ETNALogin, AccountId, SecurityETNA
-from main.models import OrderETNA
+from main.models import Order
 from django.db import connection
 from datetime import timedelta
 from django.utils import timezone
@@ -177,15 +177,15 @@ def get_security(symbol):
 
 
 def insert_order_ETNA(price, quantity, ticker):
-    side = OrderETNA.SideChoice.Buy.value if quantity>0 else OrderETNA.SideChoice.Sell.value
+    side = Order.SideChoice.Buy.value if quantity > 0 else Order.SideChoice.Sell.value
     etna_security = get_security(ticker.symbol)
-    order = OrderETNA.objects.create(Price=price,
-                                     Quantity=quantity,
-                                     SecurityId=etna_security.symbol_id,
-                                     Side=side,
-                                     TimeInForce=0,
-                                     ExpireDate=0,
-                                     ticker=ticker)
+    order = Order.objects.create(Price=price,
+                                 Quantity=quantity,
+                                 SecurityId=etna_security.symbol_id,
+                                 Side=side,
+                                 TimeInForce=0,
+                                 ExpireDate=0,
+                                 ticker=ticker)
     return order
 
 
@@ -213,7 +213,7 @@ def send_order_ETNA(order, ticket, account_id):
 
     order.Order_Id = response['Result']
 
-    order.Status = OrderETNA.StatusChoice.Sent.value
+    order.Status = Order.StatusChoice.Sent.value
     order.save()
     return order
 
@@ -234,7 +234,7 @@ def update_ETNA_order_status(order_id, ticket):
         return
 
     response = response['Result']
-    order = OrderETNA.objects.get(Order_Id=order_id)
+    order = Order.objects.get(Order_Id=order_id)
     order.FillPrice = response['AveragePrice']
     order.FillQuantity = response['ExecutedQuantity']
     order.Status = response['ExecutionStatus']
