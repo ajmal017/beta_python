@@ -45,7 +45,7 @@
           {% if form.fixed.errors %}
             <span class="error">{{ form.fixed.errors|join:"; " }}</span>
           {% endif %}
-          <span>${{ form.fixed }}</span>
+          <span>$ {{ form.fixed }}</span>
         </div>
         <div class="column">
           <button type="submit" data-type="{{ type }}">Save</button>

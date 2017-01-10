@@ -44,7 +44,7 @@
             <th>Total fee</th>
             <th>Platform fee</th>
             <th>Fee</th>
-            <th></th>
+            <th>BPS, Monthly fee</th>
           </tr>
           </thead>
           <tbody>
@@ -65,7 +65,7 @@
                   {% if firm_form.fixed.errors %}
                     <span class="error">{{ firm_form.fixed.errors|join:"; " }}</span>
                   {% endif %}
-                  <span>${{ firm_form.fixed }}</span>
+                  <span>$ {{ firm_form.fixed }}</span>
                 </div>
                 <div class="column">
                   <button type="submit" data-type="firm">Save</button>

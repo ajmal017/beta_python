@@ -1,5 +1,6 @@
 #pricing-plans .column {
     display: inline-block;
+    margin-right: 1rem;
 }
 
 #pricing-plans .column input {
