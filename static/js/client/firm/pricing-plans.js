@@ -39,7 +39,12 @@ $(function () {
             });
         $input.autocomplete({
             minLength: 0,
-            source: source,
+            source: function (term, response_cb) {
+                var search = term.term.toLowerCase();
+                response_cb(source.filter(function (el) {
+                    return el.value == search || el.label.toLowerCase().indexOf(search) > -1;
+                }));
+            },
             focus: function (event, ui) {
                 $input.val(ui.item.label);
                 return false;
