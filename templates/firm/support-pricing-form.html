@@ -1,5 +1,5 @@
 {% load static from staticfiles %}
-{% load pricing_plan %}
+{% load pricing_plan app_filters %}
 
 
 {% for form in formset %}
@@ -7,12 +7,13 @@
     <td>
       {{ type|capfirst }}
     </td>
-    <td>
+    <td class="form-group{% if form.errors %} has-error{% endif %}">
       {% if form.instance.id %}
         {{ form.instance.person }}
         <input type="hidden" name="{{ form.person.html_name }}" value="{{ form.instance.person.id }}">
       {% else %}
-        {{ form.person }}
+        {{ form.person|add_class:"hidden" }}
+        <input type="text" class="form-control autocomplete" placeholder="Enter a name...">
       {% endif %}
       {{ form.id }}
       <input type="hidden" class="form-parent" value="{{ firm.pricing_plan.id }}">
@@ -44,7 +45,7 @@
           {% if form.fixed.errors %}
             <span class="error">{{ form.fixed.errors|join:"; " }}</span>
           {% endif %}
-          <span>${{ form.fixed }}</span>
+          <span>$ {{ form.fixed }}</span>
         </div>
         <div class="column">
           <button type="submit" data-type="{{ type }}">Save</button>

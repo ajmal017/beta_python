@@ -2,13 +2,17 @@
 {% load static from staticfiles %}
 {% load i18n filters pricing_plan %}
 
+{% block css %}
+  <link rel="stylesheet" href="{% static "css/images/firm/pricing-plan.css" %}">
+  <link rel="stylesheet" href="{% static "css/jquery-ui.min.css" %}">
+{% endblock %}
+
+
 {% block head_js %}
+  <script src="{% static "js/jquery-ui.min.js" %}" type="application/javascript"></script>
   <script src="{% static 'js/client/firm/pricing-plans.js' %}" type="application/javascript"></script>
 {% endblock %}
 
-{% block css %}
-  <link rel="stylesheet" href="{% static "css/images/firm/pricing-plan.css" %}">
-{% endblock %}
 
 {% block main_content %}
   <div class="container">
@@ -40,7 +44,7 @@
             <th>Total fee</th>
             <th>Platform fee</th>
             <th>Fee</th>
-            <th></th>
+            <th>BPS, Monthly fee</th>
           </tr>
           </thead>
           <tbody>
@@ -61,7 +65,7 @@
                   {% if firm_form.fixed.errors %}
                     <span class="error">{{ firm_form.fixed.errors|join:"; " }}</span>
                   {% endif %}
-                  <span>${{ firm_form.fixed }}</span>
+                  <span>$ {{ firm_form.fixed }}</span>
                 </div>
                 <div class="column">
                   <button type="submit" data-type="firm">Save</button>
