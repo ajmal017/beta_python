@@ -45,7 +45,7 @@ class CalculatorTest(TestCase):
         ss_payments = InflatedCashFlow(1433, self.today, self.retirement, self.death)
 
         # I want a Luxury retirement. 1.5 * Current income.
-        rdcf = RetiresmartzDesiredCashFlow(income_calc, 6000, self.today, self.retirement, self.death)
+        rdcf = RetiresmartzDesiredCashFlow(income_calc, 6000, self.today, self.retirement, self.death, 1)
 
         calc = Calculator([rdcf, house, retirement_income, ss_payments], [acc_rothIRA, acc_401k])
 

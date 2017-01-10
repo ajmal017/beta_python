@@ -7,7 +7,7 @@ import logging
 
 import copy
 import numpy as np
-
+from main.models import Ticker
 from portfolios.algorithms.markowitz import markowitz_optimizer_3
 from portfolios.providers.execution.abstract import Reason, ExecutionProviderAbstract
 from portfolios.calculation import \
@@ -17,15 +17,17 @@ from main.models import GoalMetric, PositionLot
 from collections import defaultdict
 from django.db.models import Sum, F, Case, When, Value, FloatField
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date, datetime
 from portfolios.management.commands.measure_goals import get_risk_score
-
+from portfolios.returns import get_return_history
 logger = logging.getLogger('rebalance')
 
 TAX_BRACKET_LESS1Y = 0.3
 TAX_BRACKET_MORE1Y = 0.2
 MAX_WEIGHT_SUM = 1.0001
-
+SAFETY_MARGIN = 0.005 #used for buying - we use limit prices higher by 0.005 from the last recorded price
+LOT_LOSS_TLH = 0.005 # loss incurred by tax lot that triggers tax harvesting
+CORRELATION_LENGTH = 365 # number of days for calculation of correlation
 
 def optimise_up(opt_inputs, min_weights, max_weights=None):
     """
@@ -118,7 +120,26 @@ def build_positions(goal, weights, instruments):
     return res
 
 
-def create_request(goal, new_positions, reason, execution_provider, data_provider):
+def reduce_cash(volume, ticker, cash_available):
+    amount_to_buy = (ticker.latest_tick * (1+SAFETY_MARGIN)) * volume
+    if cash_available > amount_to_buy:
+        cash_available -= amount_to_buy
+    else:
+        for v in range(volume + 1):
+            amount_to_buy = (ticker.latest_tick * (1+SAFETY_MARGIN)) * v
+            if cash_available > amount_to_buy:
+                continue
+            else:
+                volume = max(v - 1, 0)
+                amount_to_buy = (ticker.latest_tick * (1 + SAFETY_MARGIN)) * volume
+                cash_available -= amount_to_buy
+                break
+    return cash_available, volume
+
+
+def create_request(goal, new_positions, reason, execution_provider, data_provider, allowed_side):
+    # be smarter - do it proportionatelly
+
     """
     Create a MarketOrderRequest for the position changes that will take the goal's existing positions to the new
     positions specified.
@@ -132,27 +153,42 @@ def create_request(goal, new_positions, reason, execution_provider, data_provide
     requests = []
     new_positions = copy.copy(new_positions)
 
+    cash_available = goal.cash_balance
+
     # Change any existing positions
     positions = goal.get_positions_all()
     for position in positions:
 
         new_pos = new_positions.pop(position['ticker_id'], 0)
-        if new_pos - position['quantity'] == 0:
-            continue
+
+        volume = new_pos - position['quantity']
+
         ticker = data_provider.get_ticker(tid=position['ticker_id'])
+
+        if allowed_side == 1:
+            cash_available, volume = reduce_cash(volume, ticker, cash_available)
+
+        if volume == 0 or np.sign(volume) != allowed_side:
+            continue
+
         request = execution_provider.create_execution_request(reason=reason,
                                                               goal=goal,
                                                               asset=ticker,
-                                                              volume=new_pos - position['quantity'],
+                                                              volume=volume,
                                                               order=order,
                                                               limit_price=None)
         requests.append(request)
 
     # Any remaining new positions.
     for tid, pos in new_positions.items():
-        if pos == 0:
-            continue
         ticker = data_provider.get_ticker(tid=tid)
+
+        if allowed_side == 1:
+            cash_available, volume = reduce_cash(pos, ticker, cash_available)
+
+        if pos == 0 or np.sign(pos) != allowed_side:
+            continue
+
         request = execution_provider.create_execution_request(reason=reason,
                                                               goal=goal,
                                                               asset=ticker,
@@ -232,11 +268,13 @@ def perturbate_withdrawal(goal):
 
 
 def get_tax_lots(goal):
+    # probably we need to change this to order by ST loss, LT loss, LT gain, ST gain, but maybe this is more optimal even.
     '''
     returns position lots sorted by increasing unit tax cost for a given goal
     :param goal
     :return:
     '''
+    order_by = ['LT_ST_gain_loss', 'unit_tax_cost']
     year_ago = timezone.now() - timedelta(days=366)
     position_lots = PositionLot.objects\
                     .filter(execution_distribution__transaction__from_goal=goal)\
@@ -250,7 +288,30 @@ def get_tax_lots(goal):
                       When(executed__lte=year_ago, then=Value(TAX_BRACKET_MORE1Y)),
                       output_field=FloatField())) \
                     .annotate(unit_tax_cost=(F('price') - F('price_entry')) * F('tax_bracket')) \
-                    .values('id', 'price_entry', 'quantity', 'executed', 'unit_tax_cost', 'ticker_id', 'price') \
+                    .annotate(LT_ST_gain_loss=Case(
+                      When(executed__gt=year_ago, unit_tax_cost__lte=0, then=Value(-2)),  #ST loss
+                      When(executed__lte=year_ago, unit_tax_cost__lte=0, then=Value(-1)), #LT loss
+                      When(executed__lte=year_ago, unit_tax_cost__gt=0, then=Value(1)),   #LT gain
+                      When(executed__gt=year_ago, unit_tax_cost__gt=0, then=Value(2)),    #ST gain
+                      output_field=FloatField()))\
+                   .values('id', 'price_entry', 'quantity', 'executed', 'unit_tax_cost', 'ticker_id', 'price','LT_ST_gain_loss') \
+                   .order_by(*order_by)
+    return position_lots
+
+def get_position_lots_by_tax_lot(ticker_id, current_price, goal_id):
+    year_ago = timezone.now() - timedelta(days=366)
+    position_lots = PositionLot.objects \
+                    .filter(execution_distribution__execution__asset_id=ticker_id,
+                            execution_distribution__execution_request__goal_id=goal_id)\
+                    .filter(quantity__gt=0)\
+                    .annotate(price_entry=F('execution_distribution__execution__price'),
+                              executed=F('execution_distribution__execution__executed'),
+                              ticker_id=F('execution_distribution__execution__asset_id'))\
+                    .annotate(tax_bracket=Case(
+                      When(executed__gt=year_ago, then=Value(TAX_BRACKET_LESS1Y)),
+                      When(executed__lte=year_ago, then=Value(TAX_BRACKET_MORE1Y)),
+                      output_field=FloatField())) \
+                    .annotate(unit_tax_cost=(current_price - F('price_entry')) * F('tax_bracket')) \
                     .order_by('unit_tax_cost')
     return position_lots
 
@@ -321,7 +382,7 @@ def perturbate_mix(goal, opt_inputs):
         except:
             pass
         if weights is not None:
-            return weights
+            return weights, get_weights(desired_lots, goal.available_balance)
 
     return weights, get_weights(desired_lots, goal.available_balance)
 
@@ -412,15 +473,90 @@ def get_largest_min_weight_per_asset(held_weights, tax_weights):
     return min_weights
 
 
-def get_weight_max_per_asset(held_weights, tax_weights):
+def get_tax_max_weights(held_weights, tax_weights):
     max_weights = dict()
     for w in held_weights.items():
         if w[0] in tax_weights:
-            max_weights[w[0]] = max(float(tax_weights[w[0]]), float(w[1]))
-        else:
-            min_weights[w[0]] = float(w[1])
-    return min_weights
+            max_weights[w[0]] = float(w[1])
+    return max_weights
 
+def perform_TLH(goal, data_provider, wash_sale):
+    ticker_ids = get_held_weights(goal).keys()
+
+    max_weights = dict()
+    min_weights = dict()
+    for ticker_id in ticker_ids:
+        current_price = Ticker.objects.get(id=ticker_id).unit_price
+        position_lots = get_position_lots_by_tax_lot(ticker_id, current_price, goal.id)
+
+        max_weights[ticker_id] = get_held_weights(goal)[ticker_id] #sum lots weight
+
+        for lot in position_lots:
+            current_lot_weight = (current_price * lot.quantity)/goal.available_balance
+            if lot.execution_distribution.execution.price > current_price and \
+                    ((lot.execution_distribution.execution.price - current_price) * lot.quantity)/goal.available_balance > LOT_LOSS_TLH:
+                max_weights[ticker_id] = max_weights[ticker_id] - current_lot_weight
+
+        if max_weights[ticker_id] == get_held_weights(goal)[ticker_id]:
+            max_weights.pop(ticker_id, None)
+
+        if ticker_id in max_weights:
+            tickers = get_tickers_with_same_specs(ticker_id)
+            best_match = find_highest_correlated(ticker_id, tickers, data_provider)
+
+            # fill in minimum weight for highly correlated asset - of same asset class, same specs (SRI, ), different index tracked, but respect 30-day wash-sale rule
+            minimum_weight = get_held_weights(goal)[ticker_id]
+            if best_match is not None and best_match not in wash_sale:
+                min_weights[best_match] = minimum_weight
+
+            # if no asset can be found - remove max_weight constraint
+            if best_match is None:
+                max_weights.pop(ticker_id, None)
+
+    return min_weights, max_weights
+
+def find_highest_correlated(ticker_id, tickers, data_provider):
+    return_history, _ = get_return_history(tickers, data_provider.get_current_date() - timedelta(days=CORRELATION_LENGTH), data_provider.get_current_date())
+    correlations = defaultdict(float)
+    for t in return_history.columns:
+        if t != ticker_id:
+            correlations[t] = return_history[ticker_id].corr(return_history[t])
+
+    if len(correlations) > 0:
+        max_value = max(correlations, key=lambda key: correlations[key])
+    else:
+        max_value = None
+    return max_value
+
+
+
+def get_tickers_with_same_specs(ticker_id):
+    ticker = Ticker.objects.get(id=ticker_id)
+    # TODO need to add benchmark - different than actual ticker - i.e. benchmark!=ticker.benchmark
+    tickers = Ticker.objects\
+        .filter(asset_class=ticker.asset_class, ethical=ticker.ethical, state=Ticker.State.ACTIVE.value)
+    return tickers
+
+
+def unify_max_weights(max_weights):
+    unified_weights = defaultdict(float)
+    for w in max_weights:
+        for key, value in w.items():
+            if key in unified_weights and value < unified_weights[key]:
+                pass
+            else:
+                unified_weights[key] = value
+    return unified_weights
+
+def unify_min_weights(min_weights):
+    unified_weights = defaultdict(float)
+    for w in min_weights:
+        for key, value in w.items():
+            if key in unified_weights and value > unified_weights[key]:
+                pass
+            else:
+                unified_weights[key] = value
+    return unified_weights
 
 def perturbate(goal, idata, data_provider, execution_provider):
     """
@@ -433,25 +569,36 @@ def perturbate(goal, idata, data_provider, execution_provider):
     # Optimise the portfolio adding appropriate constraints so there can be no removals from assets.
     # This will use any available cash to rebalance if possible.
     held_weights = get_held_weights(goal)
-    tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(goal, data_provider.get_current_date())
-    min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
 
+    # do not sell anything
+    tax_min_weights = execution_provider.get_asset_weights_held_less_than1y(goal, data_provider.get_current_date())
+    min_weights = held_weights
     tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-    max_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_max_weights)
+
+    min_TLH_weights = dict()
+    max_TLH_weights = dict()
+    if goal.account.tax_loss_harvesting_consent:
+        min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
 
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
-
-    weights = optimise_up(opt_inputs, min_weights, max_weights)
+    tax_max_weights = unify_max_weights([tax_max_weights, max_TLH_weights])
+    min_weights = unify_min_weights([min_weights, min_TLH_weights])
+    weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
     if weights is None:
-        # relax constraints and allow to sell tax winners
-        tax_min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)
-        min_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_min_weights)
-
+        min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)
         tax_max_weights = execution_provider.get_assets_sold_less_30d_ago(goal, data_provider.get_current_date())
-        max_weights = get_largest_min_weight_per_asset(held_weights=held_weights, tax_weights=tax_max_weights)
 
-        weights = optimise_up(opt_inputs, min_weights, max_weights)
+        min_TLH_weights = dict()
+        max_TLH_weights = dict()
+        if goal.account.tax_loss_harvesting_consent:
+            min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
+
+        opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
+        tax_max_weights = unify_max_weights([tax_max_weights, max_TLH_weights])
+        min_weights = unify_min_weights([min_weights, min_TLH_weights])
+
+        weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
     if weights is None:
         if sum(held_weights.values()) > MAX_WEIGHT_SUM:
@@ -513,14 +660,11 @@ def rebalance(goal, idata, data_provider, execution_provider):
         #A goal is a portfolio? If the rebalance is being made by goal it could be inneficient from a cost perspective
 
     _, instruments, _ = idata
-    new_positions = build_positions(goal, weights, instruments)
-    #idata[2] is a matrix containing latest instrument price
-    order, requests = create_request(goal, new_positions, reason,
-                                     execution_provider=execution_provider, data_provider=data_provider)
-    transaction_cost = np.sum([abs(r.volume) for r in requests]) * 0.005
-    # So, the rebalance could not be in place if the excecution algo might not determine how much it will cost to rebalance.
 
-    return order
+    # using limit prices - higher by treshold (e.g. 0.5%) than real market prices
+    # update latest prices from instruments here - to be 0.5% higher than latest_tick
+
+    return weights, instruments, reason
 
 
 def archive_goal(goal):

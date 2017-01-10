@@ -10,11 +10,13 @@ from client.models import EmailInvite
 from django.test import Client as DjangoClient
 from common.constants import GROUP_SUPPORT_STAFF
 from main.constants import ACCOUNT_TYPE_PERSONAL, EMPLOYMENT_STATUS_EMMPLOYED, GENDER_MALE
-from main.models import ExternalAsset, User
+from main.models import ExternalAsset, User, ActivityLogEvent
+from main.event import Event
 from .factories import AccountTypeRiskProfileGroupFactory, AddressFactory, \
     ClientAccountFactory, ClientFactory, ExternalAssetFactory, GoalFactory, \
     GroupFactory, RegionFactory, RiskProfileGroupFactory, UserFactory, \
     SecurityAnswerFactory
+from main.tests.fixture import Fixture1
 
 
 class ClientTests(APITestCase):
@@ -337,6 +339,9 @@ class ClientTests(APITestCase):
         self.assertEqual(regional_data_load['ssn'], regional_data['ssn'])
         self.assertEqual(regional_data_load['politically_exposed'], regional_data['politically_exposed'])
 
+        self.assertEqual(usr.client.accounts_all.count(), 1)
+        self.assertTrue(usr.client.accounts_all.get().confirmed)
+
         # check onboarding status is complete
         lookup_invite = EmailInvite.objects.get(user=usr)
         self.assertEqual(lookup_invite.status, EmailInvite.STATUS_COMPLETE)
@@ -537,6 +542,31 @@ class ClientTests(APITestCase):
         self.assertNotEqual(usr.id, 44)
         self.assertEqual(response.data['user']['id'], usr.id)
 
+    def test_advisor_invite_states_displayed(self):
+        usr_accepted = UserFactory.create()
+        invite_accepted = EmailInviteFactory.create(user=usr_accepted, status=EmailInvite.STATUS_ACCEPTED)
+        self.assertEqual(invite_accepted.get_status_display(),'Accepted')
+
+        usr_completed = UserFactory.create()
+        invite_completed = EmailInviteFactory.create(user=usr_completed, status=EmailInvite.STATUS_COMPLETE)
+        self.assertEqual(invite_completed.get_status_display(),'Complete')
+
+        usr_created = UserFactory.create()
+        invite_created = EmailInviteFactory.create(user=usr_created, status=EmailInvite.STATUS_CREATED)
+        self.assertEqual(invite_created.get_status_display(),'Created')
+
+        usr_expired = UserFactory.create()
+        invite_expired = EmailInviteFactory.create(user=usr_expired, status=EmailInvite.STATUS_EXPIRED)
+        self.assertEqual(invite_expired.get_status_display(),'Expired')
+
+        usr_sent = UserFactory.create()
+        invite_sent = EmailInviteFactory.create(user=usr_sent, status=EmailInvite.STATUS_SENT)
+        self.assertEqual(invite_sent.get_status_display(),'Sent')
+
+
+
+
+
     def test_update_client_tax_filing_status(self):
         """
 
@@ -617,3 +647,95 @@ class ClientTests(APITestCase):
                          msg='200 for authenticated put request to update client smoker field')
         self.assertEqual(response.data['id'], self.betasmartz_client.id)
         self.assertEqual(response.data['smoker'], True)
+
+    def test_get_all_client_goals(self):
+        """
+        should list all goals from all accounts
+        """
+        # goal from another account
+        second_account = ClientAccountFactory.create(primary_owner=self.betasmartz_client)
+        goal = GoalFactory.create(account=second_account)
+
+        url = '/api/v1/clients/{}/goals'.format(self.betasmartz_client.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # make sure goals are listed in data
+        self.assertEqual(response.data[0]['id'], self.goal1.id)
+        self.assertEqual(response.data[1]['id'], self.goal2.id)
+        self.assertEqual(response.data[2]['id'], goal.id)
+
+    def test_update_client_employer_type(self):
+        """
+
+
+        """
+        url = '/api/v1/clients/%s' % self.betasmartz_client.id
+        # lets test income update
+        data = {
+            'employer_type': 3,
+            'question_one': self.sa1.pk,
+            'answer_one': 'test',
+            'question_two': self.sa2.pk,
+            'answer_two': 'test',
+        }
+        self.client.force_authenticate(self.user)
+        response = self.client.put(url, data)
+        self.betasmartz_client.refresh_from_db()  # Refresh after the put.
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='200 for authenticated put request to update client employer type field')
+        self.assertEqual(response.data['id'], self.betasmartz_client.id)
+        self.assertEqual(response.data['employer_type'], 3)
+
+    def test_get_no_activity(self):
+        url = '/api/v1/clients/{}/activity'.format(Fixture1.personal_account1().primary_owner.id)
+        self.client.force_authenticate(user=Fixture1.personal_account1().primary_owner.user)
+        response = self.client.get(url)
+        self.assertEqual(response.data, [])
+
+    def test_get_all_activity(self):
+        # First add some transactions, balances and eventlogs, and make sure the ActivityLogs are set
+        Fixture1.settings_event1()
+        Fixture1.transaction_event1()
+        Fixture1.populate_balance1() # 2 Activity lines
+        ActivityLogEvent.get(Event.APPROVE_SELECTED_SETTINGS)
+        ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED)
+        ActivityLogEvent.get(Event.GOAL_DEPOSIT_EXECUTED)
+
+        url = '/api/v1/clients/{}/activity'.format(Fixture1.personal_account1().primary_owner.id)
+        self.client.force_authenticate(user=Fixture1.personal_account1().primary_owner.user)
+        response = self.client.get(url)
+        self.assertEqual(len(response.data), 4)
+        self.assertEqual(response.data[0], {'goal': 1,
+                                            'account': 1,
+                                            'time': 946684800,
+                                            'type': ActivityLogEvent.get(Event.APPROVE_SELECTED_SETTINGS).activity_log.id})  # Setting change
+        self.assertEqual(response.data[1], {'balance': 0.0,
+                                            'time': 978220800,
+                                            'type': ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED).activity_log.id}) # Balance
+        self.assertEqual(response.data[2], {'data': [3000.0],
+                                            'goal': 1,
+                                            'account': 1,
+                                            'time': 978307200,
+                                            'type': ActivityLogEvent.get(Event.GOAL_DEPOSIT_EXECUTED).activity_log.id}) # Deposit
+        self.assertEqual(response.data[3], {'balance': 3000.0,
+                                            'time': 978307200,
+                                            'type': ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED).activity_log.id}) # Balance
+    def test_external_accounts(self):
+        url = '/api/v1/quovo/external-accounts'
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+        self.assertContains(response,'data')
+
+    def test_iframe_token(self):
+        url = '/api/v1/quovo/iframe-token'
+        self.client.force_authenticate(self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+        self.assertContains(response,'data')
+

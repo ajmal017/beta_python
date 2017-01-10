@@ -10,6 +10,8 @@ from .retiresmartz import views as retiresmartz_views
 from .firm import views as firm_views
 from .address import views as address_views
 from .support import views as support_views
+from .errorlog import views as errorlog_views
+
 from api.v1.user.views import PasswordResetView
 
 router = ExtendedSimpleRouter(trailing_slash=False)
@@ -67,6 +69,8 @@ urlpatterns = patterns(
     url(r'^register/?$', client_views.ClientUserRegisterView.as_view(), name='client-user-register'),
     url(r'^invites/(?P<invite_key>\w+)/?$', client_views.InvitesView.as_view(), name='invite-detail'),
 
+    url(r'^user-names/?$', user_views.UserNamesView.as_view(), name='user-names'),
+
     url(r'^region/(?P<pk>\d+)/?$', address_views.RegionView.as_view(), name='region-detail'),
 
     url(r'^firm/(?P<pk>\d+)/?$', firm_views.FirmSingleView.as_view(), name='firm-single'),
@@ -88,9 +92,13 @@ urlpatterns = patterns(
 
     url(r'^keep-alive/?$', user_views.KeepAliveView.as_view(), name='keep-alive'),
 
-    url(r'^invites/(?P<pk>\d+)/resend/?$', client_views.ClientResendInviteView.as_view(), name='resend-invite'),
+    url(r'^invites/(?P<invite_key>\w+)/resend/?$', client_views.ClientResendInviteView.as_view(), name='resend-invite'),
 
     url(r'^support-requests/?$', support_views.RequestAdvisorSupportView.as_view(), name='support-requests'),
+
+    url(r'^quovo/external-accounts/?$', client_views.ExternalAccountsView.as_view(), name='external-accounts'),
+    url(r'^quovo/iframe-token/?$', client_views.IframeTokenView.as_view(), name='iframe-token'),
+    url(r'^error/?$', errorlog_views.LogErrorView.as_view(), name='error-log'),
 )
 
 urlpatterns += router.urls

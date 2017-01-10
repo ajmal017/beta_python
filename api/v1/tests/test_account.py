@@ -126,6 +126,7 @@ class AccountTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(len(response.data), 4)
         self.assertEqual(response.data[0], {'goal': 1,
+                                            'account': 1,
                                             'time': 946684800,
                                             'type': ActivityLogEvent.get(Event.APPROVE_SELECTED_SETTINGS).activity_log.id})  # Setting change
         self.assertEqual(response.data[1], {'balance': 0.0,
@@ -133,6 +134,7 @@ class AccountTests(APITestCase):
                                             'type': ActivityLogEvent.get(Event.GOAL_BALANCE_CALCULATED).activity_log.id}) # Balance
         self.assertEqual(response.data[2], {'data': [3000.0],
                                             'goal': 1,
+                                            'account': 1,
                                             'time': 978307200,
                                             'type': ActivityLogEvent.get(Event.GOAL_DEPOSIT_EXECUTED).activity_log.id}) # Deposit
         self.assertEqual(response.data[3], {'balance': 3000.0,
@@ -253,7 +255,8 @@ class AccountTests(APITestCase):
 
         self.client.force_authenticate(user=beneficiary.account.primary_owner.user)
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'null')
 
     def test_update_different_client_beneficiaries(self):
         beneficiary = AccountBeneficiaryFactory.create()

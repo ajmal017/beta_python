@@ -1,31 +1,42 @@
 import json
 
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse_lazy
+from django.db.models import Q
+from django.forms.models import BaseModelFormSet
 from django.http import Http404
-from django.shortcuts import HttpResponseRedirect, get_object_or_404
+from django.shortcuts import HttpResponseRedirect, get_object_or_404, \
+    render_to_response
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils.functional import curry
 from django.utils.timezone import now
 from django.views.generic import CreateView, TemplateView, View
 from django.views.generic.edit import ProcessFormView
 
+from client.models import JointAccountConfirmationModel
 from main.constants import AUTHORIZED_REPRESENTATIVE, INVITATION_ADVISOR, \
     INVITATION_SUPERVISOR, INVITATION_TYPE_DICT, PERSONAL_DATA_FIELDS, \
     SUCCESS_MESSAGE
 from main.forms import BetaSmartzGenericUserSignupForm, PERSONAL_DATA_WIDGETS
-from main.models import AuthorisedRepresentative, Firm, FirmData, Goal, \
-    Platform, Ticker, Transaction, User
+from main.models import AuthorisedRepresentative, Firm, FirmData, \
+    Goal, Platform, PricingPlan, PricingPlanAdvisor, PricingPlanClient, Ticker, \
+    Transaction, User
 from main.optimal_goal_portfolio import solve_shares_re_balance
 from notifications.models import Notify
 from ..base import AdminView, LegalView
 from ...forms import EmailInvitationForm
 from ...models import EmailInvitation, Section
 
-__all__ = ["InviteLegalView", "AuthorisedRepresentativeSignUp", 'FirmDataView', "EmailConfirmationView",
-           'Confirmation', 'AdminInviteSupervisorView', 'AdminInviteAdvisorView', "GoalRebalance"]
+__all__ = ["InviteLegalView", "AuthorisedRepresentativeSignUp", 'FirmDataView',
+           "EmailConfirmationView", 'Confirmation',
+           'AdminInviteSupervisorView', 'AdminInviteAdvisorView',
+           "GoalRebalance", "confirm_joint_account"]
 
 
 class AuthorisedRepresentativeProfileForm(forms.ModelForm):
@@ -443,3 +454,139 @@ class GoalRebalance(TemplateView, AdminView):
         self.goal.save()
 
         return HttpResponseRedirect('/admin/main/goal')
+
+
+def confirm_joint_account(request, token):
+    try:
+        jacm = JointAccountConfirmationModel.objects.get(
+            token=token,
+            date_confirmed__isnull=True,
+        )
+    except JointAccountConfirmationModel.DoesNotExist:
+        return render_to_response('firm/confirm-joint-account.html', {
+            'error': True,
+        }, status=403)
+
+    jacm.date_confirmed = now()
+    jacm.save(update_fields=['date_confirmed'])
+
+    account = jacm.account
+    account.confirmed = True
+    account.save(update_fields=['confirmed'])
+
+    sender = jacm.primary_owner
+    cosignee = jacm.cosignee
+
+    def send(user, path, **context):
+        render = curry(render_to_string,
+                       context=(RequestContext(request, context)))
+        user.email_user(
+            subject=render('%s/subject.txt' % path).strip(),
+            message=render('%s/message.txt' % path),
+            html_message=render('%s/message.html' % path),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+        )
+
+    base_path = 'email/client/joint-confirmed'
+
+    # notify primary owner account confirmed
+    send(sender.user, '%s/%s' % (base_path, 'client'), confirmation=jacm)
+
+    # notify advisor(s) account confirmed
+    context = {'confirmation': jacm, 'advisor': sender.advisor,
+               'client': sender, }
+    advisor_path = '%s/%s' % (base_path, 'advisor')
+    send(sender.advisor.user, advisor_path, **context)
+    if sender.advisor != cosignee.advisor:
+        sender.secondary_advisors.add(cosignee.advisor)
+        sender.save(update_fields=['secondary_advisors'])
+        cosignee.secondary_advisors.add(sender.advisor)
+        cosignee.save(update_fields=['secondary_advisors'])
+
+        send(cosignee.advisor.user, advisor_path, **context)
+
+    return render_to_response('firm/confirm-joint-account.html', {
+        'confirmation': jacm,
+    })
+
+
+class PricingPlanForm(forms.ModelForm):
+    bps = forms.FloatField(required=False, min_value=0)
+    fixed = forms.FloatField(required=False, min_value=0)
+
+    class Meta:
+        model = PricingPlan
+        fields = 'bps', 'fixed'
+
+
+class PricingPlanAdvisorForm(forms.ModelForm):
+    bps = forms.FloatField(required=False, min_value=0)
+    fixed = forms.FloatField(required=False, min_value=0)
+
+    class Meta:
+        model = PricingPlanAdvisor
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('initial', {'bps': '', 'fixed': ''})
+        super(PricingPlanAdvisorForm, self).__init__(*args, **kwargs)
+        pass
+
+
+class PricingPlanClientForm(forms.ModelForm):
+    bps = forms.FloatField(required=False, min_value=0)
+    fixed = forms.FloatField(required=False, min_value=0)
+
+    class Meta:
+        model = PricingPlanClient
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('initial', {'bps': '', 'fixed': ''})
+        super(PricingPlanClientForm, self).__init__(*args, **kwargs)
+        pass
+
+
+class PricingPlanBaseFormset(BaseModelFormSet):
+    def set_firm(self, value):
+        for form in self.forms:
+            person_field = form.fields['person']
+            q = Q(pricing_plan__isnull=True)
+            if form.instance.id:
+                q |= Q(pk=form.instance.person.id)
+            person_field.queryset = person_field.queryset.filter(
+                q,
+                **self._get_firm_kwargs(value),
+            )
+    firm = property(None, set_firm)
+
+    def _get_firm_kwargs(self, firm):
+        raise NotImplementedError()
+
+
+class PricingPlanBaseAdvisorFormset(PricingPlanBaseFormset):
+    def _get_firm_kwargs(self, firm):
+        return {
+            'firm': firm,
+        }
+
+
+class PricingPlanBaseClientFormset(PricingPlanBaseFormset):
+    def _get_firm_kwargs(self, firm):
+        return {
+            'advisor__firm': firm,
+        }
+
+
+PricingPlanAdvisorFormset = forms.modelformset_factory(
+    model=PricingPlanAdvisor,
+    form=PricingPlanAdvisorForm,
+    formset=PricingPlanBaseAdvisorFormset,
+    can_delete=True,
+)
+PricingPlanClientFormset = forms.modelformset_factory(
+    model=PricingPlanClient,
+    form=PricingPlanClientForm,
+    formset=PricingPlanBaseClientFormset,
+    can_delete=True,
+)

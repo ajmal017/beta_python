@@ -11,7 +11,7 @@ from main.models import User, ExternalAsset, PortfolioSet, Firm, Advisor, \
                         Goal, GoalType, InvestmentType, AssetClass, Ticker, \
                         Transaction, GoalSetting, GoalMetricGroup, \
                         FiscalYear, DailyPrice, MarketCap, MarketIndex, \
-                        GoalMetric, AssetFeatureValue, AssetFeature, \
+                        GoalMetric, AssetFeatureValue, AssetFeature, AssetFeePlan, \
                         MarkowitzScale, Supervisor, AuthorisedRepresentative, PositionLot, ExecutionDistribution,\
                         InvestmentCycleObservation, InvestmentCyclePrediction, ExecutionRequest, MarketOrderRequest, \
     Fill, ExecutionFill, Execution, RecurringTransaction, AccountGroup, Platform, Order, Portfolio, PortfolioItem
@@ -222,6 +222,14 @@ class RiskProfileAnswerFactory(factory.django.DjangoModelFactory):
     s_score = factory.Sequence(lambda n: float(n))
 
 
+class AssetFeePlanFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = AssetFeePlan
+
+    name = factory.Sequence(lambda n: 'AssetFeePlan %d' % n)
+    description = factory.Sequence(lambda n: 'AssetFeePlan Description %d' % n)
+
+
 class ClientFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Client
@@ -259,6 +267,7 @@ class ClientAccountFactory(factory.django.DjangoModelFactory):
     account_name = factory.Sequence(lambda n: 'ClientAccount %d' % n)
     account_number = '1234567890'
     default_portfolio_set = factory.SubFactory(PortfolioSetFactory)
+    asset_fee_plan = factory.SubFactory(AssetFeePlanFactory)
     confirmed = True
     cash_balance = factory.LazyAttribute(lambda n: float(random.randrange(10000000)) / 100)
 
@@ -481,7 +490,7 @@ class TickerFactory(factory.django.DjangoModelFactory):
     benchmark = factory.SubFactory(MarketIndexFactory)
     region = factory.SubFactory(MainRegionFactory)
     data_api_param = factory.Sequence(lambda n: str(n))
-
+    state = Ticker.State.ACTIVE.value
 
 class TransactionFactory(factory.django.DjangoModelFactory):
     """

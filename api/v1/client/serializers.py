@@ -78,6 +78,7 @@ class ClientCreateSerializer(serializers.ModelSerializer):
             'income',
             'occupation',
             'industry_sector',
+            'employer_type',
             'student_loan',
             'employer',
             'civil_status',
@@ -114,7 +115,13 @@ class ClientCreateSerializer(serializers.ModelSerializer):
         validated_data['is_confirmed'] = True
         validated_data['is_accepted'] = True
 
-        return super(ClientCreateSerializer, self).create(validated_data)
+        client = super(ClientCreateSerializer, self).create(validated_data)
+        client.primary_accounts.create(
+            account_type=constants.ACCOUNT_TYPE_PERSONAL,
+            default_portfolio_set=validated_data['advisor'].default_portfolio_set,
+            confirmed=True,
+        )
+        return client
 
 
 class ClientUpdateSerializer(serializers.ModelSerializer):
@@ -141,6 +148,7 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
             'income',
             'occupation',
             'industry_sector',
+            'employer_type',
             'student_loan',
             'employer',
             'civil_status',

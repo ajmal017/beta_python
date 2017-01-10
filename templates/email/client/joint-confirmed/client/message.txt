@@ -1,7 +1,7 @@
-Dear {{ recipient_client.user.first_name }},
+Dear {{ confirmation.primary_owner.user.first_name }},
 
-    Click this link {{ link }} to confirm that you and {{ sender_user.full_name }}
-    have a joint account and you are agree with adding it to our system.
+    {{ confirmation.cosignee.full_name }} agreed to create a joint account with you and this message is to inform you that the account has been created.
 
 Regards,
- Betasmartz team.
+ {{ confirmation.primary_owner.advisor.user.full_name }}
+ {{ confirmation.primary_owner.firm }}

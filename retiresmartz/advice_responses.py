@@ -136,6 +136,24 @@ def get_smoking_no(advice):
 life expectancy by 7 years."
 
 
+def get_drinks_more_than_one(advice):
+    if advice.plan.client.gender == constants.GENDER_MALE:
+        diff = 2.2
+    else:
+        diff = 1.8
+    return 'You could improve your life expectancy by up to %s years \
+by drinking only one alcoholic beverage a day' % diff
+
+
+def get_drinks_one_or_less(advice):
+    if advice.plan.client.gender == constants.GENDER_MALE:
+        diff = 2.2
+    else:
+        diff = 1.8
+    return 'By consuming less alcoholic beverages you\'re already increasing \
+your life expectancy by over %s years' % diff
+
+
 def get_exercise_only(advice):
     return "Thanks for telling us about your exercise. Exercise \
 does impact your life expectancy. Regular exercise for at \

@@ -11,7 +11,7 @@ from main.models import Ticker, MarketIndex, DailyPrice, ExchangeRate
 from portfolios.api.bloomberg import get_fund_hist_data as bl_getter, get_fx_rates
 
 logger = logging.getLogger("load_prices")
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
 api_map = {'portfolios.api.bloomberg': bl_getter}
 
@@ -29,11 +29,12 @@ def load_fx_rates(begin_date, end_date):
     seconds = []
     coi = Ticker.objects.values_list('currency', flat=True).distinct()
     for curr in coi:
-        if curr == settings.SYSTEM_CURRENCY or curr in seconds:
+        if curr in seconds:
             continue
         currs.append((settings.SYSTEM_CURRENCY, curr))
         seconds.append(curr)
 
+    logger.info('Currency pairs found: %s' % currs)
     # Get the new rates
     rates_frame = get_fx_rates(currs, begin_date, end_date)
 
@@ -165,17 +166,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('begin_date', type=parse_date, help='Inclusive start date to load the data for. (YYYYMMDD)')
         parser.add_argument('end_date', type=parse_date, help='Inclusive end date to load the data for. (YYYYMMDD)')
-        # parser.add_argument('--verbose', '-v', action='count', help='Increase logging verbosity')
 
     def handle(self, *args, **options):
-
-        # if options['verbosity'] == 0:
-        #     logger.setLevel(min(logging.WARN, logger.level))
-        # elif options['verbosity'] == 1:
-        #     logger.setLevel(min(logging.INFO, logger.level))
-        # elif options['verbosity'] >= 2:
-        logger.setLevel(min(logging.DEBUG, logger.level))
-
         load_fx_rates(options['begin_date'], options['end_date'])
         load_price_data(options['begin_date'], options['end_date'])
-        # set_aum()

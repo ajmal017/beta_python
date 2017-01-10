@@ -36,5 +36,6 @@ urlpatterns = patterns(
         name='invites-create-financial-details'),
     url(r'^invites/(?P<pk>\d+)/create/confirm$',
         main_views.BuildConfirm.as_view(), name='invites-create-confirm'),
+    url(r'^invites/(?P<pk>\d+)/delete$', views.AdvisorClientInvitesDeleteView.as_view(),name='delete'),
 
 )

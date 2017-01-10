@@ -6,7 +6,6 @@ from unittest.mock import MagicMock
 from django.utils.timezone import now
 from rest_framework import status
 from rest_framework.test import APITestCase
-
 from api.v1.tests.factories import ExternalAssetFactory, MarkowitzScaleFactory, MarketIndexFactory, \
     PortfolioSetFactory, RetirementStatementOfAdviceFactory
 from common.constants import GROUP_SUPPORT_STAFF
@@ -19,6 +18,7 @@ from .factories import AssetClassFactory, ContentTypeFactory, GroupFactory, \
     RetirementPlanFactory, TickerFactory, RetirementAdviceFactory
 from django.utils import timezone
 from pinax.eventlog.models import log
+from retiresmartz.calculator.social_security import calculate_payments
 
 mocked_now = datetime(2016, 1, 1)
 
@@ -140,6 +140,41 @@ class RetiresmartzTests(APITestCase):
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['height'], 30)
+
+    def test_update_additional_fields(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        data = {
+            'home_value': 123456.7,
+            'home_growth': 0.1,
+            'ss_fra_todays': 12345.6,
+            'ss_fra_retirement': 1234.5,
+            'state_tax_after_credits': 12345.6,
+            'state_tax_effrate': 0.1,
+            'pension_name': 'pension name',
+            'pension_amount': 12345.6,
+            'pension_start_date': date(2017, 1, 1),
+            'employee_contributions_last_year': 23456.7,
+            'employer_contributions_last_year': 34567.8,
+            'total_contributions_last_year': 1234567.8
+        }
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['home_value'], data['home_value'])
+        self.assertEqual(response.data['home_growth'], data['home_growth'])
+        self.assertEqual(response.data['ss_fra_todays'], data['ss_fra_todays'])
+        self.assertEqual(response.data['ss_fra_retirement'], data['ss_fra_retirement'])
+        self.assertEqual(response.data['state_tax_after_credits'], data['state_tax_after_credits'])
+        self.assertEqual(response.data['state_tax_effrate'], data['state_tax_effrate'])
+        self.assertEqual(response.data['pension_name'], data['pension_name'])
+        self.assertEqual(response.data['pension_amount'], data['pension_amount'])
+        self.assertEqual(response.data['pension_start_date'], data['pension_start_date'])
+        self.assertEqual(response.data['employee_contributions_last_year'], data['employee_contributions_last_year'])
+        self.assertEqual(response.data['employer_contributions_last_year'], data['employer_contributions_last_year'])
+        self.assertEqual(response.data['total_contributions_last_year'], data['total_contributions_last_year'])
+
+        # try one more update to validate against
 
     def test_get_plan(self):
         """
@@ -442,7 +477,8 @@ class RetiresmartzTests(APITestCase):
                                             retirement_home_price=250000,
                                             paid_days=1,
                                             retirement_age=67,
-                                            selected_life_expectancy=85)
+                                            selected_life_expectancy=85,
+                                            calculated_life_expectancy=85)
 
         # some tickers for portfolio
         bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')
@@ -631,3 +667,58 @@ class RetiresmartzTests(APITestCase):
         self.assertNotEqual(response.data['expenses'], None)
         self.assertEqual(response.data['expenses'][0]['id'], 1)
         self.assertEqual(response.data['expenses'][0]['amt'], 10000)
+
+    @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
+    def test_retirement_plan_calculate_notgenerated(self):
+        plan = RetirementPlanFactory.create(income=150000,
+                                            desired_income=81000,
+                                            btc=4000,
+                                            retirement_home_price=250000,
+                                            paid_days=1,
+                                            retirement_age=67,
+                                            selected_life_expectancy=85,
+                                            calculated_life_expectancy=85,
+                                            expected_return_confidence=0.5)
+        plan.client.date_of_birth = date(1960, 1, 1)
+        plan.client.save()
+
+        # some tickers for portfolio
+        bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')
+        stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
+
+        TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='IPO')
+        fund = TickerFactory.create(symbol='rest')
+
+        # Add the asset classes to the advisor's default portfolio set
+        plan.client.advisor.default_portfolio_set.asset_classes.add(bonds_asset_class, stocks_asset_class, fund.asset_class)
+
+
+        # Set the markowitz bounds for today
+        self.m_scale = MarkowitzScaleFactory.create()
+
+        # populate the data needed for the optimisation
+        # We need at least 500 days as the cycles go up to 70 days and we need at least 7 cycles.
+        populate_prices(500, asof=mocked_now.date())
+        populate_cycle_obs(500, asof=mocked_now.date())
+        populate_cycle_prediction(asof=mocked_now.date())
+        populate_inflation(asof=mocked_now.date())
+
+        url = '/api/v1/clients/{}/retirement-plans/{}/calculate'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+
+        # We should be ready to calculate properly
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('portfolio' in response.data)
+        self.assertTrue('projection' in response.data)
+        self.assertEqual(len(response.data['projection']), 50)
+
+    @skip('Fails intermittently on deployment, something wrong with calculate_payments')
+    def test_get_social_security(self):
+        ss_all = calculate_payments(date(1960, 1, 1), 100000)
+        ss_income = ss_all.get(67, None)
+        if ss_income is None:
+            ss_income = ss_all[sorted(ss_all)[0]]
+        self.assertTrue(ss_income == 2487)

@@ -1,18 +1,9 @@
 from distutils.version import StrictVersion
-
 from django import get_version
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.timezone import now
-
-from common.structures import ChoiceEnum
-
-if StrictVersion(get_version()) >= StrictVersion('1.8.0'):
-    from django.contrib.contenttypes.fields import GenericForeignKey
-else:
-    from django.contrib.contenttypes.generic import GenericForeignKey
-
 from django.db import models
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.six import text_type
@@ -24,6 +15,12 @@ from model_utils import Choices
 from jsonfield.fields import JSONField
 
 from django.contrib.auth.models import Group
+from common.structures import ChoiceEnum
+
+if StrictVersion(get_version()) >= StrictVersion('1.8.0'):
+    from django.contrib.contenttypes.fields import GenericForeignKey
+else:
+    from django.contrib.contenttypes.generic import GenericForeignKey
 
 
 # SOFT_DELETE = getattr(settings, 'NOTIFICATIONS_SOFT_DELETE', False)
@@ -257,7 +254,7 @@ def notify_handler(verb, actor, recipient, public,  description, timestamp,
             timestamp=timestamp,
             level=level,
             target=target,
-            action_object = action_object,
+            action_object=action_object,
         )
 
         if len(extra_data) and EXTRA_DATA:

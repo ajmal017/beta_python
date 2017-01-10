@@ -1,5 +1,11 @@
 <html>
 <body>
+<h1>Dear {{ advisor.user.first_name }},</h1>
+
+<p>Your clients, {{ client.user.full_name }} ({{ client.id }}) and {{ confirmation.cosignee.user.full_name }} ({{ confirmation.cosignee.id }}), have created a joint account (Account number: {{ confirmation.account.id }}). The account is now live and can be accessed from your advisor login.</p>
+
+<p>Regards,<br>
+ BetaSmartz team.</p>
 
 </body>
 </html>

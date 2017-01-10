@@ -29,6 +29,8 @@ def get_fx_rates(pairs, begin_date, end_date=None):
     hist_fields = ['PX_MID']
 
     ids = ['{}{} Curncy'.format(a, b) for a, b in pairs]
+    if len(ids) == 0:
+        ids = ['USDUSD Curncy']
 
     if end_date is None:
         end_date = begin_date

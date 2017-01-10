@@ -1,24 +1,27 @@
+import logging
+
+from django.conf import settings
+from django.db import transaction
 from django.db.models.query_utils import Q
-from rest_framework import viewsets, mixins, status
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import detail_route, list_route
-from rest_framework.exceptions import PermissionDenied, NotFound, ValidationError
-from rest_framework_extensions.mixins import NestedViewSetMixin
+from rest_framework.exceptions import NotFound, PermissionDenied, \
+    ValidationError
 from rest_framework.response import Response
+from rest_framework_extensions.mixins import NestedViewSetMixin
 
 from api.v1.permissions import IsAdvisorOrClient
 from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
-
-from client.models import ClientAccount, AccountBeneficiary, CloseAccountRequest
+from client.models import AccountBeneficiary, ClientAccount, \
+    CloseAccountRequest
 from main import constants
-from main.constants import US_RETIREMENT_ACCOUNT_TYPES
 from main.models import AccountType
 from support.models import SupportRequest
-import logging
 from . import serializers
 
+logger = logging.getLogger(__name__)
 
-logger = logging.getLogger('api.v1.account.views')
 
 
 class AccountViewSet(ApiViewMixin,
@@ -113,10 +116,18 @@ class AccountViewSet(ApiViewMixin,
                 emsg = 'Account Type: {} is not active for {}'
                 a_t = AccountType.objects.filter(id=serializer.validated_data['account_type']).first()
                 return Response({'error': emsg.format(a_t, firm)}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-            if serializer.validated_data['account_type'] in US_RETIREMENT_ACCOUNT_TYPES:
+            if serializer.validated_data['account_type'] in constants.US_RETIREMENT_ACCOUNT_TYPES:
                 emsg = 'US Retirement account types are not user creatable.'
                 return Response({'error': emsg}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(AccountViewSet, self).create(request)
+
+    def perform_create(self, serializer):
+        object = super(AccountViewSet, self).perform_create(serializer)  # type: ClientAccount
+        autoconfirm = object.account_type in settings.AUTOCONFIRMED_ACCOUNTS
+        if autoconfirm and not object.confirmed:
+            object.confirmed = True
+            object.save()
+        return object
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -128,6 +139,32 @@ class AccountViewSet(ApiViewMixin,
         serializer.is_valid(raise_exception=True)
         updated = serializer.update(instance, serializer.validated_data)
         return Response(self.serializer_response_class(updated).data)
+
+    @transaction.atomic
+    def create_new_account(self, request):
+        client = SupportRequest.target_user(self.request).client
+        serializer = serializers.new_account_fabric(request.data)
+        if serializer.is_valid():
+            try:
+                account = serializer.save(request, client)
+            except ValidationError as e:
+                return Response({'error': e.detail},
+                                status=status.HTTP_400_BAD_REQUEST)
+            return Response(self.serializer_response_class(instance=account).data)
+        return Response({'error': serializer.errors},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    @list_route(methods=['POST'])
+    def rollover(self, request):
+        return self.create_new_account(request)
+
+    @list_route(methods=['POST'])
+    def trust(self, request):
+        return self.create_new_account(request)
+
+    @list_route(methods=['POST'])
+    def joint(self, request):
+        return self.create_new_account(request)
 
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):
@@ -210,7 +247,8 @@ class AccountBeneficiaryViewSet(ApiViewMixin,
         instance = self.get_object()
         if request.user != instance.account.primary_owner.user and request.user != instance.account.primary_owner.advisor.user:
             raise PermissionDenied()
-        return super(AccountBeneficiaryViewSet, self).destroy(request, *args, **kwargs)
+        super(AccountBeneficiaryViewSet, self).destroy(request, *args, **kwargs)
+        return Response('null', status=status.HTTP_200_OK)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()

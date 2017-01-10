@@ -1,6 +1,8 @@
 {% extends "layouts_new/base.html" %}
 {% load i18n %}
 {% load filters %}
+{% load static from staticfiles %}
+
 
 {% block main_content %}
   <div class="container">
@@ -9,13 +11,9 @@
           <h3>Overview</h3>
       </div>
 
-      <form>
-        <div class="col-sm-3">
-          <div class="form-group">
-            <input type="search" name="search" placeholder="Search advisors..." value="{{ search }}" class="form-control">
-          </div>
-        </div>
-      </form>
+      <div class="col-sm-3"></div>
+
+      
     </div>
 
     {% if not fiscal_years_added %}
@@ -76,9 +74,22 @@
       </div>
     </div>
 
+    <div class="row">
+      <form>
+        <div class="col-sm-4 col-sm-offset-8">
+          <div class="form-group">
+            <div class="input-group">
+              <span class="input-group-addon"><span class="icon icon-magnifying-glass"></span></span>
+              <input type="search" name="search" placeholder="Search advisors..." value="{{ search }}" id="search" class="form-control"  aria-describedby="search">
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
     <div class="panel panel-default">
       <div class="table-responsive">
-        <table class="table">
+        <table class="table" id='advisors'>
           <thead>
             <tr>
               <th>#</th>
@@ -149,4 +160,14 @@
     </ul>
 
   </div>
+{% endblock %}
+
+
+{% block foot_js %}
+  <script type="application/javascript" src="{% static "js/widgets.js" %}"></script>
+  <script type="application/javascript">
+    $(function () {
+      betasmartz.widgets.searchTable("#advisors", "#search");
+    });
+  </script>
 {% endblock %}

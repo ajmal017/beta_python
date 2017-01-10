@@ -21,7 +21,7 @@
   $(function () {
     autoLogoutModal = new betasmartz.AutoLogoutModal({
       keepAliveUrl: "{% url "api:v1:keep-alive" %}",
-      logoutUrl: "{% url "logout" %}"
+      logoutUrl: "{% url "logout" %}?se"
     });
     autoLogoutModal.init();
     $(document).ajaxSuccess(function(event, xhr, settings) {

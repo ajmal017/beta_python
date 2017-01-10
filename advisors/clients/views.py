@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, \
     ValidationError
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.db.models import Q
-from django.views.generic import CreateView, ListView, TemplateView
+from django.views.generic import CreateView, ListView, TemplateView,DeleteView
 from django.views.generic.detail import SingleObjectMixin
 from operator import itemgetter
 
@@ -166,6 +166,15 @@ class AdvisorCreateNewAccountForExistingClient(AdvisorView, CreateView):
 class AdvisorClientInvites(ListView, AdvisorView):
     template_name = 'advisor/clients/invites/list.html'
     context_object_name = 'invites'
+
+    def get_queryset(self):
+        return self.advisor.invites.all()
+
+class AdvisorClientInvitesDeleteView(DeleteView,AdvisorView):
+    template_name = "advisor/clients/invites/confirm_delete.html"
+
+    def get_success_url(self):
+        return reverse('advisor:clients:invites')
 
     def get_queryset(self):
         return self.advisor.invites.all()

@@ -1,24 +1,20 @@
 import logging
+
 import numpy as np
 import pandas as pd
 import scipy.stats as st
 from dateutil.relativedelta import relativedelta
-from django.conf import settings
-from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import detail_route, list_route
+from rest_framework.decorators import detail_route
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 
-from api.v1.account.serializers import ClientAccountSerializer
 from api.v1.goals.serializers import PortfolioSerializer
-from api.v1.permissions import IsClient
 from api.v1.views import ApiViewMixin
 from client.models import Client
 from common.utils import d2ed
@@ -431,7 +427,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
 
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
-        performance = settings.portfolio.er + z_mult * settings.portfolio.stdev
+        performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
 
         today = timezone.now().date()
         retire_date = max(today, plan.client.date_of_birth + relativedelta(years=plan.retirement_age))
@@ -441,15 +437,15 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         income_calc = EmploymentIncome(income=plan.income / 12,
                                        growth=0.01,
                                        today=today,
-                                       end_date=retire_date)
+                                       end_date=retire_date - relativedelta(days=1))
 
         ss_all = calculate_payments(plan.client.date_of_birth, plan.income)
         ss_income = ss_all.get(plan.retirement_age, None)
         if ss_income is None:
-            ss_income = sorted(ss_all)[0]
-        ss_payments = InflatedCashFlow(ss_income, today, retire_date, death_date)
+            ss_income = ss_all[sorted(ss_all)[0]]
 
-        cash_flows = [ss_payments]
+        cash_flows = list()
+        cash_flows.append(InflatedCashFlow(amount=ss_income, today=today, start_date=retire_date, end_date=death_date))
 
         # TODO: Call the logic that determines the retirement accounts to figure out what accounts to use.
         # TODO: Get the tax rate to use when withdrawing from the account at retirement
@@ -463,6 +459,16 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                                       retirement_date=retire_date,
                                       end_date=death_date,
                                       contributions=plan.btc / 12)
+
+        #acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
+        #                              tax_rate=0.0,
+        #                              name='401k',
+        #                              today=today,
+        #                              opening_balance=plan.opening_tax_deferred_balance,
+        #                              growth=0.01,
+        #                              retirement_date=retire_date,
+        #                              end_date=death_date,
+        #                              contributions=4000 / 12)
 
         assets = [acc_401k]
 
@@ -483,83 +489,24 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         rdcf = RetiresmartzDesiredCashFlow(current_income=income_calc,
                                            retirement_income=plan.desired_income / 12,
                                            today=today,
-                                           retirement_date=retire_date,
-                                           end_date=death_date)
+                                           retirement_date=retire_date - relativedelta(days=1),
+                                           end_date=death_date,
+                                           replacement_ratio=plan.replacement_ratio
+                                           )
         # Add the income cash flow to the list of cash flows.
         cash_flows.append(rdcf)
 
         calculator = Calculator(cash_flows=cash_flows, assets=assets)
-
         asset_values, income_values = calculator.calculate(rdcf)
 
         # Convert these returned values to a format for the API
-        catd = pd.concat([asset_values.sum(axis=1), income_values['actual']], axis=1)
+        catd = pd.concat([asset_values, income_values['actual'], income_values['desired']], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
-        proj_data = [(d2ed(d), a, i) for d, a, i in catd.iloc[locs, :].itertuples()]
+        proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
 
         pser = PortfolioSerializer(instance=settings.portfolio)
 
         return Response({'portfolio': pser.data, 'projection': proj_data})
-
-    @list_route(methods=['post'], url_path='add-account',
-                permission_classes=[IsClient])
-    @transaction.atomic
-    def add_account(self, request, *args, **kwargs):
-        client = request.user.client
-
-        if str(client.id) != kwargs['parent_lookup_client']:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-
-        serializer = serializers.new_account_fabric(request.data)
-        if serializer.is_valid():
-            account = serializer.save(request, client)
-            return Response(ClientAccountSerializer(instance=account).data)
-        return Response({'error': serializer.errors},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    # TODO clarify the confirmation process before proceeding
-    # @list_route(methods=['get'], permission_classes=[])
-    # @transaction.atomic
-    # def joint_confirm(self, request, token):
-    #     try:
-    #         account = ClientAccount.objects.get(token=token)
-    #         account.confirmed = True
-    #         account.save(update_fields=['confirmed'])
-    #     except ClientAccount.DoesNotExist:
-    #         return Response(status=status.HTTP_403_FORBIDDEN)
-    #
-    #     sender = account.primary_owner
-    #     cosignee = account.signatories.first()
-    #     advisors = {sender.advisor, cosignee.advisor}
-    #
-    #     context = RequestContext(request, {
-    #         'sender': sender,
-    #         'cosignee': cosignee,
-    #         'account': account,
-    #     })
-    #     render = curry(render_to_string, context=context)
-    #     base_path = 'email/client/joint-confirmed'
-    #
-    #     # notify primary owner account confirmed
-    #     client_path = '%s/%s' % (base_path, 'client')
-    #     sender.user.email_user(
-    #         subject=render('%s/subject.txt' % client_path).strip(),
-    #         message=render('%s/message.txt' % client_path),
-    #         html_message=render('%s/message.html' % client_path),
-    #         from_email=settings.DEFAULT_FROM_EMAIL,
-    #     )
-    #
-    #     # notify advisor(s) account confirmed
-    #     advisor_path = '%s/%s' % (base_path, 'advisor')
-    #     send_mail(
-    #         subject=render('%s/subject.txt' % advisor_path).strip(),
-    #         message=render('%s/message.txt' % advisor_path),
-    #         html_message=render('%s/message.html' % advisor_path),
-    #         from_email=settings.DEFAULT_FROM_EMAIL,
-    #         recipient_list=list(a.user.email for a in advisors)
-    #     )
-    #
-    #     return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):

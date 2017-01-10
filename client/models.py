@@ -1,25 +1,31 @@
 import logging
 import uuid
-from itertools import chain
 from datetime import datetime
+from itertools import chain
+
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.validators import MaxValueValidator, MinValueValidator, ValidationError
 from django.db import models
 from django.db.models import PROTECT
-from django.db.models.aggregates import Min, Max, Sum
+from django.db.models.aggregates import Max, Min, Sum
 from django.template.loader import render_to_string
+from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext as _
-from django.utils.functional import cached_property
 from jsonfield.fields import JSONField
+from rest_framework.reverse import reverse
+
+from common.structures import ChoiceEnum
 from main import constants
 from main.abstract import NeedApprobation, NeedConfirmation, PersonalData
-from main.models import AccountGroup, Goal, Platform
-from .managers import ClientAccountQuerySet, ClientQuerySet
 from main.finance import mod_dietz_rate
+from main.models import AccountGroup, Goal, Platform, PricingPlan, \
+    PricingPlanBase
 from retiresmartz.models import RetirementAdvice, RetirementPlan
-from common.structures import ChoiceEnum
+from .managers import ClientAccountQuerySet, ClientQuerySet
+from main.constants import GENDER_MALE
+
 logger = logging.getLogger('client.models')
 
 
@@ -63,6 +69,8 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                                   max_length=20, null=True, blank=True)
     industry_sector = models.CharField(choices=constants.INDUSTRY_TYPES,
                                        max_length=20, null=True, blank=True)
+    employer_type = models.CharField(choices=constants.EMPLOYER_TYPES,
+                                     max_length=30, null=True, blank=True)
     student_loan = models.NullBooleanField(null=True, blank=True)
     employer = models.CharField(max_length=255, null=True, blank=True)
     smoker = models.NullBooleanField(null=True, blank=True)
@@ -80,6 +88,43 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     risk_profile_responses = models.ManyToManyField('RiskProfileAnswer')
     other_income = models.IntegerField(null=True, blank=True)
 
+    # User entered value of their home
+    home_value = models.FloatField(null=True, blank=True)
+
+    # Default growth rate applied to the users home_value
+    home_growth = models.FloatField(null=True, blank=True)
+
+    # Social security estimated benefit in todays dollars based on full retirement age (fra)
+    ss_fra_todays = models.FloatField(null=True, blank=True)
+
+    # Social security estimated benefit in retirement dollars based on full retirement age (fra)
+    ss_fra_retirement = models.FloatField(null=True, blank=True)
+
+    # State tax levied against income
+    state_tax_after_credits = models.FloatField(null=True, blank=True)
+
+    # State tax effective rate
+    state_tax_effrate = models.FloatField(null=True, blank=True)
+
+    # Name of pension or annuity income stream number
+    pension_name = models.CharField(max_length=255, null=True, blank=True)
+
+    # Amount of pension income in todays dollars for number
+    pension_amount = models.FloatField(null=True, blank=True)
+
+    # Start date of retirement income stream number
+    pension_start_date = models.DateField(null=True, blank=True)
+
+    # last tax year employee contributions into retirement account number
+    employee_contributions_last_year = models.FloatField(null=True, blank=True)
+
+    # last tax year employer contributions into retirement account number #
+    employer_contributions_last_year = models.FloatField(null=True, blank=True)
+
+    # total of all contributions last year into retirement account number
+    total_contributions_last_year = models.FloatField(null=True, blank=True)
+
+
     objects = ClientQuerySet.as_manager()
 
     def __str__(self):
@@ -94,7 +139,6 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
             # daily growth not annual
             assets_worth += float(a.get_growth_valuation(to_date=today))
         # Sum personal type Betasmartz Accounts - the total balance for the account is
-        # ClientAccount.cash_balance + Goal.total_balance for all goals for the account.
         personal_accounts_worth = 0.0
         for ca in self.primary_accounts.filter(account_type=constants.ACCOUNT_TYPE_PERSONAL):
             personal_accounts_worth += ca.cash_balance
@@ -106,11 +150,16 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     def net_worth(self):
         return self._net_worth()
 
+    @cached_property
+    def bmi(self):
+        if self.height is None or self.weight is None:
+            return None
+        cm_to_m2 = self.height * 0.0001
+        return self.weight / cm_to_m2
+
     @property
     def accounts_all(self):
         # TODO: Make this work
-        # return self.primary_accounts.get_queryset() |
-        # self.signatories.select_related('account')
         return self.primary_accounts
 
     @property
@@ -199,10 +248,40 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                 return False
         return True
 
-    @property
+    @cached_property
     def life_expectancy(self):
-        # TODO: Return a better extimate of life expectancy
-        return 85
+        average_life_expectancy = 85
+        calculated_life_expectancy = float(average_life_expectancy)
+        if self.smoker:
+            if self.gender == GENDER_MALE:
+                diff = 7.7
+            else:
+                diff = 7.3
+            calculated_life_expectancy -= diff
+
+        if self.daily_exercise is None:
+            self.daily_exercise = 0
+        if self.daily_exercise == 20:
+            calculated_life_expectancy += 2.2
+        elif self.daily_exercise > 20:
+            calculated_life_expectancy += 3.2
+
+        if self.drinks is None:
+            self.drinks = 0
+        if self.drinks > 1:
+            if self.gender == GENDER_MALE:
+                calculated_life_expectancy -= 2.2
+            else:
+                calculated_life_expectancy -= 1.8
+
+        if self.bmi:
+            if self.bmi > 30:
+                if self.gender == GENDER_MALE:
+                    calculated_life_expectancy -= 5.7
+                else:
+                    calculated_life_expectancy -= 5.8
+
+        return calculated_life_expectancy
 
     def get_risk_profile_bas_scores(self):
         """
@@ -238,6 +317,16 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
             scores['a_score'] / max_a if max_a > 0 else 0,
             scores['s_score'] / max_s if max_s > 0 else 0,
         )
+
+    @property
+    def my_pricing_plan(self) -> PricingPlanBase:
+        firm = self.advisor.firm
+
+        for obj in [self, self.advisor, firm]:
+            try:
+                return getattr(obj, 'pricing_plan')
+            except AttributeError:
+                pass
 
 
 class IBAccount(models.Model):
@@ -610,6 +699,7 @@ class RiskProfileQuestion(models.Model):
     text = models.TextField()
     explanation = models.TextField()
     image = models.ImageField(_('question_image'), blank=True, null=True)
+    figure = models.TextField(blank=True, null=True)
 
     # Also has property 'answers' which is all the predefined answers for
     # this question.
@@ -757,7 +847,8 @@ class EmailInvite(models.Model):
                                         context)
         send_mail(subject, '', None, [self.email], html_message=html_message)
         self.last_sent_at = now()
-        self.status = self.STATUS_SENT
+        if self.status != self.STATUS_ACCEPTED and self.status != self.STATUS_COMPLETE:
+            self.status = self.STATUS_SENT
         self.send_count += 1
 
         self.save(update_fields=['last_sent_at', 'send_count', 'status'])
@@ -858,3 +949,26 @@ class CloseAccountRequest(models.Model):
                       [settings.ADMIN_EMAIL],
                       html_message=render_to_string(
                           'email/advisor_transfer_direct_account.html', context))
+
+
+class JointAccountConfirmationModel(models.Model):
+    primary_owner = models.ForeignKey('client.Client', related_name='owner_confirmation')
+    cosignee = models.ForeignKey('client.Client', related_name='cosignee_confirmation')
+    account = models.ForeignKey('client.ClientAccount', related_name='joint_confirmation')
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_confirmed = models.DateTimeField(blank=True, null=True)
+    token = models.CharField(max_length=64)
+
+    @property
+    def url(self):
+        return reverse('confirm-joint-account', kwargs={
+            'token': self.token,
+        })
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.token:
+            self.token = generate_token()
+        super(JointAccountConfirmationModel, self).save(force_insert,
+                                                        force_update,
+                                                        using, update_fields)

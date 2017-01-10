@@ -2,7 +2,6 @@ from django.conf.urls import include, patterns, url
 from django.contrib import admin
 from django.views.decorators.csrf import csrf_exempt
 from filebrowser.sites import site
-from django.views.generic import TemplateView
 from api.v1.user.views import PasswordResetView
 from main import settings
 from main.views import *
@@ -88,6 +87,9 @@ urlpatterns = patterns(
         AdvisorSignUpView.as_view()),
     url(r'^confirm_email/(?P<type>\d+)/(?P<token>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
         EmailConfirmationView.as_view()),
+
+    url(r'^confirm-joint-account/(?P<token>\w{64})$', confirm_joint_account, name='confirm-joint-account'),
+
     url(r'^confirmation$', Confirmation.as_view(), name='confirmation'),
 
     url(r'^betasmartz_admin/rebalance/(?P<pk>\d+)$', GoalRebalance.as_view()),

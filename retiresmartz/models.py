@@ -12,7 +12,6 @@ from jsonfield.fields import JSONField
 from pinax.eventlog.models import Log
 
 from common.structures import ChoiceEnum
-from main.event import Event
 from main.models import TransferPlan, GoalSetting, GoalMetricGroup
 from main.risk_profiler import GoalSettingRiskProfile
 from retiresmartz.managers import RetirementAdviceQueryset
@@ -20,8 +19,6 @@ from .managers import RetirementPlanQuerySet
 from main import constants
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from pinax.eventlog.models import log
-from retiresmartz import advice_responses
 from django.utils.functional import cached_property
 import json
 from main.abstract import TimestampedModel
@@ -182,6 +179,9 @@ class RetirementPlan(TimestampedModel):
     goal_setting = models.OneToOneField(GoalSetting, null=True, related_name='retirement_plan', on_delete=PROTECT)
     partner_data = JSONField(null=True, blank=True)
 
+    # balance of retirement account number
+    balance = models.FloatField(null=True, blank=True)
+
     # Install the custom manager that knows how to filter.
     objects = RetirementPlanQuerySet.as_manager()
 
@@ -209,14 +209,16 @@ class RetirementPlan(TimestampedModel):
         """
         old_setting = self.goal_setting
         self.goal_setting = new_setting
-        self.save()
+        if not(old_setting and old_setting.retirement_plan.agreed_on):
+             self.save()
+
         if old_setting is not None:
-            old_group = old_setting.metric_group
-            custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
-            last_user = old_group.settings.count() == 1
-            old_setting.delete()
-            if custom_group and last_user:
-                old_group.delete()
+                old_group = old_setting.metric_group
+                custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
+                last_user = old_group.settings.count() == 1
+                old_setting.delete()
+                if custom_group and last_user:
+                    old_group.delete()
 
     @cached_property
     def spendable_income(self):
@@ -316,6 +318,13 @@ class RetirementPlan(TimestampedModel):
     def opening_tax_paid_balance(self):
         # TODO: Sum the complete amount that is expected to be in the retirement plan accounts on account opening.
         return 0
+
+    @property
+    def replacement_ratio(self):
+        partner_income = 0
+        if self.partner_data is not None:
+            partner_income = self.partner_plan.income
+        return self.desired_income / (self.income + partner_income)
 
 
 @receiver(post_save, sender=RetirementPlan)

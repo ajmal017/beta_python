@@ -11,6 +11,10 @@ from django.db import transaction
 from django.db.models import Sum, F, Case, When, Value, FloatField
 from django.utils import timezone
 
+from main.management.commands.rebalance import TAX_BRACKET_LESS1Y, TAX_BRACKET_MORE1Y, get_position_lots_by_tax_lot
+from execution.ETNA_api.send_orders import insert_order_ETNA
+
+
 from client.models import ClientAccount
 from execution.Obsolete.ETNA_api.send_orders import insert_order_ETNA
 from execution.account_groups.create_account_groups import FAAccountProfile
@@ -205,22 +209,11 @@ def process_fills():
             etna_order.fill_info = Order.FillInfo.PARTIALY_FILLED.value
         etna_order.save()
 
-
 def create_sale(ticker_id, volume, current_price, execution_distribution):
     # start selling PositionLots from 1st until quantity sold == volume
-    year_ago = timezone.now() - timedelta(days=366)
-    position_lots = PositionLot.objects \
-                    .filter(execution_distribution__execution__asset_id=ticker_id)\
-                    .filter(quantity__gt=0)\
-                    .annotate(price_entry=F('execution_distribution__execution__price'),
-                              executed=F('execution_distribution__execution__executed'),
-                              ticker_id=F('execution_distribution__execution__asset_id'))\
-                    .annotate(tax_bracket=Case(
-                      When(executed__gt=year_ago, then=Value(TAX_BRACKET_LESS1Y)),
-                      When(executed__lte=year_ago, then=Value(TAX_BRACKET_MORE1Y)),
-                      output_field=FloatField())) \
-                    .annotate(unit_tax_cost=(current_price - F('price_entry')) * F('tax_bracket')) \
-                    .order_by('unit_tax_cost')
+    position_lots = get_position_lots_by_tax_lot(ticker_id,
+                                                 current_price,
+                                                 execution_distribution.execution_request.goal_id)
 
     left_to_sell = abs(volume)
     for lot in position_lots:

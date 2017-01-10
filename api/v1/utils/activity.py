@@ -13,7 +13,7 @@ from rest_framework import serializers
 from rest_framework.response import Response
 
 from api.v1.serializers import QueryParamSerializer
-from client.models import ClientAccount
+from client.models import ClientAccount, Client
 from common.constants import DEC_2PL, EPOCH_TM
 from main.event import Event
 from main.models import ActivityLog, ActivityLogEvent, Goal, HistoricalBalance, \
@@ -75,6 +75,8 @@ def parse_event_logs(request, logs, transactions, goal):
                 for branch in locstr.split('.'):
                     if in_trans:
                         item = getattr(item, branch, NA)
+                        if branch == 'amount':
+                            item = round(item, 2)
                     else:
                         item = item.get(branch, NA)
                         if branch == 'transaction':
@@ -125,6 +127,7 @@ def parse_event_logs(request, logs, transactions, goal):
         # Get Goal if necessary
         if goal is None and isinstance(log.obj, Goal):
             result['goal'] = log.object_id
+            result['account'] = log.obj.account.id
 
         # Add any memos to the event
         memos = [memo[0] for memo in log.memos.values_list('comment', 'staff') if _is_authorised(request.user, memo[1])]
@@ -153,6 +156,7 @@ def parse_event_logs(request, logs, transactions, goal):
         if goal is None:
             # account level, so we need to work out the goal.
             result['goal'] = tx.from_goal.id if tx.to_goal is None else tx.to_goal.id
+            result['account'] = tx.from_goal.account.id if tx.to_goal is None else tx.to_goal.account.id
         else:
             # goal-level, so add the amount, an Transactions are Goal-level things and do not impact the
             # account-level balance.
@@ -181,6 +185,17 @@ def get(request, obj):
         ctm = ContentType.objects.get_for_models(ClientAccount, Goal)
         el_filter = (Q(content_type=ctm[ClientAccount], object_id=obj.id) |
                      Q(content_type=ctm[Goal], object_id__in=goal_ids))
+    elif isinstance(obj, Client):
+        goal = None
+        accounts = ClientAccount.objects.filter(Q(primary_owner=obj) | Q(signatories__id=obj.id))
+        account_ids = accounts.values_list('id', flat=True)
+        goal_ids = []
+        for account in accounts:
+            goal_ids = goal_ids + list(account.goals.values_list('id', flat=True))
+        # Filter for only the events where the object is account or goal
+        ctm = ContentType.objects.get_for_models(ClientAccount, Goal)
+        el_filter = (Q(content_type=ctm[ClientAccount], object_id__in=account_ids) |
+                    Q(content_type=ctm[Goal], object_id__in=goal_ids))
     else:
         raise Exception("object type: {} not supported.".format(type(obj)))
 

@@ -1,5 +1,6 @@
 from unittest.case import skip
 
+import numpy as np
 import pandas as pd
 from django.test import TestCase
 from backtesting.backtester import TestSetup, Backtester
@@ -14,7 +15,7 @@ from portfolios.calculation import build_instruments, calculate_portfolio, \
 from portfolios.providers.execution.django import ExecutionProviderDjango
 from portfolios.providers.data.django import DataProviderDjango
 from main.tests.fixture import Fixture1
-from main.management.commands.rebalance import rebalance
+from main.management.commands.rebalance import rebalance, create_request, build_positions
 
 
 class BaseTest(TestCase):
@@ -42,12 +43,31 @@ class BaseTest(TestCase):
                                               data_provider=setup.data_provider,
                                               execution_provider=setup.execution_provider)
 
-        mor = rebalance(idata=get_instruments(setup.data_provider),
-                        goal=setup.goal,
-                        data_provider=setup.data_provider,
-                        execution_provider=setup.execution_provider)
+        weights, instruments, reason = rebalance(idata=get_instruments(setup.data_provider),
+                                                 goal=setup.goal,
+                                                 data_provider=setup.data_provider,
+                                                 execution_provider=setup.execution_provider)
+
+        new_positions = build_positions(setup.goal, weights, instruments)
+
+        # create sell requests first
+        mor, requests = create_request(setup.goal, new_positions, reason,
+                                       execution_provider=setup.execution_provider,
+                                       data_provider=setup.data_provider,
+                                       allowed_side=-1)
+        # process sells
+        backtester.execute(mor)
+
+        # now create buys - but only use cash to finance proceeds of buys
+        mor, requests = create_request(setup.goal, new_positions, reason,
+                                       execution_provider=setup.execution_provider,
+                                       data_provider=setup.data_provider,
+                                       allowed_side=1)
 
         backtester.execute(mor)
+
+        transaction_cost = np.sum([abs(r.volume) for r in requests]) * 0.005
+        # So, the rebalance could not be in place if the excecution algo might not determine how much it will cost to rebalance.
 
         # this does not work - make it work with Django execution provider - use EtnaOrders
         #performance = backtester.calculate_performance(execution_provider=setup.execution_provider)

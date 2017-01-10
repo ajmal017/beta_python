@@ -7,6 +7,7 @@ from io import StringIO
 import logging
 import pandas as pd
 import pysftp
+import sys
 
 logger = logging.getLogger("bberg.sftp")
 logger.setLevel(logging.DEBUG)
@@ -95,6 +96,17 @@ def get_response(sftp, rid, responses):
     return False
 
 
+def get_errors(sftp, rid, responses):
+    errorname = '{}.req.err'.format(rid)
+    logger.info('Checking if %s exists' % errorname)
+    if sftp.exists(errorname):
+        with sftp.open(errorname) as errorfile:
+            responses[rid] = errorfile.read()
+        return True
+    # Response error file not found
+    return False
+
+
 class Sftp(object):
     _opening_stanza = 'START-OF-FILE\n'
     _closing_stanza = '\nEND-OF-FILE\n'
@@ -163,6 +175,10 @@ class Sftp(object):
             while len(pending) > 0:
                 logger.info('Waiting for pending sftp responses. %s pending' % len(pending))
                 sleep(10)
+                errors = [rid for rid in pending if get_errors(sftp, rid, responses)]
+                if len(errors) > 0:
+                    logger.error('Error with rids %s' % errors)
+                    sys.exit(1)
                 pending = [rid for rid in pending if not get_response(sftp, rid, responses)]
                 assert len(pending) + len(responses) == len(requests)
 

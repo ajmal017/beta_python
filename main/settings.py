@@ -1,5 +1,7 @@
 import os
 
+from main import constants
+
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS as TCP
@@ -71,7 +73,8 @@ INSTALLED_APPS = (
     'retiresmartz',
     'swift',
     'anymail',
-    'execution'
+    'execution',
+    'errorlog',
 )
 
 TEST_WITHOUT_MIGRATIONS_COMMAND = 'django_nose.management.commands.test.Command'
@@ -82,8 +85,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'user.autologout.SessionExpireMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'user.autologout.SessionExpireMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
 )
@@ -125,6 +128,11 @@ TEMPLATE_CONTEXT_PROCESSORS = TCP + (
     'user.autologout.session_expire_context_processor',
 )
 
+# QUOVO INTEGRATION
+QUOVO_API_BASE = 'https://api.quovo.com/v2/'
+QUOVO_USERNAME = 'betasmartz_prod_api'
+QUOVO_PASSWORD = 'askljfhasjed934rikah'
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 
@@ -155,6 +163,8 @@ TEMPLATE_DIRS = (
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
 )
+
+MESSAGE_STORAGE = 'django.contrib.messages.storage.fallback.FallbackStorage'
 
 AUTH_USER_MODEL = 'main.User'
 SHOW_HIJACKUSER_IN_ADMIN = False
@@ -271,5 +281,22 @@ FEMALE_LIFE_EXPECTANCY = 84
 
 # What is the system currency?
 SYSTEM_CURRENCY = 'USD'
+
+SYSTEM_CURRENCY_SYMBOL = '$'
+
+# all
+AUTOCONFIRMED_ACCOUNTS = tuple(at for at, _ in constants.ACCOUNT_TYPES
+                               if at not in [
+                                   # make these not auto confirmed
+                                   constants.ACCOUNT_TYPE_JOINT,
+                               ])
+
+# Create jira tickets with errors
+JIRA_ENABLED = True
+JIRA_SERVER = 'https://betasmartz.atlassian.net'
+JIRA_USERNAME = 'errorbot@betasmartz.com'
+JIRA_PASSWORD = '#$MKVzWj&fg6q'
+JIRA_ERROR_PROJECT_ID = 10400
+JIRA_ISSUE_TYPE = {'name': 'Bug'}
 
 from local_settings import *

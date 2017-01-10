@@ -27,7 +27,8 @@ betasmartz.widgets = {
             noSort: options.noSort || [],  // [2] (columns)
             noSearch: options.noSearch || [],  // [2,3] (columns)
             defOrder: options.defOrder || undefined, // [[1, "asc"]] (column, direction)
-            dropdown: options.dropdown  // ["#select", 2] (element, column)
+            dropdown: options.dropdown,  // ["#select", 2] (element, column)
+            initialSorting: options.initialSorting || undefined // [[1, "asc"]] (column, direction), [] - no initial sorting
         };
         var $table = $(table),
             $searchField = $(searchField),
@@ -39,6 +40,9 @@ betasmartz.widgets = {
             };
         if (options.defOrder !== undefined) {
             params.order = options.defOrder;
+        }
+        if (options.initialSorting !== undefined) {
+            params.aaSorting = options.initialSorting;
         }
         dataTable = $table.DataTable(params);
 

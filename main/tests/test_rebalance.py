@@ -1,33 +1,39 @@
 from django import test
 
 from main.tests.fixture import Fixture1
+from main.models import PortfolioItem
+from execution.end_of_day import create_sale
+from unittest.mock import patch
 from django.utils import timezone
 from api.v1.tests.factories import GoalFactory, PositionLotFactory, TickerFactory, \
     TransactionFactory, GoalSettingFactory, GoalMetricFactory, AssetFeatureValueFactory, \
-    PortfolioSetFactory, MarkowitzScaleFactory
+    PortfolioSetFactory, MarkowitzScaleFactory, PortfolioFactory
 from main.models import Transaction, GoalMetric
 from portfolios.providers.execution.django import ExecutionProviderDjango
 from portfolios.providers.data.django import DataProviderDjango
 from main.management.commands.rebalance import perturbate_mix, process_risk, perturbate_withdrawal, perturbate_risk, \
-    get_weights, get_tax_lots, calc_opt_inputs
+    get_weights, get_tax_lots, calc_opt_inputs, rebalance, get_tax_lots
 
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction
 from unittest.mock import MagicMock
 from unittest import mock
-
+from main.management.commands.rebalance import get_held_weights
 from main.models import Ticker, GoalMetric, Portfolio, PortfolioSet
 from portfolios.calculation import get_instruments
 from datetime import datetime, date
 
-mocked_now = timezone.now().date()
+mocked_now = datetime(year=2016,month=6,day=1)
 
 class RebalanceTest(test.TestCase):
-
+    @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def setUp(self):
         self.t1 = TickerFactory.create(symbol='SPY', unit_price=5)
         self.t2 = TickerFactory.create(symbol='VEA', unit_price=5)
         self.t3 = TickerFactory.create(symbol='TIP', unit_price=100)
         self.t4 = TickerFactory.create(symbol='IEV', unit_price=100)
+
+        self.t5 = TickerFactory.create(symbol='IEV2', unit_price=100, asset_class=self.t4.asset_class)
+
 
         self.equity = AssetFeatureValueFactory.create(name='equity', assets=[self.t1, self.t2])
         self.bond = AssetFeatureValueFactory.create(name='bond', assets=[self.t3, self.t4])
@@ -35,19 +41,31 @@ class RebalanceTest(test.TestCase):
         self.goal_settings = GoalSettingFactory.create()
         asset_classes = [self.t1.asset_class, self.t2.asset_class, self.t3.asset_class, self.t4.asset_class]
         portfolio_set = PortfolioSetFactory.create(name='set', risk_free_rate=0.01, asset_classes=asset_classes)
-        self.goal = GoalFactory.create(approved_settings=self.goal_settings, cash_balance=100, portfolio_set=portfolio_set)
+        self.goal = GoalFactory.create(approved_settings=self.goal_settings, active_settings=self.goal_settings,
+                                       cash_balance=100, portfolio_set=portfolio_set)
 
-        Fixture1.create_execution_details(self.goal, self.t1, 5, 4, date(2016, 1, 1))
-        Fixture1.create_execution_details(self.goal, self.t2, 5, 4, date(2016, 1, 1))
-        Fixture1.create_execution_details(self.goal, self.t3, 5, 90, date(2016, 1, 1))
-        Fixture1.create_execution_details(self.goal, self.t4, 5, 90, date(2016, 1, 1))
-        Fixture1.create_execution_details(self.goal, self.t4, 5, 90, date(2016, 1, 1))
+        self.tickers = [self.t1, self.t2, self.t3, self.t4, self.t4]
+        self.prices = [4, 4, 90, 90, 95]
+        self.quantities = [5, 5, 5, 5, 5]
+        self.executed = [date(2015, 1, 1), date(2016, 1, 1), date(2015, 1, 1), date(2016, 1, 1), date(2016, 1, 1)]
 
-        self.data_provider = DataProviderDjango()
+        self.execution_details = []
+        for i in range(5):
+            execution = Fixture1.create_execution_details(self.goal,
+                                                          self.tickers[i],
+                                                          self.quantities[i],
+                                                          self.prices[i],
+                                                          self.executed[i])
+            self.execution_details.append(execution)
+
+        self.data_provider = DataProviderDjango(mocked_now.date())
         self.execution_provider = ExecutionProviderDjango()
         MarkowitzScaleFactory.create()
         self.setup_performance_history()
         self.idata = get_instruments(self.data_provider)
+
+        self.portfolio = PortfolioFactory.create(setting=self.goal_settings)
+        self.current_weights = get_held_weights(self.goal)
 
     def test_perturbate_mix1(self):
         GoalMetricFactory.create(group=self.goal_settings.metric_group, feature=self.equity,
@@ -111,8 +129,72 @@ class RebalanceTest(test.TestCase):
         #weights = perturbate_risk(goal=self.goal)
         self.assertTrue(True)
 
-    @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
+    #@mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def setup_performance_history(self):
         populate_prices(400, asof=mocked_now)
         populate_cycle_obs(400, asof=mocked_now)
         populate_cycle_prediction(asof=mocked_now)
+
+    def test_do_not_rebuy_within_30_days(self):
+        # finish test
+        GoalMetricFactory.create(group=self.goal_settings.metric_group, feature=self.equity,
+                                 type=GoalMetric.METRIC_TYPE_RISK_SCORE,
+                                 rebalance_type=GoalMetric.REBALANCE_TYPE_ABSOLUTE,
+                                 rebalance_thr=0.5, configured_val=0.5)
+
+        weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
+
+        executed = datetime(year=2016, month=5, day=15)
+        for i in range(3, 5):
+            Fixture1.create_execution_details(self.goal, self.tickers[i], -self.quantities[i],self.tickers[i].unit_price, executed)
+            self.goal.cash_balance += self.tickers[i].unit_price * abs(self.quantities[i])
+
+        weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
+        self.assertAlmostEqual(weights[4], 0)
+
+    def test_TLH(self):
+        # out of currently held lots identify lots losing above some treshold - calculate lost weight - as PCT of portfolio value
+        # set max constraint for those lots to PCT - as if we had sold those lots completely
+        self.goal.account.tax_loss_harvesting_consent = True
+        self.goal.account.save()
+        GoalMetricFactory.create(group=self.goal_settings.metric_group, feature=self.equity,
+                                 type=GoalMetric.METRIC_TYPE_RISK_SCORE,
+                                 rebalance_type=GoalMetric.REBALANCE_TYPE_ABSOLUTE,
+                                 rebalance_thr=0.5, configured_val=0.5)
+
+        self.t4.unit_price = 10
+        self.t4.save()
+
+        weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
+        self.assertAlmostEqual(weights[4], 0)
+        self.assertTrue(weights[5] > 0)
+        weight_5 = weights[5]
+
+        self.goal.account.tax_loss_harvesting_consent = False
+        self.goal.account.save()
+        weights, instruments, reason = rebalance(self.goal, self.idata, self.data_provider, self.execution_provider)
+        self.assertNotAlmostEqual(weights[4], 0)
+        self.assertNotAlmostEqual(weights[5], weight_5)
+
+
+    def test_ST_loss_LT_loss_LT_gain_ST_gain(self, *args):
+        self.prices = [4, 4, 90, 90, 90]
+
+        self.t1.unit_price = 1
+        self.t2.unit_price = 1
+        self.t3.unit_price = 200
+        self.t4.unit_price = 200
+        self.t1.save()
+        self.t2.save()
+        self.t3.save()
+        self.t4.save()
+
+        with patch.object(timezone, 'now', return_value=mocked_now):
+            lots = get_tax_lots(self.goal)
+
+        #test asserts - that order is correct
+        self.assertTrue(lots[0]['id'] == 2) #ST loss
+        self.assertTrue(lots[1]['id'] == 1) #LT loss
+        self.assertTrue(lots[2]['id'] == 3) #LT gain
+        self.assertTrue(lots[3]['id'] == 5) #ST gain smaller
+        self.assertTrue(lots[4]['id'] == 4) #ST gain bigger

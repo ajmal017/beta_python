@@ -3,23 +3,18 @@ from datetime import date
 
 from django.conf import settings
 from django.db import transaction
-from django.template import RequestContext
-from django.template.loader import render_to_string
 from django.utils import timezone
-from django.utils.functional import curry
 from django.utils.timezone import now
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from api.v1.goals.serializers import PortfolioSerializer
 from api.v1.serializers import ReadOnlyModelSerializer
-from client.models import Client, ClientAccount
 from main import constants
 from main.models import ExternalAsset
 from main.risk_profiler import GoalSettingRiskProfile
 from retiresmartz.models import RetirementAdvice, RetirementPlan, \
     RetirementPlanEinc
-
 
 logger = logging.getLogger('api.v1.retiresmartz.serializers')
 
@@ -127,6 +122,20 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     height = serializers.SerializerMethodField(required=False)
     drinks = serializers.SerializerMethodField(required=False)
 
+    balance = serializers.FloatField()
+    home_value = serializers.SerializerMethodField(required=False)
+    home_growth = serializers.SerializerMethodField(required=False)
+    ss_fra_todays = serializers.SerializerMethodField(required=False)
+    ss_fra_retirement = serializers.SerializerMethodField(required=False)
+    state_tax_after_credits = serializers.SerializerMethodField(required=False)
+    state_tax_effrate = serializers.SerializerMethodField(required=False)
+    pension_name = serializers.SerializerMethodField(required=False)
+    pension_amount = serializers.SerializerMethodField(required=False)
+    pension_start_date = serializers.SerializerMethodField(required=False)
+    employee_contributions_last_year = serializers.SerializerMethodField(required=False)
+    employer_contributions_last_year = serializers.SerializerMethodField(required=False)
+    total_contributions_last_year = serializers.SerializerMethodField(required=False)
+
     class Meta:
         model = RetirementPlan
         # Goal setting is an internal field that doesn't need to be shared externally.
@@ -156,6 +165,42 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     def get_drinks(self, obj):
         return obj.client.drinks
 
+    def get_home_value(self, obj):
+        return obj.client.home_value
+
+    def get_home_growth(self, obj):
+        return obj.client.home_growth
+
+    def get_ss_fra_todays(self, obj):
+        return obj.client.ss_fra_todays
+
+    def get_ss_fra_retirement(self, obj):
+        return obj.client.ss_fra_retirement
+
+    def get_state_tax_after_credits(self, obj):
+        return obj.client.state_tax_after_credits
+
+    def get_state_tax_effrate(self, obj):
+        return obj.client.state_tax_effrate
+
+    def get_pension_name(self, obj):
+        return obj.client.pension_name
+
+    def get_pension_amount(self, obj):
+        return obj.client.pension_amount
+
+    def get_pension_start_date(self, obj):
+        return obj.client.pension_start_date
+
+    def get_employee_contributions_last_year(self, obj):
+        return obj.client.employee_contributions_last_year
+
+    def get_employer_contributions_last_year(self, obj):
+        return obj.client.employer_contributions_last_year
+
+    def get_total_contributions_last_year(self, obj):
+        return obj.client.total_contributions_last_year
+
 
 class RetirementPlanWritableSerializer(serializers.ModelSerializer):
     expenses = serializers.JSONField(required=False,
@@ -181,6 +226,20 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
     weight = serializers.FloatField(source='client.weight', required=False)
     height = serializers.FloatField(source='client.height', required=False)
     drinks = serializers.IntegerField(source='client.drinks', required=False)
+
+    balance = serializers.FloatField(required=False)
+    home_value = serializers.FloatField(source='client.home_value', required=False)
+    home_growth = serializers.FloatField(source='client.home_growth', required=False)
+    ss_fra_todays = serializers.FloatField(source='client.ss_fra_todays', required=False)
+    ss_fra_retirement = serializers.FloatField(source='client.ss_fra_retirement', required=False)
+    state_tax_after_credits = serializers.FloatField(source='client.state_tax_after_credits', required=False)
+    state_tax_effrate = serializers.FloatField(source='client.state_tax_effrate', required=False)
+    pension_name = serializers.CharField(source='client.pension_name', required=False)
+    pension_amount = serializers.FloatField(source='client.pension_amount', required=False)
+    pension_start_date = serializers.DateField(source='client.pension_start_date', required=False)
+    employee_contributions_last_year = serializers.FloatField(source='client.employee_contributions_last_year', required=False)
+    employer_contributions_last_year = serializers.FloatField(source='client.employer_contributions_last_year', required=False)
+    total_contributions_last_year = serializers.FloatField(source='client.total_contributions_last_year', required=False)
 
     class Meta:
         model = RetirementPlan
@@ -219,6 +278,19 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             'weight',
             'height',
             'drinks',
+            'balance',
+            'home_value',
+            'home_growth',
+            'ss_fra_todays',
+            'ss_fra_retirement',
+            'state_tax_after_credits',
+            'state_tax_effrate',
+            'pension_name',
+            'pension_amount',
+            'pension_start_date',
+            'employee_contributions_last_year',
+            'employer_contributions_last_year',
+            'total_contributions_last_year',
 
         )
 
@@ -322,6 +394,43 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                 instance.client.daily_exercise = validated_data['client']['daily_exercise']
                 instance.client.save()
 
+            if 'home_value' in validated_data['client']:
+                instance.client.home_value = validated_data['client']['home_value']
+                instance.client.save()
+            if 'home_growth' in validated_data['client']:
+                instance.client.home_growth = validated_data['client']['home_growth']
+                instance.client.save()
+            if 'ss_fra_todays' in validated_data['client']:
+                instance.client.ss_fra_todays = validated_data['client']['ss_fra_todays']
+                instance.client.save()
+            if 'ss_fra_retirement' in validated_data['client']:
+                instance.client.ss_fra_retirement = validated_data['client']['ss_fra_retirement']
+                instance.client.save()
+            if 'state_tax_after_credits' in validated_data['client']:
+                instance.client.state_tax_after_credits = validated_data['client']['state_tax_after_credits']
+                instance.client.save()
+            if 'state_tax_effrate' in validated_data['client']:
+                instance.client.state_tax_effrate = validated_data['client']['state_tax_effrate']
+                instance.client.save()
+            if 'pension_name' in validated_data['client']:
+                instance.client.pension_name = validated_data['client']['pension_name']
+                instance.client.save()
+            if 'pension_amount' in validated_data['client']:
+                instance.client.pension_amount = validated_data['client']['pension_amount']
+                instance.client.save()
+            if 'pension_start_date' in validated_data['client']:
+                instance.client.pension_start_date = validated_data['client']['pension_start_date']
+                instance.client.save()
+            if 'employee_contributions_last_year' in validated_data['client']:
+                instance.client.employee_contributions_last_year = validated_data['client']['employee_contributions_last_year']
+                instance.client.save()
+            if 'employer_contributions_last_year' in validated_data['client']:
+                instance.client.employer_contributions_last_year = validated_data['client']['employer_contributions_last_year']
+                instance.client.save()
+            if 'total_contributions_last_year' in validated_data['client']:
+                instance.client.total_contributions_last_year = validated_data['client']['total_contributions_last_year']
+                instance.client.save()
+
         for attr, value in validated_data.items():
             if str(attr) != 'client':
                 # civil_status update is on client
@@ -399,120 +508,3 @@ class RetirementAdviceWritableSerializer(serializers.ModelSerializer):
         if request.method == 'PUT':
             for field in self.fields.values():
                 field.required = False
-
-
-class NewAccountFabricBase(serializers.Serializer):
-    def save(self, request, client) -> ClientAccount:
-        raise NotImplementedError()
-
-
-def new_account_fabric(data: dict) -> NewAccountFabricBase:
-    try:
-        account_type = data['account_type']
-    except KeyError:
-        raise ValidationError({'account_type': 'Field not found.'})
-
-    if account_type == constants.ACCOUNT_TYPE_JOINT:
-        serializer_class = JointAccountConfirmation
-    elif account_type == constants.ACCOUNT_TYPE_TRUST:
-        serializer_class = AddTrustAccount
-    else:
-        serializer_class = AddRolloverAccount
-    return serializer_class(data=data)
-
-
-class JointAccountConfirmation(NewAccountFabricBase):
-    email = serializers.EmailField()
-    ssn = serializers.CharField()
-
-    client = None
-
-    def validate(self, attrs):
-        try:
-            self.client = Client.objects.get(user__email=attrs['email'])
-            if self.client.regional_data['ssn'] != attrs['ssn']:
-                raise ValueError
-        except (Client.DoesNotExist, TypeError, KeyError, ValueError):
-            raise ValidationError({'email': 'User cannot be found.'})
-        return attrs
-
-    def save(self, request, client):
-        cosignee = self.client
-        account = ClientAccount.objects.create(
-            account_type=constants.ACCOUNT_TYPE_JOINT,
-            account_name='JOINT {:%Y-%m-%d %H:%M:%S}'.format(now()),
-            primary_owner=client,
-            default_portfolio_set=client.advisor.default_portfolio_set,
-        )
-        account.signatories = [cosignee]
-        account.save()
-        context = RequestContext(request, {
-            'sender': client,
-            'cosignee': cosignee,
-            'account': account,
-            'link': '',
-            # 'link': reverse('api:v1:client-retirement-plans-joint-confirm',
-            #                 kwargs={'parent_lookup_client': client.id, }),
-        })
-        render = curry(render_to_string, context=context)
-        # cosignee.user.email_user(
-        #     render('email/client/joint-confirm/subject.txt').strip(),
-        #     message=render('email/client/joint-confirm/message.txt'),
-        #     html_message=render('email/client/joint-confirm/message.html'),
-        # )
-        return account
-
-
-class AddTrustAccount(NewAccountFabricBase):
-    trust_legal_name = serializers.CharField()
-    trust_nickname = serializers.CharField()
-    trust_state = serializers.CharField()
-    establish_date = serializers.DateField()
-    ein = serializers.CharField(required=False)
-    ssn = serializers.CharField(required=False)
-    address = serializers.CharField()
-    city = serializers.CharField()
-    state = serializers.CharField()
-    zip = serializers.CharField()
-
-    def validate(self, attrs):
-        if not (attrs['ein'] or attrs['ssn']):
-            raise ValidationError({
-                'ein': 'Either EIN or SSN must present.',
-                'ssn': 'Either EIN or SSN must present.',
-            })
-        return attrs
-
-    def save(self, request, client):
-        data = self.validated_data
-        account = ClientAccount.objects.create(
-            account_type=constants.ACCOUNT_TYPE_TRUST,
-            account_name=data['trust_nickname'],
-            primary_owner=client,
-            default_portfolio_set=client.advisor.default_portfolio_set,
-            confirmed=True,
-        )
-        # todo save trust info
-        return account
-
-
-class AddRolloverAccount(NewAccountFabricBase):
-    provider = serializers.CharField()
-    account_type = serializers.ChoiceField(choices=constants.ACCOUNT_TYPES)
-    account_number = serializers.CharField()
-    amount = serializers.FloatField()
-    signature = serializers.CharField()
-
-    def save(self, request, client):
-        data = self.validated_data
-        account_type = data['account_type']
-        account = ClientAccount.objects.create(
-            account_type=account_type,
-            account_name=dict(constants.ACCOUNT_TYPES)[account_type],
-            account_number=account_number,
-            primary_owner=client,
-            default_portfolio_set=client.advisor.default_portfolio_set,
-            confirmed=True,
-        )
-        # TODO save source account rollover data
-        return account

@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from pinax.eventlog.models import Log
-
+from execution.end_of_day import create_sale
 import address.models as ad
 from api.v1.tests.factories import GoalMetricFactory, TransactionFactory, PositionLotFactory, \
     InvestmentCycleObservationFactory, TickerFactory, AssetFeatureValueFactory, GoalFactory, PortfolioSetFactory, \
@@ -19,7 +19,7 @@ from main.models import Advisor, AssetClass, DailyPrice, Execution, \
     ExecutionDistribution, ExternalAsset, Firm, Goal, \
     GoalMetricGroup, GoalSetting, GoalType, HistoricalBalance, MarketIndex, \
     PortfolioSet, Region, Ticker, User, ExternalInstrument, \
-    Transaction, MarketOrderRequest, GoalMetric
+    Transaction, MarketOrderRequest, GoalMetric, AssetFeePlan
 from main.risk_profiler import MINIMUM_RISK
 from retiresmartz.models import RetirementPlan
 from api.v1.tests.factories import PortfolioFactory, GoalMetricGroupFactory
@@ -209,6 +209,11 @@ class Fixture1:
         return plan1
 
     @classmethod
+    def asset_fee_plan1(cls):
+        return AssetFeePlan.objects.get_or_create(name='Default Fee Plan',
+                                                description='An example asset fee plan')[0]
+    
+    @classmethod
     def risk_profile_group1(cls):
         return RiskProfileGroup.objects.get_or_create(name='risk_profile_group1')[0]
 
@@ -362,6 +367,7 @@ class Fixture1:
             'primary_owner': Fixture1.client1(),
             'default_portfolio_set': Fixture1.portfolioset1(),
             'confirmed': True,
+            'asset_fee_plan': Fixture1.asset_fee_plan1(),
         }
         return ClientAccount.objects.get_or_create(id=1, defaults=params)[0]
 
@@ -372,6 +378,7 @@ class Fixture1:
             'primary_owner': Fixture1.client2(),
             'default_portfolio_set': Fixture1.portfolioset2(),
             'confirmed': True,
+            'asset_fee_plan': Fixture1.asset_fee_plan1(),
         }
         return ClientAccount.objects.get_or_create(id=2, defaults=params)[0]
 
@@ -425,11 +432,14 @@ class Fixture1:
 
     @classmethod
     def goal1(cls):
-        return Goal.objects.get_or_create(account=Fixture1.personal_account1(),
-                                          name='goal1',
-                                          type=Fixture1.goal_type1(),
-                                          portfolio_set=Fixture1.portfolioset1(),
-                                          selected_settings=Fixture1.settings1())[0]
+        params = {
+            'account': Fixture1.personal_account1(),
+            'name': 'goal1',
+            'type': Fixture1.goal_type1(),
+            'portfolio_set': Fixture1.portfolioset1(),
+            'selected_settings': Fixture1.settings1()
+        }
+        return Goal.objects.get_or_create(id=1, defaults=params)[0]
 
     @classmethod
     def goal2(cls):
@@ -804,13 +814,16 @@ class Fixture1:
                                                 status=Transaction.STATUS_EXECUTED,
                                                 executed=executed,
                                                 amount=quantity*price)
-
-
         distribution = ExecutionDistributionFactory.create(execution=execution,
                                                            transaction=transaction,
                                                            volume=quantity,
                                                            execution_request=er)
-        position_lot = PositionLotFactory.create(quantity=quantity, execution_distribution=distribution)
+
+        if quantity > 0:
+            position_lot = PositionLotFactory.create(quantity=quantity, execution_distribution=distribution)
+        else:
+            create_sale(ticker, quantity, price, distribution)
+            position_lot = None
 
         return_values = list()
         return_values.extend((mor, execution, transaction, distribution, position_lot))

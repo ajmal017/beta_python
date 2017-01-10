@@ -181,6 +181,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     def full_name(self):
         return self.get_full_name()
 
+    @property
+    def role(self):
+        if self.is_advisor:
+            return 'advisor'
+        elif self.is_client:
+            return 'client'
+        elif self.is_supervisor:
+            return 'supervisor'
+        elif self.is_authorised_representative:
+            return 'authorized_representative'
+        else:
+            return 'none'
+
     @cached_property
     def is_advisor(self):
         """
@@ -1023,6 +1036,7 @@ class Ticker(FinancialInstrument):
                                    message="Invalid symbol format")])
     ordering = models.IntegerField(db_index=True)
     unit_price = models.FloatField(default=10)
+    latest_tick = models.FloatField(default=0)
     asset_class = models.ForeignKey(AssetClass, related_name="tickers")
     ethical = models.BooleanField(default=False,
                                   help_text='Is this an ethical instrument?')
@@ -1037,6 +1051,9 @@ class Ticker(FinancialInstrument):
     benchmark_object_id = models.PositiveIntegerField(null=True,
                                                       verbose_name='Benchmark Instrument')
     benchmark = GenericForeignKey('benchmark_content_type', 'benchmark_object_id')
+    manager_benchmark = models.ManyToManyField('MarketIndex',
+                                               related_name='manager_tickers',
+                                               through='ManagerBenchmarks')
     daily_prices = GenericRelation('DailyPrice',
                                    content_type_field='instrument_content_type',
                                    object_id_field='instrument_object_id')
@@ -1046,6 +1063,10 @@ class Ticker(FinancialInstrument):
 
     # Also may have 'features' property from the AssetFeatureValue model.
     # also has external_instruments foreign key - to get instrument_id per institution
+
+    def update_latest_tick(self, price):
+        self.latest_tick = price
+        self.save()
 
     def __str__(self):
         return self.symbol
@@ -1173,6 +1194,15 @@ class Ticker(FinancialInstrument):
 @receiver(post_save, sender=Ticker)
 def populate_ticker_features(sender, instance, created, **kwargs):
     instance.populate_features()
+
+
+class ManagerBenchmarks(models.Model):
+    ticker = models.ForeignKey('Ticker')
+    market_index = models.ForeignKey('MarketIndex')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = 'ticker', 'market_index'
 
 
 class EmailInvitation(models.Model):
@@ -1459,16 +1489,16 @@ class InvalidStateError(Exception):
 class Goal(models.Model):
     class State(ChoiceEnum):
         # The goal is currently active and ready for action.
-        ACTIVE = 0
+        ACTIVE = 0, 'Active'
         # A request to archive the goal has been made, but is waiting approval.
         # The goal can be reinstated by simply changing the state back to ACTIVE
-        ARCHIVE_REQUESTED = 1
+        ARCHIVE_REQUESTED = 1, 'Archive Requested'
         # A request to archive the goal has been approved, and is currently in process.
         # No further actions can be performed on the goal to reactivate it.
-        CLOSING = 2
+        CLOSING = 2, 'Closing'
         # The goal no longer owns any assets, and has a zero balance.
         # This goal is archived. No further actions can be performed on the goal
-        ARCHIVED = 3
+        ARCHIVED = 3, 'Archived'
 
     account = models.ForeignKey('client.ClientAccount', related_name="all_goals")
     name = models.CharField(max_length=100)
@@ -1513,7 +1543,7 @@ class Goal(models.Model):
     objects = GoalQuerySet.as_manager()
 
     class Meta:
-        ordering = ['order']
+        ordering = 'state', 'order'
         unique_together = ('account', 'name')
 
     def __str__(self):
@@ -1535,6 +1565,11 @@ class Goal(models.Model):
 
         return super(Goal, self).save(force_insert, force_update, using,
                                       update_fields)
+
+    @property
+    def is_active(self):
+        return self.state in [self.State.ACTIVE.value,
+                              self.State.ARCHIVE_REQUESTED.value]
 
     def archive(self):
         """
@@ -1822,7 +1857,7 @@ class Goal(models.Model):
             er = 1 + self.selected_settings.portfolio.er
             stdev = self.selected_settings.portfolio.stdev
 
-        # use naïve dates for calculations
+        # use naive dates for calculations
         current_time = now().replace(tzinfo=None)
         # Get the predicted cash-flow events until the provided future date
         cf_events = [(current_time, self.total_balance)]
@@ -1971,6 +2006,9 @@ class HistoricalBalance(models.Model):
     goal = models.ForeignKey(Goal, related_name='balance_history')
     date = models.DateField()
     balance = models.FloatField()
+
+    class Meta:
+        unique_together = 'goal', 'date'
 
 
 class AssetFeature(models.Model):
@@ -2454,6 +2492,9 @@ class DailyPrice(models.Model):
     date = models.DateField(db_index=True)
     price = models.FloatField(null=True)
 
+    def __str__(self):
+        return "{} {} {}".format(self.instrument, self.date, self.price)
+
 
 class MarketCap(models.Model):
     """
@@ -2496,6 +2537,9 @@ class Supervisor(models.Model):
         verbose_name="Has Full Access?",
         help_text="A supervisor with 'full access' can perform actions for "
                   "their advisors and clients.")
+
+    def __str__(self):
+        return "Supervisor {} for {}".format(self.user, self.firm)
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
@@ -2674,29 +2718,29 @@ class ActivityLogEvent(models.Model):
             return ale
 
         if event == Event.GOAL_DIVIDEND_DISTRIBUTION:
-            alog = ActivityLog.objects.create(name='Dividend Transaction',
-                                              format_str='Dividend payment of {{}}{} into goal'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Dividends',
+                                              format_str='Dividend payment of {}{{}} into goal'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_DEPOSIT_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Deposit Transaction',
-                                              format_str='Deposit of {{}}{} from Account to Goal'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Deposits',
+                                              format_str='Deposit of {}{{}} from Account to Goal'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_WITHDRAWAL_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Withdrawal Transaction',
-                                              format_str='Withdrawal of {{}}{} from Goal to Account'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Withdrawals',
+                                              format_str='Withdrawal of {}{{}} from Goal to Account'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_REBALANCE_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Rebalance Transaction', format_str='Rebalance Applied')
+            alog = ActivityLog.objects.create(name='Rebalances', format_str='Rebalance Applied')
         elif event == Event.GOAL_TRANSFER_EXECUTED:
-            alog = ActivityLog.objects.create(name='Goal Transfer Transaction', format_str='Transfer Applied')
+            alog = ActivityLog.objects.create(name='Transfer', format_str='Transfer Applied')
         elif event == Event.GOAL_FEE_LEVIED:
-            alog = ActivityLog.objects.create(name='Goal Fee Transaction',
-                                              format_str='Fee of {{}}{} applied'.format(settings.SYSTEM_CURRENCY),
+            alog = ActivityLog.objects.create(name='Fees',
+                                              format_str='Fee of {}{{}} applied'.format(settings.SYSTEM_CURRENCY_SYMBOL),
                                               format_args='transaction.amount')
         elif event == Event.GOAL_ORDER_DISTRIBUTION:
             alog = ActivityLog.objects.create(name='Order Distribution Transaction', format_str='Order Distributed')
         elif event == Event.GOAL_BALANCE_CALCULATED:
-            alog = ActivityLog.objects.create(name='Daily Balance', format_str='Daily Balance')
+            alog = ActivityLog.objects.create(name='Balance', format_str='Daily Balance')
         else:
             alog = ActivityLog.objects.create(name=event.name, format_str='DEFAULT_TEXT: {}'.format(event.name))
 
@@ -2766,6 +2810,78 @@ class Inflation(models.Model):
         return '{0.month}/{0.year}: {0.value}'.format(self)
 
 
+class PricingPlanBase(models.Model):
+    bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
+    fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
+
+    class Meta:
+        abstract = True
+
+    @property
+    def total_bps(self) -> float:
+        raise NotImplementedError()
+
+    @property
+    def total_fixed(self) -> float:
+        raise NotImplementedError()
+
+
+class PricingPlan(PricingPlanBase):
+    firm = models.OneToOneField('main.Firm',
+                                related_name='pricing_plan')
+    system_bps = models.FloatField(default=0., validators=[MinValueValidator(0)])
+    system_fixed = models.FloatField(default=0., validators=[MinValueValidator(0)])
+
+    def __str__(self):
+        return str(self.firm)
+
+    @property
+    def system_fee(self) -> (float, float):
+        return self.system_bps, self.system_fixed
+
+    @system_fee.setter
+    def system_fee(self, value):
+        self.system_bps, self.system_fixed = value
+
+    @property
+    def total_bps(self) -> float:
+        return self.bps + self.system_bps
+
+    @property
+    def total_fixed(self) -> float:
+        return self.fixed + self.system_fixed
+
+
+class PricingPlanPersonBase(PricingPlanBase):
+    class Meta:
+        abstract = True
+
+    @property
+    def total_bps(self) -> float:
+        return self.bps + self.parent.system_bps
+
+    @property
+    def total_fixed(self) -> float:
+        return self.fixed + self.parent.system_fixed
+
+
+class PricingPlanAdvisor(PricingPlanPersonBase):
+    parent = models.ForeignKey('main.PricingPlan',
+                               related_name='advisor_overrides')
+    person = models.OneToOneField('main.Advisor',
+                                   related_name='pricing_plan')
+
+
+class PricingPlanClient(PricingPlanPersonBase):
+    parent = models.ForeignKey('main.PricingPlan',
+                               related_name='client_overrides')
+    person = models.OneToOneField('client.Client',
+                                  related_name='pricing_plan')
+
+
+# --------------------------------- Signals -----------------------------------
+
+
 @receiver(user_logged_in)
 def user_logged_in_notification(sender, user: User, **kwargs):
     user_types = ['client', 'advisor', 'supervisor',
@@ -2790,3 +2906,9 @@ def user_logged_out_notification(sender, user: User, **kwargs):
                 break
             except ObjectDoesNotExist:
                 pass
+
+
+@receiver(models.signals.post_save, sender=Firm)
+def create_firm_empty_pricing_plan(sender, instance, created, **kwargs):
+    if created:
+        PricingPlan.objects.create(firm=instance)

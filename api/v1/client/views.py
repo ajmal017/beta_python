@@ -5,25 +5,29 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import detail_route
 from api.v1.client.serializers import EmailNotificationsSerializer, \
     PersonalInfoSerializer
 from api.v1.permissions import IsClient
-from api.v1.views import ApiViewMixin
-from main.models import ExternalAsset, User
-from notifications.models import Notify
+from api.v1.views import ApiViewMixin, ReadOnlyApiViewMixin
+from main.models import ExternalAsset, User, Goal
 from user.models import SecurityAnswer
-from client.models import Client, EmailInvite
+from client.models import Client, EmailInvite, ClientAccount
 from support.models import SupportRequest
 from api.v1.user.serializers import UserSerializer
 from api.v1.retiresmartz.serializers import RetirementPlanEincSerializer, RetirementPlanEincWritableSerializer
 from retiresmartz.models import RetirementPlan, RetirementPlanEinc, RetirementAdvice
 from django.views.generic.detail import SingleObjectMixin
 from . import serializers
+from api.v1.goals.serializers import GoalSerializer
 import logging
 import json
 from retiresmartz import advice_responses
 from main.event import Event
+from api.v1.utils import activity
+from main import quovo
 
 logger = logging.getLogger('api.v1.client.views')
 
@@ -164,12 +168,12 @@ class ClientViewSet(ApiViewMixin,
         updated = serializer.update(instance, serializer.validated_data)
 
         # RetirementAdvice Triggers
+        life_expectancy_field_updated = (updated.daily_exercise != orig.daily_exercise or
+                                         updated.weight != orig.weight or
+                                         updated.height != orig.height or
+                                         updated.smoker != orig.smoker or
+                                         updated.drinks != orig.drinks)
         for plan in RetirementPlan.objects.filter(client=updated, agreed_on=None):
-            life_expectancy_field_updated = (updated.daily_exercise != orig.daily_exercise or
-                                             updated.weight != orig.weight or
-                                             updated.height != orig.height or
-                                             updated.smoker != orig.smoker or
-                                             updated.drinks != orig.drinks)
             if updated.smoker != orig.smoker:
                 if updated.smoker:
                     e = Event.RETIRESMARTZ_IS_A_SMOKER.log(None,
@@ -178,6 +182,7 @@ class ClientViewSet(ApiViewMixin,
                     advice = RetirementAdvice(plan=plan, trigger=e)
                     advice.text = advice_responses.get_smoking_yes(advice)
                     advice.save()
+                    plan.save()  # save to update calculated_life_expectancy on plan
                 elif updated.smoker is False:
                     e = Event.RETIRESMARTZ_IS_NOT_A_SMOKER.log(None,
                                                                user=updated.user,
@@ -185,8 +190,9 @@ class ClientViewSet(ApiViewMixin,
                     advice = RetirementAdvice(plan=plan, trigger=e)
                     advice.text = advice_responses.get_smoking_no(advice)
                     advice.save()
-                    plan.selected_life_expectancy += 7
-                    plan.save()
+
+                    if updated.smoker is False and orig.smoker is True:
+                        plan.save()  # save to update calculated_life_expectancy on plan
 
             if updated.daily_exercise != orig.daily_exercise:
                 # exercise only
@@ -197,6 +203,31 @@ class ClientViewSet(ApiViewMixin,
                 advice.text = advice_responses.get_exercise_only(advice)
                 advice.save()
 
+                # increase calculated_life_expectancy
+                if orig.daily_exercise is None:
+                    orig.daily_exercise = 0
+                if (updated.daily_exercise == 20 and orig.daily_exercise < 20) or \
+                   (updated.daily_exercise > 20 and orig.daily_exercise == 20) or \
+                   (updated.daily_exercise > 20 and orig.daily_exercise < 20):
+                    plan.save()
+
+            if updated.drinks != orig.drinks:
+                if updated.drinks > 1:
+                    e = Event.RETIRESMARTZ_DRINKS_MORE_THAN_ONE.log(None,
+                                                         user=updated.user,
+                                                         obj=updated)
+                    advice = RetirementAdvice(plan=plan, trigger=e)
+                    advice.text = advice_responses.get_drinks_more_than_one(advice)
+                    advice.save()
+                else:
+                    e = Event.RETIRESMARTZ_DRINKS_ONE_OR_LESS.log(None,
+                                                         user=updated.user,
+                                                         obj=updated)
+                    advice = RetirementAdvice(plan=plan, trigger=e)
+                    advice.text = advice_responses.get_drinks_one_or_less(advice)
+                    advice.save()
+                plan.save()
+
             # frontend posts one at a time, weight then height, not together in one post
             if (updated.weight != orig.weight or updated.height != orig.height):
                 # weight and/or height updated
@@ -206,6 +237,7 @@ class ClientViewSet(ApiViewMixin,
                 advice = RetirementAdvice(plan=plan, trigger=e)
                 advice.text = advice_responses.get_weight_and_height_only(advice)
                 advice.save()
+
 
             if life_expectancy_field_updated and (updated.daily_exercise and
                updated.weight and updated.height and updated.smoker is not None and
@@ -228,6 +260,25 @@ class ClientViewSet(ApiViewMixin,
         #         advice.text = advice_responses.get_combination_of_more_than_one_entry_but_not_all(advice)
         #         advice.save()
         return Response(self.serializer_response_class(updated).data)
+
+    @detail_route(methods=['get'])
+    def goals(self, request, pk=None, **kwargs):
+        """
+        Return list of goals from all accounts of the given client
+        """
+        instance = self.get_object()
+        accounts = ClientAccount.objects.filter(primary_owner=instance)
+        goals = Goal.objects.filter(account__in=accounts)
+        serializer = GoalSerializer(goals, many=True)
+        return Response(serializer.data)
+
+    @detail_route(methods=['get'])
+    def activity(self, request, pk=None, **kwargs):
+        """
+        Return list of activities from all accounts of the given client
+        """
+        client = self.get_object()
+        return activity.get(request, client)
 
 
 class InvitesView(ApiViewMixin, views.APIView):
@@ -287,6 +338,10 @@ class ClientUserRegisterView(ApiViewMixin, views.APIView):
     serializer_class = serializers.ClientUserRegistrationSerializer
 
     def post(self, request):
+        user = SupportRequest.target_user(request)
+        if user.is_authenticated():
+            raise exceptions.PermissionDenied("Another user is already logged in.")
+
         serializer = serializers.ClientUserRegistrationSerializer(data=request.data)
         if not serializer.is_valid(raise_exception=True):
             logger.error('Error accepting invitation: %s' % serializer.errors['non_field_errors'][0])
@@ -352,18 +407,40 @@ class ProfileView(ApiViewMixin, RetrieveUpdateAPIView):
     def get_object(self):
         return Client.objects.get(user=self.request.user)
 
-    def perform_update(self, serializer):
-        Notify.UPDATE_PERSONAL_INFO.send(self.request.user.client)
-        return super(ProfileView, self).perform_update(serializer)
-
 
 class ClientResendInviteView(SingleObjectMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
     queryset = EmailInvite.objects.all()
 
-    def post(self, request, *args, **kwargs):
-        invite = self.get_object()
+    def post(self, request, invite_key):
+        find_invite = EmailInvite.objects.filter(invite_key=invite_key)
+        if not find_invite.exists:
+            raise exceptions.NotFound("Invitation not found.")
+
+        invite = find_invite.get()
+
         if invite.user != self.request.user:
-            return Response('forbidden', status=status.HTTP_403_FORBIDDEN)
+            raise exceptions.PermissionDenied("You are not authorized to send invitation.")
+
         invite.send()
         return Response('ok', status=status.HTTP_200_OK)
+
+
+class ExternalAccountsView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer, )
+
+    def get(self, request, *args, **kwargs):
+        data = quovo.get_user_accounts(request, request.user)
+
+        return Response({'data':data})
+
+
+class IframeTokenView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer,)
+
+    def get(self, request, *args, **kwargs):
+        token = quovo.get_iframe_token(request, request.user)
+        data = {"token": token}
+        return Response({'data':data})
