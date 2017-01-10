@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from api.v1.tests.factories import ExecutionRequestFactory, MarketOrderRequestFactory, ClientAccountFactory, GoalFactory, TickerFactory
 from execution.end_of_day import *
-from main.models import OrderETNA
+from main.models import Order
 
 
 class BaseTest(TestCase):
@@ -23,8 +23,8 @@ class BaseTest(TestCase):
         self.assertTrue(requests[1].volume == 10)
 
     def test_apex_order1(self):
-        create_apex_orders()
-        etna_orders = OrderETNA.objects.all()
+        create_orders()
+        etna_orders = Order.objects.all()
 
         self.assertTrue(etna_orders[0].ticker.id == self.asset.id)
         self.assertTrue(etna_orders[0].Quantity == 15)
@@ -37,8 +37,8 @@ class BaseTest(TestCase):
         self.mor2 = MarketOrderRequestFactory.create(account=self.account2)
         self.asset3 = TickerFactory.create(symbol='MSFT')
         er4 = ExecutionRequestFactory.create(goal=self.goal2, asset=self.asset3, volume=20, order=self.mor2)
-        create_apex_orders()
-        etna_order = OrderETNA.objects.all()
+        create_orders()
+        etna_order = Order.objects.all()
         self.assertTrue(len(etna_order) == 3)
         self.assertTrue(etna_order[2].Quantity == 20)
 
@@ -47,7 +47,7 @@ class BaseTest(TestCase):
         self.goal3 = GoalFactory.create(account=self.account3)
         self.mor3 = MarketOrderRequestFactory.create(account=self.account3)
         er5 = ExecutionRequestFactory.create(goal=self.goal3, asset=self.asset, volume=20, order=self.mor3)
-        create_apex_orders()
-        etna_orders = OrderETNA.objects.all()
+        create_orders()
+        etna_orders = Order.objects.all()
         self.assertTrue(len(etna_orders) == 2)
         self.assertTrue(etna_orders[0].Quantity == 35)

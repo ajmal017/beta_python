@@ -9,7 +9,7 @@ http://stackoverflow.com/questions/30259452/proper-way-to-consume-data-from-rest
 '''
 import requests
 from execution.serializers import LoginSerializer, AccountIdSerializer, SecurityETNASerializer, OrderETNASerializer
-from execution.models import ETNALogin, AccountId, SecurityETNA
+from execution.models import ETNALogin, AccountId, Security
 from main.models import Order
 from django.db import connection
 from datetime import timedelta
@@ -166,7 +166,7 @@ def _get_security_ETNA(symbol, ticket):
 
 
 def get_security(symbol):
-    qs = SecurityETNA.objects.filter(Symbol=symbol)
+    qs = Security.objects.filter(Symbol=symbol)
     security = qs
 
     if security.count() == 0:

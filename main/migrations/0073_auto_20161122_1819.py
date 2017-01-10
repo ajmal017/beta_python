@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
             name='ExecutionApexFill',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('apex_fill', models.ForeignKey(related_name='execution_apex_fill', to='main.ApexFill')),
+                ('apex_fill', models.ForeignKey(related_name='execution_apex_fill', to='main.models.Fill')),
                 ('execution', models.OneToOneField(to='main.Execution', related_name='execution_apex_fill')),
             ],
         ),
@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='marketorderrequestapex',
             name='etna_order',
-            field=models.ForeignKey(default=None, related_name='morsAPEX', to='main.OrderETNA'),
+            field=models.ForeignKey(default=None, related_name='morsAPEX', to='main.models.Order'),
         ),
         migrations.AddField(
             model_name='marketorderrequestapex',
@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='apexfill',
             name='etna_order',
-            field=models.ForeignKey(default=None, related_name='etna_fills', to='main.OrderETNA'),
+            field=models.ForeignKey(default=None, related_name='fills', to='main.models.Order'),
         ),
         migrations.AlterUniqueTogether(
             name='marketorderrequestapex',

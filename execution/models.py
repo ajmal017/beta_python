@@ -28,7 +28,7 @@ class AccountId(models.Model):
     created = models.DateTimeField(auto_now_add=True)
 
 
-class SecurityETNA(models.Model):
+class Security(models.Model):
     symbol_id = models.IntegerField()
     Symbol = models.CharField(max_length=128)
     Description = models.CharField(max_length=128)

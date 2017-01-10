@@ -49,6 +49,57 @@ from .abstract import FinancialInstrument, NeedApprobation, \
 from .fields import ColorField
 from .managers import ExternalAssetQuerySet, GoalQuerySet, PositionLotQuerySet
 from .slug import unique_slugify
+import logging
+import uuid
+from datetime import date, datetime, timedelta
+from enum import Enum, unique
+
+import numpy as np
+import scipy.stats as st
+from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser, Group, \
+    PermissionsMixin, UserManager, send_mail
+from django.contrib.auth.signals import user_logged_in, user_logged_out
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.validators import (MaxValueValidator, MinLengthValidator,
+                                    MinValueValidator, RegexValidator, ValidationError)
+from django.db import models, transaction
+from django.db.models import F, Sum
+from django.db.models.deletion import CASCADE, PROTECT, SET_NULL
+from django.db.models.functions import Coalesce
+from django.db.models.query_utils import Q
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.template.loader import render_to_string
+from django.utils.functional import cached_property
+from django.utils.timezone import now
+from django.utils.translation import ugettext as _
+from django_pandas.managers import DataFrameManager
+from jsonfield.fields import JSONField
+from phonenumber_field.modelfields import PhoneNumberField
+from pinax.eventlog import models as el_models
+
+from address.models import Address
+from common.constants import GROUP_SUPPORT_STAFF
+from common.structures import ChoiceEnum
+from common.utils import months_between
+from main import redis
+from main.constants import ACCOUNT_TYPES_COUNTRY, ACCOUNT_UNKNOWN
+from main.finance import mod_dietz_rate
+from main.managers import AccountTypeQuerySet
+from main.risk_profiler import validate_risk_score
+from notifications.models import Notify
+from portfolios.returns import get_price_returns
+from . import constants
+from .abstract import FinancialInstrument, NeedApprobation, \
+    NeedConfirmation, PersonalData, TransferPlan
+from .fields import ColorField
+from .managers import ExternalAssetQuerySet, GoalQuerySet, PositionLotQuerySet
+from .slug import unique_slugify
 
 logger = logging.getLogger('main.models')
 
@@ -2131,13 +2182,13 @@ class GoalMetric(models.Model):
 
 class OrderETNAManager(models.Manager):
     def is_complete(self):
-        return self.filter(Status__in=OrderETNA.StatusChoice.complete_statuses())
+        return self.filter(Status__in=Order.StatusChoice.complete_statuses())
 
     def is_not_complete(self):
-        return self.exclude(Status__in=OrderETNA.StatusChoice.complete_statuses())
+        return self.exclude(Status__in=Order.StatusChoice.complete_statuses())
 
 
-class OrderETNA(models.Model):
+class Order(models.Model):
     class OrderTypeChoice(ChoiceEnum):
         Market = 0
         Limit = 1
@@ -2177,7 +2228,7 @@ class OrderETNA(models.Model):
 
         @classmethod
         def complete_statuses(cls):
-            accessor = OrderETNA.StatusChoice
+            accessor = Order.StatusChoice
             return (accessor.Filled.value, accessor.DoneForDay.value, accessor.Canceled.value, accessor.Rejected.value,
                     accessor.Expired.value, accessor.Error.value)
 
@@ -2185,7 +2236,7 @@ class OrderETNA(models.Model):
         FILLED = 0 # entire quantity of order was filled
         PARTIALY_FILLED = 1 # less than entire quantity was filled, but > 0
         UNFILLED = 2 # 0 shares were transacted for this order
-
+    Uid = uuid.uuid1()
     Price = models.FloatField()
     Exchange = models.CharField(default="Auto", max_length=128)
     TrailingLimitAmount = models.FloatField(default=0)
@@ -2194,6 +2245,7 @@ class OrderETNA(models.Model):
     Type = models.IntegerField(choices=OrderTypeChoice.choices(),default=OrderTypeChoice.Limit.value)
     Quantity = models.IntegerField()
     SecurityId = models.IntegerField()
+    Symbol = models.CharField(default="Auto", max_length=128)
     Side = models.IntegerField(choices=SideChoice.choices())
     TimeInForce = models.IntegerField(choices=TimeInForceChoice.choices(), default=TimeInForceChoice.GoodTillDate.value)
     StopPrice = models.FloatField(default=0)
@@ -2208,8 +2260,8 @@ class OrderETNA(models.Model):
     FillQuantity = models.IntegerField(default=0)
     Description = models.CharField(max_length=128)
     objects = OrderETNAManager() # ability to filter based on this, property cannot be used to filter
-
-    ticker = models.ForeignKey('Ticker', related_name='OrderETNA', on_delete=PROTECT)
+    Broker = models.CharField(max_length=128) # contains identification of broker
+    ticker = models.ForeignKey('Ticker', related_name='Order', on_delete=PROTECT)
     fill_info = models.IntegerField(choices=FillInfo.choices(), default=FillInfo.UNFILLED.value)
     # also has field order_fills from ApexFill model
 
@@ -2220,16 +2272,19 @@ class OrderETNA(models.Model):
     def __str__(self):
         return "[{}] - {}".format(self.id, self.Status)
 
-
-class ExecutionApexFill(models.Model):
+    def setFills(self, FillPrice, FillQuantity):
+        self.FillPrice = FillPrice
+        self.FillQuantity = FillQuantity
+        fill_info = Order.FillInfo.FILLED if self.FillQuantity == self.Quantity else (Order.FillInfo.UNFILLED if self.FillQuantity == 0 else Order.FillInfo.PARTIALY_FILLED)
+class ExecutionFill(models.Model):
     # one apex_fill may contribute to many ExecutionApexFills and many Executions
-    apex_fill = models.ForeignKey('ApexFill', related_name='execution_apex_fill')
-    execution = models.OneToOneField('Execution', related_name='execution_apex_fill')
+    fill = models.ForeignKey('Fill', related_name='execution_fill')
+    execution = models.OneToOneField('Execution', related_name='execution_fill')
 
 
-class ApexFill(models.Model):
+class Fill(models.Model):
     #apex_order = models.ForeignKey('ApexOrder', related_name='apex_fills')
-    etna_order = models.ForeignKey('OrderETNA', related_name='etna_fills', default=None)
+    order = models.ForeignKey('Order', related_name='fills', default=None)
     volume = models.FloatField(help_text="Will be negative for a sell.")
     price = models.FloatField(help_text="Price for the fill.")
     executed = models.DateTimeField(help_text='The time the trade was executed.')
@@ -2239,7 +2294,7 @@ class ApexFill(models.Model):
 class MarketOrderRequestAPEX(models.Model):
     ticker = models.ForeignKey('Ticker', related_name='morsAPEX', on_delete=PROTECT)
     #apex_order = models.ForeignKey('ApexOrder', related_name='morsAPEX')
-    etna_order = models.ForeignKey('OrderETNA', related_name='morsAPEX', default=None)
+    etna_order = models.ForeignKey('Order', related_name='morsAPEX', default=None)
     market_order_request = models.ForeignKey('MarketOrderRequest', related_name='morsAPEX')
 
     class Meta:

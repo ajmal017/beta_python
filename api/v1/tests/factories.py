@@ -14,7 +14,7 @@ from main.models import User, ExternalAsset, PortfolioSet, Firm, Advisor, \
                         GoalMetric, AssetFeatureValue, AssetFeature, \
                         MarkowitzScale, Supervisor, AuthorisedRepresentative, PositionLot, ExecutionDistribution,\
                         InvestmentCycleObservation, InvestmentCyclePrediction, ExecutionRequest, MarketOrderRequest, \
-    ApexFill, ExecutionApexFill, Execution, RecurringTransaction, AccountGroup, Platform, OrderETNA, Portfolio, PortfolioItem
+    Fill, ExecutionFill, Execution, RecurringTransaction, AccountGroup, Platform, Order, Portfolio, PortfolioItem
 from retiresmartz.models import RetirementPlan, RetirementAdvice, RetirementPlanAccount
 from main.models import Region as MainRegion
 from client.models import Client, ClientAccount, RiskProfileGroup, \
@@ -520,14 +520,14 @@ class MarketOrderRequestFactory(factory.django.DjangoModelFactory):
 
 class OrderETNAFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = OrderETNA
+        model = Order
 
     ticker = factory.SubFactory(TickerFactory)
 
 
-class ApexFillFactory(factory.django.DjangoModelFactory):
+class FillFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = ApexFill
+        model = Fill
 
     etna_order = factory.SubFactory(OrderETNAFactory)
     volume = factory.SelfAttribute('apex_order.volume')
@@ -548,9 +548,9 @@ class ExecutionFactory(factory.django.DjangoModelFactory):
 
 class ExecutionApexFillFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = ExecutionApexFill
+        model = ExecutionFill
 
-    apex_fill = factory.SubFactory(ApexFillFactory)
+    apex_fill = factory.SubFactory(FillFactory)
     execution = factory.SubFactory(ExecutionFactory)
 
 
