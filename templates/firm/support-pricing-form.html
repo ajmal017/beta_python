@@ -7,7 +7,7 @@
     <td>
       {{ type|capfirst }}
     </td>
-    <td>
+    <td class="form-group{% if form.errors %} has-error{% endif %}">
       {% if form.instance.id %}
         {{ form.instance.person }}
         <input type="hidden" name="{{ form.person.html_name }}" value="{{ form.instance.person.id }}">
