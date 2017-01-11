@@ -1,7 +1,7 @@
 /* global body padding */
 body {
-  padding-top: 0px;
-  padding-bottom: 20px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 /* global spacing overrides */
@@ -137,6 +137,13 @@ table thead .active .icon-sort {
   text-transform: uppercase;
   margin-bottom: 30px;
 }
+.legal h2:not(:first-child) {
+    margin-top: 40px;
+}
+.legal h3 {
+  font-size: 21px;
+  text-decoration: underline;
+}
 .legal p {
   font-size: 18px;
   margin-bottom: 30px;
@@ -144,7 +151,13 @@ table thead .active .icon-sort {
 .legal .table {
   margin-bottom: 30px;
 }
-
+.legal ul {
+  margin-bottom: 30px;
+}
+.main-footer .disclosure p {
+  font-size: 14px;
+  margin-bottom: 20px;
+}
 #id_start {
   border-radius: 0 !important;
   border-top-left-radius: 3px !important;

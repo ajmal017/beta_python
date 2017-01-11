@@ -107,8 +107,8 @@ urlpatterns = patterns(
     #url(r'^client/2.0/api/',  include(router.urls)),
 
     # Legal Related
-    url('^privacy-policy/$', TemplateView.as_view(template_name="legal/privacy_policy.html"), name='privacy_policy'),
-    url('^online-privacy/$', TemplateView.as_view(template_name="legal/online_privacy.html"), name='online_privacy'),
+    url('^privacy-notice/$', TemplateView.as_view(template_name="legal/privacy_notice.html"), name='privacy_notice'),
+    url('^terms-of-use/$', TemplateView.as_view(template_name="legal/terms_of_use.html"), name='terms_of_use'),
     url('^legal/$', TemplateView.as_view(template_name="legal/legal.html"), name='legal'),
     url('^product-brochure/$', TemplateView.as_view(template_name="legal/product_brochure.html"), name='product-brochure'),
 )
