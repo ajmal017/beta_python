@@ -493,7 +493,7 @@ class FirmAnalyticsMixin(object):
 
         positions_by_allocation = qs_positions \
             .annotate(
-                name=F('execution_distribution__execution__asset__asset_class__investment_type__portfolio_sets__name'),
+                name=F('execution_distribution__execution__asset__asset_class__portfolio_sets__name'),
             ).values('name') \
             .annotate(value=Coalesce(Sum(F('quantity') * F('execution_distribution__execution__asset__unit_price')), 0))
 
