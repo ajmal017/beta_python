@@ -106,7 +106,7 @@ class CustomEndFilter(filters.DateFilter):
         return qs
 
 class UserGroupFilter(filters.ChoiceFilter):
-    _GROUPS_DEFAULT = ('Advisors', 'Clients') # 'Supervisors'
+    _GROUPS_DEFAULT = 'Advisors', 'Clients', 'Supervisors'
 
     def __init__(self, groups=None, *args, **kwargs):
         # @group: list of groups (by name)
