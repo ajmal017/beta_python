@@ -15,7 +15,7 @@ from main.event import Event
 from .factories import AccountTypeRiskProfileGroupFactory, AddressFactory, \
     ClientAccountFactory, ClientFactory, ExternalAssetFactory, GoalFactory, \
     GroupFactory, RegionFactory, RiskProfileGroupFactory, UserFactory, \
-    SecurityAnswerFactory
+    SecurityAnswerFactory, RiskProfileAnswerFactory
 from main.tests.fixture import Fixture1
 
 
@@ -739,3 +739,21 @@ class ClientTests(APITestCase):
         self.assertEqual(response.status_code,status.HTTP_200_OK)
         self.assertContains(response,'data')
 
+    def test_update_risk_profile_responses(self):
+        url = reverse('api:v1:client-risk-profile-responses', args=[self.betasmartz_client.id])
+        self.client.force_authenticate(self.user)
+        risk_profile_response = RiskProfileAnswerFactory.create()
+        data=[risk_profile_response.id]
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code,status.HTTP_200_OK)
+        self.assertEqual(response.data, data)
+
+        other_advisor = AdvisorFactory.create()
+        self.client.force_authenticate(other_advisor.user)
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code,status.HTTP_403_FORBIDDEN)
+
+        other_client = ClientFactory.create()
+        self.client.force_authenticate(other_client.user)
+        response = self.client.put(url, data)
+        self.assertEqual(response.status_code,status.HTTP_403_FORBIDDEN)

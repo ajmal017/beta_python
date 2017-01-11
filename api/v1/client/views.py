@@ -9,8 +9,8 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import detail_route
 from api.v1.client.serializers import EmailNotificationsSerializer, \
-    PersonalInfoSerializer
-from api.v1.permissions import IsClient
+    PersonalInfoSerializer, RiskProfileResponsesSerializer
+from api.v1.permissions import IsClient, IsAdvisorOrClient
 from api.v1.views import ApiViewMixin, ReadOnlyApiViewMixin
 from main.models import ExternalAsset, User, Goal
 from user.models import SecurityAnswer
@@ -280,6 +280,16 @@ class ClientViewSet(ApiViewMixin,
         client = self.get_object()
         return activity.get(request, client)
 
+    @detail_route(methods=['put'], permission_classes=[IsAdvisorOrClient,], url_path='risk-profile-responses')
+    def risk_profile_responses(self, request, pk=None, **kwargs):
+        instance = Client.objects.get(pk=pk)
+        user = SupportRequest.target_user(request)
+        if (user.is_advisor and instance.advisor != user.advisor) or (user.is_client and instance != user.client):
+            raise exceptions.PermissionDenied("You do not have permission to update risk profile responses")
+        serializer = RiskProfileResponsesSerializer(instance, data={'risk_profile_responses':request.data})
+        serializer.is_valid(raise_exception=True)
+        client = serializer.save()
+        return Response(serializer.data['risk_profile_responses'])
 
 class InvitesView(ApiViewMixin, views.APIView):
     permission_classes = []
