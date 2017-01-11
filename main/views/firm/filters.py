@@ -13,7 +13,6 @@ from main.models import Advisor, Goal, GoalMetric, User
 from client.models import Client
 
 ATTRS_ONCHANGE= {'onchange': 'this.form.submit();'}
-ATTRS_PERIOD_CHANGE = {'onchange': 'handlePeriodChange(this);'}
 
 logger = logging.getLogger('main.views.firm.filters')
 
@@ -192,7 +191,7 @@ class FirmActivityFilterSet(filters.FilterSet):
 
     group = UserGroupFilter(widget=forms.Select(attrs=ATTRS_ONCHANGE),
         groups=('Advisors', 'Clients', 'Supervisors'))
-    period = PeriodFilter(widget=forms.Select(attrs=ATTRS_PERIOD_CHANGE))
+    period = PeriodFilter(widget=forms.Select())
     ytd = YTDPeriodFilter(widget=forms.TextInput())
     start = CustomStartFilter(widget=forms.TextInput())
     end = CustomEndFilter(widget=forms.TextInput())
