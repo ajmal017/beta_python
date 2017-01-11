@@ -8,9 +8,9 @@ from ib.ext.TickType import TickType
 from ib.lib.logger import logger as basicConfig
 from ib.opt import ibConnection, message
 
+from execution.Obsolete.ibroker import IBroker
+from execution.Obsolete.interactive_brokers.order import Order, OrderStatus
 from execution.account_groups.account_allocations import Execution, AccountAllocations
-from execution.broker.ibroker import IBroker
-from execution.broker.interactive_brokers.order.order import Order, OrderStatus
 from execution.data_structures.market_depth import MarketDepth
 
 very_short_sleep = partial(sleep, 0.01)

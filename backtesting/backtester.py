@@ -7,10 +7,10 @@ from portfolios.providers.execution.django import ExecutionProviderDjango
 from main.management.commands.rebalance import rebalance
 from portfolios.calculation import build_instruments, \
     calculate_portfolio, calculate_portfolios, get_instruments
-from api.v1.tests.factories import MarkowitzScaleFactory, ApexFillFactory
-from execution.end_of_day import create_apex_orders, process_apex_fills, send_etna_order, \
-    mark_etna_order_as_complete, approve_mor
-from main.models import OrderETNA, Ticker
+from api.v1.tests.factories import MarkowitzScaleFactory, FillFactory
+from execution.end_of_day import create_orders, process_fills, send_order, \
+    mark_order_as_complete, approve_mor
+from main.models import Order, Ticker
 
 
 class GetETFTickers(object):
@@ -69,17 +69,17 @@ class Backtester(object):
 
     def execute(self, mor):
         approve_mor(mor)
-        create_apex_orders()
-        orders_etna = OrderETNA.objects.is_not_complete()
+        create_orders()
+        orders_etna = Order.objects.is_not_complete()
         for order in orders_etna:
-            send_etna_order(order)
-            mark_etna_order_as_complete(order)
+            send_order(order)
+            mark_order_as_complete(order)
 
             ticker = Ticker.objects.get(id=order.ticker.id)
             price = ticker.daily_prices.order_by('-date').first().price
 
-            ApexFillFactory.create(volume=order.FillQuantity,price=price,etna_order=order)
-        process_apex_fills()
+            FillFactory.create(volume=order.FillQuantity, price=price, etna_order=order)
+        process_fills()
 
     def calculate_performance(self, execution_provider):
         return execution_provider.calculate_portfolio_returns()

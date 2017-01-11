@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from execution.models import ETNALogin, LoginResult, AccountId, SecurityETNA
-from main.models import OrderETNA
+from execution.models import ETNALogin, LoginResult, AccountId, Security
+from main.models import Order
 
 
 class ResultSerializer(serializers.ModelSerializer):
@@ -33,11 +33,11 @@ class AccountIdSerializer(serializers.ModelSerializer):
 
 class SecurityETNASerializer(serializers.ModelSerializer):
     class Meta:
-        model = SecurityETNA
+        model = Security
         fields = ('Description', 'Currency', 'Symbol', 'symbol_id', 'Price')
 
 
 class OrderETNASerializer(serializers.ModelSerializer):
     class Meta:
-        model = OrderETNA
+        model = Order
         exclude = ('id',)

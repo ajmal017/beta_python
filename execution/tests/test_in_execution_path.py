@@ -2,11 +2,11 @@ from django.db.models import Sum
 from django.test import TestCase
 
 from api.v1.tests.factories import ExecutionRequestFactory, MarketOrderRequestFactory, \
-    ClientAccountFactory, GoalFactory, TickerFactory, ApexFillFactory
+    ClientAccountFactory, GoalFactory, TickerFactory, FillFactory
 from execution.end_of_day import *
-from execution.end_of_day import create_apex_orders, process_apex_fills, send_etna_order, \
-    mark_etna_order_as_complete
-from main.models import ApexFill
+from execution.end_of_day import create_orders, process_fills, send_order, \
+    mark_order_as_complete
+from main.models import Fill
 
 
 class BaseTest(TestCase):
@@ -28,14 +28,14 @@ class BaseTest(TestCase):
         orderA = insert_order_ETNA(price=self.ticker1.unit_price, quantity=100, ticker=self.ticker1)
         orderB = insert_order_ETNA(price=self.ticker1.unit_price, quantity=200, ticker=self.ticker2)
 
-        ApexFillFactory.create(volume=100, price=1, etna_order=orderA)
-        ApexFillFactory.create(volume=100, price=1, etna_order=orderB)
-        ApexFillFactory.create(volume=100, price=1, etna_order=orderB)
+        FillFactory.create(volume=100, price=1, order=orderA)
+        FillFactory.create(volume=100, price=1, order=orderB)
+        FillFactory.create(volume=100, price=1, order=orderB)
 
-        fills = ApexFill.objects.filter(etna_order_id=orderB).aggregate(sum=Sum('volume'))
+        fills = Fill.objects.filter(order_id=orderB).aggregate(sum=Sum('volume'))
         self.assertTrue(fills['sum'] == 200)
 
-        fills = ApexFill.objects.filter(etna_order_id=orderA).aggregate(sum=Sum('volume'))
+        fills = Fill.objects.filter(order_id=orderA).aggregate(sum=Sum('volume'))
         self.assertTrue(fills['sum'] == 100)
 
     def test_full_in_and_out_path1(self):
@@ -43,7 +43,7 @@ class BaseTest(TestCase):
         #out
         mor = MarketOrderRequestFactory.create(account=self.account1)
         er = ExecutionRequestFactory.create(goal=self.goal1, asset=self.ticker1, volume=100, order=mor)
-        create_apex_orders()
+        create_orders()
 
         #in
         fill1_volume = 50
@@ -51,14 +51,14 @@ class BaseTest(TestCase):
         fill2_volume = 50
         fill2_price = 15
 
-        order1_etna = OrderETNA.objects.get(ticker=self.ticker1)
-        send_etna_order(order1_etna)
-        mark_etna_order_as_complete(order1_etna)
+        order1_etna = Order.objects.get(ticker=self.ticker1)
+        send_order(order1_etna)
+        mark_order_as_complete(order1_etna)
 
-        ApexFillFactory.create(volume=fill1_volume, price=fill1_price, etna_order=order1_etna)
-        ApexFillFactory.create(volume=fill2_volume, price=fill2_price, etna_order=order1_etna)
+        FillFactory.create(volume=fill1_volume, price=fill1_price, order=order1_etna)
+        FillFactory.create(volume=fill2_volume, price=fill2_price, order=order1_etna)
 
-        process_apex_fills()
+        process_fills()
 
         sum_volume = Execution.objects.filter(distributions__execution_request__goal=self.goal1)\
             .aggregate(sum=Sum('volume'))
@@ -78,7 +78,7 @@ class BaseTest(TestCase):
         mor3 = MarketOrderRequestFactory.create(account=self.account3)
         ExecutionRequestFactory.create(goal=self.goal3, asset=self.ticker2, volume=25, order=mor3)
 
-        create_apex_orders()
+        create_orders()
 
         #in
         fill1a_volume = 50
@@ -86,14 +86,14 @@ class BaseTest(TestCase):
         fill1b_volume = 50
         fill1b_price = 15
 
-        order1_etna = OrderETNA.objects.get(ticker=self.ticker1)
-        send_etna_order(order1_etna)
-        mark_etna_order_as_complete(order1_etna)
+        order1_etna = Order.objects.get(ticker=self.ticker1)
+        send_order(order1_etna)
+        mark_order_as_complete(order1_etna)
 
-        ApexFillFactory.create(volume=fill1a_volume, price=fill1a_price, etna_order=order1_etna)
-        ApexFillFactory.create(volume=fill1b_volume, price=fill1b_price, etna_order=order1_etna)
+        FillFactory.create(volume=fill1a_volume, price=fill1a_price, order=order1_etna)
+        FillFactory.create(volume=fill1b_volume, price=fill1b_price, order=order1_etna)
 
-        process_apex_fills()
+        process_fills()
 
         sum_volume = Execution.objects.filter(distributions__execution_request__goal=self.goal1)\
             .aggregate(sum=Sum('volume'))
@@ -102,13 +102,13 @@ class BaseTest(TestCase):
         fill2_3_volume = 50
         fill2_3_price = 13
 
-        order2_3_etna = OrderETNA.objects.get(ticker=self.ticker2)
-        send_etna_order(order2_3_etna)
-        mark_etna_order_as_complete(order2_3_etna)
+        order2_3_etna = Order.objects.get(ticker=self.ticker2)
+        send_order(order2_3_etna)
+        mark_order_as_complete(order2_3_etna)
 
-        ApexFillFactory.create(volume=fill2_3_volume, price=fill2_3_price, etna_order=order2_3_etna)
+        FillFactory.create(volume=fill2_3_volume, price=fill2_3_price, order=order2_3_etna)
 
-        process_apex_fills()
+        process_fills()
         sum_volume = Execution.objects.filter(distributions__execution_request__asset=self.ticker2)\
             .aggregate(sum=Sum('volume'))
         self.assertTrue(sum_volume['sum'] == 50)
@@ -118,7 +118,7 @@ class BaseTest(TestCase):
         mor1 = MarketOrderRequestFactory.create(account=self.account1)
         ExecutionRequestFactory.create(goal=self.goal1, asset=self.ticker1, volume=101, order=mor1)
 
-        create_apex_orders()
+        create_orders()
 
         #in
         fill1a_volume = 50
@@ -126,28 +126,28 @@ class BaseTest(TestCase):
         fill1b_volume = 50
         fill1b_price = 15
 
-        order1_etna = OrderETNA.objects.get(ticker=self.ticker1)
-        send_etna_order(order1_etna)
-        mark_etna_order_as_complete(order1_etna)
+        order1_etna = Order.objects.get(ticker=self.ticker1)
+        send_order(order1_etna)
+        mark_order_as_complete(order1_etna)
 
-        ApexFillFactory.create(volume=fill1a_volume, price=fill1a_price, etna_order=order1_etna)
-        ApexFillFactory.create(volume=fill1b_volume, price=fill1b_price, etna_order=order1_etna)
+        FillFactory.create(volume=fill1a_volume, price=fill1a_price, order=order1_etna)
+        FillFactory.create(volume=fill1b_volume, price=fill1b_price, order=order1_etna)
 
-        process_apex_fills()
-        order1 = OrderETNA.objects.get(ticker=self.ticker1)
-        self.assertTrue(order1.fill_info == OrderETNA.FillInfo.PARTIALY_FILLED.value)
+        process_fills()
+        order1 = Order.objects.get(ticker=self.ticker1)
+        self.assertTrue(order1.fill_info == Order.FillInfo.PARTIALY_FILLED.value)
 
         mor2 = MarketOrderRequestFactory.create(account=self.account1)
         ExecutionRequestFactory.create(goal=self.goal1, asset=self.ticker1, volume=-60, order=mor2)
-        create_apex_orders()
+        create_orders()
         fill2_volume = -60
         fill2_price = 10
 
-        order2_etna = OrderETNA.objects.get(ticker=self.ticker1, Status=OrderETNA.StatusChoice.New.value)
-        send_etna_order(order2_etna)
-        mark_etna_order_as_complete(order2_etna)
+        order2_etna = Order.objects.get(ticker=self.ticker1, Status=Order.StatusChoice.New.value)
+        send_order(order2_etna)
+        mark_order_as_complete(order2_etna)
 
-        ApexFillFactory.create(volume=fill2_volume, price=fill2_price, etna_order=order2_etna)
-        process_apex_fills()
-        order2 = OrderETNA.objects.get(id=order2_etna.id)
-        self.assertTrue(order2.fill_info == OrderETNA.FillInfo.FILLED.value)
+        FillFactory.create(volume=fill2_volume, price=fill2_price, order=order2_etna)
+        process_fills()
+        order2 = Order.objects.get(id=order2_etna.id)
+        self.assertTrue(order2.fill_info == Order.FillInfo.FILLED.value)

@@ -14,7 +14,7 @@ from main.models import User, ExternalAsset, PortfolioSet, Firm, Advisor, \
                         GoalMetric, AssetFeatureValue, AssetFeature, AssetFeePlan, \
                         MarkowitzScale, Supervisor, AuthorisedRepresentative, PositionLot, ExecutionDistribution,\
                         InvestmentCycleObservation, InvestmentCyclePrediction, ExecutionRequest, MarketOrderRequest, \
-    ApexFill, ExecutionApexFill, Execution, RecurringTransaction, AccountGroup, Platform, OrderETNA, Portfolio, PortfolioItem
+    Fill, ExecutionFill, Execution, RecurringTransaction, AccountGroup, Platform, Order, Portfolio, PortfolioItem
 from retiresmartz.models import RetirementPlan, RetirementAdvice, RetirementPlanAccount
 from main.models import Region as MainRegion
 from client.models import Client, ClientAccount, RiskProfileGroup, \
@@ -527,18 +527,18 @@ class MarketOrderRequestFactory(factory.django.DjangoModelFactory):
     account = factory.SubFactory(ClientAccountFactory)
 
 
-class OrderETNAFactory(factory.django.DjangoModelFactory):
+class OrderFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = OrderETNA
+        model = Order
 
     ticker = factory.SubFactory(TickerFactory)
 
 
-class ApexFillFactory(factory.django.DjangoModelFactory):
+class FillFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = ApexFill
+        model = Fill
 
-    etna_order = factory.SubFactory(OrderETNAFactory)
+    order = factory.SubFactory(OrderFactory)
     volume = factory.SelfAttribute('apex_order.volume')
     price = factory.LazyAttribute(lambda n: float(random.randrange(100) / 10))
     executed = factory.Sequence(lambda n: (datetime.today() - relativedelta(days=n + 5)).date())
@@ -557,9 +557,9 @@ class ExecutionFactory(factory.django.DjangoModelFactory):
 
 class ExecutionApexFillFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = ExecutionApexFill
+        model = ExecutionFill
 
-    apex_fill = factory.SubFactory(ApexFillFactory)
+    apex_fill = factory.SubFactory(FillFactory)
     execution = factory.SubFactory(ExecutionFactory)
 
 

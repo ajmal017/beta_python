@@ -20,6 +20,12 @@ ETNA_ENDPOINT_URL = 'https://api.etnatrader.com/v0/' + ETNA_X_API_ROUTING
 ETNA_LOGIN = 'les'
 ETNA_PASSWORD = 'B0ngyDung'
 ETNA_ACCOUNT_ID = 2337
+# Interactive brokers connection settings
+IB_PORT = 7496
+IB_HOST = 'localhost'
+IB_CLIENT_ID = 0
+IB_PROVIDER_CLIENT_ID = 1
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
