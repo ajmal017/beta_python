@@ -27,8 +27,8 @@ import json
 from retiresmartz import advice_responses
 from main.event import Event
 from api.v1.utils import activity
-from main import quovo
 from django.template.loader import render_to_string
+from main import quovo, plaid
 
 logger = logging.getLogger('api.v1.client.views')
 
@@ -443,21 +443,52 @@ class ClientResendInviteView(SingleObjectMixin, views.APIView):
         return Response('ok', status=status.HTTP_200_OK)
 
 
-class ExternalAccountsView(ReadOnlyApiViewMixin, views.APIView):
-    permission_classes = [IsAuthenticated, ]
-    renderer_classes = (JSONRenderer, )
-
-    def get(self, request, *args, **kwargs):
-        data = quovo.get_user_accounts(request, request.user)
-
-        return Response({'data':data})
-
-
-class IframeTokenView(ReadOnlyApiViewMixin, views.APIView):
+class QuovoGetIframeTokenView(ReadOnlyApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
 
     def get(self, request, *args, **kwargs):
         token = quovo.get_iframe_token(request, request.user)
         data = {"token": token}
-        return Response({'data':data})
+        return Response({"data": data})
+
+
+class QuovoGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer, )
+
+    def get(self, request, *args, **kwargs):
+        data = quovo.get_accounts(request, request.user)
+        return Response({"data": data})
+
+
+# Uncomment the lines below and the "authentication_classes" lines
+# in each of the Plaid classes to test without CSRF authentication.
+# The code below is from
+# http://stackoverflow.com/questions/30871033/django-rest-framework-remove-csrf
+#
+#from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+#class CsrfExemptSessionAuthentication(SessionAuthentication):
+#    def enforce_csrf(self, request):
+#        return  # To not perform the csrf check
+
+class PlaidCreateAccessTokenView(ApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer,)
+#    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+
+    def post(self, request, *args, **kwargs):
+        public_token = request.POST["public_token"]
+        success = plaid.create_access_token(request.user, public_token)
+        data = {"success": success}
+        return Response({"data": data})
+
+
+class PlaidGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer,)
+#    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+
+    def get(self, request, *args, **kwargs):
+        data = plaid.get_accounts(request.user)
+        return Response({"data": data})

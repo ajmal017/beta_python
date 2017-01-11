@@ -103,10 +103,12 @@ def get_iframe_token(req, django_user):
         if resp.status_code == 201:
             return resp.json()["iframe_token"]["token"]
 
-    # Log this and punt
+    logger.error("unable to create Quovo user for user {0}".format(
+        django_user
+    ))
     return None
 
-def get_user_accounts(req, django_user):
+def get_accounts(req, django_user):
     username = django_user.email
     # Test if this user already exists on Quovo
     user = _user_exists(req, username)
@@ -118,4 +120,7 @@ def get_user_accounts(req, django_user):
             return resp.json()["accounts"]
 
     # The user doesn't exist
+    logger.error("There is no Quovo account for user {0}".format(
+        django_user
+    ))
     return None

@@ -2901,6 +2901,11 @@ class PricingPlanClient(PricingPlanPersonBase):
                                   related_name='pricing_plan')
 
 
+class PlaidUser(models.Model):
+    user = models.OneToOneField(User, related_name="plaid_user")
+    access_token = models.CharField(max_length=255)
+
+
 # --------------------------------- Signals -----------------------------------
 
 
