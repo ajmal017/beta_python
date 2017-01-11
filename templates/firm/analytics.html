@@ -45,7 +45,18 @@
         {% for item in risks %}
         <div onclick="onChangeRisk(event, {{ item.level }})" class="statcard statcard-analytics {% if item.level|stringformat:'i' in filter.form.risk.value %}statcard-primary{% else %}statcard-default{% endif %} {% if not forloop.first %}m-t{% endif %}">
           <div class="p-a">
-            <span class="statcard-desc">{{ item.name }} <span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="Fill me with your feelings"></span></span>
+            <span class="statcard-desc">{{ item.name }} <span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="
+            {% if item.name == 'Protected' %}
+              Clients that value protecting principal over seeking appreciation. This type of client is comfortable accepting lower returns for a higher degree of liquidity and/or stability. Typically, a Protected client primarily seeks to minimize risk and loss of principal.
+            {% elif item.name == 'Semi-protected' %}
+              Clients that value principal preservation, but are comfortable accepting a small degree of risk and volatility to seek some degree of appreciation. This type of client desires greater liquidity, is willing to accept lower returns, and is willing to accept minimal losses.
+            {% elif item.name == 'Moderate' %}
+              Clients that value reducing risks and enhancing returns equally. This type of client is willing to accept modest risks to seek higher long-term returns. A Moderate client may endure a short-term loss of principal and lower degree of liquidity in exchange for long-term appreciation.
+            {% elif item.name == 'Semi-dynamic' %}
+              Clients that value higher long-term returns and are willing to accept considerable risk. This type of client is comfortable with short-term fluctuations in exchange for seeking long-term appreciation. A Semi-Dynamic investor is willing to endure larger short-term losses of principal in exchange for the potential of higher long-term returns. Liquidity is a secondary concern to a Semi-Dynamic investor.
+            {% elif item.name == 'Dynamic' %}
+              Clients that value maximizing returns and are willing to accept substantial risk. This type of client believes maximizing long-term returns is more important than protecting principal. A Dynamic client may endure extensive volatility and significant losses. Liquidity is generally not a concern to these clients.
+            {% endif %}"></span></span>
             <h4>
               {{ item.value|currency }}
               <small>{{ item.value_percent|percentage100 }}</small>
@@ -73,22 +84,28 @@
             <table class="table table-borderless">
               <tbody>
                 <tr>
-                  <td width="33.3%" class="text-center">
+                  <td width="25%" class="text-center">
                     <canvas id="doughnutChartA" width="100" height="100"></canvas>
                     <div>
-                      Asset&nbsp;Class&nbsp;<span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="Fill me with your feelings"></span>
+                      Asset&nbsp;Class&nbsp;<span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="The different asset classes that clients have selected"></span>
                     </div>
                   </td>
-                  <td width="33.3%" class="text-center">
+                  <td width="25%" class="text-center">
                     <canvas id="doughnutChartB" width="100" height="100"></canvas>
                     <div>
-                      Region&nbsp;<span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="Fill me with your feelings"></span>
+                      Region&nbsp;<span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="The geographic regions that clients' investments are focussed on"></span>
                     </div>
                   </td>
-                  <td width="33.3%" class="text-center">
+                  <td width="25%" class="text-center">
                     <canvas id="doughnutChartC" width="100" height="100"></canvas>
                     <div>
-                      Investment Type&nbsp;<span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="Fill me with your feelings"></span>
+                      Investment Type&nbsp;<span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="A client's allocation to stocks and bonds"></span>
+                    </div>
+                  </td>
+                  <td width="25%" class="text-center">
+                    <canvas id="doughnutChartD" width="100" height="100"></canvas>
+                    <div>
+                      Portfolio&nbsp;<span class="icon icon-help-with-circle text-muted" data-toggle="tooltip" data-placement="right" title="The asset portfolio that clients have selected"></span>
                     </div>
                   </td>
                 </tr>

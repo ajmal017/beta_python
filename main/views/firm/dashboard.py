@@ -491,10 +491,17 @@ class FirmAnalyticsMixin(object):
             .values('name') \
             .annotate(value=Coalesce(Sum(F('quantity') * F('execution_distribution__execution__asset__unit_price')), 0))
 
+        positions_by_allocation = qs_positions \
+            .annotate(
+                name=F('execution_distribution__execution__asset__asset_class__portfolio_sets__name'),
+            ).values('name') \
+            .annotate(value=Coalesce(Sum(F('quantity') * F('execution_distribution__execution__asset__unit_price')), 0))
+
         data = {
             'asset_class': positions_by_asset_class,
             'region': positions_by_region,
             'investment_type': positions_by_investment_type,
+            'allocation': positions_by_allocation,
         }
         return data
 
