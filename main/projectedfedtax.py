@@ -1,8 +1,8 @@
 import pdb
 import pandas as pd
 import numpy as np
-from main import taxsheet
-from main import testtaxsheet as tst_tx
+import taxsheet
+import testtaxsheet as tst_tx
 
 class TaxFederal(object):
     '''
@@ -63,15 +63,15 @@ class TaxFederal(object):
                              'Married_Fil_Sep_Live_Apart':  6300. }
 
 
-    def get_federal_tax(self, income, inflation, tax_user_type):
+    def get_federal_tax(self, inflation, income, tax_user):
         '''
         returns federal tax for given income, inflation amd tax user type 
         '''
         # Names could be improved ... am not familiar with the correct tax terminology
-        self.tax_engine['Is_Greater_Than'] = np.where(income > self.tax_engine['Single']  * (1 + inflation), 1, 0)
-        self.tax_engine['Excess'] = income - self.tax_engine[tax_user_type]  * (1 + inflation)
-        self.tax_engine['Bracket_Component'] = self.tax_engine['Bracket_Rate_Differential'] * self.tax_engine['Excess'] * self.tax_engine['Is_Greater_Than']
-        result = self.tax_engine['Bracket_Component'].sum()
+        self.tax_engine['Is_Greater_Than_' + tax_user] = np.where(float(income) > (self.tax_engine[tax_user]  * (1 + inflation)), 1, 0)
+        self.tax_engine['Excess_' + tax_user] = income - self.tax_engine[tax_user]  * (1 + inflation)
+        self.tax_engine['Bracket_Component_' + tax_user] = self.tax_engine['Bracket_Rate_Differential'] * self.tax_engine['Excess_' + tax_user] * self.tax_engine['Is_Greater_Than_' + tax_user]
+        result = self.tax_engine['Bracket_Component_' + tax_user].sum()
         return result
     
 
@@ -83,8 +83,11 @@ class TaxFederal(object):
         self.tax_projected['Ann_Avg_Inflation'] = self.inflation
         self.tax_projected['Annual_Taxable_Income'] = self.taxable_income
 
-        for i in range(len(self.tax_user_type)):
-            self.tax_projected[self.tax_user_type[i]] = [self.get_federal_tax(self.tax_projected['Annual_Taxable_Income'].iloc[j], self.tax_projected['Ann_Avg_Inflation'].iloc[j], self.tax_user_type[i]) for j in range(len(self.years))]
+        for user in self.tax_user_type:
+            self.tax_projected[user] = [self.get_federal_tax(self.tax_projected['Ann_Avg_Inflation'].iloc[j],
+                                                                           self.tax_projected['Annual_Taxable_Income'].iloc[j],
+                                                                           user) for j in range(len(self.years))]
+
         
 
 if __name__ == "__main__":

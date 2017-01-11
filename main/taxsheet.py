@@ -2,9 +2,9 @@ import pdb
 import math
 import pandas as pd
 import numpy as np
-from main import inflation
-from main import projectedfedtax as fedtax
-from main import testtaxsheet as tst_tx
+import inflation
+import projectedfedtax as fedtax
+import testtaxsheet as tst_tx
 
 from dateutil.relativedelta import relativedelta
 
@@ -82,8 +82,11 @@ class TaxUser(object):
         '''
         retirememt period
         '''
-        self.pre_retirement_end = math.ceil((self.desired_retirement_age - self.age) * 12)
-        self.retirement_start = self.pre_retirement_end + 1
+        self.pre_retirement_end = math.floor((self.desired_retirement_age - self.age) * 12)  # i.e. last period in which TaxUser is younger than desired retirement age
+                                                                                            # NB this period has index self.pre_retirement_end - 1
+                                                                                            
+        self.retirement_start = self.pre_retirement_end + 1                                 # i.e. first period in which TaxUser is older than desired retirement age
+                                                                                            # NB this period has index self.retirement_start - 1
 
         '''
         years
@@ -102,8 +105,8 @@ class TaxUser(object):
         period to retirement may not be a whole number of years.
         'remenant' = periods representing this 'gap'
         '''
-        self.remenant_periods = self.retirement_start - (12 * len(self.years_pre)) - 1 # 
-        self.remenant_start_index = (self.pre_retirement_years * 12) + 1 # i.e. we need the period AFTER the last pre-retirement period (so +1)
+        self.remenant_periods = self.pre_retirement_end - (12 * len(self.years_pre))   
+        self.remenant_start_index = (self.pre_retirement_years * 12) - 1 + 1 # i.e. we need the period AFTER the last pre-retirement period (so +1)
  
         '''
         rows
@@ -119,10 +122,12 @@ class TaxUser(object):
         '''
         data frame indices
         '''
-        self.dateind = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(0, self.total_rows)]
-        self.dateind_pre = [pd.Timestamp('today').date() + relativedelta(months=+i) for i in range(0, self.retirement_start)]
-        self.dateind_post = [self.dateind_pre[len(self.dateind_pre)-1] + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows - self.retirement_start)]
-
+        self.dateind = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows)]
+        self.dateind_pre = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.pre_retirement_end)]
+        self.dateind_post = [self.dateind_pre[len(self.dateind_pre)-1]
+                             + relativedelta(months=1)
+                             + relativedelta(months=+i) for i in range(self.total_rows - self.pre_retirement_end)]
+        
         '''
         data frame
         '''
@@ -155,8 +160,8 @@ class TaxUser(object):
         returns data frame column having 'real' (c.f. 'nominal') vales, where post retirement is calculated
         from other columns, and pre-retirement is the deflated retirement value
         '''
-        nominal_pre = [temp_df_column[self.retirement_start] for i in range(self.retirement_start)]
-        real_post = [temp_df_column[self.retirement_start + i] for i in range(self.total_rows - self.retirement_start)]
+        nominal_pre = [temp_df_column[self.pre_retirement_end - 1] for i in range(self.pre_retirement_end)]
+        real_post = [temp_df_column[self.retirement_start - 1 + i] for i in range(self.total_rows - self.pre_retirement_end)]
         result = self.maindf['Deflator'] * self.set_full_series(nominal_pre, real_post)
         return result
     
@@ -166,8 +171,8 @@ class TaxUser(object):
         returns data frame column having 'real' (c.f. 'nominal') values, where post retirement is calculated
         from other columns, and pre-retirement is set to zero
         '''
-        nominal_pre = [0. for i in range(self.retirement_start)]
-        real_post = [temp_df_column[self.retirement_start + i] for i in range(self.total_rows - self.retirement_start)]
+        nominal_pre = [0. for i in range(self.pre_retirement_end)]
+        real_post = [temp_df_column[self.retirement_start - 1 + i] for i in range(self.total_rows - self.pre_retirement_end)]
         result = self.set_full_series(nominal_pre, real_post)
         return result
     
@@ -177,8 +182,8 @@ class TaxUser(object):
         returns data frame column having 'real' (c.f. 'nominal') values, where pre retirement is calculated
         from other columns, and post-retirement is set to zero
         '''
-        nominal_pre = [temp_df_column[self.retirement_start] for i in range(self.retirement_start)]
-        real_post = [0. for i in range(self.total_rows - self.retirement_start)]
+        nominal_pre = [temp_df_column[self.pre_retirement_end - 1] for i in range(self.pre_retirement_end)]
+        real_post = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         result = self.set_full_series(nominal_pre, real_post)
         return result
 
@@ -210,17 +215,19 @@ class TaxUser(object):
 
         self.port_return = self.risk_profile_over_cpi/12.
 
-        self.pre_proj_inc_growth_monthly = [self.projected_income_growth/12. for i in range(self.retirement_start)]
-        self.post_proj_inc_growth_monthly = [0. for i in range(self.total_rows - self.retirement_start)]
+        self.pre_proj_inc_growth_monthly = [self.projected_income_growth/12. for i in range(self.pre_retirement_end)]
+        self.post_proj_inc_growth_monthly = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Proj_Inc_Growth_Monthly'] = self.set_full_series(self.pre_proj_inc_growth_monthly, self.post_proj_inc_growth_monthly)
 
         self.maindf['Proj_Inflation_Rate'] = [self.inflation_level[i]/12. for i in range(self.total_rows)]
-        self.pre_proj_inflation_rate = [self.inflation_level[i]/12. for i in range(self.retirement_start)] 
-        self.post_proj_inflation_rate = [self.inflation_level[self.retirement_start + i]/12. for i in range(self.total_rows - self.retirement_start)] 
+        self.pre_proj_inflation_rate = [self.inflation_level[i]/12. for i in range(self.pre_retirement_end)] 
+        self.post_proj_inflation_rate = [self.inflation_level[self.retirement_start + i]/12. for i in range(self.total_rows - self.pre_retirement_end)] 
 
         self.maindf['Portfolio_Return'] = self.maindf['Proj_Inflation_Rate'] + self.risk_profile_over_cpi/12.
-        self.pre_portfolio_return = [self.inflation_level[i]/12. + self.risk_profile_over_cpi/12. for i in range(self.retirement_start)]
-        self.post_portfolio_return = [self.inflation_level[self.retirement_start + i]/12. + self.risk_profile_over_cpi/12. for i in range(self.total_rows - self.retirement_start)]
+        self.pre_portfolio_return = [self.inflation_level[i]/12. + self.risk_profile_over_cpi/12. for i in range(self.pre_retirement_end)]
+        self.post_portfolio_return = [self.inflation_level[self.retirement_start
+                                                           + i]/12. + self.risk_profile_over_cpi/12.
+                                      for i in range(self.total_rows - self.pre_retirement_end)]
 
         self.maindf['Retire_Work_Inc_Daily_Rate'] = [116*(1+self.projected_income_growth/12.)**i for i in range(self.total_rows)]
 
@@ -228,19 +235,19 @@ class TaxUser(object):
         get the 'flators'
         '''
         
-        self.pre_deflator = [0. for i in range(self.retirement_start)]  
-        self.pre_deflator[self.retirement_start - 1] = 1. * (1 - self.pre_proj_inflation_rate[self.retirement_start -1])                                                                                            
-        for i in range (1, self.retirement_start - 1):
-            self.pre_deflator[self.retirement_start -1 - i] = self.pre_deflator[self.retirement_start -1 - i + 1] * (1 - self.pre_proj_inflation_rate[self.retirement_start -1 - i])                                                                                         
+        self.pre_deflator = [0. for i in range(self.pre_retirement_end)]
+        self.pre_deflator[self.pre_retirement_end - 1] = 1. * (1 - self.pre_proj_inflation_rate[self.pre_retirement_end - 1])                                                                                          
+        for i in range (1, self.pre_retirement_end):
+            self.pre_deflator[self.pre_retirement_end - 1 - i] = self.pre_deflator[self.pre_retirement_end - 1 - i + 1] * (1 - self.pre_proj_inflation_rate[self.pre_retirement_end - 1 - i])                                                                                         
 
-        self.post_inflator = [0. for i in range(self.total_rows - self.retirement_start)]
-        self.post_inflator[0] = 1.                                                                                           
-        for i in range (1, self.total_rows - self.retirement_start):
+        self.post_inflator = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_inflator[0] = 1. * (1 + self.post_proj_inflation_rate[0])
+        for i in range (1, self.total_rows - self.pre_retirement_end):
             self.post_inflator[i] = self.post_inflator[i - 1] * (1 + self.post_proj_inflation_rate[i])
-
-        self.maindf['Deflator'] = self.set_full_series(self.pre_deflator, [1. for i in range(self.total_rows - self.retirement_start)])     # for pre-retirement
-        self.maindf['Inflator'] = self.set_full_series([1. for i in range(self.retirement_start)], self.post_inflator)                      # for post-retirement
-        self.maindf['Flator'] = self.maindf['Deflator'] * self.maindf['Inflator']                                                           # deserves a pat on the back
+        
+        self.maindf['Deflator'] = self.set_full_series(self.pre_deflator, [1. for i in range(self.total_rows - self.pre_retirement_end)])     # for pre-retirement
+        self.maindf['Inflator'] = self.set_full_series([1. for i in range(self.pre_retirement_end)], self.post_inflator)                      # for post-retirement
+        self.maindf['Flator'] = self.maindf['Deflator'] * self.maindf['Inflator']                                                             # deserves a pat on the back
 
 
         # INCOME RELATED - WORKING PERIOD
@@ -251,6 +258,7 @@ class TaxUser(object):
         self.pre_df = pd.DataFrame(index=self.dateind_pre)
         self.pre_df['Inc_Growth_Monthly_Pre'] = self.maindf['Proj_Inc_Growth_Monthly'][0:self.pre_retirement_end]
         self.pre_df['Inc_Inflator_Pre'] = (1 + self.pre_df['Inc_Growth_Monthly_Pre']).cumprod()
+        
         '''
         get pre-retirement inflation flator
         '''
@@ -261,29 +269,29 @@ class TaxUser(object):
         '''
 
         self.pre_total_income = self.total_income/12. * self.pre_df['Inc_Inflator_Pre']
-        self.post_total_income  = [0. for i in range(self.total_rows - self.retirement_start)]
+        self.post_total_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Total_Income'] = self.set_full_series(self.pre_total_income, self.post_total_income)
         
         self.pre_other_income = self.other_income/12. * self.pre_df['Inf_Inflator_Pre']
-        self.post_other_income  = [0. for i in range(self.total_rows - self.retirement_start)]
+        self.post_other_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Other_Income'] = self.set_full_series(self.pre_other_income, self.post_other_income)                                
 
         self.maindf['Adj_Gross_Income'] = self.maindf['Total_Income'] + self.maindf['Other_Income']
         
         self.pre_fed_regular_tax = self.federal_regular_tax/12. * self.pre_df['Inf_Inflator_Pre']
-        self.post_fed_regular_tax  = [0. for i in range(self.total_rows - self.retirement_start)]
+        self.post_fed_regular_tax  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Fed_Regular_Tax'] = self.set_full_series(self.pre_fed_regular_tax, self.post_fed_regular_tax)
         
         self.maindf['Fed_Taxable_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax']
   
         self.pre_state_tax_after_credits = self.state_tax_after_credits/12. * self.pre_df['Inf_Inflator_Pre']      
-        self.post_state_tax_after_credits = [0. for i in range(self.total_rows - self.retirement_start)] 
+        self.post_state_tax_after_credits = [0. for i in range(self.total_rows - self.pre_retirement_end)] 
         self.maindf['State_Tax_After_Credits'] = self.set_full_series(self.pre_state_tax_after_credits, self.post_state_tax_after_credits)
             
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
         
         self.pre_fica = self.fica/12. * self.pre_df['Inf_Inflator_Pre']       
-        self.post_fica = [0. for i in range(self.total_rows - self.retirement_start)] 
+        self.post_fica = [0. for i in range(self.total_rows - self.pre_retirement_end)] 
         self.maindf['FICA'] = self.set_full_series(self.pre_fica, self.post_fica)
 
         self.maindf['Home_Value'] = self.house_value * (1+self.maindf['Proj_Inflation_Rate']).cumprod()
@@ -523,17 +531,17 @@ class TaxUser(object):
         for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
         ''' 
         self.starting_balance_401k = 50000
-        self.pre_401k_capital_growth, self.pre_401k_balance = self.get_capital_growth_and_balance_series(self.retirement_start, '401k', self.starting_balance_401k )        
+        self.pre_401k_capital_growth, self.pre_401k_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, '401k', self.starting_balance_401k )        
 
-        self.post_401k_balance = [self.pre_401k_balance[self.retirement_start - 1] for i in range(self.total_rows - self.retirement_start)]
-        self.post_401k_capital_growth = [0. for i in range(self.total_rows - self.retirement_start)]
-        self.post_total_tax_distrib = [0. for i in range(self.total_rows - self.retirement_start)]
+        self.post_401k_balance = [self.pre_401k_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_401k_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_total_tax_distrib = [0. for i in range(self.total_rows - self.pre_retirement_end)]
                 
-        for i in range(1, self.total_rows - self.retirement_start): # **** NEED to add in 'total of taxable distribution'
+        for i in range(1, self.total_rows - self.pre_retirement_end): # **** NEED to add in 'total of taxable distribution'
             self.post_401k_capital_growth[i] = self.post_portfolio_return[i] * self.post_401k_balance[i - 1]
 
             if (self.contrib_rate_employee_401k + self.contrib_rate_employer_401k) * self.post_total_income[i] + self.post_401k_capital_growth[i] + self.post_401k_balance[i - 1] - self.post_total_tax_distrib[i - 1] > 0:
-                self.post_401k_balance[i] = (self.contrib_rate_employee_401k + self.contrib_rate_employer_401k) * self.post_total_income[i] + self.post_401k_capital_growth[i] + self.post_401k_balance[i - 1] - self.post_total_tax_distrib[i - 1]
+                self.post_401k_balance[i] = (self.contrib_rate_employee_401k + (self.contrib_rate_employer_401k) * self.post_total_income[i]) + self.post_401k_capital_growth[i] + self.post_401k_balance[i - 1] - self.post_total_tax_distrib[i - 1]
             else:
                 self.post_401k_balance[i] = 0.
 
@@ -571,7 +579,7 @@ class TaxUser(object):
         # RETIREMENT PERIOD INCOME
 
         self.pre_des_ret_inc_pre_tax = self.retirement_lifestyle * self.maindf['Adj_Gross_Income'][0:self.pre_retirement_end]
-        self.post_des_ret_inc_pre_tax = [self.pre_des_ret_inc_pre_tax[len(self.pre_des_ret_inc_pre_tax) - 1] for i in range(self.total_rows - self.retirement_start)] 
+        self.post_des_ret_inc_pre_tax = [self.pre_des_ret_inc_pre_tax[len(self.pre_des_ret_inc_pre_tax) - 1] for i in range(self.total_rows - self.pre_retirement_end)] 
         self.maindf['Des_Ret_Inc_Pre_Tax_Post_Nominal'] = self.set_full_series(self.pre_des_ret_inc_pre_tax, self.post_des_ret_inc_pre_tax)
         self.maindf['Des_Ret_Inc_Pre_Tax'] = self.maindf['Des_Ret_Inc_Pre_Tax_Post_Nominal'] * self.maindf['Inflator']
 
@@ -600,11 +608,11 @@ class TaxUser(object):
                                                    np.where(self.maindf['Total_Income'] == 0
                                                             , self.maindf['Home_Value'][self.retirement_start - 1] * (0.9/(self.retirement_years * 12.))
                                                             , 0)
-                                                   , 0)[self.retirement_start:]
-        self.pre_reverse_mortage = [self.post_reverse_mortgage[0] for i in range (self.retirement_start)]
+                                                   , 0)[self.pre_retirement_end:]
+        self.pre_reverse_mortage = [self.post_reverse_mortgage[0] for i in range (self.pre_retirement_end)]
         self.maindf['Reverse_Mortgage_Nominal'] = self.set_full_series(self.pre_reverse_mortage, self.post_reverse_mortgage)
         self.maindf['Reverse_Mortgage'] = self.maindf['Deflator'] * self.maindf['Reverse_Mortgage_Nominal']
-
+        
         self.maindf['Certain_Ret_Inc'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Soc_Sec_Benefit']
                                                                                         + self.maindf['Ret_Working_Inc']
                                                                                         + self.maindf['Pension_Payments']
@@ -648,8 +656,18 @@ class TaxUser(object):
                                                                                 + self.maindf['Ret_Working_Inc']
                                                                                 + self.maindf['Soc_Sec_Benefit'])
 
-        self.taxable_inc_pre = (self.maindf['Soc_Sec_Benefit'] + self.maindf['Ret_Working_Inc'] + self.maindf['Pension_Payments'] + self.maindf['Annuity_Payments'] + self.maindf['Tot_Taxable_Dist'])[:self.retirement_start - 1]
-        self.taxable_inc_post = (self.maindf['Taxable_Soc_Sec'] + self.maindf['Ret_Working_Inc'] + self.maindf['Pension_Payments'] + self.maindf['Annuity_Payments'] + self.maindf['Tot_Taxable_Dist'])[self.retirement_start - 1:]
+        self.taxable_inc_pre = (self.maindf['Soc_Sec_Benefit']
+                                + self.maindf['Ret_Working_Inc']
+                                + self.maindf['Pension_Payments']
+                                + self.maindf['Annuity_Payments']
+                                + self.maindf['Tot_Taxable_Dist'])[:self.pre_retirement_end]
+
+        self.taxable_inc_post = (self.maindf['Taxable_Soc_Sec']
+                                 + self.maindf['Ret_Working_Inc']
+                                 + self.maindf['Pension_Payments']
+                                 + self.maindf['Annuity_Payments']
+                                 + self.maindf['Tot_Taxable_Dist'])[self.pre_retirement_end:]
+        
         self.maindf['Taxable_Inc'] = self.set_full_series(self.taxable_inc_pre, self.taxable_inc_post)
 
         self.maindf['Adj_Gross_Inc'] = self.maindf['Tot_Inc']
@@ -657,7 +675,7 @@ class TaxUser(object):
         '''
         federal tax
         '''
-        self.maindf['Fed_Taxable_Inc'] = self.set_full_series([0. for i in range(self.retirement_start)], self.maindf['Taxable_Inc'][self.retirement_start - 1:])
+        self.maindf['Fed_Taxable_Inc'] = self.set_full_series([0. for i in range(self.pre_retirement_end)], self.maindf['Taxable_Inc'][self.pre_retirement_end:])
 
         self.annual_taxable_income_pre = [self.maindf['Fed_Taxable_Income'][(i * 12)]
                                           + self.maindf['Fed_Taxable_Income'][(i * 12) + 1]
@@ -687,12 +705,12 @@ class TaxUser(object):
                                            + self.maindf['Taxable_Inc'][self.retirement_start - 1 + (i * 12) + 9]
                                            + self.maindf['Taxable_Inc'][self.retirement_start - 1 + (i * 12) + 10]
                                            + self.maindf['Taxable_Inc'][self.retirement_start - 1 + (i * 12) + 11] for i in range(self.retirement_years)]
-
+       
         self.annual_taxable_income = self.set_full_series_with_indices(self.annual_taxable_income_pre,
                                                                        self.annual_taxable_income_post,
                                                                        self.years_pre,
                                                                        self.years_post)
-        
+
         taxFed = fedtax.TaxFederal(self.years, self.annual_inflation, self.annual_taxable_income)
         taxFed.create_tax_engine()
         taxFed.create_tax_projected()
@@ -729,12 +747,11 @@ class TaxUser(object):
 
         
         full_post = pd.Series(self.post_projected_tax, index=self.dateind_post) 
-        self.maindf['Fed_Regular_Tax'] = self.set_full_series([0. for i in range(self.retirement_start)], self.post_projected_tax )
+        self.maindf['Fed_Regular_Tax'] = self.set_full_series([0. for i in range(self.pre_retirement_end)], self.post_projected_tax )
         
         self.maindf['State_Tax_After_Credits'] = self.maindf['Adj_Gross_Inc'] * self.state_effective_rate_to_agi
 
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
-        pdb.set_trace()
         
 
 if __name__ == "__main__":
@@ -768,6 +785,5 @@ if __name__ == "__main__":
                       tst_tx.projected_income_growth)
     
     tst_cls.create_maindf()
-    pdb.set_trace()
 
         

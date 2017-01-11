@@ -1,5 +1,5 @@
 import pandas as pd
-from main import inflation
+import inflation
 
 
 '''
