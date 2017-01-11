@@ -24,12 +24,12 @@ class BaseTest(TestCase):
 
     def test_apex_order1(self):
         create_orders()
-        etna_orders = Order.objects.all()
+        orders = Order.objects.all()
 
-        self.assertTrue(etna_orders[0].ticker.id == self.asset.id)
-        self.assertTrue(etna_orders[0].Quantity == 15)
-        self.assertTrue(etna_orders[1].ticker.id == self.asset2.id)
-        self.assertTrue(etna_orders[1].Quantity == 10)
+        self.assertTrue(orders[0].ticker.id == self.asset.id)
+        self.assertTrue(orders[0].Quantity == 15)
+        self.assertTrue(orders[1].ticker.id == self.asset2.id)
+        self.assertTrue(orders[1].Quantity == 10)
 
     def test_apex_order2(self):
         self.account2 = ClientAccountFactory.create()
@@ -38,9 +38,9 @@ class BaseTest(TestCase):
         self.asset3 = TickerFactory.create(symbol='MSFT')
         er4 = ExecutionRequestFactory.create(goal=self.goal2, asset=self.asset3, volume=20, order=self.mor2)
         create_orders()
-        etna_order = Order.objects.all()
-        self.assertTrue(len(etna_order) == 3)
-        self.assertTrue(etna_order[2].Quantity == 20)
+        order = Order.objects.all()
+        self.assertTrue(len(order) == 3)
+        self.assertTrue(order[2].Quantity == 20)
 
     def test_apex_order3(self):
         self.account3 = ClientAccountFactory.create()
@@ -48,6 +48,6 @@ class BaseTest(TestCase):
         self.mor3 = MarketOrderRequestFactory.create(account=self.account3)
         er5 = ExecutionRequestFactory.create(goal=self.goal3, asset=self.asset, volume=20, order=self.mor3)
         create_orders()
-        etna_orders = Order.objects.all()
-        self.assertTrue(len(etna_orders) == 2)
-        self.assertTrue(etna_orders[0].Quantity == 35)
+        orders = Order.objects.all()
+        self.assertTrue(len(orders) == 2)
+        self.assertTrue(orders[0].Quantity == 35)

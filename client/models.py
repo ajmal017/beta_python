@@ -335,12 +335,17 @@ class IBAccount(models.Model):
     '''
     ib_account = models.CharField(max_length=32)
     bs_account = models.OneToOneField('ClientAccount', related_name='ib_account')
+    broker = "IB"
 
+    def __str__(self):
+        return self.ib_account
 
 class APEXAccount(models.Model):
     apex_account = models.CharField(max_length=32)
     bs_account = models.OneToOneField('ClientAccount', related_name='apex_account')
-
+    broker = "ETNA"
+    def __str__(self):
+        return self.apex_account
 
 class AccountBeneficiary(models.Model):
     class Type(ChoiceEnum):
@@ -415,6 +420,18 @@ class ClientAccount(models.Model):
     def __init__(self, *args, **kwargs):
         super(ClientAccount, self).__init__(*args, **kwargs)
         self.__was_confirmed = self.confirmed
+
+    def get_account(self):
+        """ Gets account - is broker accont. There is only one allowed. If this is not fulfilled exception is thrown"""
+        account = None
+        if self.ib_account is not None:
+            account = self.ib_account
+        elif self.apex_account is not None:
+            if account is not None:
+                raise Exception("Two broker accounts can not be assigned to one client.")
+            account = self.apex_account
+        Exception("No broker account was assigned to client.")
+        return account
 
     @property
     def goals(self):

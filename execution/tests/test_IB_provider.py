@@ -1,8 +1,11 @@
 from django.test import TestCase
 from api.v1.tests.factories import TickerFactory
 from execution.market_data.InteractiveBrokers.IBProvider import IBProvider
+from unittest import skip, skipIf
 
+ib_testing = False
 
+@skipIf(not ib_testing,"IB Testing is manually turned off.")
 class BaseTest(TestCase):
     def setUp(self):
         self.con = IBProvider()

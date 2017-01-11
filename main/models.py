@@ -2218,7 +2218,7 @@ class GoalMetric(models.Model):
                                                                  self.id)
 
 
-class OrderETNAManager(models.Manager):
+class OrderManager(models.Manager):
     def is_complete(self):
         return self.filter(Status__in=Order.StatusChoice.complete_statuses())
 
@@ -2297,7 +2297,7 @@ class Order(models.Model):
     FillPrice = models.FloatField(default=0)
     FillQuantity = models.IntegerField(default=0)
     Description = models.CharField(max_length=128)
-    objects = OrderETNAManager() # ability to filter based on this, property cannot be used to filter
+    objects = OrderManager() # ability to filter based on this, property cannot be used to filter
     Broker = models.CharField(max_length=128) # contains identification of broker
     ticker = models.ForeignKey('Ticker', related_name='Order', on_delete=PROTECT)
     fill_info = models.IntegerField(choices=FillInfo.choices(), default=FillInfo.UNFILLED.value)
@@ -2332,7 +2332,7 @@ class Fill(models.Model):
 class MarketOrderRequestAPEX(models.Model):
     ticker = models.ForeignKey('Ticker', related_name='morsAPEX', on_delete=PROTECT)
     #apex_order = models.ForeignKey('ApexOrder', related_name='morsAPEX')
-    etna_order = models.ForeignKey('Order', related_name='morsAPEX', default=None)
+    order = models.ForeignKey('Order', related_name='morsAPEX', default=None)
     market_order_request = models.ForeignKey('MarketOrderRequest', related_name='morsAPEX')
 
     class Meta:

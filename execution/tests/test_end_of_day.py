@@ -26,7 +26,7 @@ class BaseTest(TestCase):
         self.con = Mock(BaseBroker)
         self.con.connect.return_value = True
 
-        self.con.requesting_market_depth.return_value = False
+        #self.con.requesting_market_depth.return_value = False
 
         self.con.market_data = dict()
         self.con.market_data['GOOG'] = MarketDepth()

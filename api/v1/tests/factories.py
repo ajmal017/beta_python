@@ -527,7 +527,7 @@ class MarketOrderRequestFactory(factory.django.DjangoModelFactory):
     account = factory.SubFactory(ClientAccountFactory)
 
 
-class OrderETNAFactory(factory.django.DjangoModelFactory):
+class OrderFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Order
 
@@ -538,7 +538,7 @@ class FillFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Fill
 
-    etna_order = factory.SubFactory(OrderETNAFactory)
+    order = factory.SubFactory(OrderFactory)
     volume = factory.SelfAttribute('apex_order.volume')
     price = factory.LazyAttribute(lambda n: float(random.randrange(100) / 10))
     executed = factory.Sequence(lambda n: (datetime.today() - relativedelta(days=n + 5)).date())

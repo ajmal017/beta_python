@@ -28,14 +28,14 @@ class BaseTest(TestCase):
         orderA = insert_order_ETNA(price=self.ticker1.unit_price, quantity=100, ticker=self.ticker1)
         orderB = insert_order_ETNA(price=self.ticker1.unit_price, quantity=200, ticker=self.ticker2)
 
-        FillFactory.create(volume=100, price=1, etna_order=orderA)
-        FillFactory.create(volume=100, price=1, etna_order=orderB)
-        FillFactory.create(volume=100, price=1, etna_order=orderB)
+        FillFactory.create(volume=100, price=1, order=orderA)
+        FillFactory.create(volume=100, price=1, order=orderB)
+        FillFactory.create(volume=100, price=1, order=orderB)
 
-        fills = Fill.objects.filter(etna_order_id=orderB).aggregate(sum=Sum('volume'))
+        fills = Fill.objects.filter(order_id=orderB).aggregate(sum=Sum('volume'))
         self.assertTrue(fills['sum'] == 200)
 
-        fills = Fill.objects.filter(etna_order_id=orderA).aggregate(sum=Sum('volume'))
+        fills = Fill.objects.filter(order_id=orderA).aggregate(sum=Sum('volume'))
         self.assertTrue(fills['sum'] == 100)
 
     def test_full_in_and_out_path1(self):
@@ -55,8 +55,8 @@ class BaseTest(TestCase):
         send_order(order1_etna)
         mark_order_as_complete(order1_etna)
 
-        FillFactory.create(volume=fill1_volume, price=fill1_price, etna_order=order1_etna)
-        FillFactory.create(volume=fill2_volume, price=fill2_price, etna_order=order1_etna)
+        FillFactory.create(volume=fill1_volume, price=fill1_price, order=order1_etna)
+        FillFactory.create(volume=fill2_volume, price=fill2_price, order=order1_etna)
 
         process_fills()
 
@@ -90,8 +90,8 @@ class BaseTest(TestCase):
         send_order(order1_etna)
         mark_order_as_complete(order1_etna)
 
-        FillFactory.create(volume=fill1a_volume, price=fill1a_price, etna_order=order1_etna)
-        FillFactory.create(volume=fill1b_volume, price=fill1b_price, etna_order=order1_etna)
+        FillFactory.create(volume=fill1a_volume, price=fill1a_price, order=order1_etna)
+        FillFactory.create(volume=fill1b_volume, price=fill1b_price, order=order1_etna)
 
         process_fills()
 
@@ -106,7 +106,7 @@ class BaseTest(TestCase):
         send_order(order2_3_etna)
         mark_order_as_complete(order2_3_etna)
 
-        FillFactory.create(volume=fill2_3_volume, price=fill2_3_price, etna_order=order2_3_etna)
+        FillFactory.create(volume=fill2_3_volume, price=fill2_3_price, order=order2_3_etna)
 
         process_fills()
         sum_volume = Execution.objects.filter(distributions__execution_request__asset=self.ticker2)\
@@ -130,8 +130,8 @@ class BaseTest(TestCase):
         send_order(order1_etna)
         mark_order_as_complete(order1_etna)
 
-        FillFactory.create(volume=fill1a_volume, price=fill1a_price, etna_order=order1_etna)
-        FillFactory.create(volume=fill1b_volume, price=fill1b_price, etna_order=order1_etna)
+        FillFactory.create(volume=fill1a_volume, price=fill1a_price, order=order1_etna)
+        FillFactory.create(volume=fill1b_volume, price=fill1b_price, order=order1_etna)
 
         process_fills()
         order1 = Order.objects.get(ticker=self.ticker1)
@@ -147,7 +147,7 @@ class BaseTest(TestCase):
         send_order(order2_etna)
         mark_order_as_complete(order2_etna)
 
-        FillFactory.create(volume=fill2_volume, price=fill2_price, etna_order=order2_etna)
+        FillFactory.create(volume=fill2_volume, price=fill2_price, order=order2_etna)
         process_fills()
         order2 = Order.objects.get(id=order2_etna.id)
         self.assertTrue(order2.fill_info == Order.FillInfo.FILLED.value)
