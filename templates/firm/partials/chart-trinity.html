@@ -3,7 +3,7 @@
     var doughnutChartAElem = document.getElementById('doughnutChartA');
     var doughnutChartBElem = document.getElementById('doughnutChartB');
     var doughnutChartCElem = document.getElementById('doughnutChartC');
-    //var doughnutChartDElem = document.getElementById('doughnutChartD');
+    var doughnutChartDElem = document.getElementById('doughnutChartD');
 
     // positions_by_asset_class
     {% with items=positions.asset_class|dictsortreversed:'value' %}
@@ -28,5 +28,13 @@
       var backgroundColors = [{% for item in items %}randomColor({seed: {{ forloop.counter }} * 1059, luminosity: 'dark', format: 'rgb'}),{% endfor %}];
     {% endwith %}
     var doughnutChartC = new Chart(doughnutChartCElem, App.doughnutChartConfig(labels, values, backgroundColors));
+
+    // positions_by_allocation
+    {% with items=positions.allocation|dictsortreversed:'value' %}
+      var labels = [{% for item in items %}'{{ item.name }}',{% endfor %}];
+      var values = [{% for item in items %}'{{ item.value|floatformat:0 }}',{% endfor %}];
+      var backgroundColors = [{% for item in items %}randomColor({seed: {{ forloop.counter }} * 1059, luminosity: 'dark', format: 'rgb'}),{% endfor %}];
+    {% endwith %}
+    var doughnutChartD = new Chart(doughnutChartDElem, App.doughnutChartConfig(labels, values, backgroundColors));
   });
 </script>
