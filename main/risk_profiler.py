@@ -1,6 +1,9 @@
 from django.core.exceptions import ValidationError
 
 from main.constants import ACCOUNT_TYPE_JOINT, ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_SMSF
+import logging
+
+logger = logging.getLogger('main.risk_profiler')
 
 # The risk score if we don't have enough info to say anything.
 MINIMUM_RISK = 0.1
@@ -97,7 +100,7 @@ class GoalSettingRiskProfile(object):
         """
         if not scores: return MINIMUM_RISK
         else: B, A, S = scores
-        return min(A, S)
+        return round(min(A, S), 15)
 
 
 def recommend_risk(setting):
