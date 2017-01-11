@@ -39,8 +39,7 @@ class SearchFilter(filters.CharFilter):
 
 class PeriodFilter(filters.ChoiceFilter):
     PERIOD_CHOICES = (
-        (None, '- Time period -'),
-        (None, 'All time'),
+        (None, 'All Time'),
         ('1mo', '1mo'),
         ('1yr', '1yr'),
         ('ytd', 'YTD'),
@@ -121,8 +120,7 @@ class UserGroupFilter(filters.ChoiceFilter):
         except:
             logger.error('Did not find expected groups for UserGroupFilter')
         choices = [
-                (None, '- Users -'),
-                (None, 'All'),
+                (None, 'All Users'),
             ]
         if groups:
             choices += groups
@@ -183,8 +181,7 @@ class UsersFilter(filters.CharFilter):
 
 class FirmActivityFilterSet(filters.FilterSet):
     VERB_CHOICES = (
-        (None, '- Activity -'),
-        (None, 'All'),
+        (None, 'All Activity'),
         ('login', 'Login'),
         ('logout', 'Logout'),
     )
