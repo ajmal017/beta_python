@@ -1,12 +1,20 @@
 import pdb
+import logging
 import math
 import pandas as pd
 import numpy as np
-import inflation
-import projectedfedtax as fedtax
-import testtaxsheet as tst_tx
+from main import inflation
+from main import projectedfedtax as fedtax
+from main import testtaxsheet as tst_tx
+
+#from client.models import Client
+#from retirementsmartz.models import RetirementPlan
+#from main.abstract import PersonalData
+
 
 from dateutil.relativedelta import relativedelta
+
+logger = logging.getLogger('taxsheet')
 
 class TaxUser(object):
 

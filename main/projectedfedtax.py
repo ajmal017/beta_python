@@ -1,8 +1,8 @@
 import pdb
 import pandas as pd
 import numpy as np
-import taxsheet
-import testtaxsheet as tst_tx
+from main import taxsheet
+from main import testtaxsheet as tst_tx
 
 class TaxFederal(object):
     '''
