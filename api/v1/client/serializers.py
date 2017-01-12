@@ -478,3 +478,13 @@ class PersonalInfoSerializer(serializers.ModelSerializer):
         # TODO generate a new SOA
 
         return instance
+
+
+class RiskProfileResponsesSerializer(serializers.ModelSerializer):
+    qs = RiskProfileAnswer.objects.all()
+    risk_profile_responses = serializers.PrimaryKeyRelatedField(many=True,
+                                                                queryset=qs,
+                                                                required=False)
+    class Meta:
+        model = Client
+        fields = ('risk_profile_responses',)
