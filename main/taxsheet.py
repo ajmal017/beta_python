@@ -20,7 +20,7 @@ class TaxUser(object):
 
     '''
 
-    Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v3.xlsx).
+    Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v4.xlsx).
 
     '''
 
@@ -46,7 +46,7 @@ class TaxUser(object):
                  other_income,
                  ss_fra_retirement,
                  paid_days,
-                 ira_rmo_factor,
+                 ira_rmd_factor,
                  initial_401k_balance,
                  inflation_level,
                  risk_profile_over_cpi,
@@ -77,7 +77,7 @@ class TaxUser(object):
         self.fica = fica
         self.ss_fra_retirement = ss_fra_retirement
         self.paid_days = paid_days
-        self.ira_rmo_factor = ira_rmo_factor
+        self.ira_rmd_factor = ira_rmd_factor
         self.initial_401k_balance = initial_401k_balance
         self.projected_income_growth = projected_income_growth
         self.other_income = other_income
@@ -631,7 +631,7 @@ class TaxUser(object):
         self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Des_Ret_Inc_Pre_Tax']
                                                                                             - self.maindf['Certain_Ret_Inc'])
 
-        self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmo_factor * 12.), 0)
+        self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmd_factor * 12.), 0)
 
         self.maindf['Tot_Non_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Ret_Certain_Inc_Gap'] > self.maindf['Reqd_Min_Dist'],
                                                                                                       np.where(self.maindf['Nontaxable_Accounts'] > 0
@@ -786,7 +786,7 @@ if __name__ == "__main__":
                       tst_tx.other_income,
                       tst_tx.ss_fra_retirement,
                       tst_tx.paid_days,
-                      tst_tx.ira_rmo_factor,
+                      tst_tx.ira_rmd_factor,
                       tst_tx.initial_401k_balance,
                       tst_tx.inflation_level,
                       tst_tx.risk_profile_over_cpi,

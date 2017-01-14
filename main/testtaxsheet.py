@@ -50,7 +50,7 @@ ss_fra_retirement = 7002.
 
 paid_days = 2
 
-ira_rmo_factor = 26.5
+ira_rmd_factor = 26.5
 
 initial_401k_balance = 50000
 
