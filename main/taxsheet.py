@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from main import inflation
 from main import projectedfedtax as fedtax
+from main import fica
 from main import testtaxsheet as tst_tx
 
 #from client.models import Client
