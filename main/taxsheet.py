@@ -50,7 +50,9 @@ class TaxUser(object):
                  initial_401k_balance,
                  inflation_level,
                  risk_profile_over_cpi,
-                 projected_income_growth):
+                 projected_income_growth,
+                 contrib_rate_employee_401k,
+                 contrib_rate_employer_401k):
 
         '''
         set variables
@@ -81,6 +83,8 @@ class TaxUser(object):
         self.initial_401k_balance = initial_401k_balance
         self.projected_income_growth = projected_income_growth
         self.other_income = other_income
+        self.contrib_rate_employee_401k = contrib_rate_employee_401k
+        self.contrib_rate_employer_401k = contrib_rate_employer_401k
 
         '''
         age
@@ -310,7 +314,6 @@ class TaxUser(object):
         self.contrib_rate_employee_pension = 0.0
         self.maindf['Pension_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_pension
 
-        self.contrib_rate_employee_401k = 0.055 
         self.maindf['401k_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_401k
 
         self.contrib_rate_employee_profit_sharing = 0.0
@@ -373,7 +376,6 @@ class TaxUser(object):
         self.contrib_rate_employer_pension = 0.0
         self.maindf['Pension_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_pension
 
-        self.contrib_rate_employer_401k = 0.02
         self.maindf['401k_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_401k
 
         self.contrib_rate_employer_profit_sharing = 0.0
@@ -790,7 +792,9 @@ if __name__ == "__main__":
                       tst_tx.initial_401k_balance,
                       tst_tx.inflation_level,
                       tst_tx.risk_profile_over_cpi,
-                      tst_tx.projected_income_growth)
+                      tst_tx.projected_income_growth,
+                      tst_tx.contrib_rate_employee_401k,
+                      tst_tx.contrib_rate_employer_401k)
     
     tst_cls.create_maindf()
 

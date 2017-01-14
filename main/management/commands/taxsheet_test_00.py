@@ -32,7 +32,9 @@ class Command(NoArgsCommand):
                           tst_tx.initial_401k_balance,
                           tst_tx.inflation_level,
                           tst_tx.risk_profile_over_cpi,
-                          tst_tx.projected_income_growth)
+                          tst_tx.projected_income_growth,
+                          tst_tx.contrib_rate_employee_401k,
+                          tst_tx.contrib_rate_employer_401k)
     
         tst_cls.create_maindf()
         

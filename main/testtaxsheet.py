@@ -59,3 +59,7 @@ inflation_level = inflation.inflation_level
 risk_profile_over_cpi = 0.005
 
 projected_income_growth = 0.01
+
+contrib_rate_employee_401k = 0.055
+
+contrib_rate_employer_401k = 0.02
