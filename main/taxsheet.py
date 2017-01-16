@@ -40,7 +40,6 @@ class TaxUser(object):
                  federal_taxable_income,
                  federal_regular_tax,
                  after_tax_income,
-                 fica,
                  other_income,
                  ss_fra_retirement,
                  paid_days,
@@ -51,7 +50,8 @@ class TaxUser(object):
                  projected_income_growth,
                  contrib_rate_employee_401k,
                  contrib_rate_employer_401k,
-                 state):
+                 state,
+                 employment_status):
 
         '''
         set variables
@@ -83,6 +83,7 @@ class TaxUser(object):
         self.contrib_rate_employee_401k = contrib_rate_employee_401k
         self.contrib_rate_employer_401k = contrib_rate_employer_401k
         self.state = state
+        self.employment_status = employment_status
 
 
         '''
@@ -304,6 +305,10 @@ class TaxUser(object):
         self.maindf['State_Tax_After_Credits'] = self.set_full_series(self.pre_state_tax_after_credits, self.post_state_tax_after_credits)
             
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
+        pdb.set_trace()
+        fc = fica.Fica(self.employment_status,self.total_income)
+        self.fica = fc.get_fica()
+        pdb.set_trace()
         
         self.pre_fica = self.fica/12. * self.pre_df['Inf_Inflator_Pre']       
         self.post_fica = [0. for i in range(self.total_rows - self.pre_retirement_end)] 
@@ -785,7 +790,6 @@ if __name__ == "__main__":
                       tst_tx.federal_taxable_income,
                       tst_tx.federal_regular_tax,
                       tst_tx.after_tax_income,
-                      tst_tx.fica,
                       tst_tx.other_income,
                       tst_tx.ss_fra_retirement,
                       tst_tx.paid_days,
@@ -796,7 +800,8 @@ if __name__ == "__main__":
                       tst_tx.projected_income_growth,
                       tst_tx.contrib_rate_employee_401k,
                       tst_tx.contrib_rate_employer_401k,
-                      tst_tx.state)
+                      tst_tx.state,
+                      tst_tx.employment_status)
     
     tst_cls.create_maindf()
 

@@ -109,7 +109,6 @@ if __name__ == "__main__":
                                   tst_tx.federal_taxable_income,
                                   tst_tx.federal_regular_tax,
                                   tst_tx.after_tax_income,
-                                  tst_tx.fica,
                                   tst_tx.other_income,
                                   tst_tx.ss_fra_retirement,
                                   tst_tx.paid_days,
@@ -118,7 +117,8 @@ if __name__ == "__main__":
                                   tst_tx.inflation_level,
                                   tst_tx.risk_profile_over_cpi,
                                   tst_tx.projected_income_growth,
-                                  tst_tx.state)
+                                  tst_tx.state,
+                                  tst_tx.employment_status)
 
     tst_tx_cls.create_maindf()
 

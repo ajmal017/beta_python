@@ -22,7 +22,6 @@ class Command(NoArgsCommand):
                               tst_tx.federal_taxable_income,
                               tst_tx.federal_regular_tax,
                               tst_tx.after_tax_income,
-                              tst_tx.fica,
                               tst_tx.other_income,
                               tst_tx.ss_fra_retirement,
                               tst_tx.paid_days,
@@ -33,7 +32,8 @@ class Command(NoArgsCommand):
                               tst_tx.projected_income_growth,
                               tst_tx.contrib_rate_employee_401k,
                               tst_tx.contrib_rate_employer_401k,
-                              tst_tx.state)
+                              tst_tx.state,
+                              tst_tx.employment_status)
     
         tst_cls.create_maindf()
         

@@ -40,8 +40,6 @@ federal_taxable_income = 109996.
 
 federal_regular_tax = 20614.
 
-fica = 14581.
-
 ss_fra_retirement = 7002.
 
 paid_days = 2
@@ -61,4 +59,6 @@ contrib_rate_employee_401k = 0.055
 contrib_rate_employer_401k = 0.02
 
 state = "CA"
+
+employment_status = 'Self_Employed'
 
