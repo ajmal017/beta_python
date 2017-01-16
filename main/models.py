@@ -472,6 +472,12 @@ class Firm(models.Model):
     account_types = models.ManyToManyField(AccountType, help_text="The set of supported account "
                                                                   "types offered to clients of this firm.")
 
+    site_url = models.CharField(max_length=255,
+                                null=True,
+                                blank=True,
+                                default="https://www.betasmartz.com",
+                                help_text="Official Site URL")
+
     def save(self,
              force_insert=False,
              force_update=False,
