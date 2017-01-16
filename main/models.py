@@ -676,14 +676,16 @@ class FirmData(models.Model):
                                                max_length=20,
                                                null=True, blank=True)
     fee_bank_account_holder_name = models.CharField('Account holder',
-                                                    max_length=100, null=True, blank=True)
-    australian_business_number = models.CharField("ABN", max_length=20, null=True, blank=True)
+                                                    max_length=100,
+                                                    null=True, blank=True)
+    australian_business_number = models.CharField("ABN", max_length=20,
+                                                  null=True, blank=True)
 
     site_url = models.CharField(max_length=255,
-                            null=True,
-                            blank=True,
-                            default="https://www.betasmartz.com",
-                            help_text="Official Site URL")
+                                null=True,
+                                blank=True,
+                                default="https://www.betasmartz.com",
+                                help_text="Official Site URL")
 
     def __str__(self):
         return "FirmData for {}".format(self.firm)
