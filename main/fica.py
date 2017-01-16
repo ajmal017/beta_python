@@ -9,7 +9,7 @@ FICA_RATE_MEDICARE_SELF_EMPLOYED = 0.029
 
 FICA_INC_CEILING_SS = 118500.
 
-class FedInsContribsAct(object):
+class Fica(object):
 
     '''
     Federal Insurance Contributions Act (FICA) tax is a United States
@@ -96,8 +96,7 @@ if __name__ == "__main__":
     filing_status = 'Self_Employed'
     total_income = 100000.
 
-    tst_cls = FedInsContribsAct(filing_status,
-                                total_income)
+    tst_cls = Fica(filing_status,total_income)
 
     fica = tst_cls.get_fica()
     pdb.set_trace()

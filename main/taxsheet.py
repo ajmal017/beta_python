@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from main import inflation
 from main import projectedfedtax as fedtax
+from main import statetax as state
 from main import fica
 from main import testtaxsheet as tst_tx
 
@@ -20,9 +21,7 @@ logger = logging.getLogger('taxsheet')
 class TaxUser(object):
 
     '''
-
     Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v4.xlsx).
-
     '''
 
     def __init__(self,name,
@@ -40,8 +39,6 @@ class TaxUser(object):
                  adj_gross,
                  federal_taxable_income,
                  federal_regular_tax,
-                 state_tax_after_credits,
-                 state_effective_rate_to_agi,
                  after_tax_income,
                  fica,
                  other_income,
@@ -53,7 +50,8 @@ class TaxUser(object):
                  risk_profile_over_cpi,
                  projected_income_growth,
                  contrib_rate_employee_401k,
-                 contrib_rate_employer_401k):
+                 contrib_rate_employer_401k,
+                 state):
 
         '''
         set variables
@@ -74,8 +72,6 @@ class TaxUser(object):
         self.adj_gross = adj_gross
         self.federal_taxable_income = federal_taxable_income
         self.federal_regular_tax = federal_regular_tax
-        self.state_tax_after_credits = state_tax_after_credits
-        self.state_effective_rate_to_agi = state_effective_rate_to_agi
         self.after_tax_income = after_tax_income
         self.fica = fica
         self.ss_fra_retirement = ss_fra_retirement
@@ -86,6 +82,8 @@ class TaxUser(object):
         self.other_income = other_income
         self.contrib_rate_employee_401k = contrib_rate_employee_401k
         self.contrib_rate_employer_401k = contrib_rate_employer_401k
+        self.state = state
+
 
         '''
         age
@@ -290,13 +288,17 @@ class TaxUser(object):
         self.maindf['Other_Income'] = self.set_full_series(self.pre_other_income, self.post_other_income)                                
 
         self.maindf['Adj_Gross_Income'] = self.maindf['Total_Income'] + self.maindf['Other_Income']
-        
+
         self.pre_fed_regular_tax = self.federal_regular_tax/12. * self.pre_df['Inf_Inflator_Pre']
         self.post_fed_regular_tax  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Fed_Regular_Tax'] = self.set_full_series(self.pre_fed_regular_tax, self.post_fed_regular_tax)
         
         self.maindf['Fed_Taxable_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax']
-  
+
+        self.state_tax = state.StateTax(self.state, self.filing_status, self.total_income)
+        self.state_tax_after_credits = self.state_tax.get_state_tax()
+        self.state_effective_rate_to_agi = self.state_tax_after_credits/self.total_income
+
         self.pre_state_tax_after_credits = self.state_tax_after_credits/12. * self.pre_df['Inf_Inflator_Pre']      
         self.post_state_tax_after_credits = [0. for i in range(self.total_rows - self.pre_retirement_end)] 
         self.maindf['State_Tax_After_Credits'] = self.set_full_series(self.pre_state_tax_after_credits, self.post_state_tax_after_credits)
@@ -782,8 +784,6 @@ if __name__ == "__main__":
                       tst_tx.adj_gross,
                       tst_tx.federal_taxable_income,
                       tst_tx.federal_regular_tax,
-                      tst_tx.state_tax_after_credits,
-                      tst_tx.state_effective_rate_to_agi,
                       tst_tx.after_tax_income,
                       tst_tx.fica,
                       tst_tx.other_income,
@@ -795,7 +795,8 @@ if __name__ == "__main__":
                       tst_tx.risk_profile_over_cpi,
                       tst_tx.projected_income_growth,
                       tst_tx.contrib_rate_employee_401k,
-                      tst_tx.contrib_rate_employer_401k)
+                      tst_tx.contrib_rate_employer_401k,
+                      tst_tx.state)
     
     tst_cls.create_maindf()
 

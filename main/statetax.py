@@ -1,702 +1,89 @@
-import pdb
-import pandas as pd
-
-zip_codes = pd.read_csv('zipcode_list.csv')
+from main import statetaxengine as state
 
 import json
+import pandas as pd
+import numpy as np
 
-state_al = """{"state": "AL",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.04, "bracket": 500.0},
-                        {"rate": 0.05, "bracket": 3000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.04, "bracket": 1000.0},
-                        {"rate": 0.05, "bracket": 6000.0}]
-                    }],
-                 "standard_deduction": [{"single": 2500.0}, {"couple": 7500.0}],
-                 "personal_exemption": [{"single": 1500.0}, {"couple": 3000.0},{"dependent": 1000.0} ]
-                }"""
+#zip_codes = pd.read_csv('zipcode_list.csv')
 
-state_ak = """{"state": "AK",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.0, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.0, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 0.0}, {"couple": 0.0},{"dependent": 0.0} ]
-                }"""
+class StateTax(object):
 
-state_az = """{"state": "AZ",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.0259, "bracket": 0.0},
-                        {"rate": 0.0288, "bracket": 10000.0},
-                        {"rate": 0.0336, "bracket": 25000.0},
-                        {"rate": 0.0424, "bracket": 50000.0},
-                        {"rate": 0.0454, "bracket": 150000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.0259, "bracket": 0.0},
-                        {"rate": 0.0288, "bracket": 20000.0},
-                        {"rate": 0.0336, "bracket": 50000.0},
-                        {"rate": 0.0424, "bracket": 100000.0},
-                        {"rate": 0.0454, "bracket": 300000.0}]
-                    }],
-                 "standard_deduction": [{"single": 5091.0}, {"couple": 10173.0}],
-                 "personal_exemption": [{"single": 2100.0}, {"couple": 4200.0},{"dependent": 2100.0} ]
-                }"""
-
-state_ar = """{"state": "AR",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.009, "bracket": 0.0},
-                        {"rate": 0.025, "bracket": 4299.0},
-                        {"rate": 0.035, "bracket": 8399.0},
-                        {"rate": 0.045, "bracket": 12599.0},
-                        {"rate": 0.06, "bracket": 20999.0},
-                        {"rate": 0.069, "bracket": 35099.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.009, "bracket": 0.0},
-                        {"rate": 0.025, "bracket": 4299.0},
-                        {"rate": 0.035, "bracket": 8399.0},
-                        {"rate": 0.045, "bracket": 12599.0},
-                        {"rate": 0.06, "bracket": 20999.0},
-                        {"rate": 0.069, "bracket": 35099.0}]
-                    }],
-                 "standard_deduction": [{"single": 2200.0}, {"couple": 4400.0}],
-                 "personal_exemption": [{"single": 26.0}, {"couple": 52.0},{"dependent": 26.0} ]
-                }"""
-
-state_ca = """{"state": "CA",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.01, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 7850.0},
-                        {"rate": 0.04, "bracket": 18610.0},
-                        {"rate": 0.06, "bracket": 29372.0},
-                        {"rate": 0.08, "bracket": 40773.0},
-                        {"rate": 0.093, "bracket": 51530.0},
-                        {"rate": 0.103, "bracket": 263222.0},
-                        {"rate": 0.113, "bracket": 315866.0},
-                        {"rate": 0.123, "bracket": 526443.0},
-                        {"rate": 0.133, "bracket": 1000000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.01, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 15700.0},
-                        {"rate": 0.04, "bracket": 37220.0},
-                        {"rate": 0.06, "bracket": 58744.0},
-                        {"rate": 0.08, "bracket": 81546.0},
-                        {"rate": 0.093, "bracket": 103060.0},
-                        {"rate": 0.103, "bracket": 526444.0},
-                        {"rate": 0.113, "bracket": 631732.0},
-                        {"rate": 0.123, "bracket": 1000000.0},
-                        {"rate": 0.133, "bracket": 1052886.0}]
-                    }],
-                 "standard_deduction": [{"single": 4044.0}, {"couple": 8088.0}],
-                 "personal_exemption": [{"single": 109.0}, {"couple": 218.0},{"dependent": 337.0} ]
-                }"""
-
-state_co = """{"state": "CO",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.0463, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.0463, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 0.0}, {"couple": 0.0},{"dependent": 0.0} ]
-                }"""
-
-state_ct = """{"state": "CT",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.03, "bracket": 0.0},
-                        {"rate": 0.05, "bracket": 10000.0},
-                        {"rate": 0.055, "bracket": 50000.0},
-                        {"rate": 0.06, "bracket": 100000.0},
-                        {"rate": 0.065, "bracket": 200000.0},
-                        {"rate": 0.069, "bracket": 250000.0},
-                        {"rate": 0.0699, "bracket": 500000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.03, "bracket": 0.0},
-                        {"rate": 0.05, "bracket": 20000.0},
-                        {"rate": 0.055, "bracket": 100000.0},
-                        {"rate": 0.06, "bracket": 200000.0},
-                        {"rate": 0.065, "bracket": 400000.0},
-                        {"rate": 0.069, "bracket": 500000.0},
-                        {"rate": 0.0699, "bracket": 1000000.0}]
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 15000.0}, {"couple": 24000.0},{"dependent": 0.0} ]
-                }"""
-
-state_de = """{"state": "DE",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.022, "bracket": 2000.0},
-                        {"rate": 0.039, "bracket": 5000.0},
-                        {"rate": 0.048, "bracket": 10000.0},
-                        {"rate": 0.052, "bracket": 20000.0},
-                        {"rate": 0.0555, "bracket": 25000.0},
-                        {"rate": 0.066, "bracket": 60000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.022, "bracket": 2000.0},
-                        {"rate": 0.039, "bracket": 5000.0},
-                        {"rate": 0.048, "bracket": 10000.0},
-                        {"rate": 0.052, "bracket": 20000.0},
-                        {"rate": 0.0555, "bracket": 25000.0},
-                        {"rate": 0.066, "bracket": 60000.0}]
-                    }],
-                 "standard_deduction": [{"single": 3250.0}, {"couple": 6500.0}],
-                 "personal_exemption": [{"single": 110.0}, {"couple": 220.0},{"dependent": 110.0} ]
-                }"""
-
-state_fl = """{"state": "FL",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.0463, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.0463, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 0.0}, {"couple": 0.0},{"dependent": 0.0} ]
-                }"""
-
-state_ga = """{"state": "GA",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.01, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 750.0},
-                        {"rate": 0.03, "bracket": 2250.0},
-                        {"rate": 0.04, "bracket": 3750.0},
-                        {"rate": 0.05, "bracket": 5250.0},
-                        {"rate": 0.06, "bracket": 7000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.01, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 1000.0},
-                        {"rate": 0.03, "bracket": 3000.0},
-                        {"rate": 0.04, "bracket": 5000.0},
-                        {"rate": 0.05, "bracket": 7000.0},
-                        {"rate": 0.06, "bracket": 10000.0}]
-                    }],
-                 "standard_deduction": [{"single": 2300.0}, {"couple": 3000.0}],
-                 "personal_exemption": [{"single": 2700.0}, {"couple": 7400.0},{"dependent": 3000.0} ]
-                }"""
-
-state_hi = """{"state": "HI",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.014, "bracket": 0.0},
-                        {"rate": 0.032, "bracket": 2400.0},
-                        {"rate": 0.055, "bracket": 4800.0},
-                        {"rate": 0.064, "bracket": 9600.0},
-                        {"rate": 0.068, "bracket": 14400.0},
-                        {"rate": 0.072, "bracket": 19200.0},
-                        {"rate": 0.076, "bracket": 24000.0},
-                        {"rate": 0.079, "bracket": 36000.0},
-                        {"rate": 0.0825, "bracket": 48000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.014, "bracket": 0.0},
-                        {"rate": 0.032, "bracket": 4800.0},
-                        {"rate": 0.055, "bracket": 9600.0},
-                        {"rate": 0.064, "bracket": 19200.0},
-                        {"rate": 0.068, "bracket": 28800.0},
-                        {"rate": 0.072, "bracket": 38400.0},
-                        {"rate": 0.076, "bracket": 48000.0},
-                        {"rate": 0.079, "bracket": 72000.0},
-                        {"rate": 0.0825, "bracket": 96000.0}]
-                    }],
-                 "standard_deduction": [{"single": 2200.0}, {"couple": 4400.0}],
-                 "personal_exemption": [{"single": 1144.0}, {"couple": 2288.0},{"dependent": 1144.0} ]
-                }"""
-
-state_id = """{"state": "ID",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.016, "bracket": 0.0},
-                        {"rate": 0.036, "bracket": 1452.0},
-                        {"rate": 0.041, "bracket": 2940.0},
-                        {"rate": 0.051, "bracket": 4356.0},
-                        {"rate": 0.061, "bracket": 5808.0},
-                        {"rate": 0.071, "bracket": 7260.0},
-                        {"rate": 0.074, "bracket": 10890.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.016, "bracket": 0.0},
-                        {"rate": 0.036, "bracket": 2904.0},
-                        {"rate": 0.041, "bracket": 5808.0},
-                        {"rate": 0.051, "bracket": 8712.0},
-                        {"rate": 0.061, "bracket": 11616.0},
-                        {"rate": 0.071, "bracket": 14520.0},
-                        {"rate": 0.074, "bracket": 21780.0}]
-                    }],
-                 "standard_deduction": [{"single": 6300.0}, {"couple": 12600.0}],
-                 "personal_exemption": [{"single": 4000.0}, {"couple": 8000.0},{"dependent": 4000.0} ]
-                }"""
-
-state_il = """{"state": "IL",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.0375, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.0375, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 2125.0}, {"couple": 4250.0},{"dependent": 2125.0} ]
-                }"""
-
-state_in = """{"state": "IN",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.033, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.033, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 1000.0}, {"couple": 2000.0},{"dependent": 1500.0} ]
-                }"""
-
-state_io = """{"state": "IO",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.0036, "bracket": 0.0},
-                        {"rate": 0.0072, "bracket": 1554.0},
-                        {"rate": 0.0243, "bracket": 3108.0},
-                        {"rate": 0.045, "bracket": 6216.0},
-                        {"rate": 0.0612, "bracket": 13896.0},
-                        {"rate": 0.0648, "bracket": 23310.0},
-                        {"rate": 0.068, "bracket": 31080.0},
-                        {"rate": 0.0792, "bracket": 46620.0},
-                        {"rate": 0.0898, "bracket": 69930.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.0036, "bracket": 0.0},
-                        {"rate": 0.0072, "bracket": 1554.0},
-                        {"rate": 0.0243, "bracket": 3108.0},
-                        {"rate": 0.045, "bracket": 6216.0},
-                        {"rate": 0.0612, "bracket": 13896.0},
-                        {"rate": 0.0648, "bracket": 23310.0},
-                        {"rate": 0.068, "bracket": 31080.0},
-                        {"rate": 0.0792, "bracket": 46620.0},
-                        {"rate": 0.0898, "bracket": 69930.0}]
-                    }],
-                 "standard_deduction": [{"single": 1970.0}, {"couple": 4860.0}],
-                 "personal_exemption": [{"single": 40.0}, {"couple": 40.0},{"dependent": 40.0} ]
-                }"""
-
-state_ks = """{"state": "KS",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.027, "bracket": 0.0},
-                        {"rate": 0.046, "bracket": 15000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.027, "bracket": 0.0},
-                        {"rate": 0.046, "bracket": 30000.0}]
-                    }],
-                 "standard_deduction": [{"single": 3000.0}, {"couple": 7500.0}],
-                 "personal_exemption": [{"single": 2250.0}, {"couple": 4500.0},{"dependent": 2250.0} ]
-                }"""
-
-state_ky = """{"state": "KY",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.03, "bracket": 3000.0},
-                        {"rate": 0.04, "bracket": 4000.0},
-                        {"rate": 0.05, "bracket": 5000.0},
-                        {"rate": 0.058, "bracket": 8000.0},
-                        {"rate": 0.06, "bracket": 75000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.03, "bracket": 3000.0},
-                        {"rate": 0.04, "bracket": 4000.0},
-                        {"rate": 0.05, "bracket": 5000.0},
-                        {"rate": 0.058, "bracket": 8000.0},
-                        {"rate": 0.06, "bracket": 75000.0}]
-                    }],
-                 "standard_deduction": [{"single": 2460.0}, {"couple": 2460.0}],
-                 "personal_exemption": [{"single": 10.0}, {"couple": 10.0},{"dependent": 10.0} ]
-                }"""
-
-state_la = """{"state": "LA",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.04, "bracket": 12500.0},
-                        {"rate": 0.06, "bracket": 50000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.04, "bracket": 25000.0},
-                        {"rate": 0.06, "bracket": 100000.0}]
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 4500.0}, {"couple": 9000.0},{"dependent": 1000.0} ]
-                }"""
-
-state_me = """{"state": "ME",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.058, "bracket": 0.0},
-                        {"rate": 0.0675, "bracket": 21049.0},
-                        {"rate": 0.0715, "bracket": 37499.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.058, "bracket": 0.0},
-                        {"rate": 0.0675, "bracket": 42099.0},
-                        {"rate": 0.0715, "bracket": 74999.0}]
-                    }],
-                 "standard_deduction": [{"single": 11600.0}, {"couple": 23200.0}],
-                 "personal_exemption": [{"single": 4050.0}, {"couple": 8100.0},{"dependent": 4050.0} ]
-                }"""
-
-state_md = """{"state": "MD",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.03, "bracket": 1000.0},
-                        {"rate": 0.04, "bracket": 2000.0},
-                        {"rate": 0.0475, "bracket": 3000.0},
-                        {"rate": 0.05, "bracket": 100000.0},
-                        {"rate": 0.0525, "bracket": 125000.0},
-                        {"rate": 0.055, "bracket": 150000.0},
-                        {"rate": 0.0575, "bracket": 250000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.02, "bracket": 0.0},
-                        {"rate": 0.03, "bracket": 1000.0},
-                        {"rate": 0.04, "bracket": 2000.0},
-                        {"rate": 0.0475, "bracket": 3000.0},
-                        {"rate": 0.05, "bracket": 150000.0},
-                        {"rate": 0.0525, "bracket": 175000.0},
-                        {"rate": 0.055, "bracket": 225000.0},
-                        {"rate": 0.0575, "bracket": 300000.0}]
-                    }],
-                 "standard_deduction": [{"single": 2000.0}, {"couple": 4000.0}],
-                 "personal_exemption": [{"single": 3200.0}, {"couple": 6400.0},{"dependent": 3200.0} ]
-                }"""
-
-state_ma = """{"state": "MA",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.051, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.051, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 4400.0}, {"couple": 8800.0},{"dependent": 1000.0} ]
-                }"""
-
-state_mi = """{"state": "MI",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.0425, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.0425, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 4000.0}, {"couple": 4000.0},{"dependent": 0.0} ]
-                }"""
-
-state_mn = """{"state": "MN",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.0535, "bracket": 0.0},
-                        {"rate": 0.0705, "bracket": 25180.0},
-                        {"rate": 0.0785, "bracket": 82740.0},
-                        {"rate": 0.0985, "bracket": 155650.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.0535, "bracket": 0.0},
-                        {"rate": 0.0705, "bracket": 36820.0},
-                        {"rate": 0.0785, "bracket": 146270.0},
-                        {"rate": 0.0985, "bracket": 259420.0}]
-                    }],
-                 "standard_deduction": [{"single": 6300.0}, {"couple": 12600.0}],
-                 "personal_exemption": [{"single": 4000.0}, {"couple": 8000.0},{"dependent": 4000.0} ]
-                }"""
-
-state_ms = """{"state": "MS",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.03, "bracket": 0.0},
-                        {"rate": 0.04, "bracket": 5000.0},
-                        {"rate": 0.05, "bracket": 100000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.03, "bracket": 0.0},
-                        {"rate": 0.04, "bracket": 5000.0},
-                        {"rate": 0.05, "bracket": 100000.0}]
-                    }],
-                 "standard_deduction": [{"single": 2300.0}, {"couple": 4600.0}],
-                 "personal_exemption": [{"single": 6000.0}, {"couple": 12000.0},{"dependent": 1500.0} ]
-                }"""
-
-state_mo = """{"state": "MO",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.015, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 1000.0},
-                        {"rate": 0.025, "bracket": 2000.0},
-                        {"rate": 0.03, "bracket": 3000.0},
-                        {"rate": 0.035, "bracket": 4000.0},
-                        {"rate": 0.04, "bracket": 5000.0},
-                        {"rate": 0.045, "bracket": 6000.0},
-                        {"rate": 0.05, "bracket": 7000.0},
-                        {"rate": 0.055, "bracket": 8000.0},
-                        {"rate": 0.06, "bracket": 9000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.015, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 1000.0},
-                        {"rate": 0.025, "bracket": 2000.0},
-                        {"rate": 0.03, "bracket": 3000.0},
-                        {"rate": 0.035, "bracket": 4000.0},
-                        {"rate": 0.04, "bracket": 5000.0},
-                        {"rate": 0.045, "bracket": 6000.0},
-                        {"rate": 0.05, "bracket": 7000.0},
-                        {"rate": 0.055, "bracket": 8000.0},
-                        {"rate": 0.06, "bracket": 9000.0}]
-                    }],
-                 "standard_deduction": [{"single": 6300.0}, {"couple": 12600.0}],
-                 "personal_exemption": [{"single": 2100.0}, {"couple": 4200.0},{"dependent": 1200.0} ]
-                }"""
-
-state_mt = """{"state": "MT",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.01, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 2900.0},
-                        {"rate": 0.03, "bracket": 5100.0},
-                        {"rate": 0.04, "bracket": 7800.0},
-                        {"rate": 0.05, "bracket": 10500.0},
-                        {"rate": 0.06, "bracket": 13500.0},
-                        {"rate": 0.069, "bracket": 17400.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.01, "bracket": 0.0},
-                        {"rate": 0.02, "bracket": 2900.0},
-                        {"rate": 0.03, "bracket": 5100.0},
-                        {"rate": 0.04, "bracket": 7800.0},
-                        {"rate": 0.05, "bracket": 10500.0},
-                        {"rate": 0.06, "bracket": 13500.0},
-                        {"rate": 0.069, "bracket": 17400.0}]
-                    }],
-                 "standard_deduction": [{"single": 4370.0}, {"couple": 8740.0}],
-                 "personal_exemption": [{"single": 2330.0}, {"couple": 4660.0},{"dependent": 2300.0} ]
-                }"""
-
-state_ne = """{"state": "NE",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.0246, "bracket": 0.0},
-                        {"rate": 0.0351, "bracket": 3060.0},
-                        {"rate": 0.0501, "bracket": 18370.0},
-                        {"rate": 0.0684, "bracket": 29590.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.0246, "bracket": 0.0},
-                        {"rate": 0.0351, "bracket": 6120.0},
-                        {"rate": 0.0501, "bracket": 36730.0},
-                        {"rate": 0.0684, "bracket": 59180.0}]
-                    }],
-                 "standard_deduction": [{"single": 6300.0}, {"couple": 12600.0}],
-                 "personal_exemption": [{"single": 131.0}, {"couple": 262.0},{"dependent": 131.0} ]
-                }"""
-
-state_nv = """{"state": "NV",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.0, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.0, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 0.0}, {"couple": 0.0},{"dependent": 0.0} ]
-                }"""
-
-state_nh = """{"state": "NH",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.05, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.05, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 2400.0}, {"couple": 4800.0},{"dependent": 0.0} ]
-                }"""
-
-state_nj = """{"state": "NJ",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.014, "bracket": 0.0},
-                        {"rate": 0.0175, "bracket": 20000.0},
-                        {"rate": 0.035, "bracket": 35000.0},
-                        {"rate": 0.05525, "bracket": 40000.0},
-                        {"rate": 0.0637, "bracket": 75000.0},
-                        {"rate": 0.0897, "bracket": 500000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.014, "bracket": 0.0},
-                        {"rate": 0.0175, "bracket": 20000.0},
-                        {"rate": 0.0245, "bracket": 50000.0},
-                        {"rate": 0.035, "bracket": 70000.0},
-                        {"rate": 0.05525, "bracket": 80000.0},
-                        {"rate": 0.0637, "bracket": 150000.0},
-                        {"rate": 0.0897, "bracket": 500000.0}]
-                    }],
-                 "standard_deduction": [{"single": 0.0}, {"couple": 0.0}],
-                 "personal_exemption": [{"single": 1000.0}, {"couple": 2000.0},{"dependent": 1500.0} ]
-                }"""
-
-state_nm = """{"state": "NM",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.017, "bracket": 0.0},
-                        {"rate": 0.032, "bracket": 5500.0},
-                        {"rate": 0.047, "bracket": 11000.0},
-                        {"rate": 0.049, "bracket": 16000.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.017, "bracket": 0.0},
-                        {"rate": 0.032, "bracket": 8000.0},
-                        {"rate": 0.047, "bracket": 16000.0},
-                        {"rate": 0.049, "bracket": 24000.0}]
-                    }],
-                 "standard_deduction": [{"single": 6300.0}, {"couple": 12600.0}],
-                 "personal_exemption": [{"single": 4000.0}, {"couple": 8000.0},{"dependent": 4000.0} ]
-                }"""
-
-state_ny = """{"state": "NY",
-                "filing_status":
-                    [{"Single":
-                        [{"rate": 0.04, "bracket": 0.0},
-                        {"rate": 0.045, "bracket": 8450.0},
-                        {"rate": 0.0525, "bracket": 11650.0},
-                        {"rate": 0.059, "bracket": 13850.0},
-                        {"rate": 0.0645, "bracket": 21300.0},
-                        {"rate": 0.0665, "bracket": 80150.0},
-                        {"rate": 0.0685, "bracket": 214000.0},
-                        {"rate": 0.0882, "bracket": 1070350.0}]
-                    },
-                    {"Married_Fil_Joint":
-                        [{"rate": 0.04, "bracket": 0.0},
-                        {"rate": 0.045, "bracket": 17050.0},
-                        {"rate": 0.0525, "bracket": 23450.0},
-                        {"rate": 0.059, "bracket": 27750.0},
-                        {"rate": 0.0645, "bracket": 42750.0},
-                        {"rate": 0.0665, "bracket": 160500.0},
-                        {"rate": 0.0685, "bracket": 321050.0},
-                        {"rate": 0.0882, "bracket": 2140900.0}]
-                    }],
-                 "standard_deduction": [{"single": 7950.0}, {"couple": 15950.0}],
-                 "personal_exemption": [{"single": 0.0}, {"couple": 0.0},{"dependent": 1000.0} ]
-                }"""
-
-state_nc = """{"state": "NC",
-                "filing_status":
-                    [{"Single":
-                        {"rate": 0.0575, "bracket": 0.0}
-                    },
-                    {"Married_Fil_Joint":
-                        {"rate": 0.0575, "bracket": 0.0}
-                    }],
-                 "standard_deduction": [{"single": 7500.0}, {"couple": 15000.0}],
-                 "personal_exemption": [{"single": 0.0}, {"couple": 0.0},{"dependent": 0.0} ]
-                }"""
+    '''
+    Most individual U.S. states collect a state income tax in addition to federal income tax.
+    The two are separate entities. State income tax is imposed at a fixed or graduated rate on
+    taxable income of individuals. The rates vary by state. Taxable income conforms closely to
+    federal taxable income in most states, with limited modifications. Many states allow a standard
+    deduction or some form of itemized deductions. 
+    '''
 
 
-state_tax_engine = [state_al,
-                    state_ak,
-                    state_az,
-                    state_ar,
-                    state_ca,
-                    state_co,
-                    state_ct,
-                    state_de,
-                    state_fl,
-                    state_ga,
-                    state_hi,
-                    state_id,
-                    state_il,
-                    state_in,
-                    state_io,
-                    state_ks,
-                    state_ky,
-                    state_la,
-                    state_me,
-                    state_md,
-                    state_ma,
-                    state_mi,
-                    state_mn,
-                    state_ms,
-                    state_mo,
-                    state_mt,
-                    state_ne,
-                    state_nv,
-                    state_nh,
-                    state_nj,
-                    state_nm,
-                    state_ny,
-                    state_nc]
+    def __init__(self, state, filing_status, income):
 
+        self.state = state
+        self.filing_status = filing_status
+        self.income = income
+
+
+    def get_state_tax(self):
+        '''
+        return state tax for given state, income and filing_status
+        '''
+        self.set_tax_engine()
+        idx = self.get_index()
+        df = pd.DataFrame(index=idx)
+        df['Rate'] = self.get_rates()
+        df['Bracket'] = self.get_brackets()
+
+        # Names could be improved ... am not familiar with the correct tax terminology
+        # also, deductions are not included in calculation ...
+        df['Is_Greater_Than'] = np.where(float(self.income) > df['Bracket'], 1, 0)
+        df['Excess'] = self.income - df['Bracket']
+        df['Bracket_Component'] = df['Rate'] * df['Excess'] * df['Is_Greater_Than']
+        result = df['Bracket_Component'].sum()
+        return result
+
+
+    def set_tax_engine(self):
+        '''
+        sets json with tax_engine for state and filing status
+        '''
+        found = False
+        for i in range(len(state.tax_engine)):
+            json_st_tx = json.loads(state.tax_engine[i])
+            if json_st_tx['state'] == self.state:
+                json_state_tax = json_st_tx
+                found = True
+
+        if found:
+            self.tax_engine = json_state_tax[self.filing_status]
+
+        else:
+            raise Exception('state not handled')
+
+
+    def get_index(self):
+        '''
+        returns index for rates and brackets for state and filing status
+        '''
+        return [i for i in range(len(self.tax_engine))]
+    
+
+    def get_rates(self):
+        '''
+        returns list with rates for state and filing status
+        '''
+        return [self.tax_engine[i]["rate"] for i in range(len(self.tax_engine))]
+
+
+    def get_brackets(self):
+        '''
+        returns list with brackets for state and filing status
+        '''
+        return [self.tax_engine[i]["bracket"] for i in range(len(self.tax_engine))]
+        
+            
 if __name__ == "__main__":
 
-    tst = json.loads(state_al)
-    tst = json.loads(state_ak)
-    tst = json.loads(state_az)
-    tst = json.loads(state_ar)
-    tst = json.loads(state_ca)
-    tst = json.loads(state_co)
-    tst = json.loads(state_ct)
-    tst = json.loads(state_de)
-    tst = json.loads(state_fl)
-    tst = json.loads(state_ga)
-    tst = json.loads(state_hi)
-    tst = json.loads(state_id)
-    tst = json.loads(state_il)
-    tst = json.loads(state_in)
-    tst = json.loads(state_io)
-    tst = json.loads(state_ks)
-    tst = json.loads(state_ky)
-    tst = json.loads(state_la)
-    tst = json.loads(state_me)
-    tst = json.loads(state_md)
-    tst = json.loads(state_ma)
-    tst = json.loads(state_mi)
-    tst = json.loads(state_mn)
-    tst = json.loads(state_ms)
-    tst = json.loads(state_mo)
-    tst = json.loads(state_mt)
-    tst = json.loads(state_ne)
-    tst = json.loads(state_nv)
-    tst = json.loads(state_nh)
-    tst = json.loads(state_nj)
-    tst = json.loads(state_nm)
-    tst = json.loads(state_ny)
-    tst = json.loads(state_nc)
-
+    tst_tx_cls = StateTax('CA', 'Single', 100000.)
+    tst = self.set_tax_engine()
     pdb.set_trace()

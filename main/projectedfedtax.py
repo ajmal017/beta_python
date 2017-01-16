@@ -68,6 +68,7 @@ class TaxFederal(object):
         returns federal tax for given income, inflation amd tax user type 
         '''
         # Names could be improved ... am not familiar with the correct tax terminology
+        # also, deductions are not included in calculation ...
         self.tax_engine['Is_Greater_Than_' + tax_user] = np.where(float(income) > (self.tax_engine[tax_user]  * (1 + inflation)), 1, 0)
         self.tax_engine['Excess_' + tax_user] = income - self.tax_engine[tax_user]  * (1 + inflation)
         self.tax_engine['Bracket_Component_' + tax_user] = self.tax_engine['Bracket_Rate_Differential'] * self.tax_engine['Excess_' + tax_user] * self.tax_engine['Is_Greater_Than_' + tax_user]
@@ -107,8 +108,6 @@ if __name__ == "__main__":
                                   tst_tx.adj_gross,
                                   tst_tx.federal_taxable_income,
                                   tst_tx.federal_regular_tax,
-                                  tst_tx.state_tax_after_credits,
-                                  tst_tx.state_effective_rate_to_agi,
                                   tst_tx.after_tax_income,
                                   tst_tx.fica,
                                   tst_tx.other_income,
@@ -118,7 +117,8 @@ if __name__ == "__main__":
                                   tst_tx.initial_401k_balance,
                                   tst_tx.inflation_level,
                                   tst_tx.risk_profile_over_cpi,
-                                  tst_tx.projected_income_growth)
+                                  tst_tx.projected_income_growth,
+                                  tst_tx.state)
 
     tst_tx_cls.create_maindf()
 

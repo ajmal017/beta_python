@@ -22,7 +22,7 @@ life_exp = 85.
 
 house_value = 250000.
 
-filing_status = 'single'
+filing_status = 'Single'
 
 retire_earn_at_fra = 3490.
 
@@ -39,10 +39,6 @@ after_tax_income = 110982.
 federal_taxable_income = 109996.
 
 federal_regular_tax = 20614.
-
-state_tax_after_credits = 8404.
-
-state_effective_rate_to_agi = 0.06
 
 fica = 14581.
 
@@ -63,3 +59,6 @@ projected_income_growth = 0.01
 contrib_rate_employee_401k = 0.055
 
 contrib_rate_employer_401k = 0.02
+
+state = "CA"
+
