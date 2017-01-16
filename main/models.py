@@ -472,12 +472,6 @@ class Firm(models.Model):
     account_types = models.ManyToManyField(AccountType, help_text="The set of supported account "
                                                                   "types offered to clients of this firm.")
 
-    site_url = models.CharField(max_length=255,
-                                null=True,
-                                blank=True,
-                                default="https://www.betasmartz.com",
-                                help_text="Official Site URL")
-
     def save(self,
              force_insert=False,
              force_update=False,
@@ -684,6 +678,15 @@ class FirmData(models.Model):
     fee_bank_account_holder_name = models.CharField('Account holder',
                                                     max_length=100, null=True, blank=True)
     australian_business_number = models.CharField("ABN", max_length=20, null=True, blank=True)
+
+    site_url = models.CharField(max_length=255,
+                            null=True,
+                            blank=True,
+                            default="https://www.betasmartz.com",
+                            help_text="Official Site URL")
+
+    def __str__(self):
+        return "FirmData for {}".format(self.firm)
 
 
 class Advisor(NeedApprobation, NeedConfirmation, PersonalData):
