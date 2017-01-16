@@ -48,12 +48,12 @@ class Address(models.Model):
 
     @cached_property
     def full_address(self):
-        ads = self.address.split('\n')
+        ads = [x for x in self.address.split('\n') if x != '']
         if len(ads) >= 2:
             address, city = ads[0], ads[1]
-            return '{}, {}, {}, {}'.format(address, city, self.region, self.post_code)
+            return '{}, {}, {}, {}'.format(address, city, self.region.name, self.post_code)
         else:
-            return '{}, {}, {}'.format(self.address, self.region, self.post_code)
+            return '{}, {}, {}'.format(self.address, self.region.name, self.post_code)
 
     def __str__(self):
         return self.address
