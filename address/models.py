@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import ugettext as _
+from django.utils.functional import cached_property
 """
 After looking through the addressing options available (django-postal, django-address) Neither worked well with
 addresses that have a apartment number, and chinese addresses, and had a DRF backend, so I had to roll my own :(
@@ -44,6 +45,15 @@ class Address(models.Model):
                                  unique=True,
                                  help_text='Global identifier of the address in whatever API we are using (if any)')
     region = models.ForeignKey(Region, related_name='+')
+
+    @cached_property
+    def full_address(self):
+        ads = self.address.split('\n')
+        if len(ads) >= 2:
+            address, city = ads[0], ads[1]
+            return '{}, {}, {}, {}'.format(address, city, self.region, self.post_code)
+        else:
+            return '{}, {}, {}'.format(self.address, self.region, self.post_code)
 
     def __str__(self):
         return self.address
