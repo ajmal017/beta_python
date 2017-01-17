@@ -563,7 +563,7 @@ class InviteTests(APITestCase):
         self.client.force_authenticate(invite.user)
         response = self.client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(mail.outbox[-1].subject, 'BetaSmartz client sign up form url',
+        self.assertEqual(mail.outbox[-1].subject, "Welcome to the {} online platform".format(invite.advisor.firm.name),
                          msg='Email outbox has email with expected resend email subject')
         lookup_invite = EmailInvite.objects.get(pk=invite.pk)
         self.assertEqual(lookup_invite.send_count, 1)
