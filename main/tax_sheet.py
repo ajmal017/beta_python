@@ -5,7 +5,21 @@ import pandas as pd
 import numpy as np
 from main import inflation
 from main import us_tax
+<<<<<<< 1f9ccff2cf72444b60664811e8a4c244a48d683d:main/tax_sheet.py
+from main import statetax as state
+from main import fica
+from main import test_tax_sheet as tst_tx
+=======
+#from main import projectedfedtax as fedtax
+#from main import statetax as state
+#from main import fica
 from main import testtaxsheet as tst_tx
+>>>>>>> us tax integration work-in-progress:main/taxsheet.py
+
+#from client.models import Client
+#from retirementsmartz.models import RetirementPlan
+#from main.abstract import PersonalData
+
 
 from dateutil.relativedelta import relativedelta
 
@@ -121,7 +135,6 @@ class TaxUser(object):
         inflation
         '''
         self.inflation_level = inflation_level
-        pdb.set_trace()
         self.annual_inflation = [self.inflation_level[11 + (i * 12)] for i in range(self.years_to_project)]
 
         '''
@@ -276,7 +289,7 @@ class TaxUser(object):
         self.pre_total_income = self.total_income/12. * self.pre_df['Inc_Inflator_Pre']
         self.post_total_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Total_Income'] = self.set_full_series(self.pre_total_income, self.post_total_income)
-        pdb.set_trace()
+        
         self.pre_other_income = self.other_income/12. * self.pre_df['Inf_Inflator_Pre']
         self.post_other_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Other_Income'] = self.set_full_series(self.pre_other_income, self.post_other_income)                                
@@ -298,9 +311,15 @@ class TaxUser(object):
         self.maindf['State_Tax_After_Credits'] = self.set_full_series(self.pre_state_tax_after_credits, self.post_state_tax_after_credits)
             
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
+<<<<<<< 1f9ccff2cf72444b60664811e8a4c244a48d683d:main/tax_sheet.py
+        fc = fica.Fica(self.employment_status,self.total_income)
+        self.fica = fc.get_fica()
+        
+=======
         
         fica_tx = us_tax.Fica(self.employment_status,self.total_income)
         self.fica = fica_tx.get_fica()
+>>>>>>> us tax integration work-in-progress:main/taxsheet.py
         
         self.pre_fica = self.fica/12. * self.pre_df['Inf_Inflator_Pre']       
         self.post_fica = [0. for i in range(self.total_rows - self.pre_retirement_end)] 

@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+import json
+
+from main import state_tax_engine
+from main import tax_sheet
+from main import test_tax_sheet as tst_tx
 
 class FederalTax(object):
     '''
@@ -7,6 +12,8 @@ class FederalTax(object):
     '''
 
     def __init__(self, years, inflation, taxable_income):
+
+
         '''
         checks
         '''
@@ -25,16 +32,17 @@ class FederalTax(object):
 
         
     def create_tax_engine(self):
+
         '''
         tax engine
         '''
 
         self.tax_user_type =    ['Single',
-                                 'Married Filing Jointly',
-                                 'Married Filing Separately (lived with spouse)',
-                                 'Head of Household',
-                                 "Qualifying Widow(er)",
-                                 'Married Filing Separately (didn\'t live with spouse)']
+                                 'Married_Fil_Joint',
+                                 'Married_Fil_Sep',
+                                 'Head_Of_House',
+                                 'Qual_Widow_Dep_Child',
+                                 'Married_Fil_Sep_Live_Apart']
         
         self.tax_bracket = [0., 0.1, 0.15, 0.25, 0.28, 0.33, 0.35, 0.396]
 
@@ -43,18 +51,18 @@ class FederalTax(object):
         self.tax_engine['Bracket_Rate_Differential'] = [self.tax_bracket[i] - self.tax_bracket[i - 1] for i in range(1, len(self.tax_bracket))]
         
         self.tax_engine['Single']                        = [0.       , 9225.    , 37450.    , 90750.    , 189300.   , 411500.   , 413200.   ]
-        self.tax_engine['Married Filing Jointly']             = [0.       , 18450.   , 74900.    , 151200.   , 230450.   , 411500.   , 464850.   ]    
-        self.tax_engine['Married Filing Separately (lived with spouse)']               = [0.       , 9225.    , 37450.    , 75600.    , 115225.   , 205750.   , 232425.   ]  
-        self.tax_engine['Head of Household']                 = [0.       , 13150.   , 50200.    , 129600.   , 209850.   , 411500.   , 439000    ]   
-        self.tax_engine["Qualifying Widow(er)"]          = [0.       , 18450.   , 74900.    , 151200.   , 230450.   , 411500.   , 464850    ]   
-        self.tax_engine['Married Filing Separately (didn\'t live with spouse)']    = [0.       , 9225.    , 37450.    , 90750.    , 189300.   , 411500.   , 413200.   ]   
+        self.tax_engine['Married_Fil_Joint']             = [0.       , 18450.   , 74900.    , 151200.   , 230450.   , 411500.   , 464850.   ]    
+        self.tax_engine['Married_Fil_Sep']               = [0.       , 9225.    , 37450.    , 75600.    , 115225.   , 205750.   , 232425.   ]  
+        self.tax_engine['Head_Of_House']                 = [0.       , 13150.   , 50200.    , 129600.   , 209850.   , 411500.   , 439000    ]   
+        self.tax_engine['Qual_Widow_Dep_Child']          = [0.       , 18450.   , 74900.    , 151200.   , 230450.   , 411500.   , 464850    ]   
+        self.tax_engine['Married_Fil_Sep_Live_Apart']    = [0.       , 9225.    , 37450.    , 90750.    , 189300.   , 411500.   , 413200.   ]   
 
         self.stand_deduct = {'Single':                      6300. ,
-                             'Married Filing Jointly':           12600. ,
-                             'Married Filing Separately (lived with spouse)':             6300. ,
-                             'Head of Household':               9250. ,
-                             "Qualifying Widow(er)":        12600. ,
-                             'Married Filing Separately (didn\'t live with spouse)':  6300. }
+                             'Married_Fil_Joint':           12600. ,
+                             'Married_Fil_Sep':             6300. ,
+                             'Head_Of_House':               9250. ,
+                             'Qual_Widow_Dep_Child':        12600. ,
+                             'Married_Fil_Sep_Live_Apart':  6300. }
 
 
     def get_federal_tax(self, inflation, income, tax_user):
@@ -83,9 +91,6 @@ class FederalTax(object):
                                                                            self.tax_projected['Annual_Taxable_Income'].iloc[j],
                                                                            user) for j in range(len(self.years))]
 
-
-from main import statetaxengine as state
-import json
 
 class StateTax(object):
 
@@ -129,8 +134,8 @@ class StateTax(object):
         sets json with tax_engine for state and filing status
         '''
         found = False
-        for i in range(len(state.tax_engine)):
-            json_st_tx = json.loads(state.tax_engine[i])
+        for i in range(len(state_tax_engine.tax_engine)):
+            json_st_tx = json.loads(state_tax_engine.tax_engine[i])
             if json_st_tx['state'] == self.state:
                 json_state_tax = json_st_tx
                 found = True
@@ -161,13 +166,12 @@ class StateTax(object):
         returns list with brackets for state and filing status
         '''
         return [self.tax_engine[i]["bracket"] for i in range(len(self.tax_engine))]
-
+        
 
 FICA_RATE_SS_EMPLOYED = 0.062
 FICA_RATE_SS_SELF_EMPLOYED = 0.124
 FICA_RATE_MEDICARE_EMPLOYED = 0.0145
 FICA_RATE_MEDICARE_SELF_EMPLOYED = 0.029
-
 FICA_INC_CEILING_SS = 118500.
 
 class Fica(object):
@@ -250,53 +254,10 @@ class Fica(object):
             result = 0
 
         return result
-        
 
-if __name__ == "__main__":
-    
-    import pdb
-    from main import taxsheet
-    from main import testtaxsheet as tst_tx
 
-    tst_tx_cls = taxsheet.TaxUser(tst_tx.name,
-                                  tst_tx.ssn,
-                                  tst_tx.dob,
-                                  tst_tx.desired_retirement_age,
-                                  tst_tx.life_exp,
-                                  tst_tx.retirement_lifestyle,
-                                  tst_tx.reverse_mort,
-                                  tst_tx.house_value,
-                                  tst_tx.filing_status,
-                                  tst_tx.retire_earn_at_fra,
-                                  tst_tx.retire_earn_under_fra,
-                                  tst_tx.total_income,
-                                  tst_tx.adj_gross,
-                                  tst_tx.federal_taxable_income,
-                                  tst_tx.federal_regular_tax,
-                                  tst_tx.after_tax_income,
-                                  tst_tx.other_income,
-                                  tst_tx.ss_fra_retirement,
-                                  tst_tx.paid_days,
-                                  tst_tx.ira_rmo_factor,
-                                  tst_tx.initial_401k_balance,
-                                  tst_tx.inflation_level,
-                                  tst_tx.risk_profile_over_cpi,
-                                  tst_tx.projected_income_growth,
-                                  tst_tx.state,
-                                  tst_tx.employment_status)
 
-    tst_tx_cls.create_maindf()
 
-    tx_fed_cls = TaxFederal(tst_tx_cls.years, tst_tx_cls.annual_inflation, tst_tx_cls.annual_taxable_income)
-    tx_fed__cls.create_tax_engine()
-    tx_fed_cls.create_tax_projected()
-    tax_proj = tx_fed_cls.tax_projected
 
-    tx_state_cls = StateTax('CA', 'Single', 100000.)
-    state_tax = tx_state_cls.set_tax_engine()
 
-    tx_fica_cls = Fica(tst_tx.employment_status,tst_tx.total_income)
-    fica = tx_fica_cls.get_fica()
 
-    
-    pdb.set_trace()

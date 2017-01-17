@@ -3,8 +3,8 @@ from django.core.management.base import NoArgsCommand
 class Command(NoArgsCommand):
     def handle_noargs(self, **options):
 
-        from main import taxsheet as tax
-        from main import testtaxsheet as tst_tx
+        from main import tax_sheet as tax
+        from main import test_tax_sheet as tst_tx
 
         tst_cls = tax.TaxUser(tst_tx.name,
                               tst_tx.ssn,
