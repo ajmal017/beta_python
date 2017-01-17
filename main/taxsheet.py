@@ -5,15 +5,7 @@ import pandas as pd
 import numpy as np
 from main import inflation
 from main import us_tax
-#from main import projectedfedtax as fedtax
-#from main import statetax as state
-#from main import fica
 from main import testtaxsheet as tst_tx
-
-#from client.models import Client
-#from retirementsmartz.models import RetirementPlan
-#from main.abstract import PersonalData
-
 
 from dateutil.relativedelta import relativedelta
 
@@ -129,6 +121,7 @@ class TaxUser(object):
         inflation
         '''
         self.inflation_level = inflation_level
+        pdb.set_trace()
         self.annual_inflation = [self.inflation_level[11 + (i * 12)] for i in range(self.years_to_project)]
 
         '''
@@ -283,7 +276,7 @@ class TaxUser(object):
         self.pre_total_income = self.total_income/12. * self.pre_df['Inc_Inflator_Pre']
         self.post_total_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Total_Income'] = self.set_full_series(self.pre_total_income, self.post_total_income)
-        
+        pdb.set_trace()
         self.pre_other_income = self.other_income/12. * self.pre_df['Inf_Inflator_Pre']
         self.post_other_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Other_Income'] = self.set_full_series(self.pre_other_income, self.post_other_income)                                
