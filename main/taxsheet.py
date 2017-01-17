@@ -4,9 +4,10 @@ import math
 import pandas as pd
 import numpy as np
 from main import inflation
-from main import projectedfedtax as fedtax
-from main import statetax as state
-from main import fica
+from main import us_tax
+#from main import projectedfedtax as fedtax
+#from main import statetax as state
+#from main import fica
 from main import testtaxsheet as tst_tx
 
 #from client.models import Client
@@ -73,7 +74,6 @@ class TaxUser(object):
         self.federal_taxable_income = federal_taxable_income
         self.federal_regular_tax = federal_regular_tax
         self.after_tax_income = after_tax_income
-        self.fica = fica
         self.ss_fra_retirement = ss_fra_retirement
         self.paid_days = paid_days
         self.ira_rmd_factor = ira_rmd_factor
@@ -296,7 +296,7 @@ class TaxUser(object):
         
         self.maindf['Fed_Taxable_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax']
 
-        self.state_tax = state.StateTax(self.state, self.filing_status, self.total_income)
+        self.state_tax = us_tax.StateTax(self.state, self.filing_status, self.total_income)
         self.state_tax_after_credits = self.state_tax.get_state_tax()
         self.state_effective_rate_to_agi = self.state_tax_after_credits/self.total_income
 
@@ -305,10 +305,9 @@ class TaxUser(object):
         self.maindf['State_Tax_After_Credits'] = self.set_full_series(self.pre_state_tax_after_credits, self.post_state_tax_after_credits)
             
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
-        pdb.set_trace()
-        fc = fica.Fica(self.employment_status,self.total_income)
-        self.fica = fc.get_fica()
-        pdb.set_trace()
+        
+        fica_tx = us_tax.Fica(self.employment_status,self.total_income)
+        self.fica = fica_tx.get_fica()
         
         self.pre_fica = self.fica/12. * self.pre_df['Inf_Inflator_Pre']       
         self.post_fica = [0. for i in range(self.total_rows - self.pre_retirement_end)] 
@@ -729,7 +728,7 @@ class TaxUser(object):
                                                                        self.years_pre,
                                                                        self.years_post)
 
-        taxFed = fedtax.TaxFederal(self.years, self.annual_inflation, self.annual_taxable_income)
+        taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
         taxFed.create_tax_engine()
         taxFed.create_tax_projected()
 
