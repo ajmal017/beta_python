@@ -853,11 +853,12 @@ class EmailInvite(models.Model):
             raise ValidationError('Can be resend only in status '
                                   'CREATED or SENT')
 
-        subject = "BetaSmartz client sign up form url"
+        subject = "Welcome to the {} online platform".format(self.advisor.firm.name)
 
         context = {
             'invite_url': self.advisor.get_invite_url('client', self.email),
             'advisor': self.advisor,
+            'category': 'Customer onboarding'
         }
 
         html_message = render_to_string('advisor/clients/invites/email.html',
