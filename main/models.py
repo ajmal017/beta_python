@@ -251,13 +251,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         " Returns the short name for the user."
         return self.first_name
 
-    def email_user(self, subject, message,
+    def email_user(self, subject, message="",
                    from_email=settings.DEFAULT_FROM_EMAIL, **kwargs):
         """
         Sends an email to this User.
         """
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
+    def login_url(self):
+        return settings.SITE_URL + "/login"
 
 class FiscalYear(models.Model):
     name = models.CharField(max_length=127)

@@ -28,6 +28,7 @@ from retiresmartz import advice_responses
 from main.event import Event
 from api.v1.utils import activity
 from main import quovo
+from django.template.loader import render_to_string
 
 logger = logging.getLogger('api.v1.client.views')
 
@@ -150,9 +151,15 @@ class ClientViewSet(ApiViewMixin,
         client.user.invitation.save()
 
         # Email the user "Welcome Aboard"
-        self.request.user.email_user('Welcome to BetaSmartz!',
-                                     "Congratulations! You've setup your first account, "
-                                     "you're ready to start using BetaSmartz!")
+        subject = 'Welcome to BetaSmartz!'
+        context = {
+            'advisor': client.advisor,
+            'login_url': client.user.login_url,
+            'category': 'Customer onboarding'
+        }
+        self.request.user.email_user(subject,
+                                     html_message=render_to_string(
+                                        'email/client/congrats_new_client_setup.html', context))
 
         headers = self.get_success_headers(serializer.data)
         serializer = self.serializer_response_class(client)
