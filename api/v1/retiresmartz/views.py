@@ -1,4 +1,3 @@
-import pdb
 import logging
 
 import numpy as np
@@ -32,10 +31,6 @@ from retiresmartz.calculator.social_security import calculate_payments
 from retiresmartz.models import RetirementAdvice, RetirementPlan
 from support.models import SupportRequest
 from . import serializers
-
-from main import taxsheet
-from main import inflation
-from main import zip2state
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
@@ -434,44 +429,6 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
 
-        # the following 'hard-wired' for now
-        fudged_federal_regular_tax = 20614
-        ira_rmd_factor = 26.5
-        fudged_risk_profile_over_cpi = 0.005
-        
-        tax_user = taxsheet.TaxUser(plan.client,
-                                      plan.client.regional_data['ssn'],
-                                      plan.client.date_of_birth,
-                                      plan.retirement_age,
-                                      plan.client.life_expectancy,
-                                      plan.lifestyle,
-                                      plan.reverse_mortgage,
-                                      plan.client.home_value,
-                                      plan.client.civil_status,
-                                      plan.client.ss_fra_todays,
-                                      plan.client.ss_fra_retirement,
-                                      plan.income,
-                                      plan.client.net_worth,
-                                      plan.client.income,
-                                      fudged_federal_regular_tax,
-                                      plan.atc,
-                                      plan.client.other_income,
-                                      plan.client.ss_fra_retirement,
-                                      plan.paid_days,
-                                      ira_rmd_factor,
-                                      plan.balance,
-                                      inflation.inflation_level,
-                                      fudged_risk_profile_over_cpi,
-                                      plan.income_growth,
-                                      plan.client.employee_contributions_last_year,
-                                      plan.client.employer_contributions_last_year,
-                                      zip2state.get_state(plan.client.residential_address.post_code),
-                                      plan.client.employment_status)
-
-        tax_user.create_maindf()
-
-
-        '''
         today = timezone.now().date()
         retire_date = max(today, plan.client.date_of_birth + relativedelta(years=plan.retirement_age))
         death_date = max(retire_date, plan.client.date_of_birth + relativedelta(years=plan.selected_life_expectancy))
@@ -541,12 +498,9 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
 
         calculator = Calculator(cash_flows=cash_flows, assets=assets)
         asset_values, income_values = calculator.calculate(rdcf)
-        '''
 
         # Convert these returned values to a format for the API
-        
-        catd = pd.concat([tax_user.maindf["Taxable_Accounts"], tax_user.maindf["After_Tax_Income"], tax_user.maindf["After_Tax_Income"]], axis=1)
-        pdb.set_trace()
+        catd = pd.concat([asset_values, income_values['actual'], income_values['desired']], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
 
