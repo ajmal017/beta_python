@@ -1,9 +1,10 @@
+import logging
 from datetime import datetime
 
 from django import forms
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse_lazy
+from django.core.urlresolvers import reverse
 from django.db import transaction
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect, \
@@ -23,6 +24,9 @@ from main.models import AccountGroup, Advisor, Goal, Platform, PortfolioSet, \
 from main.views.base import AdvisorView, ClientView
 from notifications.models import Notify
 from user.autologout import SessionExpire
+
+
+logger = logging.getLogger(__name__)
 
 
 class AdvisorClientInviteNewView(TemplateView, AdvisorView):
@@ -66,12 +70,17 @@ class AdvisorDownloadAgreement(AdvisorView):
             client = self.advisor.clients.get(pk=client_id)
         except Client.DoesNotExist:
             return HttpResponseForbidden()
+        try:
+            url = client.client_agreement.url
+        except ValueError:
+            logger.error('Client %s does not have agreement.', client_id)
+            return HttpResponseRedirect(reverse('advisor:agreements'))
         Notify.ADVISOR_CLIENT_AGREEMENT_DOWNLOAD.send(
             actor=self.advisor,
             recipient=self.advisor.user,
             target=client
         )
-        return HttpResponseRedirect(client.client_agreement.url)
+        return HttpResponseRedirect(url)
 
 
 class AdvisorSupport(TemplateView, AdvisorView):
@@ -118,9 +127,9 @@ class AdvisorCompositeForm:
 
     def get_success_url(self):
         if self.object:
-            return reverse_lazy('advisor:composites-edit', kwargs={'pk': self.object.pk})
+            return reverse('advisor:composites-edit', kwargs={'pk': self.object.pk})
         else:
-            return reverse_lazy('advisor:composites-create')
+            return reverse('advisor:composites-create')
 
     def get_queryset(self):
         return super(AdvisorCompositeForm, self).get_queryset().filter(
@@ -140,7 +149,7 @@ class AdvisorCompositeNew(AdvisorCompositeForm, CreateView, AdvisorView):
             pk__in=account_list,
             primary_owner__advisor=self.advisor)
         if account_list.count() == 0:
-            redirect = reverse_lazy('advisor:composites-create')
+            redirect = reverse('advisor:composites-create')
             messages.error(request,
                 'Failed to create household. Make sure you add at least one account')
             return HttpResponseRedirect(redirect)
@@ -198,10 +207,10 @@ class AdvisorRemoveAccountFromGroupView(AdvisorView):
                 recipient=self.advisor.user,
                 target=account,
             )
-            redirect = reverse_lazy('advisor:overview')
+            redirect = reverse('advisor:overview')
         else:
             # account group not deleted (just the account)
-            redirect = reverse_lazy('advisor:composites-edit',
+            redirect = reverse('advisor:composites-edit',
                 kwargs={'pk': account_group_id})
 
         return HttpResponseRedirect(redirect)
@@ -300,7 +309,7 @@ class AdvisorAccountGroupSecondaryCreateView(UpdateView, AdvisorView):
 
         messages.info(self.request, mark_safe(msg))
 
-        return reverse_lazy('advisor:composites-detail-secondary-advisors-create',
+        return reverse('advisor:composites-detail-secondary-advisors-create',
                 kwargs={'pk': self.object.pk})
 
     def get_form(self, form_class=None):
@@ -374,7 +383,7 @@ class AdvisorAccountGroupSecondaryDeleteView(AdvisorView):
         )
 
         return HttpResponseRedirect(
-            reverse_lazy('advisor:composites-detail-secondary-advisors-create',
+            reverse('advisor:composites-detail-secondary-advisors-create',
                 kwargs={'pk': account_group_pk})
         )
 
@@ -504,7 +513,7 @@ class CreateNewClientPrepopulatedView(AdvisorView, TemplateView):
                 return response
             else:
                 return HttpResponseRedirect(
-                    reverse_lazy('advisor:clients:invites-create-personal-details',
+                    reverse('advisor:clients:invites-create-personal-details',
                         kwargs={'pk': user.client.pk})
                 )
 
@@ -519,7 +528,7 @@ class CreateNewClientPrepopulatedView(AdvisorView, TemplateView):
             user = form.save()
             if self.invite_type == "blank":
                 return HttpResponseRedirect(
-                    reverse_lazy('advisor:clients:invites-create-confirm',
+                    reverse('advisor:clients:invites-create-confirm',
                         kwargs={'pk': user.client.pk}) + '?invitation_type=blank'
                 )
 
@@ -542,7 +551,7 @@ class CreateNewClientPrepopulatedView(AdvisorView, TemplateView):
             messages.error(request, "Please select an account type")
 
             return HttpResponseRedirect(
-                reverse_lazy('advisor:clients:invites') \
+                reverse('advisor:clients:invites') \
                 + '?invitation_type={0}'.format(self.invite_type)
             )
 
@@ -555,7 +564,7 @@ class CreateNewClientPrepopulatedView(AdvisorView, TemplateView):
 
     def get_success_url(self):
         messages.info(self.request, "Invite sent successfully!")
-        return reverse_lazy('advisor:clients:invites')
+        return reverse('advisor:clients:invites')
 
     def get_context_data(self, **kwargs):
         context_data = super(CreateNewClientPrepopulatedView,
@@ -631,7 +640,7 @@ class BuildPersonalDetails(AdvisorView, UpdateView):
         return q
 
     def get_success_url(self):
-        return reverse_lazy('advisor:clients:invites-create-financial-details',
+        return reverse('advisor:clients:invites-create-financial-details',
                 kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
@@ -671,7 +680,7 @@ class BuildFinancialDetails(AdvisorView, UpdateView):
         return q
 
     def get_success_url(self):
-        return reverse_lazy('advisor:clients:invites-create-confirm',
+        return reverse('advisor:clients:invites-create-confirm',
                 kwargs={'pk': self.object.pk})
 
 
