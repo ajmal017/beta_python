@@ -19,7 +19,7 @@ from .factories import AssetClassFactory, ContentTypeFactory, GroupFactory, \
 from django.utils import timezone
 from pinax.eventlog.models import log
 from retiresmartz.calculator.social_security import calculate_payments
-
+import pdb
 mocked_now = datetime(2016, 1, 1)
 
 
@@ -520,7 +520,7 @@ class RetiresmartzTests(APITestCase):
         # Now set the date of birth
         plan.client.date_of_birth = old_dob
         plan.client.save()
-
+        
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
