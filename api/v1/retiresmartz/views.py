@@ -3,9 +3,6 @@ import logging
 import numpy as np
 import pandas as pd
 import scipy.stats as st
-from dateutil.relativedelta import relativedelta
-from django.db.models import Q
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import detail_route
 from rest_framework.exceptions import ValidationError
@@ -19,15 +16,9 @@ from api.v1.views import ApiViewMixin
 from client.models import Client
 from common.utils import d2ed
 from main.event import Event
-from main.models import Ticker
 from portfolios.calculation import Unsatisfiable
 from retiresmartz import advice_responses
-from retiresmartz.calculator import Calculator, create_settings
-from retiresmartz.calculator.assets import TaxDeferredAccount
-from retiresmartz.calculator.cashflows import EmploymentIncome, \
-    InflatedCashFlow, ReverseMortgage
-from retiresmartz.calculator.desired_cashflows import RetiresmartzDesiredCashFlow
-from retiresmartz.calculator.social_security import calculate_payments
+from retiresmartz.calculator import create_settings
 from retiresmartz.models import RetirementAdvice, RetirementPlan
 from support.models import SupportRequest
 from . import serializers
@@ -36,7 +27,6 @@ from main import tax_sheet as tax
 from main import inflation
 from main import zip2state
 from main import test_tax_sheet as tst_tx
-import pdb
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
