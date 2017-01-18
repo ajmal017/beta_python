@@ -578,13 +578,12 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                               inflation.inflation_level,
                               tst_tx.risk_profile_over_cpi,
                               plan.income_growth,
-                              plan.employee_contributions_last_year,
-                              plan.employer_contributions_last_year,
+                              tst_tx.contrib_rate_employee_401k,
+                              tst_tx.contrib_rate_employee_401k,
                               state,
                               tst_tx.employment_status)
     
         tx.create_maindf()
-        pdb.set_trace()
 
         # Convert these returned values to a format for the API
         catd = pd.concat([tx.maindf['Taxable_Accounts'], tx.maindf['After_Tax_Income'], tx.maindf['After_Tax_Income']], axis=1)
