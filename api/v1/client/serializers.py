@@ -17,6 +17,7 @@ from pdf_parsers.tax_return import parse_pdf
 from user.models import SecurityAnswer
 from ..user.serializers import PhoneNumberValidationSerializer, \
     UserFieldSerializer
+from django.conf import settings
 
 logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
@@ -306,10 +307,11 @@ class InvitationSerializer(ReadOnlyModelSerializer):
     firm_name = serializers.SerializerMethodField()
     firm_logo = serializers.SerializerMethodField()
     firm_colored_logo = serializers.SerializerMethodField()
+    client_agreement_url = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailInvite
-        read_only_fields = ('email', )
+        read_only_fields = ('email', 'client_agreement_url', )
         fields = (
             'invite_key',
             'status',
@@ -321,6 +323,7 @@ class InvitationSerializer(ReadOnlyModelSerializer):
             'firm_name',
             'firm_logo',
             'firm_colored_logo',
+            'client_agreement_url',
             'email',
         )
 
@@ -332,6 +335,10 @@ class InvitationSerializer(ReadOnlyModelSerializer):
 
     def get_firm_colored_logo(self, obj):
         return obj.advisor.firm.colored_logo
+
+    def get_client_agreement_url(self, obj):
+        cau = obj.advisor.firm.client_agreement_url
+        return settings.SITE_URL + cau.url if cau else None
 
 
 class PrivateInvitationSerializer(serializers.ModelSerializer):
@@ -345,12 +352,13 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
     risk_profile_group = serializers.SerializerMethodField()
     firm_name = serializers.SerializerMethodField()
     firm_logo = serializers.SerializerMethodField()
+    client_agreement_url = serializers.SerializerMethodField()
     firm_colored_logo = serializers.SerializerMethodField()
     tax_transcript_data = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailInvite
-        read_only_fields = ('invite_key', 'email', 'status')
+        read_only_fields = ('invite_key', 'email', 'status', 'client_agreement_url',)
         fields = (
             'email',
             'invite_key',
@@ -361,6 +369,7 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
             'advisor',
             'firm_name',
             'firm_logo',
+            'client_agreement_url',
             'firm_colored_logo',
             'tax_transcript',
             'tax_transcript_data',  # this will be stored to client.region_data.tax_transcript_data
@@ -377,6 +386,10 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
 
     def get_firm_colored_logo(self, obj):
         return obj.advisor.firm.colored_logo
+
+    def get_client_agreement_url(self, obj):
+        cau = obj.advisor.firm.client_agreement_url
+        return settings.SITE_URL + cau.url if cau else None
 
     def get_tax_transcript_data(self, obj):
         # parse_pdf
