@@ -37,5 +37,7 @@
         });
         $("#id_period").change(handlePeriodChange);
     });
-    betasmartz.widgets.searchTable("#activity");
+    betasmartz.widgets.searchTable("#activity", null, {
+      saveState: true
+  });
 }());
