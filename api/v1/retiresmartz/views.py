@@ -133,7 +133,9 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         orig = RetirementPlan.objects.get(pk=instance.pk)
+        orig_client = orig.client
         updated = serializer.update(instance, serializer.validated_data)
+        updated_client = updated.client
 
         if getattr(instance, '_prefetched_objects_cache', None):
             # If 'prefetch_related' has been applied to a queryset, we need to
@@ -142,6 +144,82 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             serializer = self.get_serializer(instance)
 
         # RetirementAdvice Triggers
+        orig_daily_exercise = 0 if orig_client.daily_exercise is None else orig_client.daily_exercise
+        orig_drinks = 0 if orig_client.drinks is None else orig_client.drinks
+        orig_smoker = orig_client.smoker
+        orig_height = orig_client.height
+        orig_weight = orig_client.weight
+
+        life_expectancy_field_updated = (updated_client.daily_exercise != orig_client.daily_exercise or
+                                         updated_client.weight != orig_weight or
+                                         updated_client.height != orig_height or
+                                         updated_client.smoker != orig_smoker or
+                                         updated_client.drinks != orig_drinks)
+
+        # Advice feed for toggling smoker
+        if updated_client.smoker != orig_smoker:
+            if updated_client.smoker:
+                e = Event.RETIRESMARTZ_IS_A_SMOKER.log(None,
+                                                       user=updated_client.user,
+                                                       obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_smoking_yes(advice)
+                advice.save()
+            elif updated_client.smoker is False:
+                e = Event.RETIRESMARTZ_IS_NOT_A_SMOKER.log(None,
+                                                           user=updated_client.user,
+                                                           obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_smoking_no(advice)
+                advice.save()
+
+        # Advice feed for daily_exercise change
+        if updated_client.daily_exercise != orig_daily_exercise:
+            # exercise only
+            e = Event.RETIRESMARTZ_EXERCISE_ONLY.log(None,
+                                                     user=updated_client.user,
+                                                     obj=updated_client)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_exercise_only(advice)
+            advice.save()
+
+        # Advice feed for drinks change
+        if updated_client.drinks != orig_drinks:
+            if updated_client.drinks > 1:
+                e = Event.RETIRESMARTZ_DRINKS_MORE_THAN_ONE.log(None,
+                                                     user=updated_client.user,
+                                                     obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_drinks_more_than_one(advice)
+                advice.save()
+            else:
+                e = Event.RETIRESMARTZ_DRINKS_ONE_OR_LESS.log(None,
+                                                     user=updated_client.user,
+                                                     obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_drinks_one_or_less(advice)
+                advice.save()
+
+        # frontend posts one at a time, weight then height, not together in one post
+        if (updated_client.weight != orig_weight or updated_client.height != orig_height):
+            # weight and/or height updated
+            e = Event.RETIRESMARTZ_WEIGHT_AND_HEIGHT_ONLY.log(None,
+                                                              user=updated_client.user,
+                                                              obj=updated_client)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_weight_and_height_only(advice)
+            advice.save()
+
+        if life_expectancy_field_updated and (updated_client.daily_exercise and
+           updated_client.weight and updated_client.height and updated_client.smoker is not None and
+           updated_client.drinks is not None):
+            # every wellbeing field
+            e = Event.RETIRESMARTZ_ALL_WELLBEING_ENTRIES.log(None,
+                                                             user=updated_client.user,
+                                                             obj=updated_client)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_all_wellbeing_entries(advice)
+            advice.save()
 
         # Spending and Contributions
         # TODO: Replace income with function to calculate expected income
@@ -412,7 +490,7 @@ equired to generate the
         going up by 1000 every point, income starting
         at 200000, increasing by 50 every point.
         """
-    
+
         retirement_plan = self.get_object()
         tickers = Ticker.objects.filter(~Q(state=Ticker.State.CLOSED.value))
         portfolio = []
@@ -435,8 +513,8 @@ equired to generate the
             dt = today + i * day_interval
             projection.append([d2ed(dt), assets, income])
         return Response({'portfolio': portfolio, 'projection': projection})
-        
-       
+
+
     @detail_route(methods=['get'], url_path='calculate')
     def calculate(self, request, parent_lookup_client, pk, format=None):
         """

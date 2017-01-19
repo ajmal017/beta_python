@@ -27,6 +27,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='retirementadvice',
             name='actions',
-            field=jsonfield.fields.JSONField(help_text='List of actions [{label, url, data},...]', blank=True, null=True),
+            field=jsonfield.fields.JSONField(help_text='List of actions [{label, type/url, data},...]', blank=True, null=True),
         ),
     ]
