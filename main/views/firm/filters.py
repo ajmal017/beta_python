@@ -7,7 +7,7 @@ from django.db.models import Q
 import django_filters as filters
 from django.utils.timezone import now
 
-from notifications.models import Notification
+from notifications.models import Notification, Notify
 
 from main.models import Advisor, Goal, GoalMetric, User
 from client.models import Client
@@ -182,9 +182,7 @@ class UsersFilter(filters.CharFilter):
 class FirmActivityFilterSet(filters.FilterSet):
     VERB_CHOICES = (
         (None, 'All Activity'),
-        ('login', 'Login'),
-        ('logout', 'Logout'),
-    )
+    ) + tuple((i.value, i.value.title()) for i in Notify)
 
     group = UserGroupFilter(widget=forms.Select(attrs=ATTRS_ONCHANGE),
         groups=('Advisors', 'Clients', 'Supervisors'))
