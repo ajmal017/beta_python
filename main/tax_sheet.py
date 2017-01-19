@@ -6,6 +6,8 @@ import numpy as np
 from main import inflation
 from main import us_tax
 from main import test_tax_sheet as tst_tx
+from main import abstract
+from main import constants
 
 from dateutil.relativedelta import relativedelta
 
@@ -57,7 +59,7 @@ class TaxUser(object):
         self.retirement_lifestyle = retirement_lifestyle
         self.reverse_mort = reverse_mort
         self.house_value = house_value
-        self.filing_status = filing_status
+        self.filing_status = abstract.PersonalData.CivilStatus(filing_status)
         self.risk_profile_over_cpi = risk_profile_over_cpi
         self.retire_earn_at_fra = retire_earn_at_fra
         self.retire_earn_under_fra = retire_earn_under_fra
@@ -75,13 +77,12 @@ class TaxUser(object):
         self.contrib_rate_employee_401k = contrib_rate_employee_401k
         self.contrib_rate_employer_401k = contrib_rate_employer_401k
         self.state = state
-        self.employment_status = employment_status
-
+        self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
 
         '''
         age
         '''
-        self.age = ((pd.Timestamp('today')-dob).days)/365.
+        self.age = ((pd.Timestamp('today')-self.dob).days)/365.
 
         '''
         retirememt period
@@ -120,6 +121,7 @@ class TaxUser(object):
         '''
         inflation
         '''
+
         self.inflation_level = inflation_level
         self.annual_inflation = [self.inflation_level[11 + (i * 12)] for i in range(self.years_to_project)]
 
@@ -205,6 +207,17 @@ class TaxUser(object):
             capital_growth[i] = self.maindf['Portfolio_Return'][i] * balance[i - 1]
             balance[i] = self.maindf[account_type + '_Employee'][i] + self.maindf[account_type + '_Employer'][i] + capital_growth[i] + balance[i - 1]
         return capital_growth, balance
+
+
+    def get_projected_fed_tax(self):
+        '''
+        returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
+        '''
+
+        taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
+        taxFed.create_tax_engine()
+        taxFed.create_tax_projected()
+        self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
     
 
     def create_maindf(self):
@@ -287,7 +300,7 @@ class TaxUser(object):
         self.maindf['Fed_Regular_Tax'] = self.set_full_series(self.pre_fed_regular_tax, self.post_fed_regular_tax)
         
         self.maindf['Fed_Taxable_Income'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax']
-
+        
         self.state_tax = us_tax.StateTax(self.state, self.filing_status, self.total_income)
         self.state_tax_after_credits = self.state_tax.get_state_tax()
         self.state_effective_rate_to_agi = self.state_tax_after_credits/self.total_income
@@ -583,7 +596,7 @@ class TaxUser(object):
                                           + self.maindf['Qual_Annuity_Balance'] \
                                           + self.maindf['Tax_Def_Annuity_Balance'] \
                                           - self.maindf['Nontaxable_Accounts']
-
+        
                                             
         # RETIREMENT PERIOD INCOME
 
@@ -720,18 +733,21 @@ class TaxUser(object):
                                                                        self.years_pre,
                                                                        self.years_post)
 
-        taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
+        taxFed = us_tax.FederalTax(self.filing_status,
+                                   self.years,
+                                   self.annual_inflation,
+                                   self.annual_taxable_income)
         taxFed.create_tax_engine()
         taxFed.create_tax_projected()
 
-        self.annual_projected_tax = taxFed.tax_projected['Single']
+        self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
         
         self.post_projected_tax = pd.Series()
         
         for i in range(len(self.years_post) - 1):
-            self.post_projected_tax = self.post_projected_tax.append(pd.Series([self.annual_projected_tax.iloc[self.pre_retirement_years - 1 + 1 + i]/12.,
-                                                                                self.annual_projected_tax.iloc[self.pre_retirement_years - 1 + 1 + i]/12.,
-                                                                                self.annual_projected_tax.iloc[self.pre_retirement_years - 1 + 1 + i]/12.,
+            self.post_projected_tax = self.post_projected_tax.append(pd.Series([self.annual_projected_tax.iloc[self.pre_retirement_years - 1  + 1 + i]/12.,
+                                                                                self.annual_projected_tax.iloc[self.pre_retirement_years - 1  + 1 + i]/12.,
+                                                                                self.annual_projected_tax.iloc[self.pre_retirement_years - 1  + 1 + i]/12.,
                                                                                 self.annual_projected_tax.iloc[self.pre_retirement_years- 1 + 1 + i]/12.,
                                                                                 self.annual_projected_tax.iloc[self.pre_retirement_years - 1 + 1 + i]/12.,
                                                                                 self.annual_projected_tax.iloc[self.pre_retirement_years - 1 + 1 + i]/12.,
@@ -761,39 +777,6 @@ class TaxUser(object):
         self.maindf['State_Tax_After_Credits'] = self.maindf['Adj_Gross_Inc'] * self.state_effective_rate_to_agi
 
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
-        
 
-if __name__ == "__main__":
-
-    tst_cls = TaxUser(tst_tx.name,
-                      tst_tx.ssn,
-                      tst_tx.dob,
-                      tst_tx.desired_retirement_age,
-                      tst_tx.life_exp,
-                      tst_tx.retirement_lifestyle,
-                      tst_tx.reverse_mort,
-                      tst_tx.house_value,
-                      tst_tx.filing_status,
-                      tst_tx.retire_earn_at_fra,
-                      tst_tx.retire_earn_under_fra,
-                      tst_tx.total_income,
-                      tst_tx.adj_gross,
-                      tst_tx.federal_taxable_income,
-                      tst_tx.federal_regular_tax,
-                      tst_tx.after_tax_income,
-                      tst_tx.other_income,
-                      tst_tx.ss_fra_retirement,
-                      tst_tx.paid_days,
-                      tst_tx.ira_rmd_factor,
-                      tst_tx.initial_401k_balance,
-                      tst_tx.inflation_level,
-                      tst_tx.risk_profile_over_cpi,
-                      tst_tx.projected_income_growth,
-                      tst_tx.contrib_rate_employee_401k,
-                      tst_tx.contrib_rate_employer_401k,
-                      tst_tx.state,
-                      tst_tx.employment_status)
-    
-    tst_cls.create_maindf()
 
         

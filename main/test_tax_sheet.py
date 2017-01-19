@@ -1,5 +1,7 @@
 import pandas as pd
 from main import inflation
+from main import abstract
+from main import constants
 
 
 '''
@@ -22,7 +24,7 @@ life_exp = 85.
 
 house_value = 250000.
 
-filing_status = 'Single'
+filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
 retire_earn_at_fra = 3490.
 
@@ -60,5 +62,6 @@ contrib_rate_employer_401k = 0.02
 
 state = "CA"
 
-employment_status = 'Self_Employed'
+employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
+
 

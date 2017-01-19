@@ -4,6 +4,8 @@ import json
 
 from main import state_tax_engine
 from main import tax_sheet
+from main import abstract
+from main import constants
 from main import test_tax_sheet as tst_tx
 
 class FederalTax(object):
@@ -11,8 +13,7 @@ class FederalTax(object):
     Model for projected federal tax calculation; based on 'Projected Federal Tax Calc' tab in 'Retirement Modelling v3.xlsx' 
     '''
 
-    def __init__(self, years, inflation, taxable_income):
-
+    def __init__(self, filing_status, years, inflation, taxable_income):
 
         '''
         checks
@@ -26,9 +27,10 @@ class FederalTax(object):
         '''
         variables
         '''
-        self.years              = years
-        self.inflation          = inflation
-        self.taxable_income     = taxable_income
+        self.fed_tax_filing_status   = self.get_federal_tax_filing_status(filing_status)
+        self.years                  = years
+        self.inflation              = inflation
+        self.taxable_income         = taxable_income
 
         
     def create_tax_engine(self):
@@ -36,13 +38,6 @@ class FederalTax(object):
         '''
         tax engine
         '''
-
-        self.tax_user_type =    ['Single',
-                                 'Married_Fil_Joint',
-                                 'Married_Fil_Sep',
-                                 'Head_Of_House',
-                                 'Qual_Widow_Dep_Child',
-                                 'Married_Fil_Sep_Live_Apart']
         
         self.tax_bracket = [0., 0.1, 0.15, 0.25, 0.28, 0.33, 0.35, 0.396]
 
@@ -65,16 +60,44 @@ class FederalTax(object):
                              'Married_Fil_Sep_Live_Apart':  6300. }
 
 
-    def get_federal_tax(self, inflation, income, tax_user):
+    def get_federal_tax_filing_status(self, filing_status):
         '''
-        returns federal tax for given income, inflation amd tax user type 
+        returns one of 'Single', 'Married_Fil_Joint', 'Married_Fil_Sep', 'Head_Of_House', 'Qual_Widow_Dep_Child',
+        'Married_Fil_Sep_Live_Apart' (or raising exception) depending on filing_status
+        '''
+
+        if filing_status == abstract.PersonalData.CivilStatus['SINGLE']:
+            return 'Single'
+
+        elif filing_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER']:
+            return 'Married_Fil_Sep'
+
+        elif filing_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_NOT_LIVED_TOGETHER']:
+            return 'Married_Fil_Sep_Live_Apart'
+
+        elif filing_status == abstract.PersonalData.CivilStatus['HEAD_OF_HOUSEHOLD']:
+            return 'Head_Of_House'
+              
+        elif filing_status == abstract.PersonalData.CivilStatus['QUALIFYING_WIDOWER']:
+            return 'Qual_Widow_Dep_Child'
+
+        elif filing_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:
+            return 'Married_Fil_Joint'
+
+        else:
+            raise Exception('filing_status not handled')
+
+
+    def get_federal_tax(self, inflation, income):
+        '''
+        returns federal tax for given income, inflation amd fed tax filing status 
         '''
         # Names could be improved ... am not familiar with the correct tax terminology
         # also, deductions are not included in calculation ...
-        self.tax_engine['Is_Greater_Than_' + tax_user] = np.where(float(income) > (self.tax_engine[tax_user]  * (1 + inflation)), 1, 0)
-        self.tax_engine['Excess_' + tax_user] = income - self.tax_engine[tax_user]  * (1 + inflation)
-        self.tax_engine['Bracket_Component_' + tax_user] = self.tax_engine['Bracket_Rate_Differential'] * self.tax_engine['Excess_' + tax_user] * self.tax_engine['Is_Greater_Than_' + tax_user]
-        result = self.tax_engine['Bracket_Component_' + tax_user].sum()
+        self.tax_engine['Is_Greater_Than'] = np.where(float(income) > (self.tax_engine[self.fed_tax_filing_status]  * (1 + inflation)), 1, 0)
+        self.tax_engine['Excess'] = income - self.tax_engine[self.fed_tax_filing_status]  * (1 + inflation)
+        self.tax_engine['Bracket_Component'] = self.tax_engine['Bracket_Rate_Differential'] * self.tax_engine['Excess'] * self.tax_engine['Is_Greater_Than']
+        result = self.tax_engine['Bracket_Component'].sum()
         return result
     
 
@@ -86,10 +109,8 @@ class FederalTax(object):
         self.tax_projected['Ann_Avg_Inflation'] = self.inflation
         self.tax_projected['Annual_Taxable_Income'] = self.taxable_income
 
-        for user in self.tax_user_type:
-            self.tax_projected[user] = [self.get_federal_tax(self.tax_projected['Ann_Avg_Inflation'].iloc[j],
-                                                                           self.tax_projected['Annual_Taxable_Income'].iloc[j],
-                                                                           user) for j in range(len(self.years))]
+        self.tax_projected['Projected_Fed_Tax'] = [self.get_federal_tax(self.tax_projected['Ann_Avg_Inflation'].iloc[j],
+                                                                    self.tax_projected['Annual_Taxable_Income'].iloc[j]) for j in range(len(self.years))]
 
 
 class StateTax(object):
@@ -141,7 +162,7 @@ class StateTax(object):
                 found = True
 
         if found:
-            self.tax_engine = json_state_tax[self.filing_status]
+            self.tax_engine = json_state_tax[self.get_state_tax_filing_status()]
 
         else:
             raise Exception('state not handled')
@@ -166,6 +187,34 @@ class StateTax(object):
         returns list with brackets for state and filing status
         '''
         return [self.tax_engine[i]["bracket"] for i in range(len(self.tax_engine))]
+
+
+    def get_state_tax_filing_status(self):
+        '''
+        returns either 'Single' or 'Married_Filing_Joint' (or raises exception) based on overloaded filing_status 
+        '''
+
+        if self.filing_status == abstract.PersonalData.CivilStatus['SINGLE']:
+            return 'Single'
+
+        elif self.filing_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER']:
+            return 'Single'
+
+        elif self.filing_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_NOT_LIVED_TOGETHER']:
+            return 'Single'
+
+        elif self.filing_status == abstract.PersonalData.CivilStatus['HEAD_OF_HOUSEHOLD']:
+            return 'Single'
+
+        elif self.filing_status == abstract.PersonalData.CivilStatus['QUALIFYING_WIDOWER']:
+            return 'Single'
+
+        elif self.filing_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:
+            return 'Married Filing Jointly'
+
+        else:
+            raise Exception('filing_status not handled')
+            
         
 
 FICA_RATE_SS_EMPLOYED = 0.062
@@ -183,9 +232,9 @@ class Fica(object):
     '''
 
 
-    def __init__(self, filing_status, total_income):
+    def __init__(self, employment_status, total_income):
 
-        self.filing_status = filing_status
+        self.employment_status = employment_status
         self.total_income = total_income
 
 
@@ -202,7 +251,7 @@ class Fica(object):
 
     def get_for_ss(self):
 
-        if self.filing_status == 'Employed':
+        if self.employment_status[0] == constants.EMPLOYMENT_STATUS_EMMPLOYED:
             '''
             For social security = IF employment_status is employed then multiply wages,
             salaries, tips etc (Line 7 of Form 1040) up to a maximum amount of $118,500
@@ -212,7 +261,7 @@ class Fica(object):
             result = min(self.total_income, FICA_INC_CEILING_SS) * FICA_RATE_SS_EMPLOYED
             
 
-        elif self.filing_status == 'Self_Employed':
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_SELF_EMPLOYED:
             '''
             For social security = IF employment_status is self employed then multiply
             business income (Line 12 of Form 1040) less SE_tax  (Line 57 of Form 1040)
@@ -223,15 +272,24 @@ class Fica(object):
             
             result = min(self.total_income, FICA_INC_CEILING_SS) * FICA_RATE_SS_SELF_EMPLOYED
 
-        else:
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_UNEMPLOYED:
             result = 0
+
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_RETIRED:
+            result = 0
+
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_NOT_LABORFORCE:
+            result = 0
+
+        else: 
+            raise Exception('employment_status not handled')
 
         return result
 
 
     def get_for_medicare(self):
 
-        if self.filing_status == 'Employed':
+        if self.employment_status[0] == constants.EMPLOYMENT_STATUS_EMMPLOYED:
             '''
             For medicare = IF employment_status is employed then multiply wages, salaries,
             tips etc (Line 7 of Form 1040)  by 1.45%F
@@ -240,7 +298,7 @@ class Fica(object):
             result = self.total_income * FICA_RATE_MEDICARE_EMPLOYED
             
 
-        elif self.filing_status == 'Self_Employed':
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_SELF_EMPLOYED:
             '''
             For medicare = IF employment_status is self employed then multiply business
             income (Line 12 of Form 1040) less SE_tax  (Line 57 of Form 1040) by 2.9%
@@ -250,8 +308,17 @@ class Fica(object):
             
             result = self.total_income * FICA_RATE_MEDICARE_SELF_EMPLOYED
 
-        else:
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_UNEMPLOYED:
             result = 0
+
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_RETIRED:
+            result = 0
+
+        elif self.employment_status[0] == constants.EMPLOYMENT_STATUS_NOT_LABORFORCE:
+            result = 0
+
+        else: 
+            raise Exception('employment_status not handled')
 
         return result
 

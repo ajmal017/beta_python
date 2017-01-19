@@ -19,8 +19,10 @@ from .factories import AssetClassFactory, ContentTypeFactory, GroupFactory, \
 from django.utils import timezone
 from pinax.eventlog.models import log
 from retiresmartz.calculator.social_security import calculate_payments
-mocked_now = datetime(2016, 1, 1)
+from main import constants
+from main import abstract
 
+mocked_now = datetime(2016, 1, 1)
 
 class RetiresmartzTests(APITestCase):
     def setUp(self):
@@ -531,6 +533,98 @@ class RetiresmartzTests(APITestCase):
                                             paid_days=1,
                                             retirement_age=67,
                                             selected_life_expectancy=85,
+                                            calculated_life_expectancy=85,
+                                            lifestyle=1,
+                                            reverse_mortgage=True,
+                                            income_growth=0.01,
+                                            balance=50000,
+                                            atc=110982,
+                                            retirement_postal_code=94123)
+        
+        plan.client.life_expectancy = 85
+        plan.client.income = 100000
+        plan.client.home_value = 250000
+        plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
+        plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
+        plan.client.ss_fra_retirement = 3490
+        plan.client.ss_fra_todays = 1390
+        plan.client.other_income = 40000
+        plan.client.net_worth = 140000
+        plan.client.regional_data['ssn'] = "123456789" 
+        plan.client.save()
+        
+        # some tickers for portfolio
+        bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')
+        stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
+
+        TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='IPO')
+        fund = TickerFactory.create(symbol='rest')
+
+        # Add the asset classes to the advisor's default portfolio set
+        plan.client.advisor.default_portfolio_set.asset_classes.add(bonds_asset_class, stocks_asset_class, fund.asset_class)
+
+
+        # Set the markowitz bounds for today
+        self.m_scale = MarkowitzScaleFactory.create()
+
+        # populate the data needed for the optimisation
+        # We need at least 500 days as the cycles go up to 70 days and we need at least 7 cycles.
+        populate_prices(500, asof=mocked_now.date())
+        populate_cycle_obs(500, asof=mocked_now.date())
+        populate_cycle_prediction(asof=mocked_now.date())
+        populate_inflation(asof=mocked_now.date())
+
+        self.assertIsNone(plan.goal_setting)
+        old_settings = GoalSetting.objects.all().count()
+        old_mgroups = GoalMetricGroup.objects.all().count()
+        old_metrics = GoalMetric.objects.all().count()
+        url = '/api/v1/clients/{}/retirement-plans/{}/calculate'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+
+        # First try and calculate without a client date of birth. Make sure we get the correct 400
+        old_dob = plan.client.date_of_birth
+        plan.client.date_of_birth = None
+        plan.client.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Now set the date of birth
+        plan.client.date_of_birth = old_dob
+        plan.client.save()
+        # We should be ready to calculate properly
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('portfolio' in response.data)
+        self.assertTrue('projection' in response.data)
+        self.assertEqual(len(response.data['projection']), 50)
+        # Make sure the goal_setting is now populated.
+        plan.refresh_from_db()
+        self.assertIsNotNone(plan.goal_setting.portfolio)
+        self.assertEqual(old_settings+1, GoalSetting.objects.all().count())
+        self.assertEqual(old_mgroups+1, GoalMetricGroup.objects.all().count())
+        self.assertEqual(old_metrics+1, GoalMetric.objects.all().count())
+        old_id = plan.goal_setting.id
+
+        # Recalculate and make sure the number of settings, metric groups and metrics in the system is the same
+        # Also make sure the setting object is different
+        response = self.client.get(url)
+        plan.refresh_from_db()
+        self.assertEqual(old_settings+1, GoalSetting.objects.all().count())
+        self.assertEqual(old_mgroups+1, GoalMetricGroup.objects.all().count())
+        self.assertEqual(old_metrics+1, GoalMetric.objects.all().count())
+        self.assertNotEqual(old_id, plan.goal_setting.id)
+    '''
+    @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
+    def test_retirement_plan_calculate_us_tax_projection
+        plan = RetirementPlanFactory.create(income=100000,
+                                            desired_income=81000,
+                                            btc=4000,
+                                            retirement_home_price=250000,
+                                            paid_days=1,
+                                            retirement_age=67,
+                                            selected_life_expectancy=85,
                                             calculated_life_expectancy=85)
 
         # some tickers for portfolio
@@ -573,7 +667,6 @@ class RetiresmartzTests(APITestCase):
         # Now set the date of birth
         plan.client.date_of_birth = old_dob
         plan.client.save()
-        
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -596,6 +689,7 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(old_mgroups+1, GoalMetricGroup.objects.all().count())
         self.assertEqual(old_metrics+1, GoalMetric.objects.all().count())
         self.assertNotEqual(old_id, plan.goal_setting.id)
+    '''
 
     def test_retirement_plan_advice_feed_list_unread(self):
         self.content_type = ContentTypeFactory.create()
@@ -723,7 +817,7 @@ class RetiresmartzTests(APITestCase):
 
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
-        plan = RetirementPlanFactory.create(income=150000,
+        plan = RetirementPlanFactory.create(income=100000,
                                             desired_income=81000,
                                             btc=4000,
                                             retirement_home_price=250000,
@@ -731,7 +825,24 @@ class RetiresmartzTests(APITestCase):
                                             retirement_age=67,
                                             selected_life_expectancy=85,
                                             calculated_life_expectancy=85,
-                                            expected_return_confidence=0.5)
+                                            lifestyle=1,
+                                            reverse_mortgage=True,
+                                            income_growth=0.01,
+                                            balance=50000,
+                                            atc=110982,
+                                            retirement_postal_code=94123)
+
+        plan.client.life_expectancy = 85
+        plan.client.income = 100000
+        plan.client.home_value = 250000
+        plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
+        plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
+        plan.client.ss_fra_retirement = 3490
+        plan.client.ss_fra_todays = 1390
+        plan.client.other_income = 40000
+        plan.client.net_worth = 140000
+        plan.client.regional_data['ssn'] = "123456789" 
+        
         plan.client.date_of_birth = date(1960, 1, 1)
         plan.client.save()
 
