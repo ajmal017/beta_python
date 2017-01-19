@@ -1,5 +1,6 @@
 from django.conf.urls import include, patterns, url
 from django.contrib import admin
+from django.core.urlresolvers import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from filebrowser.sites import site
 from api.v1.user.views import PasswordResetView
