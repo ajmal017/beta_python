@@ -409,8 +409,7 @@ class ClientAccount(models.Model):
                                                    'to operate the account.',
                                          blank=True)
     status = models.IntegerField(null=True, choices=Status.choices(), default=0)
-    # also has ib_account foreign key to IBAccount
-    # also has apex_account foreign key to APEXAccount
+    # also has broker_account foreign key to BrokerAccount
 
     objects = ClientAccountQuerySet.as_manager()
 
@@ -420,18 +419,6 @@ class ClientAccount(models.Model):
     def __init__(self, *args, **kwargs):
         super(ClientAccount, self).__init__(*args, **kwargs)
         self.__was_confirmed = self.confirmed
-
-    def get_account(self):
-        """ Gets account - is broker accont. There is only one allowed. If this is not fulfilled exception is thrown"""
-        account = None
-        if self.ib_account is not None:
-            account = self.ib_account
-        elif self.apex_account is not None:
-            if account is not None:
-                raise Exception("Two broker accounts can not be assigned to one client.")
-            account = self.apex_account
-        Exception("No broker account was assigned to client.")
-        return account
 
     @property
     def goals(self):
@@ -680,6 +667,19 @@ class ClientAccount(models.Model):
             self.primary_owner.advisor.firm.name,
             self.account_type_name)
 
+    @property
+    def broker(self):
+        if self.ib_account is not None:
+            return "IB"
+        elif self.apex_account is not None:
+            return "ETNA"
+
+    @property
+    def broker_account(self):
+        if self.ib_account is not None:
+            return self.ib_account
+        elif self.apex_account is not None:
+            return self.apex_account
 
 class RiskProfileGroup(models.Model):
     """

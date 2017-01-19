@@ -12,7 +12,7 @@ from ib.ext.ExecutionFilter import ExecutionFilter
 from main.settings import IB_CLIENT_ID, IB_HOST, IB_PORT
 from execution.broker.InteractiveBrokers.IBOrder import IBOrder
 from main.models import Order
-
+from execution.data_structures.account_info import AccountInfo
 very_short_sleep = partial(sleep, 0.01)
 short_sleep = partial(sleep, 1)
 long_sleep = partial(sleep, 10)
@@ -24,7 +24,11 @@ class ReferenceWrapper(EWrapper):
         basicConfig()
         self._time_received_next_valid_order_id = datetime.min
         self._executions = {}
+        self._account_info = {}
         self._requests_finished = {}
+
+    def getAccountInfo(self, ib_account):
+        return self._account_info[ib_account]
 
     def getExecutions(self, requestId):
         return self._executions[requestId]
@@ -189,10 +193,18 @@ class ReferenceWrapper(EWrapper):
         logger.debug('positionEnd', vars())
 
     def accountSummary(self, reqId, account, tag, value, currency):
+        if(tag == "TotalCashValue"):
+            if account not in self._account_info:
+                account_info = AccountInfo()
+                self._account_info[account] = account_info
+            self._account_info[account].acoount = account
+            self._account_info[account].cash = float(value)
+            self._account_info[account].currency = currency
         logger.debug('accountSummary', vars())
 
     def accountSummaryEnd(self, reqId):
         logger.debug('accountSummaryEnd', vars())
+        self._requests_finished[reqId] = 'AccountSummary'
 
 
 class IBBroker(BaseBroker):
@@ -257,3 +269,9 @@ class IBBroker(BaseBroker):
         for execution in self._wrapper.getExecutions[requestId]:
             map(lambda x: x.setFills(execution.m_price, execution.m_shares) if execution.m_shares>0 and execution.m_orderId==x.Order_Id else None, orders)
 
+    def get_account_info(self, broker_account):
+        requestId = self._get_next_request_id()
+        self._connection.reqAccountSummary(requestId, 'All', 'AccountType,TotalCashValue')
+        while not self._wrapper.isExecutionRequestFinished(requestId):
+            very_short_sleep()
+        return self._wrapper.getAccountInfo(broker_account.ib_account)

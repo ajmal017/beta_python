@@ -23,7 +23,7 @@ from main.management.commands.rebalance import TAX_BRACKET_LESS1Y, TAX_BRACKET_M
 from main.models import MarketOrderRequest, ExecutionRequest, Execution, Ticker, MarketOrderRequestAPEX, \
     Fill, ExecutionFill, ExecutionDistribution, Transaction, PositionLot, Sale, Order
 # TODO remove obsolete functionality
-from execution.Obsolete.ETNA_api.send_orders import insert_order_ETNA
+#from execution.Obsolete.ETNA_api.send_orders import insert_order_ETNA
 
 short_sleep = partial(sleep, 1)
 long_sleep = partial(sleep, 10)
@@ -48,7 +48,7 @@ logger.setLevel(logging.INFO)
 class BrokerManager(object):
     _brokers = dict()
     def get(self, broker_name):
-        if self._brokers[broker_name] is None:
+        if broker_name not in self._brokers:
             if broker_name == "IB":
                 broker = IBBroker()
             elif broker_name == "ETNA":
@@ -59,6 +59,19 @@ class BrokerManager(object):
 
 
 broker_manager =  BrokerManager()
+
+class ProviderManager(object):
+    _providers = dict()
+    def get(self, provider_name):
+        if self._providers[provider_name] is None:
+            if provider_name == "IB":
+                provider = IBBroker()
+                provider.connect()
+            self._providers[provider_name] = broker
+        return self._providers[provider_name]
+
+
+provider_manager =  ProviderManager()
 
 def get_options():
     opts = types.SimpleNamespace()
@@ -75,9 +88,8 @@ def reconcile_cash_client_account(account):
     for goal in goals:
         goals_cash += goal.cash_balance
 
-    broker_account = account.get_account()
-    # obtaining account_info object. This represents info as of on real brokers account
-    account_info = broker_manager.get(broker_account.broker).getAccountInfo(broker_account)
+    # obtaining account_info object. This represents info as of with real brokers account
+    account_info = broker_manager.get(account.broker).get_account_info(account.broker_account)
 
 
     difference = account_info.cash - (account_cash + goals_cash)
@@ -89,8 +101,8 @@ def reconcile_cash_client_account(account):
         if abs(difference) < account_cash:
             account_cash -= abs(difference)
         else:
-            logger.exception("interactive brokers cash < sum of goals cashes for " + broker_account)
-            raise Exception("interactive brokers cash < sum of goals cashes for " + broker_account)
+            logger.exception("cash < sum of goals cashes for " + str(account.broker_account))
+            raise Exception("cash < sum of goals cashes for " + str(account.broker_account))
             # we have a problem - we should not be able to withdraw more than account_cash
     account.cash_balance = account_cash
     account.save()
@@ -132,17 +144,26 @@ def create_orders():
     '''
     from outstanding MOR and ER create MorApex and ApexOrder
     '''
+    x=1
     ers = ExecutionRequest.objects.all().filter(order__state=MarketOrderRequest.State.APPROVED.value)\
         .annotate(ticker_id=F('asset__id'))\
-        .values('ticker_id')\
+        .values('ticker_id', 'order__account__broker_account')\
         .annotate(volume=Sum('volume'))
 
+    """
+    for e in ers:
+        ers_for_given_volume = ExecutionRequest.objects.all().filter(asset__id=e.ticker_id)
+
+        for kokot in ers_for_given_volume:
+            kokot.market_order_request.client_account.broker
+    """
     for grouped_volume_per_share in ers:
         ticker = Ticker.objects.get(id=grouped_volume_per_share['ticker_id'])
 
         # TODO get actual price
-        order = insert_order_ETNA(price=0, quantity=grouped_volume_per_share['volume'], ticker=ticker)
-
+        provider_manager.get("IB")
+        order = broker_manager.get(ers.broker).create_order(price=0, quantity=grouped_volume_per_share['volume'], ticker=ticker)
+        order.save()
         mor_ids = MarketOrderRequest.objects.all().filter(state=MarketOrderRequest.State.APPROVED.value,
                                                           execution_requests__asset_id=ticker.id).\
             values_list('id', flat=True).distinct()

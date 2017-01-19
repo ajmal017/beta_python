@@ -3,8 +3,10 @@ from django.test import TestCase
 from api.v1.tests.factories import ExecutionRequestFactory, MarketOrderRequestFactory, ClientAccountFactory, GoalFactory, TickerFactory
 from execution.end_of_day import *
 from main.models import Order
+from unittest import skip
 
 
+@skip("Subject to refactoring related to security")
 class BaseTest(TestCase):
     def setUp(self):
         self.account = ClientAccountFactory.create()

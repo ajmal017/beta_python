@@ -1,4 +1,4 @@
-from client.models import ClientAccount, IBAccount
+from client.models import ClientAccount, IBAccount, APEXAccount
 from main.models import MarketOrderRequest, ExecutionRequest, Execution, Ticker, Transaction, \
     ExecutionDistribution
 
@@ -10,22 +10,25 @@ def create_django_executions(order_fills, execution_allocations):
     :param execution_allocations: AccountAllocations
     :return:
     '''
-    for ib_id in execution_allocations.keys():
-        allocation_per_ib_id = execution_allocations[ib_id]
+    for id in execution_allocations.keys():
+        allocation_per_id = execution_allocations[id]
 
-        for ib_account in allocation_per_ib_id.keys():
-            account = IBAccount.objects.get(ib_account=ib_account)
+        for account_id in allocation_per_id.keys():
+            if allocation_per_id[account_id].broker == "IB":
+                account = IBAccount.objects.get(ib_account=account_id)
+            elif allocation_per_id[account_id].broker == "Apex":
+                account = APEXAccount.objects.get(apex_account=account_id)
             client_account = ClientAccount.objects.get(ib_account=account)
 
             mor = MarketOrderRequest.objects.get(account=client_account, state=MarketOrderRequest.State.APPROVED.value)
 
-            ers = ExecutionRequest.objects.all().filter(order__account__ib_account__ib_account=ib_account)
-            allocation_per_ib_account = allocation_per_ib_id[ib_account]
+            ers = ExecutionRequest.objects.all().filter(order__account__ib_account__ib_account=account_id)
+            allocation_per_ib_account = allocation_per_id[account_id]
             no_shares = allocation_per_ib_account.shares
             for e in ers:
                 to_subtract = min(no_shares, e.volume)
                 no_shares -= to_subtract
-                ex1 = Execution.objects.create(asset=Ticker.objects.get(symbol=order_fills[ib_id].symbol),
+                ex1 = Execution.objects.create(asset=Ticker.objects.get(symbol=order_fills[id].Symbol),
                                                volume=to_subtract,
                                                order=mor,
                                                price=allocation_per_ib_account.price,
