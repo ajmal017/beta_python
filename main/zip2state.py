@@ -1,5 +1,4 @@
 import pandas as pd
-
 zip_codes = pd.read_csv('main/zipcode_list.csv')
 
 def get_state(zip):

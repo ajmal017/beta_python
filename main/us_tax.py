@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import json
-
 from main import state_tax_engine
 from main import tax_sheet
 from main import abstract

@@ -21,7 +21,6 @@ from pinax.eventlog.models import log
 from retiresmartz.calculator.social_security import calculate_payments
 from main import constants
 from main import abstract
-
 mocked_now = datetime(2016, 1, 1)
 
 class RetiresmartzTests(APITestCase):

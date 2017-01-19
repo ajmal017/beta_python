@@ -1,5 +1,4 @@
 import logging
-
 import numpy as np
 import pandas as pd
 import scipy.stats as st
@@ -13,7 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
 from api.v1.goals.serializers import PortfolioSerializer
 from api.v1.views import ApiViewMixin
 from client.models import Client

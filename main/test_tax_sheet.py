@@ -3,7 +3,6 @@ from main import inflation
 from main import abstract
 from main import constants
 
-
 '''
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
