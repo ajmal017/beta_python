@@ -2,7 +2,7 @@ from datetime import date, datetime
 from ujson import loads
 from unittest import mock, skip
 from unittest.mock import MagicMock
-
+from dateutil.relativedelta import relativedelta
 from django.utils.timezone import now
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -19,7 +19,6 @@ from .factories import AssetClassFactory, ContentTypeFactory, GroupFactory, \
 from django.utils import timezone
 from pinax.eventlog.models import log
 from retiresmartz.calculator.social_security import calculate_payments
-import pdb
 mocked_now = datetime(2016, 1, 1)
 
 
@@ -41,6 +40,60 @@ class RetiresmartzTests(APITestCase):
 
     def tearDown(self):
         self.client.logout()
+
+    def test_add_plan_with_client_field_updates(self):
+        '''
+        Tests:
+        - clients can create a retirement plan.
+        - specifying btc on creation works
+        '''
+        url = '/api/v1/clients/{}/retirement-plans'.format(Fixture1.client1().id)
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        start_time = timezone.now() + relativedelta(years=40)
+        data = self.base_plan_data
+        data['civil_status'] = 2
+        data['smoker'] = True
+        data['height'] = 200
+        data['weight'] = 220
+        data['daily_exercise'] = 30
+
+        data['home_value'] = 1000000
+        data['home_growth'] = 0.5
+        data['ss_fra_todays'] = 2.5
+        data['ss_fra_retirement'] = 0.4
+        data['state_tax_after_credits'] = 8.5
+        data['state_tax_effrate'] = 7.5
+        data['pension_name'] = 'Test Pension'
+        data['pension_amount'] = 50000.5
+        data['pension_start_date'] = start_time.date()
+        data['employee_contributions_last_year'] = 4000.0
+        data['employer_contributions_last_year'] = 2000.0
+        data['total_contributions_last_year'] = 6000.0
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['btc'], 3200)  # 80000 * 0.04
+        self.assertNotEqual(response.data['id'], None)
+        saved_plan = RetirementPlan.objects.get(id=response.data['id'])
+        self.assertEqual(saved_plan.btc, 3200)
+        self.assertEqual(saved_plan.client.civil_status, 2)
+        self.assertEqual(saved_plan.client.smoker, True)
+        self.assertEqual(saved_plan.client.height, 200)
+        self.assertEqual(saved_plan.client.weight, 220)
+        self.assertEqual(saved_plan.client.daily_exercise, 30)
+
+        self.assertEqual(saved_plan.client.home_value, 1000000)
+        self.assertEqual(saved_plan.client.home_growth, 0.5)
+        self.assertEqual(saved_plan.client.ss_fra_todays, 2.5)
+        self.assertEqual(saved_plan.client.ss_fra_retirement, 0.4)
+        self.assertEqual(saved_plan.client.state_tax_after_credits, 8.5)
+        self.assertEqual(saved_plan.client.state_tax_effrate, 7.5)
+        self.assertEqual(saved_plan.client.pension_name, 'Test Pension')
+        self.assertEqual(saved_plan.client.pension_amount, 50000.5)
+        self.assertEqual(saved_plan.client.pension_start_date, start_time.date())
+        self.assertEqual(saved_plan.client.employee_contributions_last_year, 4000.0)
+        self.assertEqual(saved_plan.client.employer_contributions_last_year, 2000.0)
+        self.assertEqual(saved_plan.client.total_contributions_last_year, 6000.0)
 
     def test_update_client_civil_status(self):
         """

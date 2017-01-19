@@ -73,6 +73,45 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         """
         user = SupportRequest.target_user(self.request)
         client = Client.objects.filter_by_user(user).get(id=int(self.get_parents_query_dict()['client']))
+        if 'client' in serializer.validated_data:
+            if 'civil_status' in serializer.validated_data['client']:
+                client.civil_status = serializer.validated_data['client']['civil_status']
+            if 'smoker' in serializer.validated_data['client']:
+                client.smoker = serializer.validated_data['client']['smoker']
+            if 'drinks' in serializer.validated_data['client']:
+                client.drinks = serializer.validated_data['client']['drinks']
+            if 'height' in serializer.validated_data['client']:
+                client.height = serializer.validated_data['client']['height']
+            if 'weight' in serializer.validated_data['client']:
+                client.weight = serializer.validated_data['client']['weight']
+            if 'daily_exercise' in serializer.validated_data['client']:
+                client.daily_exercise = serializer.validated_data['client']['daily_exercise']
+
+            if 'home_value' in serializer.validated_data['client']:
+                client.home_value = serializer.validated_data['client']['home_value']
+            if 'home_growth' in serializer.validated_data['client']:
+                client.home_growth = serializer.validated_data['client']['home_growth']
+            if 'ss_fra_todays' in serializer.validated_data['client']:
+                client.ss_fra_todays = serializer.validated_data['client']['ss_fra_todays']
+            if 'ss_fra_retirement' in serializer.validated_data['client']:
+                client.ss_fra_retirement = serializer.validated_data['client']['ss_fra_retirement']
+            if 'state_tax_after_credits' in serializer.validated_data['client']:
+                client.state_tax_after_credits = serializer.validated_data['client']['state_tax_after_credits']
+            if 'state_tax_effrate' in serializer.validated_data['client']:
+                client.state_tax_effrate = serializer.validated_data['client']['state_tax_effrate']
+            if 'pension_name' in serializer.validated_data['client']:
+                client.pension_name = serializer.validated_data['client']['pension_name']
+            if 'pension_amount' in serializer.validated_data['client']:
+                client.pension_amount = serializer.validated_data['client']['pension_amount']
+            if 'pension_start_date' in serializer.validated_data['client']:
+                client.pension_start_date = serializer.validated_data['client']['pension_start_date']
+            if 'employee_contributions_last_year' in serializer.validated_data['client']:
+                client.employee_contributions_last_year = serializer.validated_data['client']['employee_contributions_last_year']
+            if 'employer_contributions_last_year' in serializer.validated_data['client']:
+                client.employer_contributions_last_year = serializer.validated_data['client']['employer_contributions_last_year']
+            if 'total_contributions_last_year' in serializer.validated_data['client']:
+                client.total_contributions_last_year = serializer.validated_data['client']['total_contributions_last_year']
+            client.save()
         return serializer.save(client=client)
 
     def update(self, request, *args, **kwargs):
