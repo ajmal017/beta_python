@@ -9696,7 +9696,7 @@ fieldset[disabled] .btn-danger-outline.active {
 }
 @media (min-width: 992px) {
   .header-inner {
-    height: 100px;
+    height: 80px;
     display: table;
     width: 100%;
   }
@@ -9707,9 +9707,9 @@ fieldset[disabled] .btn-danger-outline.active {
   }
   .header-inner .navbar-brand img {
     max-width: 280px;
-    width: 100%;
+    width: auto;
     height: auto;
-    max-height: 80px;
+    max-height: 50px;
   }
 }
 @media (min-width: 992px) {
