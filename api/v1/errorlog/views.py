@@ -14,15 +14,16 @@ class LogErrorView(CreateAPIView):
     def perform_create(self, serializer):
         kwargs = {
             'source': ErrorLog.ErrorSource.WebApp.value,
-            'version':self.get_version(),
+            'version': self.get_version(),
         }
         if self.request.user.is_authenticated():
-            kwargs['user']=self.request.user
+            kwargs['user'] = self.request.user
 
-        try:
-            kwargs['url'] = self.request.META['HTTP_REFERER']
-        except KeyError:
-            pass
+        url = self.request.data.get('url', None)
+        if url is None:
+            url = self.request._request.META.get('HTTP_REFERER', None)
+        if url is not None:
+            kwargs['url'] = url
 
         try:
             kwargs['details'] = {

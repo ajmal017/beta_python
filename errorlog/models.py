@@ -54,10 +54,14 @@ class JiraTicket(models.Model):
     @classmethod
     def create(cls, error: ErrorLog) -> 'JiraTicket':
         try:
-            details = '\n'.join(
+            environment = '\n'.join(
                 '%s: %s' % (k, v) for k, v in error.details.items())
         except (AttributeError, TypeError):
-            details = ''
+            environment = ''
+        if environment:
+            environment += error.url + '\n\n' + environment
+        else:
+            environment = error.url
 
         jira = JIRA(settings.JIRA_SERVER,
                     basic_auth=(settings.JIRA_USERNAME,
@@ -69,7 +73,7 @@ class JiraTicket(models.Model):
                                       description=error.message,
                                       issuetype=settings.JIRA_ISSUE_TYPE,
                                       labels=[error.get_source_display()],
-                                      environment=details)
+                                      environment=environment)
             return cls.objects.create(ticket=issue.permalink(),
                                       header=error.header,
                                       message=error.message,
