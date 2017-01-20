@@ -1,4 +1,3 @@
-import pdb
 import logging
 import math
 import pandas as pd
@@ -18,7 +17,8 @@ class TaxUser(object):
     Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v4.xlsx).
     '''
 
-    def __init__(self,name,
+    def __init__(self,
+                 name,
                  ssn,
                  dob,
                  desired_retirement_age,
@@ -47,6 +47,38 @@ class TaxUser(object):
                  state,
                  employment_status):
 
+        '''
+        checks
+        '''
+        self.validate_inputs(name,
+                             ssn,
+                             dob,
+                             desired_retirement_age,
+                             life_exp,
+                             retirement_lifestyle,
+                             reverse_mort,
+                             house_value,
+                             filing_status,
+                             retire_earn_at_fra,
+                             retire_earn_under_fra,
+                             total_income,
+                             adj_gross,
+                             federal_taxable_income,
+                             federal_regular_tax,
+                             after_tax_income,
+                             other_income,
+                             ss_fra_retirement,
+                             paid_days,
+                             ira_rmd_factor,
+                             initial_401k_balance,
+                             inflation_level,
+                             risk_profile_over_cpi,
+                             projected_income_growth,
+                             contrib_rate_employee_401k,
+                             contrib_rate_employer_401k,
+                             state,
+                             employment_status)
+        
         '''
         set variables
         '''
@@ -82,6 +114,7 @@ class TaxUser(object):
         age
         '''
         self.age = ((pd.Timestamp('today')-self.dob).days)/365.
+        self.validate_age()
 
         '''
         retirememt period
@@ -120,7 +153,6 @@ class TaxUser(object):
         '''
         inflation
         '''
-
         self.inflation_level = inflation_level
         self.annual_inflation = [self.inflation_level[11 + (i * 12)] for i in range(self.years_to_project)]
 
@@ -778,4 +810,181 @@ class TaxUser(object):
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
 
 
+    def validate_inputs(self,
+                         name,
+                         ssn,
+                         dob,
+                         desired_retirement_age,
+                         life_exp,
+                         retirement_lifestyle,
+                         reverse_mort,
+                         house_value,
+                         filing_status,
+                         retire_earn_at_fra,
+                         retire_earn_under_fra,
+                         total_income,
+                         adj_gross,
+                         federal_taxable_income,
+                         federal_regular_tax,
+                         after_tax_income,
+                         other_income,
+                         ss_fra_retirement,
+                         paid_days,
+                         ira_rmd_factor,
+                         initial_401k_balance,
+                         inflation_level,
+                         risk_profile_over_cpi,
+                         projected_income_growth,
+                         contrib_rate_employee_401k,
+                         contrib_rate_employer_401k,
+                         state,
+                         employment_status):
+
+        # Null checks
+        if not name:
+            raise Exception('name not provided')
+
+        if not dob:
+            raise Exception('dob not provided')
+
+        if not desired_retirement_age:
+            raise Exception('desired_retirement_age not provided')
+
+        if not life_exp:
+            raise Exception('life_exp no provided')
+
+        if not retirement_lifestyle:
+            raise Exception('retirement_lifestyle not provided')
+
+        if not reverse_mort:
+            raise Exception('reverse_mort not provided')
+
+        if not house_value:
+            raise Exception('house_value not provided')
+
+        if not filing_status:
+            raise Exception('filing_status not provided')
+
+        if not retire_earn_at_fra:
+            raise Exception('retire_earn_at_fra not provided')
+
+        if not retire_earn_under_fra:
+            raise Exception('retire_earn_under_fra not provided')
+
+        if not total_income:
+            raise Exception('total_income not provided')
+
+        if not adj_gross:
+            raise Exception('adj_gross not provided')
+
+        if not federal_taxable_income:
+            raise Exception('federal_taxable_income not provided')
+
+        if not federal_regular_tax:
+            raise Exception('federal_regular_tax not provided')
+
+        if not after_tax_income:
+            raise Exception('after_tax_income not provided')
+
+        if not other_income:
+            raise Exception('other_income not provided')
+
+        if not ss_fra_retirement:
+            raise Exception('ss_fra_retirement not provided')
+
+        if not paid_days:
+            raise Exception('paid_days not provided')
+
+        if not ira_rmd_factor:
+            raise Exception('ira_rmd_factor not provided')
+
+        if not initial_401k_balance:
+            raise Exception('initial_401k_balance not provided')
+
+        if not inflation_level:
+            raise Exception('inflation_level not provided')
+
+        if not risk_profile_over_cpi:
+            raise Exception('risk_profile_over_cpi not provided')
+
+        if not projected_income_growth:
+            raise Exception('projected_income_growth not provided')
+
+        if not contrib_rate_employee_401k:
+            raise Exception('contrib_rate_employee_401k not provided')
+
+        if not contrib_rate_employer_401k:
+            raise Exception('contrib_rate_employer_401k not provided')
+
+        if not state:
+            raise Exception('state not provided')
+
+        if not employment_status:
+            raise Exception('employment_status not provided')
+
+        # other checks
+        if desired_retirement_age < 0:
+            raise Exception('desired_retirement_age less than 0')
+
+        if life_exp < 0:
+            raise Exception('life_exp less than 0')
+
+        if house_value < 0:
+            raise Exception('house_value less than 0')
+
+        if retire_earn_at_fra < 0:
+            raise Exception('retire_earn_at_fra less than 0')
+
+        if retire_earn_under_fra < 0:
+            raise Exception('retire_earn_under_fra less than 0')
+
+        if total_income < 0:
+            raise Exception('total_income less than 0')
+
+        if federal_taxable_income < 0:
+            raise Exception('federal_taxable_income less then 0')
+
+        if federal_regular_tax < 0:
+            raise Exception('federal_regular_tax less than 0')
+
+        if after_tax_income < 0:
+            raise Exception('after_tax_income less than 0')
+
+        if other_income < 0:
+            raise Exception('other_income less than 0')
+
+        if ss_fra_retirement < 0:
+            raise Exception('ss_fra_retirement less than 0')
+
+        if paid_days < 0:
+            raise Exception('paid_days less than 0')
+
+        if paid_days > 30:
+            raise Exception('paid_days greater than 30 per month')
+
+        if initial_401k_balance < 0:
+            raise Exception('initial_401k_balance less than 0')
+
+        if contrib_rate_employee_401k < 0:
+            raise Exception('contrib_rate_employee_401k less than 0')
+
+        if contrib_rate_employee_401k > 1:
+            raise Exception('contrib_rate_employee_401k greater than 1 (i.e. > 100%)')
+
+        if contrib_rate_employer_401k < 0:
+            raise Exception('contrib_rate_employer_401k less than 0')
+
+        if contrib_rate_employer_401k > 1:
+            raise Exception('contrib_rate_employer_401k greater than 1 (i.e. > 100%)')
+
+        if len(state) != 2:
+            raise Exception('state does not have two characters, so not of correct format for US states')
+
+
+    def validate_age(self):
+        if self.age >= self.desired_retirement_age:
+            raise Exception("age greater than or equal to desired retirement age")
+
+        if self.age <= 0:
+            raise Exception("age less than or equal to 0")
         

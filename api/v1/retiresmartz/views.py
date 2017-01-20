@@ -33,6 +33,9 @@ from main import tax_sheet as tax
 from main import inflation
 from main import zip2state
 from main import abstract
+from main import constants
+from datetime import date, datetime
+import pdb
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
@@ -476,13 +479,86 @@ equired to generate the
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
 
+        today = timezone.now().date()
+        retire_date = max(today, plan.client.date_of_birth + relativedelta(years=plan.retirement_age))
+        death_date = max(retire_date, plan.client.date_of_birth + relativedelta(years=plan.selected_life_expectancy))
+
+        # Pre-retirement income cash flow
+        income_calc = EmploymentIncome(income=plan.income / 12,
+                                       growth=0.01,
+                                       today=today,
+                                       end_date=retire_date - relativedelta(days=1))
+
+        ss_all = calculate_payments(plan.client.date_of_birth, plan.income)
+        ss_income = ss_all.get(plan.retirement_age, None)
+        if ss_income is None:
+            ss_income = ss_all[sorted(ss_all)[0]]
+
+        cash_flows = list()
+        cash_flows.append(InflatedCashFlow(amount=ss_income, today=today, start_date=retire_date, end_date=death_date))
+
+        # TODO: Call the logic that determines the retirement accounts to figure out what accounts to use.
+        # TODO: Get the tax rate to use when withdrawing from the account at retirement
+        # For now we assume we want a tax deferred 401K
+        acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
+                                      tax_rate=0.0,
+                                      name='401k',
+                                      today=today,
+                                      opening_balance=plan.opening_tax_deferred_balance,
+                                      growth=performance,
+                                      retirement_date=retire_date,
+                                      end_date=death_date,
+                                      contributions=plan.btc / 12)
+
+        #acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
+        #                              tax_rate=0.0,
+        #                              name='401k',
+        #                              today=today,
+        #                              opening_balance=plan.opening_tax_deferred_balance,
+        #                              growth=0.01,
+        #                              retirement_date=retire_date,
+        #                              end_date=death_date,
+        #                              contributions=4000 / 12)
+
+        assets = [acc_401k]
+
+        if plan.reverse_mortgage and plan.retirement_home_price is not None:
+            cash_flows.append(ReverseMortgage(home_value=plan.retirement_home_price,
+                                              value_date=today,
+                                              start_date=retire_date,
+                                              end_date=death_date))
+
+        if plan.paid_days > 0:
+            # Average retirement income is 116 per day as of September 2016, working until age 80
+            cash_flows.append(InflatedCashFlow(amount=116*plan.paid_days,
+                                               today=today,
+                                               start_date=retire_date,
+                                               end_date=plan.client.date_of_birth + relativedelta(years=80)))
+
+        # The desired cash flow generator.
+        rdcf = RetiresmartzDesiredCashFlow(current_income=income_calc,
+                                           retirement_income=plan.desired_income / 12,
+                                           today=today,
+                                           retirement_date=retire_date - relativedelta(days=1),
+                                           end_date=death_date,
+                                           replacement_ratio=plan.replacement_ratio
+                                           )
+        # Add the income cash flow to the list of cash flows.
+        cash_flows.append(rdcf)
+
+        calculator = Calculator(cash_flows=cash_flows, assets=assets)
+        asset_values, income_values = calculator.calculate(rdcf)
+
+        # Convert these returned values to a format for the API
+        catd = pd.concat([asset_values, income_values['actual'], income_values['desired']], axis=1)
+        locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
+        proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
+
+        pser = PortfolioSerializer(instance=settings.portfolio)
+
+        return Response({'portfolio': pser.data, 'projection': proj_data})
+        """
         # Get US tax projection
-        '''
-
-        -        risk_proifile               plan.client.get_risk_profile_bas_scores() * 0.05
-        '''
-
-
         ira_rmd_factor = 26.5
         # These ones are fudged ...
         risk_profile = 0.5
@@ -491,7 +567,7 @@ equired to generate the
         employer_contributions_last_year = 0.02
         # # #'
         state = zip2state.get_state(int(plan.retirement_postal_code))
-        
+        pdb.set_trace()
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(plan.client.date_of_birth),
@@ -520,7 +596,66 @@ equired to generate the
                         employer_contributions_last_year,
                         state,
                         plan.client.employment_status)
+        """
 
+        """
+        name = "John Smith"
+        ssn  = "123456789" 
+        dob = date(1969, 1, 1)
+        desired_retirement_age = 70.
+        retirement_lifestyle = 1.
+        reverse_mort = True
+        life_exp = 85.
+        house_value = 250000.
+        filing_status = abstract.PersonalData.CivilStatus['SINGLE']
+        retire_earn_at_fra = 3490.
+        retire_earn_under_fra = 1310.
+        total_income = 100000.
+        adj_gross = 140000.
+        other_income=40000.
+        after_tax_income = 110982.
+        federal_taxable_income = 109996.
+        federal_regular_tax = 20614.
+        ss_fra_retirement = 7002.
+        paid_days = 2
+        ira_rmd_factor = 26.5
+        initial_401k_balance = 50000
+        inflation_level = inflation.inflation_level
+        risk_profile_over_cpi = 0.005
+        projected_income_growth = 0.01
+        contrib_rate_employee_401k = 0.055
+        contrib_rate_employer_401k = 0.02
+        zipcode = 94112
+        employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
+        state = zip2state.get_state(int(zipcode))
+        tx = tax.TaxUser(name,
+                        ssn,
+                        pd.Timestamp(dob),
+                        desired_retirement_age,
+                        life_exp,
+                        retirement_lifestyle,
+                        reverse_mort,
+                        house_value,
+                        filing_status,
+                        retire_earn_at_fra,
+                        retire_earn_under_fra,
+                        total_income,
+                        adj_gross,
+                        other_income,
+                        federal_regular_tax,
+                        after_tax_income,
+                        other_income,
+                        ss_fra_retirement,
+                        paid_days,
+                        ira_rmd_factor,
+                        initial_401k_balance,
+                        inflation.inflation_level,
+                        risk_profile_over_cpi,
+                        projected_income_growth,
+                        contrib_rate_employee_401k,
+                        contrib_rate_employer_401k,
+                        state,
+                        employment_status)
         tx.create_maindf()
         
         # Convert these returned values to a format for the API
@@ -529,8 +664,8 @@ equired to generate the
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
 
         pser = PortfolioSerializer(instance=settings.portfolio)
-        
         return Response({'portfolio': pser.data, 'projection': proj_data})
+    """
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
