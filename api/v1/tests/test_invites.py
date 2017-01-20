@@ -408,6 +408,7 @@ class InviteTests(APITestCase):
             'CombatCredit': '0.00',
             'AddChildTaxCredit': '0.00',
             'ExcessSSCredit': '0.00',
+            'RefundableCredit': '2,422.00',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
@@ -487,6 +488,7 @@ class InviteTests(APITestCase):
             'CombatCredit': '0.00',
             'AddChildTaxCredit': '0.00',
             'ExcessSSCredit': '0.00',
+            'RefundableCredit': '2,422.00',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
