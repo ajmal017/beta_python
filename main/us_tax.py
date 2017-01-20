@@ -112,9 +112,6 @@ class FederalTax(object):
 
     def validate_inputs(self, filing_status, years, inflation, taxable_income):
 
-        if not filing_status:
-            raise Exception('filing_status not provided')
-
         if not years:
             raise Exception('years not provided')
 
@@ -244,9 +241,6 @@ class StateTax(object):
         
 
     def validate_inputs(self, state, filing_status, income):
-
-        if not filing_status:
-            raise Exception('filing_status not provided')
 
         if not state:
             raise Exception('state not provided')
@@ -378,9 +372,6 @@ class Fica(object):
 
 
     def validate_inputs(self, employment_status, total_income):
-
-        if not employment_status:
-            raise Exception('employment_status not provided')
 
         if not total_income:
             raise Exception('total_income not provided')

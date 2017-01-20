@@ -8,7 +8,7 @@ from main import test_tax_sheet as tst_tx
 from main import abstract
 from main import constants
 from dateutil.relativedelta import relativedelta
- 
+import pdb
 logger = logging.getLogger('taxsheet')
 
 class TaxUser(object):
@@ -103,6 +103,7 @@ class TaxUser(object):
         self.paid_days = paid_days
         self.ira_rmd_factor = ira_rmd_factor
         self.initial_401k_balance = initial_401k_balance
+        self.inflation_level = inflation_level
         self.projected_income_growth = projected_income_growth
         self.other_income = other_income
         self.contrib_rate_employee_401k = contrib_rate_employee_401k
@@ -153,7 +154,6 @@ class TaxUser(object):
         '''
         inflation
         '''
-        self.inflation_level = inflation_level
         self.annual_inflation = [self.inflation_level[11 + (i * 12)] for i in range(self.years_to_project)]
 
         '''
@@ -856,71 +856,14 @@ class TaxUser(object):
         if not retirement_lifestyle:
             raise Exception('retirement_lifestyle not provided')
 
-        if not reverse_mort:
-            raise Exception('reverse_mort not provided')
-
-        if not house_value:
-            raise Exception('house_value not provided')
-
-        if not filing_status:
-            raise Exception('filing_status not provided')
-
-        if not retire_earn_at_fra:
-            raise Exception('retire_earn_at_fra not provided')
-
-        if not retire_earn_under_fra:
-            raise Exception('retire_earn_under_fra not provided')
-
-        if not total_income:
-            raise Exception('total_income not provided')
-
-        if not adj_gross:
-            raise Exception('adj_gross not provided')
-
-        if not federal_taxable_income:
-            raise Exception('federal_taxable_income not provided')
-
-        if not federal_regular_tax:
-            raise Exception('federal_regular_tax not provided')
-
-        if not after_tax_income:
-            raise Exception('after_tax_income not provided')
-
-        if not other_income:
-            raise Exception('other_income not provided')
-
-        if not ss_fra_retirement:
-            raise Exception('ss_fra_retirement not provided')
-
-        if not paid_days:
-            raise Exception('paid_days not provided')
-
         if not ira_rmd_factor:
             raise Exception('ira_rmd_factor not provided')
-
-        if not initial_401k_balance:
-            raise Exception('initial_401k_balance not provided')
 
         if not inflation_level:
             raise Exception('inflation_level not provided')
 
-        if not risk_profile_over_cpi:
-            raise Exception('risk_profile_over_cpi not provided')
-
-        if not projected_income_growth:
-            raise Exception('projected_income_growth not provided')
-
-        if not contrib_rate_employee_401k:
-            raise Exception('contrib_rate_employee_401k not provided')
-
-        if not contrib_rate_employer_401k:
-            raise Exception('contrib_rate_employer_401k not provided')
-
         if not state:
             raise Exception('state not provided')
-
-        if not employment_status:
-            raise Exception('employment_status not provided')
 
         # other checks
         if desired_retirement_age < 0:

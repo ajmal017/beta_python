@@ -565,9 +565,8 @@ equired to generate the
         employee_contributions_last_year = 0.055
         employer_contributions_last_year = 0.02
         # # #'
-        """
+        
         state = zip2state.get_state(int(plan.retirement_postal_code))
-        pdb.set_trace()
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(plan.client.date_of_birth),
@@ -654,6 +653,7 @@ equired to generate the
                         contrib_rate_employer_401k,
                         state,
                         employment_status)
+        """
         
         tx.create_maindf()
         
