@@ -43,7 +43,9 @@ keywords = {
     'ADDRESS': ['\nADDRESS:\n\n', '\n\nFILING STATUS:'],
     # "TOTAL INCOME": ["TOTAL INCOME PER COMPUTER:\n\n", "\n\nAdjustments to Income"],
     'TotalIncomeColumn': ['TOTAL INCOME PER COMPUTER:\n\nPage 3 of 8\n\n', '\n\nAdjustments to Income'],
-    'IncomeColumn': ['EARNED INCOME CREDIT NONTAXABLE COMBAT PAY:\n\n', '\n\nFORM 4136 CREDIT FOR FEDERAL TAX ON FUELS PER'],
+    'IncomeColumn': ['', ''],
+    'PaymentsColumn': ['AMOUNT PAID WITH FORM 4868:\n\n', 'Tax Return Transcript'],
+    'PaymentsColumn2': ['TOTAL PAYMENTS PER COMPUTER:\n\n', '\n\nRefund or Amount Owed'],
 }
 
 output = {
@@ -63,6 +65,8 @@ output = {
         {
             "name": "Income",
             "fields": {
+                'PaymentsColumn': '',
+                'PaymentsColumn2': '',
                 'TotalIncomeColumn': '',
                 "TotalIncome": "",
                 'IncomeColumn': '',
@@ -113,31 +117,45 @@ def parse_text(string):
                 elif k == "TotalIncomeColumn":
                     chunks = res.split('\n')
                     output["sections"][i]["fields"]['TotalIncome'] = chunks[-2]
-                elif k == 'IncomeColumn':
+                # elif k == 'IncomeColumn':
+                #     chunks = res.split('\n')
+                #     logger.error(chunks)
+                #     logger.error(len(chunks))
+                #     """
+                #     chunks 0 - health care full year coverage indicator
+                #            1 - cobra premium subsidy
+                #            2 - estimated tax payments
+                #            3 - other payment credit
+                #            4 - refundable education credit
+                #            5 - refundable education credit per computer
+                #            6 - refundable education credit verified
+                #            7 - earned income credit
+                #            8 - earned income credit per computer
+                #            9 - earned income credit nontaxable combat pay
+                #            10 - schedule 8812 combat pay
+                #            11 - excess social security
+                #            12 - tot ss/medicare withheld
+                #            13 - additional child tax credit
+                #     """
+                #     if len(chunks) > 1:
+                #         output["sections"][i]["fields"]['EarnedIncomeCredit'] = chunks[7]
+                #         output["sections"][i]["fields"]['CombatCredit'] = chunks[8]
+                #         output["sections"][i]["fields"]['ExcessSSCredit'] = chunks[11]
+                #         output["sections"][i]["fields"]['AddChildTaxCredit'] = chunks[13]
+                elif k == 'PaymentsColumn':
+                    chunks = [s for s in res.split('\n') if s != '$']
+                    logger.error(chunks)
+                    if len(chunks) > 1:
+                        output["sections"][i]["fields"]['EarnedIncomeCredit'] = chunks[2]
+                        output["sections"][i]["fields"]['CombatCredit'] = chunks[7]
+                        output["sections"][i]["fields"]['ExcessSSCredit'] = chunks[9]
+                        output["sections"][i]["fields"]['AddChildTaxCredit'] = chunks[11]
+
+                elif k == 'PaymentsColumn2':
                     chunks = res.split('\n')
                     logger.error(chunks)
-                    logger.error(len(chunks))
-                    """
-                    chunks 0 - health care full year coverage indicator
-                           1 - cobra premium subsidy
-                           2 - estimated tax payments
-                           3 - other payment credit
-                           4 - refundable education credit
-                           5 - refundable education credit per computer
-                           6 - refundable education credit verified
-                           7 - earned income credit
-                           8 - earned income credit per computer
-                           9 - earned income credit nontaxable combat pay
-                           10 - schedule 8812 combat pay
-                           11 - excess social security
-                           12 - tot ss/medicare withheld
-                           13 - additional child tax credit
-                    """
                     if len(chunks) > 1:
-                        output["sections"][i]["fields"]['EarnedIncomeCredit'] = chunks[7]
-                        output["sections"][i]["fields"]['CombatCredit'] = chunks[8]
-                        output["sections"][i]["fields"]['ExcessSSCredit'] = chunks[11]
-                        output["sections"][i]["fields"]['AddChildTaxCredit'] = chunks[13]
+                        output["sections"][i]["fields"]['TotalPayments'] = chunks[6]
 
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
@@ -198,9 +216,9 @@ def clean_results(results):
     clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
     clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
-    clean_output['TotalIncome'] = results['sections'][1]['fields']['TotalIncome']
+    clean_output['TotalIncome'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
 
-    clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit']
+    clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit'].strip('$ ')
     clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit']
     clean_output['ExcessSSCredit'] = results['sections'][1]['fields']['ExcessSSCredit']
     clean_output['AddChildTaxCredit'] = results['sections'][1]['fields']['AddChildTaxCredit']
