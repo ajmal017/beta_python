@@ -22,7 +22,7 @@ from retiresmartz.calculator.social_security import calculate_payments
 from main import constants
 from main import abstract
 mocked_now = datetime(2016, 1, 1)
- 
+
 class RetiresmartzTests(APITestCase):
     def setUp(self):
         self.support_group = GroupFactory(name=GROUP_SUPPORT_STAFF)
@@ -483,6 +483,7 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(response.data, {})
         # Make sure the db content didn't change
         self.assertEqual(plan2.partner_plan, plan1)
+
 
     def test_partner_delete(self):
         """
