@@ -115,13 +115,13 @@ def parse_vector_pdf(fl):
 
 
 def parse_scanned_pdf(fl):
-    tmp_pdfs = "temp"
+    tmp_pdfs = "tmp"
     if not os.path.exists(tmp_pdfs):
         os.makedirs(tmp_pdfs)
 
     os.system("convert -density 300 -alpha Off {0} {1}/img.tiff".format(fl, tmp_pdfs))
     os.system("tesseract {0}/img.tiff {0}/out".format(tmp_pdfs))
-    cmd = "sed -i -e 's/—/-/g' {0}/out.txt".format(tmp_pdfs)
+    cmd = "touch {0}/out.txt && sed -i -e 's/—/-/g' {0}/out.txt".format(tmp_pdfs)
     os.system(cmd)
     with open("{0}/out.txt".format(tmp_pdfs), 'r') as f:
         txt = f.read()

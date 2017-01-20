@@ -417,6 +417,45 @@ class InviteTests(APITestCase):
         self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
                          msg='Parsed tax_transcript_data matches expected')
 
+        expected_social_security_statement_data = {
+            'EmployerPaidThisYearMedicare': '1,177',
+            'EmployerPaidThisYearSocialSecurity': '5,033',
+            'EstimatedTaxableEarnings': '21,807',
+            'LastYearMedicare': '21,807',
+            'LastYearSS': '21,807',
+            'PaidThisYearMedicare': '1,177',
+            'PaidThisYearSocialSecurity': '4,416',
+            'RetirementAtAge62': '759',
+            'RetirementAtAge70': '1,337',
+            'RetirementAtFull': '1,078',
+            'SurvivorsChild': '808',
+            'SurvivorsSpouseAtFull': '1,077',
+            'SurvivorsSpouseWithChild': '808',
+            'SurvivorsTotalFamilyBenefitsLimit': '1,616'
+        }
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
+            data = {
+                'social_security_statement': ss_statement
+            }
+            response = self.client.put(invite_detail_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating onboarding with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['social_security_statement'], None,
+                            msg='social_security_statement_data is in the response and not None')
+        self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
+                         msg='Parsed social_security_statement_data matches expected')
+
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
+            data = {
+                'partner_social_security_statement': ss_statement
+            }
+            response = self.client.put(invite_detail_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating onboarding with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['partner_social_security_statement'], None,
+                            msg='partner_social_security_statement_data is in the response and not None')
+        self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
+                         msg='Parsed partner_social_security_statement_data matches expected')
 
         self.assertEqual(response._headers['content-type'], ('Content-Type', 'application/json'),
                          msg='Response content type is application/json after upload')

@@ -816,6 +816,8 @@ class EmailInvite(models.Model):
 
     onboarding_data = JSONField(null=True, blank=True)
     tax_transcript = models.FileField(null=True, blank=True)
+    social_security_statement = models.FileField(null=True, blank=True)
+    partner_social_security_statement = models.FileField(null=True, blank=True)
 
     def __str__(self):
         return '{} {} {} ({})'.format(self.first_name, self.middle_name[:1],

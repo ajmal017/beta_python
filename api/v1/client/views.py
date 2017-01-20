@@ -146,6 +146,26 @@ class ClientViewSet(ApiViewMixin,
                 client.regional_data = json.dumps(rd)
                 client.save()
 
+        if not rd.get('social_security_statement_data'):
+            # add social_security_statement and social_security_statement_data from
+            # the invitation serializer to client.regional_data
+            invitation_serializer = serializers.PrivateInvitationSerializer(request.user.invitation)
+            if invitation_serializer.data.get('social_security_statement', None) is not None:
+                rd['social_security_statement'] = invitation_serializer.data.get('social_security_statement')
+                rd['social_security_statement_data'] = invitation_serializer.data.get('social_security_statement_data')
+                client.regional_data = json.dumps(rd)
+                client.save()
+
+        if not rd.get('partner_social_security_statement_data'):
+            # add social_security_statement and social_security_statement_data from
+            # the invitation serializer to client.regional_data
+            invitation_serializer = serializers.PrivateInvitationSerializer(request.user.invitation)
+            if invitation_serializer.data.get('partner_social_security_statement', None) is not None:
+                rd['partner_social_security_statement'] = invitation_serializer.data.get('partner_social_security_statement')
+                rd['partner_social_security_statement_data'] = invitation_serializer.data.get('partner_social_security_statement_data')
+                client.regional_data = json.dumps(rd)
+                client.save()
+
         # set client invitation status to complete
         client.user.invitation.status = EmailInvite.STATUS_COMPLETE
         client.user.invitation.save()
@@ -297,6 +317,7 @@ class ClientViewSet(ApiViewMixin,
         serializer.is_valid(raise_exception=True)
         client = serializer.save()
         return Response(serializer.data['risk_profile_responses'])
+
 
 class InvitesView(ApiViewMixin, views.APIView):
     permission_classes = []
