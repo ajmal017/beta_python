@@ -555,7 +555,7 @@ equired to generate the
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
 
         pser = PortfolioSerializer(instance=settings.portfolio)
-
+ 
         return Response({'portfolio': pser.data, 'projection': proj_data})
         """
         # Get US tax projection

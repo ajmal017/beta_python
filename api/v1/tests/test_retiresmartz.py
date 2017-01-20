@@ -22,7 +22,7 @@ from retiresmartz.calculator.social_security import calculate_payments
 from main import constants
 from main import abstract
 mocked_now = datetime(2016, 1, 1)
-
+ 
 class RetiresmartzTests(APITestCase):
     def setUp(self):
         self.support_group = GroupFactory(name=GROUP_SUPPORT_STAFF)
@@ -614,6 +614,7 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(old_mgroups+1, GoalMetricGroup.objects.all().count())
         self.assertEqual(old_metrics+1, GoalMetric.objects.all().count())
         self.assertNotEqual(old_id, plan.goal_setting.id)
+        
     '''
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_us_tax_projection

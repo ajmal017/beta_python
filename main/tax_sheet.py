@@ -8,7 +8,7 @@ from main import test_tax_sheet as tst_tx
 from main import abstract
 from main import constants
 from dateutil.relativedelta import relativedelta
-
+ 
 logger = logging.getLogger('taxsheet')
 
 class TaxUser(object):

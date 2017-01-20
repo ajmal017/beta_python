@@ -8,7 +8,7 @@ test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py
 '''
 
 name = "John Smith"
-
+ 
 ssn  = "123456789" 
 
 dob = pd.Timestamp('1969-03-03')

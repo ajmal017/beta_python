@@ -1,14 +1,31 @@
 import pandas as pd
-zip_codes = pd.read_csv('main/zipcode_list.csv')
-
+import os
+dir = os.path.dirname(__file__)
+file_name = os.path.join(dir, 'zipcode_list.csv')
+zip_codes = pd.read_csv(file_name)
+  
 def get_state(zip):
 
-    if type(zip) == int:
-        for i in range(len(zip_codes["Zip_Code"])):
-            if zip == zip_codes["Zip_Code"][i]:
-                return zip_codes["State"][i]
-            
-        raise Exception('no state found for this zipcode')
+    # check input is valid
+    validate_input(zip)
+
+    # look for the state
+    for i in range(len(zip_codes["Zip_Code"])):
+        if zip == zip_codes["Zip_Code"][i]:
+            return zip_codes["State"][i]
+        
+    raise Exception('no state found for this zipcode')
+
+
+def validate_input(zip):
+    if not zip:
+        raise Exception("zip not provided")
 
     else:
-        raise TypeError("zip must be integer")
+        if type(zip) == int:
+            if zip < 10000 or zip > 99999:
+                raise Exception("zip has incorrect number of digits to be a valid zip code")
+
+        else:
+            raise Exception("zip must be integer")
+    

@@ -1,5 +1,5 @@
 import json
-
+ 
 '''
 The following rates, brackets, deductions and exemptions are taken from on Andrew's
 Excel tax sheet (Retirement Modelling v4.xlsx).
