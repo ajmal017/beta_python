@@ -357,6 +357,7 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
     firm_colored_logo = serializers.SerializerMethodField()
     tax_transcript_data = serializers.SerializerMethodField()
     social_security_statement_data = serializers.SerializerMethodField()
+    partner_social_security_statement_data = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailInvite
@@ -377,6 +378,8 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
             'tax_transcript_data',  # this will be stored to client.region_data.tax_transcript_data
             'social_security_statement',
             'social_security_statement_data',
+            'partner_social_security_statement',
+            'partner_social_security_statement_data',
         )
 
     def get_risk_profile_group(self, obj):
@@ -418,6 +421,16 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
                     f.write(chunk)
             obj.social_security_statement_data = parse_ss_pdf(tmp_filename)
             return obj.social_security_statement_data
+        return None
+
+    def get_partner_social_security_statement_data(self, obj):
+        if obj.partner_social_security_statement:
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in obj.partner_social_security_statement.chunks():
+                    f.write(chunk)
+            obj.partner_social_security_statement_data = parse_ss_pdf(tmp_filename)
+            return obj.partner_social_security_statement_data
         return None
 
 

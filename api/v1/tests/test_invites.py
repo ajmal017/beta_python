@@ -445,6 +445,17 @@ class InviteTests(APITestCase):
         self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
                          msg='Parsed social_security_statement_data matches expected')
 
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
+            data = {
+                'partner_social_security_statement': ss_statement
+            }
+            response = self.client.put(invite_detail_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating onboarding with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['partner_social_security_statement'], None,
+                            msg='partner_social_security_statement_data is in the response and not None')
+        self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
+                         msg='Parsed partner_social_security_statement_data matches expected')
 
         self.assertEqual(response._headers['content-type'], ('Content-Type', 'application/json'),
                          msg='Response content type is application/json after upload')

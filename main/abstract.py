@@ -74,6 +74,8 @@ class PersonalData(models.Model):
             'tax_transcript_data': f([US], str),  # JSON Object
             'social_security_statement': f([US], str),  # url to file
             'social_security_statement_data': f([US], str),  # JSON Object
+            'partner_social_security_statement': f([US], str),  # url to file
+            'partner_social_security_statement_data': f([US], str),  # JSON Object
         }
 
         VE = curry(lambda m: ValueError({'regional_data': m}))
