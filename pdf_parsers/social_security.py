@@ -36,7 +36,7 @@ def get_pdf_content_lines(pdf_file_path):
 keywords = {
     'RetirementAtFull': ['Your payment would be about\n', '\nat full retirement age'],
     'BenefitsColumn': ['Social Security three months before your 65th birthday to enroll in Medicare.\n\n', '\n\n* Your estimated benefits are based on current law.'],
-    'EstimatedTaxableEarnings': ['\n\t\n', '\nYour Social Security number (only the last four digits are shown to help prevent identity theft)'],
+    'EstimatedTaxableEarnings': ['\n\t\n$', '\nYour Social Security number (only the last four digits are shown to help prevent identity theft)'],
     'LastYearSS': ['Taxed\nMedicare\nEarnings\n\n', '\nNot yet recorded\n\n'],
     'LastYearMedicare': ['\nNot yet recorded\n\n', '\n\nYou and your family may be eligible for valuable benefits'],
     'PaidColumn': ['You paid:\t\nYour employers paid:\t\n\n', '\n\nNote: Currently, you and your employer each pay'],
@@ -106,27 +106,27 @@ def parse_text(string):
                 if k == 'BenefitsColumn':
                     benefits = res.split('\n')
                     if len(benefits) > 1:
-                        output['sections'][i]['fields']['RetirementAtAge70'] = '$' + benefits[1]
-                        output['sections'][i]['fields']['RetirementAtAge62'] = '$' + benefits[2]
-                        output['sections'][i]['fields']['Disability'] = '$' + benefits[3]
-                        output['sections'][i]['fields']['SurvivorsChild'] = '$' + benefits[4]
-                        output['sections'][i]['fields']['SurvivorsSpouseWithChild'] = '$' + benefits[5]
-                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = '$' + benefits[6]
-                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = '$' + benefits[7]
-                        output['sections'][i]['fields']['SurvivorsTotalFamilyBenefitsLimit'] = '$' + benefits[8]
+                        output['sections'][i]['fields']['RetirementAtAge70'] = benefits[1].strip(' a month')
+                        output['sections'][i]['fields']['RetirementAtAge62'] = benefits[2].strip(' a month')
+                        output['sections'][i]['fields']['Disability'] = benefits[3].strip(' a month')
+                        output['sections'][i]['fields']['SurvivorsChild'] = benefits[4].strip(' a month')
+                        output['sections'][i]['fields']['SurvivorsSpouseWithChild'] = benefits[5].strip(' a month')
+                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = benefits[6].strip(' a month')
+                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = benefits[7].strip(' a month')
+                        output['sections'][i]['fields']['SurvivorsTotalFamilyBenefitsLimit'] = benefits[8].strip(' a month')
                 elif k == 'PaidColumn':
                     paid = res.split('\n')
                     if len(paid) > 1:
-                        output['sections'][i]['fields']['PaidThisYearSocialSecurity'] = paid[4]
-                        output['sections'][i]['fields']['EmployerPaidThisYearSocialSecurity'] = paid[5]
-                        output['sections'][i]['fields']['PaidThisYearMedicare'] = paid[7]
-                        output['sections'][i]['fields']['EmployerPaidThisYearMedicare'] = paid[8]
+                        output['sections'][i]['fields']['PaidThisYearSocialSecurity'] = paid[4].strip('$')
+                        output['sections'][i]['fields']['EmployerPaidThisYearSocialSecurity'] = paid[5].strip('$')
+                        output['sections'][i]['fields']['PaidThisYearMedicare'] = paid[7].strip('$')
+                        output['sections'][i]['fields']['EmployerPaidThisYearMedicare'] = paid[8].strip('$')
                 elif k == 'LastYearSS':
                     last_year_taxed_ss_earnings = res.split('\n')[9]
-                    output['sections'][i]['fields']['LastYearSS'] = last_year_taxed_ss_earnings
+                    output['sections'][i]['fields']['LastYearSS'] = last_year_taxed_ss_earnings.strip('$')
                 elif k == 'LastYearMedicare':
                     last_year_taxed_medicare_earnings = res.split('\n')[3]
-                    output['sections'][i]['fields']['LastYearMedicare'] = last_year_taxed_medicare_earnings
+                    output['sections'][i]['fields']['LastYearMedicare'] = last_year_taxed_medicare_earnings.strip('$')
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
 
