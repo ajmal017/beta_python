@@ -13,7 +13,8 @@ from client.models import AccountTypeRiskProfileGroup, Client, EmailInvite, \
 from main import constants
 from main.constants import ACCOUNT_TYPE_PERSONAL
 from main.models import ExternalAsset, ExternalAssetTransfer, User
-from pdf_parsers.tax_return import parse_pdf
+from pdf_parsers.tax_return import parse_pdf as parse_tax_pdf
+from pdf_parsers.social_security import parse_pdf as parse_ss_pdf
 from user.models import SecurityAnswer
 from ..user.serializers import PhoneNumberValidationSerializer, \
     UserFieldSerializer
@@ -355,6 +356,7 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
     client_agreement_url = serializers.SerializerMethodField()
     firm_colored_logo = serializers.SerializerMethodField()
     tax_transcript_data = serializers.SerializerMethodField()
+    social_security_statement_data = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailInvite
@@ -373,6 +375,8 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
             'firm_colored_logo',
             'tax_transcript',
             'tax_transcript_data',  # this will be stored to client.region_data.tax_transcript_data
+            'social_security_statement',
+            'social_security_statement_data',
         )
 
     def get_risk_profile_group(self, obj):
@@ -402,8 +406,18 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
             with open(tmp_filename, 'wb+') as f:
                 for chunk in obj.tax_transcript.chunks():
                     f.write(chunk)
-            obj.tax_transcript_data = parse_pdf(tmp_filename)
+            obj.tax_transcript_data = parse_tax_pdf(tmp_filename)
             return obj.tax_transcript_data
+        return None
+
+    def get_social_security_statement_data(self, obj):
+        if obj.social_security_statement:
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in obj.social_security_statement.chunks():
+                    f.write(chunk)
+            obj.social_security_statement_data = parse_ss_pdf(tmp_filename)
+            return obj.social_security_statement_data
         return None
 
 

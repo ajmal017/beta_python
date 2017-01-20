@@ -34,7 +34,7 @@ def get_pdf_content_lines(pdf_file_path):
 # for each item to extract its string, the value is found between
 # the pairs in the list e.g. SSN is found between "SSN:", "SPOUSE SSN:"
 keywords = {
-    'RetirementAtFull': ['Your payment would be about\n', '\nat full retirement age'],
+    'RetirementAtFull': ['Your payment would be about\n$', ' a month\nat full retirement age'],
     'BenefitsColumn': ['Social Security three months before your 65th birthday to enroll in Medicare.\n\n', '\n\n* Your estimated benefits are based on current law.'],
     'EstimatedTaxableEarnings': ['\n\t\n$', '\nYour Social Security number (only the last four digits are shown to help prevent identity theft)'],
     'LastYearSS': ['Taxed\nMedicare\nEarnings\n\n', '\nNot yet recorded\n\n'],
@@ -109,9 +109,8 @@ def parse_text(string):
                         output['sections'][i]['fields']['RetirementAtAge70'] = benefits[1].strip(' a month')
                         output['sections'][i]['fields']['RetirementAtAge62'] = benefits[2].strip(' a month')
                         output['sections'][i]['fields']['Disability'] = benefits[3].strip(' a month')
-                        output['sections'][i]['fields']['SurvivorsChild'] = benefits[4].strip(' a month')
-                        output['sections'][i]['fields']['SurvivorsSpouseWithChild'] = benefits[5].strip(' a month')
-                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = benefits[6].strip(' a month')
+                        output['sections'][i]['fields']['SurvivorsChild'] = benefits[5].strip(' a month')
+                        output['sections'][i]['fields']['SurvivorsSpouseWithChild'] = benefits[6].strip(' a month')
                         output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = benefits[7].strip(' a month')
                         output['sections'][i]['fields']['SurvivorsTotalFamilyBenefitsLimit'] = benefits[8].strip(' a month')
                 elif k == 'PaidColumn':
@@ -135,7 +134,6 @@ def parse_text(string):
 
 
 def parse_vector_pdf(fl):
-    # logger.error(get_pdf_content_lines(fl))
     res = get_pdf_content_lines(fl).decode("utf-8")
     return parse_text(res)
 

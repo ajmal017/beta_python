@@ -1,9 +1,10 @@
+import os
 import json
 from datetime import date
 from django.core.urlresolvers import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-
+from django.conf import settings
 from address.models import Region
 from api.v1.tests.factories import AdvisorFactory, EmailInviteFactory
 from client.models import EmailInvite
@@ -563,15 +564,7 @@ class ClientTests(APITestCase):
         invite_sent = EmailInviteFactory.create(user=usr_sent, status=EmailInvite.STATUS_SENT)
         self.assertEqual(invite_sent.get_status_display(),'Sent')
 
-
-
-
-
     def test_update_client_tax_filing_status(self):
-        """
-
-
-        """
         invite = EmailInviteFactory.create(status=EmailInvite.STATUS_ACCEPTED)
         url = reverse('api:v1:client-list')
         usr = UserFactory.create()
