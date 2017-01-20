@@ -38,7 +38,8 @@ keywords = {
     'RetirementAtFull': ['Your payment would be about\n', '\nat full retirement age'],
     'BenefitsColumn': ['Social Security three months before your 65th birthday to enroll in Medicare.\n\n', '\n\n* Your estimated benefits are based on current law.'],
     'EstimatedTaxableEarnings': ['\n\t\n', '\nYour Social Security number (only the last four digits are shown to help prevent identity theft)'],
-    'LastYear': ['You paid:', ''],
+    'LastYearSS': ['Taxed\nMedicare\nEarnings\n\n', '\nNot yet recorded\n\n'],
+    'LastYearMedicare': ['\nNot yet recorded\n\n', '\n\nYou and your family may be eligible for valuable benefits'],
     'PaidColumn': ['You paid:\t\nYour employers paid:\t\n\n', '\n\nNote: Currently, you and your employer each pay'],
 }
 
@@ -62,7 +63,8 @@ output = {
         {
             'name': 'Estimated Earnings',
             'fields': {
-                'LastYear': '',
+                'LastYearSS': '',
+                'LastYearMedicare': '',
             }
         },
         {
@@ -125,7 +127,14 @@ def parse_text(string):
                         output['sections'][i]['fields']['EmployerPaidThisYearSocialSecurity'] = paid[5]
                         output['sections'][i]['fields']['PaidThisYearMedicare'] = paid[7]
                         output['sections'][i]['fields']['EmployerPaidThisYearMedicare'] = paid[8]
-                
+                elif k == 'LastYearSS':
+                    logger.error(res.split('\n'))
+                    last_year_taxed_ss_earnings = res.split('\n')[9]
+                    output['sections'][i]['fields']['LastYearSS'] = last_year_taxed_ss_earnings
+                elif k == 'LastYearMedicare':
+                    logger.error(res.split('\n'))
+                    last_year_taxed_medicare_earnings = res.split('\n')[3]
+                    output['sections'][i]['fields']['LastYearMedicare'] = last_year_taxed_medicare_earnings
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
 
@@ -167,7 +176,8 @@ def clean_results(results):
     clean_output['SurvivorsSpouseAtFull'] = results['sections'][0]['fields']['SurvivorsSpouseAtFull']
     clean_output['SurvivorsTotalFamilyBenefitsLimit'] = results['sections'][0]['fields']['SurvivorsTotalFamilyBenefitsLimit']
     clean_output['EstimatedTaxableEarnings'] = results['sections'][0]['fields']['EstimatedTaxableEarnings']
-    clean_output['LastYear'] = results['sections'][1]['fields']['LastYear']
+    clean_output['LastYearSS'] = results['sections'][1]['fields']['LastYearSS']
+    clean_output['LastYearMedicare'] = results['sections'][1]['fields']['LastYearMedicare']
     clean_output['PaidThisYearSocialSecurity'] = results['sections'][2]['fields']['PaidThisYearSocialSecurity']
     clean_output['EmployerPaidThisYearSocialSecurity'] = results['sections'][2]['fields']['EmployerPaidThisYearSocialSecurity']
     clean_output['PaidThisYearMedicare'] = results['sections'][2]['fields']['PaidThisYearMedicare']
