@@ -564,9 +564,10 @@ equired to generate the
         federal_regular_tax = 20614
         employee_contributions_last_year = 0.055
         employer_contributions_last_year = 0.02
+        zip_code = 90058
         # # #'
         
-        state = zip2state.get_state(int(plan.retirement_postal_code))
+        state = zip2state.get_state(int(zip_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(plan.client.date_of_birth),
