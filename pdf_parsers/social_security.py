@@ -38,6 +38,7 @@ keywords = {
     'RetirementAtFull': ['Your payment would be about\n', '\nat full retirement age'],
     'BenefitsColumn': ['Social Security three months before your 65th birthday to enroll in Medicare.\n\n', '\n\n* Your estimated benefits are based on current law.'],
     'LastYear': ['You paid:', ''],
+    'PaidColumn': ['You paid:\t\nYour employers paid:\t\n\n', '\n\nNote: Currently, you and your employer each pay'],
     'PaidThisYear': ['', ''],
     'EmployerPaidThisYear': ['', ''],
     'PaidLastYear': ['', ''],
@@ -69,10 +70,11 @@ output = {
         {
             'name': 'Estimated Paid',
             'fields': {
-                'PaidThisYear': '',
-                'EmployerPaidThisYear': '',
-                'PaidLastYear': '',
-                'EmployerPaidLastYear': '',
+                'PaidColumn': '',
+                'PaidThisYearSocialSecurity': '',
+                'EmployerPaidThisYearSocialSecurity': '',
+                'PaidThisYearMedicare': '',
+                'EmployerPaidThisYearMedicare': '',
             }
         },
     ]
@@ -111,14 +113,23 @@ def parse_text(string):
                     benefits = res.split('\n')
                     logger.error(benefits)
                     if len(benefits) > 1:
-                        output['sections'][i]['fields']['RetirementAtAge70'] = benefits[1]
-                        output['sections'][i]['fields']['RetirementAtAge62'] = benefits[2]
-                        output['sections'][i]['fields']['Disability'] = benefits[3]
-                        output['sections'][i]['fields']['SurvivorsChild'] = benefits[4]
-                        output['sections'][i]['fields']['SurvivorsSpouseWithChild'] = benefits[5]
-                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = benefits[6]
-                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = benefits[7]
-                        output['sections'][i]['fields']['SurvivorsTotalFamilyBenefitsLimit'] = benefits[8]
+                        output['sections'][i]['fields']['RetirementAtAge70'] = '$' + benefits[1]
+                        output['sections'][i]['fields']['RetirementAtAge62'] = '$' + benefits[2]
+                        output['sections'][i]['fields']['Disability'] = '$' + benefits[3]
+                        output['sections'][i]['fields']['SurvivorsChild'] = '$' + benefits[4]
+                        output['sections'][i]['fields']['SurvivorsSpouseWithChild'] = '$' + benefits[5]
+                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = '$' + benefits[6]
+                        output['sections'][i]['fields']['SurvivorsSpouseAtFull'] = '$' + benefits[7]
+                        output['sections'][i]['fields']['SurvivorsTotalFamilyBenefitsLimit'] = '$' + benefits[8]
+                elif k == 'PaidColumn':
+                    paid = res.split('\n')
+                    logger.error(paid)
+                    logger.error(len(paid))
+                    if len(paid) > 1:
+                        output['sections'][i]['fields']['PaidThisYearSocialSecurity'] = paid[4]
+                        output['sections'][i]['fields']['EmployerPaidThisYearSocialSecurity'] = paid[5]
+                        output['sections'][i]['fields']['PaidThisYearMedicare'] = paid[7]
+                        output['sections'][i]['fields']['EmployerPaidThisYearMedicare'] = paid[8]
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
 
@@ -160,10 +171,10 @@ def clean_results(results):
     clean_output['SurvivorsSpouseAtFull'] = results['sections'][0]['fields']['SurvivorsSpouseAtFull']
     clean_output['SurvivorsTotalFamilyBenefitsLimit'] = results['sections'][0]['fields']['SurvivorsTotalFamilyBenefitsLimit']
     clean_output['LastYear'] = results['sections'][1]['fields']['LastYear']
-    clean_output['PaidThisYear'] = results['sections'][2]['fields']['PaidThisYear']
-    clean_output['EmployerPaidThisYear'] = results['sections'][2]['fields']['EmployerPaidThisYear']
-    clean_output['PaidLastYear'] = results['sections'][2]['fields']['PaidLastYear']
-    clean_output['EmployerPaidLastYear'] = results['sections'][2]['fields']['EmployerPaidLastYear']
+    clean_output['PaidThisYearSocialSecurity'] = results['sections'][2]['fields']['PaidThisYearSocialSecurity']
+    clean_output['EmployerPaidThisYearSocialSecurity'] = results['sections'][2]['fields']['EmployerPaidThisYearSocialSecurity']
+    clean_output['PaidThisYearMedicare'] = results['sections'][2]['fields']['PaidThisYearMedicare']
+    clean_output['EmployerPaidThisYearMedicare'] = results['sections'][2]['fields']['EmployerPaidThisYearMedicare']
 
     return clean_output
 
