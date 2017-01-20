@@ -36,9 +36,9 @@ def get_pdf_content_lines(pdf_file_path):
 # the pairs in the list e.g. SSN is found between "SSN:", "SPOUSE SSN:"
 keywords = {
     'IntroChunk': ['SHOWN ON RETURN:\n\n', '\n\nADDRESS:\n\n'],
-    "SPOUSE SSN": ["SPOUSE SSN:", "NAME(S)"],
     "FILING STATUS": ["\n\nADDRESS:\n\n", "\n\nFORM NUMBER:\n\n"],
-    "TOTAL INCOME": ["TOTAL INCOME:", "TOTAL INCOME PER COMPUTER:"]
+    'SSN': ['FILING STATUS:\n\n', '\n\nSPOUSE SSN:\n\n'],
+    "TOTAL INCOME": ["TOTAL INCOME PER COMPUTER:\n\n", "\n\nAdjustments to Income"]
 }
 
 output = {
@@ -94,7 +94,7 @@ def parse_text(string):
                     # 222-22-2222\nFIRST M & SPOUSE M LAST\n\nAC\n\n999 AVENUE RD\nCITY, ST 10.000-90.00-800
                     chunks = res.split('\n')
                     logger.error(chunks)
-                    output["sections"][i]["fields"]['SSN'] = chunks[0]
+                    output["sections"][i]["fields"]['SPOUSE SSN'] = chunks[0]
                     if '&' in chunks[1]:
                         csplit = chunks[1].split('&')
                         output["sections"][i]["fields"]['NAME'] = csplit[0] + csplit[1].split(' ')[-1]
@@ -102,6 +102,13 @@ def parse_text(string):
                     else:
                         output["sections"][i]["fields"]['NAME'] = chunks[1]
                     output["sections"][i]["fields"]['ADDRESS'] = chunks[5] + ', ' + chunks[6]
+                elif k == 'SSN':
+                    chunks = res.split('\n')
+                    output["sections"][i]["fields"]['SSN'] = chunks[0]
+                elif k == "TOTAL INCOME":
+                    chunks = res.split('\n')
+                    output["sections"][i]["fields"]['TOTAL INCOME'] = chunks[1]
+
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
         i += 1
