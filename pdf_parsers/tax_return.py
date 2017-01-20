@@ -7,7 +7,6 @@ python3: pip-install pyPdf2
 """
 
 import argparse
-from PyPDF2 import PdfFileReader
 import os
 import shutil
 import sys
@@ -15,27 +14,30 @@ import json
 import subprocess
 import logging
 import re
+import random
+import string
 
 logger = logging.getLogger('pdf_parsers.tax_return')
 
 
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
 def get_pdf_content_lines(pdf_file_path):
     with open(pdf_file_path, 'rb') as f:
-        pdf_reader = PdfFileReader(f)
-        for page in pdf_reader.pages:
-            for line in page.extractText().splitlines():
-                yield line
+        tmp_file_id = id_generator()
+        subprocess.run(['pdftotext', pdf_file_path, '/tmp/' + tmp_file_id], stdout=subprocess.PIPE)
+        with open('/tmp/' + tmp_file_id, 'rb') as f:
+            return f.read()
 
 
 # for each item to extract its string, the value is found between
 # the pairs in the list e.g. SSN is found between "SSN:", "SPOUSE SSN:"
 keywords = {
-    "SSN": ["SSN:", "SPOUSE SSN:"],
+    'IntroChunk': ['SHOWN ON RETURN:\n\n', '\n\nADDRESS:\n\n'],
     "SPOUSE SSN": ["SPOUSE SSN:", "NAME(S)"],
-    "NAME": ["RETURN:", "ADDRESS:"],
-    "SPOUSE NAME": ["RETURN:", "ADDRESS:"],
-    "ADDRESS": ["ADDRESS:", "FILING STATUS:"],
-    "FILING STATUS": ["FILING STATUS:", "FORM NUMBER:"],
+    "FILING STATUS": ["\n\nADDRESS:\n\n", "\n\nFORM NUMBER:\n\n"],
     "TOTAL INCOME": ["TOTAL INCOME:", "TOTAL INCOME PER COMPUTER:"]
 }
 
@@ -44,6 +46,7 @@ output = {
         {
             "name": "Introduction",
             "fields": {
+                'IntroChunk': '',
                 "SSN": "",
                 "SPOUSE SSN": "",
                 "NAME": "",
@@ -77,20 +80,6 @@ def parse_item(key, s):
     start = sub_str[0]
     end = sub_str[1]
     result = find_between(s, start, end)
-    if key == "NAME" and "&" in result:
-        result = result.split("&")[0]
-    if key == 'SPOUSE NAME':
-        if "&" in result:
-            result = result.split("&")[1]
-            if "\n" in result:
-                for i in result.splitlines()[1:]:
-                    if i and "\n" not in i:
-                        output["sections"][0]["fields"]["ADDRESS"] = i
-                        break
-
-                result = result.splitlines()[0]
-        else:
-            result = ''
 
     return result.lstrip().rstrip().lstrip('.').rstrip('.').rstrip('\n')
 
@@ -98,20 +87,31 @@ def parse_item(key, s):
 def parse_text(string):
     i = 0
     for section in output["sections"]:
-        for k, v in section["fields"].items():
-            res = parse_item(k, string)
-            if output["sections"][i]["fields"][k] == "":
-                output["sections"][i]["fields"][k] = res
-            else:
-                if k == "ADDRESS":
+        for k, v in list(section["fields"].items()):
+            if k in list(keywords.keys()):
+                res = parse_item(k, string)
+                if k == 'IntroChunk':
+                    # 222-22-2222\nFIRST M & SPOUSE M LAST\n\nAC\n\n999 AVENUE RD\nCITY, ST 10.000-90.00-800
+                    chunks = res.split('\n')
+                    logger.error(chunks)
+                    output["sections"][i]["fields"]['SSN'] = chunks[0]
+                    if '&' in chunks[1]:
+                        csplit = chunks[1].split('&')
+                        output["sections"][i]["fields"]['NAME'] = csplit[0] + csplit[1].split(' ')[-1]
+                        output["sections"][i]["fields"]['SPOUSE NAME'] = csplit[1].strip(' ')
+                    else:
+                        output["sections"][i]["fields"]['NAME'] = chunks[1]
+                    output["sections"][i]["fields"]['ADDRESS'] = chunks[5] + ', ' + chunks[6]
+                if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
         i += 1
     return output
 
 
 def parse_vector_pdf(fl):
-    res = get_pdf_content_lines(fl)
-    return parse_text('\n'.join(res))
+    logger.error(get_pdf_content_lines(fl))
+    res = get_pdf_content_lines(fl).decode("utf-8")
+    return parse_text(res)
 
 
 def parse_scanned_pdf(fl):
@@ -130,10 +130,10 @@ def parse_scanned_pdf(fl):
     txt = ''.join(txt)
     return parse_text(txt)
 
+
 def parse_address(addr_str):
     # addr_str format:
-    # {Street Address}\n
-    # {City}, {State Code} {Zip code}
+    # '999 AVENUE RD, CITY, ST 10.000-90.00-800'
     address = {
         "address1": '',
         "address2": '',
@@ -141,17 +141,17 @@ def parse_address(addr_str):
         "state": '',
         "post_code": ''
     }
-    # '  ' => '\n', '\n\n+' => '\n'
-    addr_list1 = re.sub('\\n+', '\n', addr_str.replace('  ', '\n')).split('\n')
-    address['address1'] = addr_list1[0].strip(' ,') # TODO: check if address1 can be split for address2
+    addr_list1 = addr_str.split(',')
+    address['address1'] = addr_list1[0].strip(' ,')
+    if '\n' in address['address1']:
+        address['address1'] = addr_list1[0].strip(' ,').split('\n')[0]
+        address['address2'] = addr_list1[0].strip(' ,').split('\n')[1]
     if len(addr_list1) >= 2:
-        addr_list2 = addr_list1[1].strip().split(',')
-        address['city'] = addr_list2[0].strip()
-        if len(addr_list2) >= 2:
-            addr_list3 = addr_list2[1].strip().split(' ')
-            address['state'] = addr_list3[0].strip()
-            address['post_code'] = addr_list3[1].strip()
+        address['city'] = addr_list1[1].strip(' ,')
+        address['state'] = addr_list1[2].strip(' ,').split(' ')[0]
+        address['post_code'] = addr_list1[2].strip(' ,').split(' ')[1]
     return address
+
 
 def clean_results(results):
     clean_output = {}
