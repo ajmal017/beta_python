@@ -116,7 +116,8 @@ def parse_text(string):
                         output["sections"][i]["fields"]['SPOUSE NAME'] = csplit[1].strip(' ')
                 elif k == "TotalIncomeColumn":
                     chunks = res.split('\n')
-                    output["sections"][i]["fields"]['TotalIncome'] = chunks[-2]
+                    if len(chunks) > 2:
+                        output["sections"][i]["fields"]['TotalIncome'] = chunks[-2]
                 # elif k == 'IncomeColumn':
                 #     chunks = res.split('\n')
                 #     logger.error(chunks)
@@ -216,7 +217,7 @@ def clean_results(results):
     clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
     clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
-    clean_output['TotalIncome'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
+    clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
 
     clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit'].strip('$ ')
     clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit']
