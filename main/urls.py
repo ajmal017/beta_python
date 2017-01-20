@@ -112,7 +112,7 @@ urlpatterns = patterns(
     url('^terms-of-use/$', TemplateView.as_view(template_name="legal/terms_of_use.html"), name='terms_of_use'),
     url('^legal/$', TemplateView.as_view(template_name="legal/legal.html"), name='legal'),
     url('^product-brochure/$', TemplateView.as_view(template_name="legal/product_brochure.html"), name='product-brochure'),
-    url('^oddcast/$', TemplateView.as_view(template_name="client_app/oddcast.html"), name='oddcast')
+    url('^oddcast/$', oddcast.index, name='oddcast')
 )
 
 if settings.DEBUG:
