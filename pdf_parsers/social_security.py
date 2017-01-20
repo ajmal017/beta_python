@@ -40,10 +40,6 @@ keywords = {
     'EstimatedTaxableEarnings': ['\n\t\n', '\nYour Social Security number (only the last four digits are shown to help prevent identity theft)'],
     'LastYear': ['You paid:', ''],
     'PaidColumn': ['You paid:\t\nYour employers paid:\t\n\n', '\n\nNote: Currently, you and your employer each pay'],
-    'PaidThisYear': ['', ''],
-    'EmployerPaidThisYear': ['', ''],
-    'PaidLastYear': ['', ''],
-    'EmployerPaidLastYear': ['', ''],
 }
 
 output = {
