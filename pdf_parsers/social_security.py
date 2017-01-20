@@ -6,7 +6,6 @@ linux: apt-get install tesseract
 python3: pip-install pyPdf2
 """
 import argparse
-# from PyPDF2 import PdfFileReader
 import os
 import shutil
 import sys
@@ -95,11 +94,6 @@ def parse_item(key, s):
     start = sub_str[0]
     end = sub_str[1]
     result = find_between(s, start, end)
-    logger.error(sub_str)
-    logger.error(start)
-    logger.error(end)
-    logger.error(result)
-
     return result.lstrip().rstrip().lstrip('.').rstrip('.').rstrip('\n')
 
 
@@ -128,11 +122,9 @@ def parse_text(string):
                         output['sections'][i]['fields']['PaidThisYearMedicare'] = paid[7]
                         output['sections'][i]['fields']['EmployerPaidThisYearMedicare'] = paid[8]
                 elif k == 'LastYearSS':
-                    logger.error(res.split('\n'))
                     last_year_taxed_ss_earnings = res.split('\n')[9]
                     output['sections'][i]['fields']['LastYearSS'] = last_year_taxed_ss_earnings
                 elif k == 'LastYearMedicare':
-                    logger.error(res.split('\n'))
                     last_year_taxed_medicare_earnings = res.split('\n')[3]
                     output['sections'][i]['fields']['LastYearMedicare'] = last_year_taxed_medicare_earnings
                 if output["sections"][i]["fields"][k] == "":
@@ -143,7 +135,7 @@ def parse_text(string):
 
 
 def parse_vector_pdf(fl):
-    logger.error(get_pdf_content_lines(fl))
+    # logger.error(get_pdf_content_lines(fl))
     res = get_pdf_content_lines(fl).decode("utf-8")
     return parse_text(res)
 
