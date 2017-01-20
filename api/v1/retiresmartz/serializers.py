@@ -448,11 +448,19 @@ class RetirementPlanEincWritableSerializer(serializers.ModelSerializer):
                 field.required = False
 
 
+class AdviceFeedActionSerializer(serializers.Serializer):
+    label = serializers.CharField()
+    type = serializers.CharField()
+    url = serializers.CharField()
+    data = serializers.JSONField()
+
+
 class RetirementAdviceReadSerializer(ReadOnlyModelSerializer):
     """
         Read-Only RetirementAdvice serializer, used for
         get request for retirement-plans advice-feed endpoint
     """
+    actions = serializers.JSONField()
 
     class Meta:
         model = RetirementAdvice
