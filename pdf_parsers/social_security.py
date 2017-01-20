@@ -37,6 +37,7 @@ def get_pdf_content_lines(pdf_file_path):
 keywords = {
     'RetirementAtFull': ['Your payment would be about\n', '\nat full retirement age'],
     'BenefitsColumn': ['Social Security three months before your 65th birthday to enroll in Medicare.\n\n', '\n\n* Your estimated benefits are based on current law.'],
+    'EstimatedTaxableEarnings': ['\n\t\n', '\nYour Social Security number (only the last four digits are shown to help prevent identity theft)'],
     'LastYear': ['You paid:', ''],
     'PaidColumn': ['You paid:\t\nYour employers paid:\t\n\n', '\n\nNote: Currently, you and your employer each pay'],
     'PaidThisYear': ['', ''],
@@ -59,6 +60,7 @@ output = {
                 'SurvivorsSpouseAtFull': '',
                 'SurvivorsSpouseAtFull': '',
                 'SurvivorsTotalFamilyBenefitsLimit': '',
+                'EstimatedTaxableEarnings': '',
             }
         },
         {
@@ -111,7 +113,6 @@ def parse_text(string):
                 res = parse_item(k, string)
                 if k == 'BenefitsColumn':
                     benefits = res.split('\n')
-                    logger.error(benefits)
                     if len(benefits) > 1:
                         output['sections'][i]['fields']['RetirementAtAge70'] = '$' + benefits[1]
                         output['sections'][i]['fields']['RetirementAtAge62'] = '$' + benefits[2]
@@ -123,13 +124,12 @@ def parse_text(string):
                         output['sections'][i]['fields']['SurvivorsTotalFamilyBenefitsLimit'] = '$' + benefits[8]
                 elif k == 'PaidColumn':
                     paid = res.split('\n')
-                    logger.error(paid)
-                    logger.error(len(paid))
                     if len(paid) > 1:
                         output['sections'][i]['fields']['PaidThisYearSocialSecurity'] = paid[4]
                         output['sections'][i]['fields']['EmployerPaidThisYearSocialSecurity'] = paid[5]
                         output['sections'][i]['fields']['PaidThisYearMedicare'] = paid[7]
                         output['sections'][i]['fields']['EmployerPaidThisYearMedicare'] = paid[8]
+                
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
 
@@ -138,8 +138,8 @@ def parse_text(string):
 
 
 def parse_vector_pdf(fl):
+    logger.error(get_pdf_content_lines(fl))
     res = get_pdf_content_lines(fl).decode("utf-8")
-    logger.error(res)
     return parse_text(res)
 
 
@@ -170,6 +170,7 @@ def clean_results(results):
     clean_output['SurvivorsSpouseAtFull'] = results['sections'][0]['fields']['SurvivorsSpouseAtFull']
     clean_output['SurvivorsSpouseAtFull'] = results['sections'][0]['fields']['SurvivorsSpouseAtFull']
     clean_output['SurvivorsTotalFamilyBenefitsLimit'] = results['sections'][0]['fields']['SurvivorsTotalFamilyBenefitsLimit']
+    clean_output['EstimatedTaxableEarnings'] = results['sections'][0]['fields']['EstimatedTaxableEarnings']
     clean_output['LastYear'] = results['sections'][1]['fields']['LastYear']
     clean_output['PaidThisYearSocialSecurity'] = results['sections'][2]['fields']['PaidThisYearSocialSecurity']
     clean_output['EmployerPaidThisYearSocialSecurity'] = results['sections'][2]['fields']['EmployerPaidThisYearSocialSecurity']
