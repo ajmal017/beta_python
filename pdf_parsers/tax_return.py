@@ -35,10 +35,15 @@ def get_pdf_content_lines(pdf_file_path):
 # for each item to extract its string, the value is found between
 # the pairs in the list e.g. SSN is found between "SSN:", "SPOUSE SSN:"
 keywords = {
-    'IntroChunk': ['SHOWN ON RETURN:\n\n', '\n\nADDRESS:\n\n'],
-    "FILING STATUS": ["\n\nADDRESS:\n\n", "\n\nFORM NUMBER:\n\n"],
-    'SSN': ['FILING STATUS:\n\n', '\n\nSPOUSE SSN:\n\n'],
-    "TOTAL INCOME": ["TOTAL INCOME PER COMPUTER:\n\n", "\n\nAdjustments to Income"]
+    'IntroChunk': ['SHOWN ON RETURN:\n', '\n\nADDRESS:\n'],
+    "FILING STATUS": ["\n\nFILING STATUS:\n", "\nFORM NUMBER:\n"],
+    'NAME': ['\nNAME(S) SHOWN ON RETURN:', '\nADDRESS:\n'],
+    'SSN': ['\nSSN:', '\nSPOUSE SSN:'],
+    'SPOUSE SSN': ['\nSPOUSE SSN:', '\nNAME(S) SHOWN ON RETURN:'],
+    'ADDRESS': ['\nADDRESS:\n\n', '\n\nFILING STATUS:'],
+    # "TOTAL INCOME": ["TOTAL INCOME PER COMPUTER:\n\n", "\n\nAdjustments to Income"],
+    'TotalIncomeColumn': ['TOTAL INCOME PER COMPUTER:\n\nPage 3 of 8\n\n', '\n\nAdjustments to Income'],
+    'IncomeColumn': ['EARNED INCOME CREDIT NONTAXABLE COMBAT PAY:\n\n', '\n\nFORM 4136 CREDIT FOR FEDERAL TAX ON FUELS PER'],
 }
 
 output = {
@@ -58,8 +63,17 @@ output = {
         {
             "name": "Income",
             "fields": {
-                "TOTAL INCOME": "",
+                'TotalIncomeColumn': '',
+                "TotalIncome": "",
+                'IncomeColumn': '',
+                'EarnedIncomeCredit': '',
+                'CombatCredit': '',
+                'ExcessSSCredit': '',
+                'AddChildTaxCredit': '',
 
+                'RefundableCredit': '',
+                'PremiumTaxCredit': '',
+                'TotalPayments': '',
             }
         }
     ]
@@ -89,25 +103,41 @@ def parse_text(string):
     for section in output["sections"]:
         for k, v in list(section["fields"].items()):
             if k in list(keywords.keys()):
+                logger.error(k)
                 res = parse_item(k, string)
-                if k == 'IntroChunk':
-                    # 222-22-2222\nFIRST M & SPOUSE M LAST\n\nAC\n\n999 AVENUE RD\nCITY, ST 10.000-90.00-800
-                    chunks = res.split('\n')
-                    logger.error(chunks)
-                    output["sections"][i]["fields"]['SPOUSE SSN'] = chunks[0]
-                    if '&' in chunks[1]:
-                        csplit = chunks[1].split('&')
+                if k == 'NAME':
+                    if '&' in res:
+                        csplit = res.split('&')
                         output["sections"][i]["fields"]['NAME'] = csplit[0] + csplit[1].split(' ')[-1]
                         output["sections"][i]["fields"]['SPOUSE NAME'] = csplit[1].strip(' ')
-                    else:
-                        output["sections"][i]["fields"]['NAME'] = chunks[1]
-                    output["sections"][i]["fields"]['ADDRESS'] = chunks[5] + ', ' + chunks[6]
-                elif k == 'SSN':
+                elif k == "TotalIncomeColumn":
                     chunks = res.split('\n')
-                    output["sections"][i]["fields"]['SSN'] = chunks[0]
-                elif k == "TOTAL INCOME":
+                    output["sections"][i]["fields"]['TotalIncome'] = chunks[-2]
+                elif k == 'IncomeColumn':
                     chunks = res.split('\n')
-                    output["sections"][i]["fields"]['TOTAL INCOME'] = chunks[1]
+                    logger.error(chunks)
+                    logger.error(len(chunks))
+                    """
+                    chunks 0 - health care full year coverage indicator
+                           1 - cobra premium subsidy
+                           2 - estimated tax payments
+                           3 - other payment credit
+                           4 - refundable education credit
+                           5 - refundable education credit per computer
+                           6 - refundable education credit verified
+                           7 - earned income credit
+                           8 - earned income credit per computer
+                           9 - earned income credit nontaxable combat pay
+                           10 - schedule 8812 combat pay
+                           11 - excess social security
+                           12 - tot ss/medicare withheld
+                           13 - additional child tax credit
+                    """
+                    if len(chunks) > 1:
+                        output["sections"][i]["fields"]['EarnedIncomeCredit'] = chunks[7]
+                        output["sections"][i]["fields"]['CombatCredit'] = chunks[8]
+                        output["sections"][i]["fields"]['ExcessSSCredit'] = chunks[11]
+                        output["sections"][i]["fields"]['AddChildTaxCredit'] = chunks[13]
 
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
@@ -140,7 +170,7 @@ def parse_scanned_pdf(fl):
 
 def parse_address(addr_str):
     # addr_str format:
-    # '999 AVENUE RD, CITY, ST 10.000-90.00-800'
+    # 200 SAMPLE RD\nHOT SPRINGS, AR 33XXX
     address = {
         "address1": '',
         "address2": '',
@@ -148,15 +178,15 @@ def parse_address(addr_str):
         "state": '',
         "post_code": ''
     }
-    addr_list1 = addr_str.split(',')
+    logger.error(addr_str)
+    addr_list1 = addr_str.split('\n')
     address['address1'] = addr_list1[0].strip(' ,')
-    if '\n' in address['address1']:
-        address['address1'] = addr_list1[0].strip(' ,').split('\n')[0]
-        address['address2'] = addr_list1[0].strip(' ,').split('\n')[1]
-    if len(addr_list1) >= 2:
-        address['city'] = addr_list1[1].strip(' ,')
-        address['state'] = addr_list1[2].strip(' ,').split(' ')[0]
-        address['post_code'] = addr_list1[2].strip(' ,').split(' ')[1]
+    if len(addr_list1) > 2:
+        address['address2'] = addr_list1[1].strip(' ,')
+    if len(addr_list1) == 2:
+        address['city'] = addr_list1[1].split(',')[0]
+        address['state'] = addr_list1[1].strip(' ').split(',')[1].split(' ')[1]
+        address['post_code'] = addr_list1[1].split(' ')[-1]
     return address
 
 
@@ -166,11 +196,14 @@ def clean_results(results):
     clean_output['SPOUSE SSN'] = results['sections'][0]['fields']['SPOUSE SSN']
     clean_output['NAME'] = results['sections'][0]['fields']['NAME']
     clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
-    # logger.error(results['sections'][0])
-    # logger.error(results['sections'][0]['fields']['ADDRESS'])
     clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
-    clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TOTAL INCOME']
+    clean_output['TotalIncome'] = results['sections'][1]['fields']['TotalIncome']
+
+    clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit']
+    clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit']
+    clean_output['ExcessSSCredit'] = results['sections'][1]['fields']['ExcessSSCredit']
+    clean_output['AddChildTaxCredit'] = results['sections'][1]['fields']['AddChildTaxCredit']
 
     return clean_output
 
