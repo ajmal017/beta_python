@@ -7,6 +7,7 @@ from main import abstract
 from main import constants
 from main import test_tax_sheet as tst_tx
 
+
 class FederalTax(object):
     '''
     Model for projected federal tax calculation; based on 'Projected Federal Tax Calc' tab in 'Retirement Modelling v3.xlsx' 
@@ -17,11 +18,8 @@ class FederalTax(object):
         '''
         checks
         '''
-        if len(inflation) != len(years):
-            raise Exception('len(inflation) != len(years)')
-        
-        if len(taxable_income) != len(years):
-            raise Exception('len(taxable_income) != len(years)')
+        self.validate_inputs(filing_status, years, inflation, taxable_income)
+            
         
         '''
         variables
@@ -112,6 +110,34 @@ class FederalTax(object):
                                                                     self.tax_projected['Annual_Taxable_Income'].iloc[j]) for j in range(len(self.years))]
 
 
+    def validate_inputs(self, filing_status, years, inflation, taxable_income):
+
+        if not filing_status:
+            raise Exception('filing_status not provided')
+
+        if not years:
+            raise Exception('years not provided')
+
+        if not inflation:
+            raise Exception('inflation not provided')
+
+        if len(years) == 0:
+            raise Exception('length of years is zero')
+
+        if len(inflation) == 0:
+            raise Exception('length of inflation is zero')
+
+        if len(taxable_income) == 0:
+            raise Exception('length of taxable_income is zero')
+        
+        if len(inflation) != len(years):
+            raise Exception('len(inflation) != len(years)')
+        
+        if len(taxable_income) != len(years):
+            raise Exception('len(taxable_income) != len(years)')
+        
+
+
 class StateTax(object):
 
     '''
@@ -124,6 +150,8 @@ class StateTax(object):
 
 
     def __init__(self, state, filing_status, income):
+
+        self.validate_inputs(state, filing_status, income)
 
         self.state = state
         self.filing_status = filing_status
@@ -213,7 +241,21 @@ class StateTax(object):
 
         else:
             raise Exception('filing_status not handled')
-            
+        
+
+    def validate_inputs(self, state, filing_status, income):
+
+        if not filing_status:
+            raise Exception('filing_status not provided')
+
+        if not state:
+            raise Exception('state not provided')
+
+        if len(state) != 2:
+            raise Exception('state does not have two characters, so not of correct format for US states')
+        
+        if income < 0:
+            raise Exception('income < 0')
         
 
 FICA_RATE_SS_EMPLOYED = 0.062
@@ -233,6 +275,8 @@ class Fica(object):
 
     def __init__(self, employment_status, total_income):
 
+        self.validate_inputs(employment_status, total_income)
+
         self.employment_status = employment_status
         self.total_income = total_income
 
@@ -240,7 +284,18 @@ class Fica(object):
 
     def get_fica(self):
         '''
-        FICA = Social Security contribution + Medicare contribution
+        FICA = Social Security contribution + Medicare con
+    if income < 0:
+        raise Exception('income < 0')
+
+    if not filing_status:
+        raise Exception('filing_status not provided')
+
+    if not state:
+        raise Exception('state not provided')
+
+    if len(state) != 2:
+        raise Exception('state does not have two characters, so not of correct format for US states')tribution
         '''
 
         result = self.get_for_ss() + self.get_for_medicare()
@@ -320,6 +375,19 @@ class Fica(object):
             raise Exception('employment_status not handled')
 
         return result
+
+
+    def validate_inputs(self, employment_status, total_income):
+
+        if not employment_status:
+            raise Exception('employment_status not provided')
+
+        if not total_income:
+            raise Exception('total_income not provided')
+        
+        if total_income < 0:
+            raise Exception('total_income < 0')
+
 
 
 
