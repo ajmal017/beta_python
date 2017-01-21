@@ -154,7 +154,6 @@ class TaxUser(object):
         '''
         inflation
         '''
-        pdb.set_trace()
         self.indices_for_inflation = [(11 + (i * 12)) for i in range(self.years_to_project)]
         self.annual_inflation = [inflation_level[j] for j in self.indices_for_inflation]
 
