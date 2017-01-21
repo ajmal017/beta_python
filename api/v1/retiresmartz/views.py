@@ -571,8 +571,8 @@ equired to generate the
         total_income = 100000.
         adj_gross = 140000.
         other_income=40000.
-        after_tax_income = 110982.
-        federal_taxable_income = 109996.
+        after_tax_income = 50082.
+        federal_taxable_income = 90096.
         federal_regular_tax = 20614.
         ss_fra_retirement = 7002.
         paid_days = 2
