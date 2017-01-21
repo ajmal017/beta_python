@@ -6,6 +6,7 @@ from main import tax_sheet
 from main import abstract
 from main import constants
 from main import test_tax_sheet as tst_tx
+import pdb
  
 
 class FederalTax(object):
@@ -134,7 +135,7 @@ class FederalTax(object):
             raise Exception('len(taxable_income) != len(years)')
         
 
-
+tax_engine = []
 class StateTax(object):
 
     '''
@@ -186,7 +187,7 @@ class StateTax(object):
                 found = True
 
         if found:
-            self.tax_engine = json_state_tax[self.get_state_tax_filing_status()]
+            tax_engine = json_state_tax[self.get_state_tax_filing_status()]
 
         else:
             raise Exception('state not handled')
@@ -196,21 +197,21 @@ class StateTax(object):
         '''
         returns index for rates and brackets for state and filing status
         '''
-        return [i for i in range(len(self.tax_engine))]
+        return [i for i in range(len(tax_engine))]
     
 
     def get_rates(self):
         '''
         returns list with rates for state and filing status
         '''
-        return [self.tax_engine[i]["rate"] for i in range(len(self.tax_engine))]
+        return [tax_engine[i]["rate"] for i in range(len(tax_engine))]
 
 
     def get_brackets(self):
         '''
         returns list with brackets for state and filing status
         '''
-        return [self.tax_engine[i]["bracket"] for i in range(len(self.tax_engine))]
+        return [tax_engine[i]["bracket"] for i in range(len(tax_engine))]
 
 
     def get_state_tax_filing_status(self):
