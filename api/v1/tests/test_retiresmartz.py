@@ -539,8 +539,9 @@ class RetiresmartzTests(APITestCase):
                                             reverse_mortgage=True,
                                             income_growth=0.01,
                                             balance=50000,
-                                            atc=110982,
-                                            retirement_postal_code=94123)
+                                            atc=110982)
+        
+        plan.client.residential_address.post_code=94123
         
         plan.client.life_expectancy = 85
         plan.client.income = 100000

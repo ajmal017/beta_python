@@ -557,6 +557,121 @@ equired to generate the
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
 
+        if plan.client is not None:
+            print('1 ' + str(plan.client))
+        else:
+            print('plan.client')
+
+        if plan.client.regional_data['ssn'] is not None:
+            print('2 ' + str(plan.client.regional_data['ssn']))
+        else:
+            print('plan.client.regional_data[ssn]')
+
+        if plan.retirement_age is not None:
+            print('3 ' + str(plan.retirement_age))
+        else:
+            print('plan.retirement_age')
+
+        if plan.client.life_expectancy is not None:
+            print('4 ' + str(plan.client.life_expectancy))
+        else:
+            print('plan.client.life_expectancy')
+
+        if plan.lifestyle is not None:
+            print('5 ' + str(plan.lifestyle))
+        else:
+            print('plan.lifestyle')
+
+        if plan.reverse_mortgage is not None:
+            print('6 ' + str(plan.reverse_mortgage))
+        else:
+            print('plan.reverse_mortgage')
+
+        if plan.client.home_value is not None:
+            print('7 ' + str(plan.client.home_value))
+        else:
+            print('plan.client.home_value')
+
+        if plan.client.civil_status is not None:
+            print('8 ' + str(plan.client.civil_status))
+        else:
+            print('plan.client.civil_status')
+
+        if plan.client.ss_fra_retirement is not None:
+            print('9 ' + str(plan.client.ss_fra_retirement))
+        else:
+            print('plan.client.ss_fra_retirement')
+
+        if plan.client.ss_fra_todays is not None:
+            print('10 ' + str(plan.client.ss_fra_todays))
+        else:
+            print('plan.client.ss_fra_todays')
+
+        if plan.client.income is not None:
+            print('11 ' + str(plan.client.income))
+        else:
+            print('plan.client.income')
+
+        if plan.client.net_worth is not None:
+            print('12 ' + str(plan.client.net_worth))
+        else:
+            print('plan.client.net_worth')
+
+        if plan.client.income is not None:
+            print('13 ' + str(plan.client.income))
+        else:
+            print('plan.client.income')
+
+        if plan.atc is not None:
+            print('14 ' + str(plan.atc))
+        else:
+            print('plan.atc')
+
+        if plan.client.other_income is not None:
+            print('15 ' + str(plan.client.other_income))
+        else:
+            print('plan.client.other_income ')
+
+        if plan.client.other_income is not None:
+            print('16 ' + str(plan.client.other_income))
+        else:
+            print('plan.client.other_income')
+
+        if plan.client.ss_fra_retirement is not None:
+            print('17 ' + str(plan.client.ss_fra_retirement))
+        else:
+            print('plan.client.ss_fra_retirement')
+
+        if plan.paid_days is not None:
+            print('18 ' + str(plan.paid_days))
+        else:
+            print('plan.paid_days')
+
+        if plan.balance is not None:
+            print('19 ' + str(plan.balance))
+        else:
+            print('plan.balance')
+
+        if plan.client.risk_profile_group is not None:
+            print('20 ' + str(plan.client.risk_profile_group))
+        else:
+            print('plan.client.risk_profile_group')
+
+        if plan.income_growth is not None:
+            print('21 ' + str(plan.income_growth))
+        else:
+            print('plan.income_growth')
+
+        if plan.client.employment_status is not None:
+            print('22 ' + str(plan.client.employment_status))
+        else:
+            print('plan.client.employment_status')
+
+        if plan.client.residential_address.post_code is not None:
+            print('23 ' + str(plan.client.residential_address.post_code))
+        else:
+            print('plan.client.residential_address.post_code')
+
         # Get US tax projection
         ira_rmd_factor = 26.5
         # These ones are fudged ...
@@ -584,7 +699,7 @@ equired to generate the
         employer_contributions_last_year = 0.02
         zip_code = 90058
         # # #
-         
+        
         state = zip2state.get_state(int(zip_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
