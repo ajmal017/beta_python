@@ -674,7 +674,7 @@ equired to generate the
         # Get US tax projection
         ira_rmd_factor = 26.5
         # These ones are fudged ...
-        dob = date(2016, 9, 28)
+        # dob = date(2016, 9, 28)
         house_value = 250000.
         retire_earn_at_fra = 3490.
         retire_earn_under_fra = 1310.
@@ -695,7 +695,7 @@ equired to generate the
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
-                        pd.Timestamp(dob),
+                        pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
                         plan.client.life_expectancy,
                         plan.lifestyle,
