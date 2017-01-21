@@ -691,6 +691,7 @@ equired to generate the
         employee_contributions_last_year = 0.055
         employer_contributions_last_year = 0.02
         # # #
+        
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
