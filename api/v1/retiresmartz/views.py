@@ -586,14 +586,14 @@ equired to generate the
         employee_contributions_last_year = 0.055
         employer_contributions_last_year = 0.02
         zip_code = 90058
-        # # #'
+        # # #
          
         state = zip2state.get_state(int(zip_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(dob),
-                        desired_retirement_age,
-                        life_exp,
+                        plan.retirement_age,
+                        plan.client.life_expectancy,
                         retirement_lifestyle,
                         reverse_mort,
                         house_value,
