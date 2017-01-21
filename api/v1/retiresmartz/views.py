@@ -560,6 +560,7 @@ equired to generate the
         # Get US tax projection
         ira_rmd_factor = 26.5
         # These ones are fudged ...
+        dob = date(1974, 1, 1)
         desired_retirement_age = 70.
         retirement_lifestyle = 1.
         reverse_mort = True
@@ -586,11 +587,11 @@ equired to generate the
         employer_contributions_last_year = 0.02
         zip_code = 90058
         # # #'
-        
+         
         state = zip2state.get_state(int(zip_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
-                        pd.Timestamp(plan.client.date_of_birth),
+                        pd.Timestamp(dob),
                         desired_retirement_age,
                         life_exp,
                         retirement_lifestyle,
