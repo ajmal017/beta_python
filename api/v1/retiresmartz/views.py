@@ -561,10 +561,8 @@ equired to generate the
         ira_rmd_factor = 26.5
         # These ones are fudged ...
         dob = date(1974, 1, 1)
-        desired_retirement_age = 70.
         retirement_lifestyle = 1.
         reverse_mort = True
-        life_exp = 85.
         house_value = 250000.
         retire_earn_at_fra = 3490.
         retire_earn_under_fra = 1310.
@@ -579,7 +577,6 @@ equired to generate the
         initial_401k_balance = 50000
         inflation_level = inflation.inflation_level
         risk_profile_over_cpi = 0.005
-        projected_income_growth = 0.01
         employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
         risk_profile = 0.5
         federal_regular_tax = 20614
@@ -612,7 +609,7 @@ equired to generate the
                         initial_401k_balance,
                         inflation.inflation_level,
                         risk_profile,
-                        projected_income_growth,
+                        plan.income_growth,
                         employee_contributions_last_year,
                         employer_contributions_last_year,
                         state,
