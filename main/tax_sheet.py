@@ -8,8 +8,10 @@ from main import test_tax_sheet as tst_tx
 from main import abstract
 from main import constants
 from dateutil.relativedelta import relativedelta
+from main import inflation
 import pdb
 logger = logging.getLogger('taxsheet')
+inflation_level = inflation.inflation_level
 
 class TaxUser(object):
 
@@ -39,7 +41,6 @@ class TaxUser(object):
                  paid_days,
                  ira_rmd_factor,
                  initial_401k_balance,
-                 inflation_level,
                  risk_profile_over_cpi,
                  projected_income_growth,
                  contrib_rate_employee_401k,
@@ -103,7 +104,6 @@ class TaxUser(object):
         self.paid_days = paid_days
         self.ira_rmd_factor = ira_rmd_factor
         self.initial_401k_balance = initial_401k_balance
-        self.inflation_level = inflation_level
         self.projected_income_growth = projected_income_growth
         self.other_income = other_income
         self.contrib_rate_employee_401k = contrib_rate_employee_401k
@@ -154,7 +154,9 @@ class TaxUser(object):
         '''
         inflation
         '''
-        self.annual_inflation = [self.inflation_level[11 + (i * 12)] for i in range(self.years_to_project)]
+        pdb.set_trace()
+        self.indices_for_inflation = [(11 + (i * 12)) for i in range(self.years_to_project)]
+        self.annual_inflation = [inflation_level[j] for j in self.indices_for_inflation]
 
         '''
         data frame indices
@@ -267,13 +269,13 @@ class TaxUser(object):
         self.post_proj_inc_growth_monthly = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Proj_Inc_Growth_Monthly'] = self.set_full_series(self.pre_proj_inc_growth_monthly, self.post_proj_inc_growth_monthly)
 
-        self.maindf['Proj_Inflation_Rate'] = [self.inflation_level[i]/12. for i in range(self.total_rows)]
-        self.pre_proj_inflation_rate = [self.inflation_level[i]/12. for i in range(self.pre_retirement_end)] 
-        self.post_proj_inflation_rate = [self.inflation_level[self.retirement_start + i]/12. for i in range(self.total_rows - self.pre_retirement_end)] 
+        self.maindf['Proj_Inflation_Rate'] = [inflation_level[i]/12. for i in range(self.total_rows)]
+        self.pre_proj_inflation_rate = [inflation_level[i]/12. for i in range(self.pre_retirement_end)] 
+        self.post_proj_inflation_rate = [inflation_level[self.retirement_start + i]/12. for i in range(self.total_rows - self.pre_retirement_end)] 
 
         self.maindf['Portfolio_Return'] = self.maindf['Proj_Inflation_Rate'] + self.risk_profile_over_cpi/12.
-        self.pre_portfolio_return = [self.inflation_level[i]/12. + self.risk_profile_over_cpi/12. for i in range(self.pre_retirement_end)]
-        self.post_portfolio_return = [self.inflation_level[self.retirement_start
+        self.pre_portfolio_return = [inflation_level[i]/12. + self.risk_profile_over_cpi/12. for i in range(self.pre_retirement_end)]
+        self.post_portfolio_return = [inflation_level[self.retirement_start
                                                            + i]/12. + self.risk_profile_over_cpi/12.
                                       for i in range(self.total_rows - self.pre_retirement_end)]
 

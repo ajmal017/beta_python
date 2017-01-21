@@ -30,7 +30,6 @@ from retiresmartz.models import RetirementAdvice, RetirementPlan
 from support.models import SupportRequest
 from . import serializers
 from main import tax_sheet as tax
-from main import inflation
 from main import zip2state
 from main import abstract
 from main import constants
@@ -556,7 +555,7 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
-
+        '''
         if plan.client is not None:
             print('1 ' + str(plan.client))
         else:
@@ -659,7 +658,7 @@ equired to generate the
 
         if plan.income_growth is not None:
             print('21 ' + str(plan.income_growth))
-        else:
+        else:logs -f dev_betasmartz_app
             print('plan.income_growth')
 
         if plan.client.employment_status is not None:
@@ -671,18 +670,14 @@ equired to generate the
             print('23 ' + str(plan.client.residential_address.post_code))
         else:
             print('plan.client.residential_address.post_code')
-
+        '''
         # Get US tax projection
         ira_rmd_factor = 26.5
         # These ones are fudged ...
-        dob = date(1974, 1, 1)
-        retirement_lifestyle = 1.
-        reverse_mort = True
+        dob = date(1990, 1, 1)
         house_value = 250000.
         retire_earn_at_fra = 3490.
         retire_earn_under_fra = 1310.
-        total_income = 100000.
-        adj_gross = 140000.
         other_income=40000.
         after_tax_income = 50082.
         federal_taxable_income = 90096.
@@ -690,24 +685,20 @@ equired to generate the
         ss_fra_retirement = 7002.
         paid_days = 2
         initial_401k_balance = 50000
-        inflation_level = inflation.inflation_level
         risk_profile_over_cpi = 0.005
-        employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
-        risk_profile = 0.5
+        projected_income_growth = 0.01
         federal_regular_tax = 20614
         employee_contributions_last_year = 0.055
         employer_contributions_last_year = 0.02
-        zip_code = 90058
         # # #
-        
-        state = zip2state.get_state(int(zip_code))
+        state = zip2state.get_state(int(plan.retirement_postal_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(dob),
                         plan.retirement_age,
                         plan.client.life_expectancy,
-                        retirement_lifestyle,
-                        reverse_mort,
+                        plan.lifestyle,
+                        plan.reverse_mortgage,
                         house_value,
                         plan.client.civil_status,
                         retire_earn_at_fra,
@@ -722,72 +713,12 @@ equired to generate the
                         paid_days,
                         ira_rmd_factor,
                         initial_401k_balance,
-                        inflation.inflation_level,
-                        risk_profile,
-                        plan.income_growth,
+                        risk_profile_over_cpi,
+                        projected_income_growth,
                         employee_contributions_last_year,
                         employer_contributions_last_year,
                         state,
                         plan.client.employment_status)
-        """
-        name = "John Smith"
-        ssn  = "123456789" 
-        dob = date(1969, 1, 1)
-        desired_retirement_age = 70.
-        retirement_lifestyle = 1.
-        reverse_mort = True
-        life_exp = 85.
-        house_value = 250000.
-        filing_status = abstract.PersonalData.CivilStatus['SINGLE']
-        retire_earn_at_fra = 3490.
-        retire_earn_under_fra = 1310.
-        total_income = 100000.
-        adj_gross = 140000.
-        other_income=40000.
-        after_tax_income = 110982.
-        federal_taxable_income = 109996.
-        federal_regular_tax = 20614.
-        ss_fra_retirement = 7002.
-        paid_days = 2
-        ira_rmd_factor = 26.5
-        initial_401k_balance = 50000
-        inflation_level = inflation.inflation_level
-        risk_profile_over_cpi = 0.005
-        projected_income_growth = 0.01
-        contrib_rate_employee_401k = 0.055
-        contrib_rate_employer_401k = 0.02
-        zipcode = 94112
-        employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
-        state = zip2state.get_state(int(zipcode))
-        tx = tax.TaxUser(name,
-                        ssn,
-                        pd.Timestamp(dob),
-                        desired_retirement_age,
-                        life_exp,
-                        retirement_lifestyle,
-                        reverse_mort,
-                        house_value,
-                        filing_status,
-                        retire_earn_at_fra,
-                        retire_earn_under_fra,
-                        total_income,
-                        adj_gross,
-                        other_income,
-                        federal_regular_tax,
-                        after_tax_income,
-                        other_income,
-                        ss_fra_retirement,
-                        paid_days,
-                        ira_rmd_factor,
-                        initial_401k_balance,
-                        inflation.inflation_level,
-                        risk_profile_over_cpi,
-                        projected_income_growth,
-                        contrib_rate_employee_401k,
-                        contrib_rate_employer_401k,
-                        state,
-                        employment_status)
-        """
         
         tx.create_maindf()
         
@@ -795,7 +726,6 @@ equired to generate the
         catd = pd.concat([tx.maindf['Taxable_Accounts'][:-12], tx.maindf['After_Tax_Income'][:-12], tx.maindf['After_Tax_Income'][:-12]], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
-
         pser = PortfolioSerializer(instance=settings.portfolio)
         return Response({'portfolio': pser.data, 'projection': proj_data})
     

@@ -1,5 +1,4 @@
 import pandas as pd
-from main import inflation
 from main import abstract
 from main import constants
 
@@ -48,8 +47,6 @@ paid_days = 2
 ira_rmd_factor = 26.5
 
 initial_401k_balance = 50000
-
-inflation_level = inflation.inflation_level
 
 risk_profile_over_cpi = 0.005
 

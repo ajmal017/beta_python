@@ -27,7 +27,6 @@ class Command(NoArgsCommand):
                               tst_tx.paid_days,
                               tst_tx.ira_rmd_factor,
                               tst_tx.initial_401k_balance,
-                              tst_tx.inflation_level,
                               tst_tx.risk_profile_over_cpi,
                               tst_tx.projected_income_growth,
                               tst_tx.contrib_rate_employee_401k,
