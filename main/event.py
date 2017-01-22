@@ -59,8 +59,8 @@ class Event(ChoiceEnum):
     # RetirementAdvice Events
     RETIRESMARTZ_PROTECTIVE_MOVE = (19, ['prev_risk', 'new_risk'], 'retiresmartz.RetirementPlan')
     RETIRESMARTZ_DYNAMIC_MOVE = (20, ['prev_risk', 'new_risk'], 'retiresmartz.RetirementPlan')
-    RETIRESMARTZ_SPENDABLE_INCOME_UP_CONTRIB_DOWN = (21, ['prev_btc', 'new_btc'], 'retiresmartz.RetirementPlan')
-    RETIRESMARTZ_SPENDABLE_INCOME_DOWN_CONTRIB_UP = (22, ['prev_btc', 'new_btc'], 'retiresmartz.RetirementPlan')
+    RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN = (21, ['prev_btc', 'new_btc'], 'retiresmartz.RetirementPlan')
+    RETIRESMARTZ_SPENDING_DOWN_CONTRIB_UP = (22, ['prev_btc', 'new_btc'], 'retiresmartz.RetirementPlan')
 
     RETIRESMARTZ_RETIREMENT_AGE_ADJUSTED = (23, ['prev_age', 'new_age'], 'retiresmartz.RetirementPlan')
 
@@ -74,7 +74,7 @@ class Event(ChoiceEnum):
     RETIRESMARTZ_ON_TRACK_NOW = (30, [], 'retiresmartz.RetirementPlan')
     RETIRESMARTZ_OFF_TRACK_NOW = (31, [], 'retiresmartz.RetirementPlan')
 
-    RETIRESMARTZ_CONTRIB_UP_SPENDING_DOWN = (32, ['prev_btc', 'new_btc'], 'retiresmartz.RetirementPlan')
+    RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN = (32, ['prev_btc', 'new_btc'], 'retiresmartz.RetirementPlan')
 
     RETIRESMARTZ_DRINKS_MORE_THAN_ONE = (33, [], 'client.Client')
     RETIRESMARTZ_DRINKS_ONE_OR_LESS = (34, [], 'client.Client')

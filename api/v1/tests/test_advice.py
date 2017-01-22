@@ -10,7 +10,8 @@ from django.core.urlresolvers import reverse
 from retiresmartz.models import RetirementAdvice
 from client.models import EmailInvite
 from main.models import InvestmentType
-mocked_now = datetime(2016, 1, 1)
+from pinax.eventlog.models import Log as EventLog
+from django.db.models import Q
 
 
 class RetiresmartzAdviceTests(APITestCase):
@@ -373,6 +374,25 @@ class RetiresmartzAdviceTests(APITestCase):
         response = self.client.get(self.advice_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
+
+    def test_spending_increased_contributions_decreased_again(self):
+        data = {
+            'btc': 2,
+        }
+        self.client.force_authenticate(user=self.plan.client.user)
+        response = self.client.put(self.plan_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = {
+            'btc': 1,
+        }
+        response = self.client.put(self.plan_url, data)
+        response = self.client.get(self.advice_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event = EventLog.objects.filter(
+            Q(pk=response.data['results'][0]['trigger'])|
+            Q(pk=response.data['results'][1]['trigger'])
+        ).filter(action='RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN')
+        self.assertEqual(event.count(), 1)
 
     def test_spending_decreased_contributions_increased(self):
         data = {
