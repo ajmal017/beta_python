@@ -7,7 +7,6 @@ python3: pip-install pyPdf2
 """
 
 import argparse
-from PyPDF2 import PdfFileReader
 import os
 import shutil
 import sys
@@ -15,28 +14,37 @@ import json
 import subprocess
 import logging
 import re
+import random
+import string
 
 logger = logging.getLogger('pdf_parsers.tax_return')
 
 
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
 def get_pdf_content_lines(pdf_file_path):
     with open(pdf_file_path, 'rb') as f:
-        pdf_reader = PdfFileReader(f)
-        for page in pdf_reader.pages:
-            for line in page.extractText().splitlines():
-                yield line
+        tmp_file_id = id_generator()
+        subprocess.run(['pdftotext', pdf_file_path, '/tmp/' + tmp_file_id], stdout=subprocess.PIPE)
+        with open('/tmp/' + tmp_file_id, 'rb') as f:
+            return f.read()
 
 
 # for each item to extract its string, the value is found between
 # the pairs in the list e.g. SSN is found between "SSN:", "SPOUSE SSN:"
 keywords = {
-    "SSN": ["SSN:", "SPOUSE SSN:"],
-    "SPOUSE SSN": ["SPOUSE SSN:", "NAME(S)"],
-    "NAME": ["RETURN:", "ADDRESS:"],
-    "SPOUSE NAME": ["RETURN:", "ADDRESS:"],
-    "ADDRESS": ["ADDRESS:", "FILING STATUS:"],
-    "FILING STATUS": ["FILING STATUS:", "FORM NUMBER:"],
-    "TOTAL INCOME": ["TOTAL INCOME:", "TOTAL INCOME PER COMPUTER:"]
+    'IntroChunk': ['SHOWN ON RETURN:\n', '\n\nADDRESS:\n'],
+    "FILING STATUS": ["\n\nFILING STATUS:\n", "\nFORM NUMBER:\n"],
+    'NAME': ['\nNAME(S) SHOWN ON RETURN:', '\nADDRESS:\n'],
+    'SSN': ['\nSSN:', '\nSPOUSE SSN:'],
+    'SPOUSE SSN': ['\nSPOUSE SSN:', '\nNAME(S) SHOWN ON RETURN:'],
+    'ADDRESS': ['\nADDRESS:\n\n', '\n\nFILING STATUS:'],
+    'TotalIncomeColumn': ['TOTAL INCOME PER COMPUTER:\n\nPage 3 of 8\n\n', '\n\nAdjustments to Income'],
+    'PaymentsColumn': ['AMOUNT PAID WITH FORM 4868:\n\n', 'Tax Return Transcript'],
+    'PaymentsColumn2': ['TOTAL PAYMENTS PER COMPUTER:\n\n', '\n\nRefund or Amount Owed'],
+    'RefundColumn': ['BAL DUE/OVER PYMT USING COMPUTER FIGURES:\n\n', '\n\nThird Party Designee'],
 }
 
 output = {
@@ -44,6 +52,7 @@ output = {
         {
             "name": "Introduction",
             "fields": {
+                'IntroChunk': '',
                 "SSN": "",
                 "SPOUSE SSN": "",
                 "NAME": "",
@@ -55,8 +64,19 @@ output = {
         {
             "name": "Income",
             "fields": {
-                "TOTAL INCOME": "",
+                'PaymentsColumn': '',
+                'PaymentsColumn2': '',
+                'TotalIncomeColumn': '',
+                "TotalIncome": "",
+                'EarnedIncomeCredit': '',
+                'CombatCredit': '',
+                'ExcessSSCredit': '',
+                'AddChildTaxCredit': '',
 
+                'RefundColumn': '',
+                'RefundableCredit': '',
+                'PremiumTaxCredit': '',
+                'TotalPayments': '',
             }
         }
     ]
@@ -77,20 +97,6 @@ def parse_item(key, s):
     start = sub_str[0]
     end = sub_str[1]
     result = find_between(s, start, end)
-    if key == "NAME" and "&" in result:
-        result = result.split("&")[0]
-    if key == 'SPOUSE NAME':
-        if "&" in result:
-            result = result.split("&")[1]
-            if "\n" in result:
-                for i in result.splitlines()[1:]:
-                    if i and "\n" not in i:
-                        output["sections"][0]["fields"]["ADDRESS"] = i
-                        break
-
-                result = result.splitlines()[0]
-        else:
-            result = ''
 
     return result.lstrip().rstrip().lstrip('.').rstrip('.').rstrip('\n')
 
@@ -98,20 +104,47 @@ def parse_item(key, s):
 def parse_text(string):
     i = 0
     for section in output["sections"]:
-        for k, v in section["fields"].items():
-            res = parse_item(k, string)
-            if output["sections"][i]["fields"][k] == "":
-                output["sections"][i]["fields"][k] = res
-            else:
-                if k == "ADDRESS":
+        for k, v in list(section["fields"].items()):
+            if k in list(keywords.keys()):
+                logger.error(k)
+                res = parse_item(k, string)
+                if k == 'NAME':
+                    if '&' in res:
+                        csplit = res.split('&')
+                        output["sections"][i]["fields"]['NAME'] = csplit[0] + csplit[1].split(' ')[-1]
+                        output["sections"][i]["fields"]['SPOUSE NAME'] = csplit[1].strip(' ')
+                elif k == "TotalIncomeColumn":
+                    chunks = res.split('\n')
+                    if len(chunks) > 2:
+                        output["sections"][i]["fields"]['TotalIncome'] = chunks[-2]
+                elif k == 'PaymentsColumn':
+                    chunks = [s for s in res.split('\n') if s != '$']
+                    if len(chunks) > 11:
+                        output["sections"][i]["fields"]['EarnedIncomeCredit'] = chunks[2]
+                        output["sections"][i]["fields"]['CombatCredit'] = chunks[7]
+                        output["sections"][i]["fields"]['ExcessSSCredit'] = chunks[9]
+                        output["sections"][i]["fields"]['AddChildTaxCredit'] = chunks[11]
+
+                elif k == 'PaymentsColumn2':
+                    chunks = res.split('\n')
+                    if len(chunks) > 6:
+                        output["sections"][i]["fields"]['TotalPayments'] = chunks[6]
+
+                elif k == 'RefundColumn':
+                    chunks = res.split('\n')
+                    if len(chunks) > 5:
+                        output["sections"][i]["fields"]['RefundableCredit'] = chunks[5]
+
+                if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
         i += 1
     return output
 
 
 def parse_vector_pdf(fl):
-    res = get_pdf_content_lines(fl)
-    return parse_text('\n'.join(res))
+    logger.error(get_pdf_content_lines(fl))
+    res = get_pdf_content_lines(fl).decode("utf-8")
+    return parse_text(res)
 
 
 def parse_scanned_pdf(fl):
@@ -130,10 +163,10 @@ def parse_scanned_pdf(fl):
     txt = ''.join(txt)
     return parse_text(txt)
 
+
 def parse_address(addr_str):
     # addr_str format:
-    # {Street Address}\n
-    # {City}, {State Code} {Zip code}
+    # 200 SAMPLE RD\nHOT SPRINGS, AR 33XXX
     address = {
         "address1": '',
         "address2": '',
@@ -141,17 +174,17 @@ def parse_address(addr_str):
         "state": '',
         "post_code": ''
     }
-    # '  ' => '\n', '\n\n+' => '\n'
-    addr_list1 = re.sub('\\n+', '\n', addr_str.replace('  ', '\n')).split('\n')
-    address['address1'] = addr_list1[0].strip(' ,') # TODO: check if address1 can be split for address2
-    if len(addr_list1) >= 2:
-        addr_list2 = addr_list1[1].strip().split(',')
-        address['city'] = addr_list2[0].strip()
-        if len(addr_list2) >= 2:
-            addr_list3 = addr_list2[1].strip().split(' ')
-            address['state'] = addr_list3[0].strip()
-            address['post_code'] = addr_list3[1].strip()
+    logger.error(addr_str)
+    addr_list1 = addr_str.split('\n')
+    address['address1'] = addr_list1[0].strip(' ,')
+    if len(addr_list1) > 2:
+        address['address2'] = addr_list1[1].strip(' ,')
+    if len(addr_list1) == 2:
+        address['city'] = addr_list1[1].split(',')[0]
+        address['state'] = addr_list1[1].strip(' ').split(',')[1].split(' ')[1]
+        address['post_code'] = addr_list1[1].split(' ')[-1]
     return address
+
 
 def clean_results(results):
     clean_output = {}
@@ -159,11 +192,16 @@ def clean_results(results):
     clean_output['SPOUSE SSN'] = results['sections'][0]['fields']['SPOUSE SSN']
     clean_output['NAME'] = results['sections'][0]['fields']['NAME']
     clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
-    # logger.error(results['sections'][0])
-    # logger.error(results['sections'][0]['fields']['ADDRESS'])
     clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
-    clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TOTAL INCOME']
+    clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
+
+    clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit'].strip('$ ')
+    clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit']
+    clean_output['ExcessSSCredit'] = results['sections'][1]['fields']['ExcessSSCredit']
+    clean_output['AddChildTaxCredit'] = results['sections'][1]['fields']['AddChildTaxCredit']
+    clean_output['RefundableCredit'] = results['sections'][1]['fields']['RefundableCredit'].strip('$ ')
+    clean_output['PremiumTaxCredit'] = results['sections'][1]['fields']['PremiumTaxCredit'].strip('$ ')
 
     return clean_output
 
