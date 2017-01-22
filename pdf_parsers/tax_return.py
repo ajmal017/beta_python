@@ -106,7 +106,6 @@ def parse_text(string):
     for section in output["sections"]:
         for k, v in list(section["fields"].items()):
             if k in list(keywords.keys()):
-                logger.error(k)
                 res = parse_item(k, string)
                 if k == 'NAME':
                     if '&' in res:
@@ -142,7 +141,7 @@ def parse_text(string):
 
 
 def parse_vector_pdf(fl):
-    logger.error(get_pdf_content_lines(fl))
+    # logger.error(get_pdf_content_lines(fl))
     res = get_pdf_content_lines(fl).decode("utf-8")
     return parse_text(res)
 
@@ -174,7 +173,6 @@ def parse_address(addr_str):
         "state": '',
         "post_code": ''
     }
-    logger.error(addr_str)
     addr_list1 = addr_str.split('\n')
     address['address1'] = addr_list1[0].strip(' ,')
     if len(addr_list1) > 2:
