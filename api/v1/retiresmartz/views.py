@@ -534,7 +534,6 @@ equired to generate the
             projection.append([d2ed(dt), assets, income])
         return Response({'portfolio': portfolio, 'projection': projection})
 
-
     @detail_route(methods=['get'], url_path='calculate')
     def calculate(self, request, parent_lookup_client, pk, format=None):
         """
@@ -714,6 +713,7 @@ equired to generate the
         # # #
 
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
+
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(plan.client.date_of_birth),
@@ -749,6 +749,7 @@ equired to generate the
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
         pser = PortfolioSerializer(instance=settings.portfolio)
+
         return Response({'portfolio': pser.data, 'projection': proj_data})
 
 
