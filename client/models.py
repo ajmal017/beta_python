@@ -155,7 +155,9 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
         if self.height is None or self.weight is None:
             return None
         cm_to_m2 = self.height * 0.0001
-        return self.weight / cm_to_m2
+        if cm_to_m2 > 0:
+            return self.weight / cm_to_m2
+        return None
 
     @property
     def accounts_all(self):
