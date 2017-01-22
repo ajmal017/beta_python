@@ -77,7 +77,6 @@ class TaxUser(object):
         print('*27 ' + str(employment_status))
 
 
-
         '''
         checks
         '''
