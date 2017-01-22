@@ -201,6 +201,7 @@ def clean_results(results):
     clean_output['ExcessSSCredit'] = results['sections'][1]['fields']['ExcessSSCredit']
     clean_output['AddChildTaxCredit'] = results['sections'][1]['fields']['AddChildTaxCredit']
     clean_output['RefundableCredit'] = results['sections'][1]['fields']['RefundableCredit'].strip('$ ')
+    clean_output['PremiumTaxCredit'] = results['sections'][1]['fields']['PremiumTaxCredit'].strip('$ ')
 
     return clean_output
 
