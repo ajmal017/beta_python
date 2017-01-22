@@ -35,6 +35,9 @@ from main import abstract
 from main import constants
 from datetime import date, datetime
 import pdb
+from pinax.eventlog.models import Log as EventLog
+from main.inflation import inflation_level
+from functools import reduce
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
@@ -225,24 +228,42 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         # increase in these two calls to get_decrease_spending_increase_contribution
         # and get_increase_contribution_decrease_spending
         if orig.btc > updated.btc:
-            # spending increased, contributions decreased
-            e = Event.RETIRESMARTZ_SPENDABLE_INCOME_UP_CONTRIB_DOWN.log(None,
-                                                                        orig.btc,
-                                                                        updated.btc,
-                                                                        user=updated.client.user,
-                                                                        obj=updated)
-            advice = RetirementAdvice(plan=updated, trigger=e)
-            advice.text = advice_responses.get_increase_spending_decrease_contribution(advice, orig.btc, orig.btc * 1.2)
-            advice.save()
+            # spending increased, contributions decreased\
+            events = EventLog.objects.filter(
+                Q(action='RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN') |
+                Q(action='RETIRESMARTZ_SPENDING_DOWN_CONTRIB_UP')
+            ).order_by('-timestamp')
+            # TODO: calculate nth rate based on retirement age?
+            nth_rate = reduce((lambda acc, rate: acc * (1 + rate)), inflation_level[:25], 1)
+
+            if events.count() > 0 and events[0].action == 'RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN':
+                e = Event.RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN.log(None,
+                                                                            orig.btc,
+                                                                            updated.btc,
+                                                                            user=updated.client.user,
+                                                                            obj=updated)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_increase_spending_decrease_contribution_again(advice, orig.btc, orig.btc * nth_rate)
+                advice.save()
+            else:
+                e = Event.RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN.log(None,
+                                                                            orig.btc,
+                                                                            updated.btc,
+                                                                            user=updated.client.user,
+                                                                            obj=updated)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_increase_spending_decrease_contribution(advice, orig.btc, orig.btc * nth_rate)
+                advice.save()
 
         if orig.btc < updated.btc:
-            e = Event.RETIRESMARTZ_CONTRIB_UP_SPENDING_DOWN.log(None,
+            nth_rate = reduce((lambda acc, rate: acc * (1 + rate)), inflation_level[:25], 1)
+            e = Event.RETIRESMARTZ_SPENDING_DOWN_CONTRIB_UP.log(None,
                                                                 orig.btc,
                                                                 updated.btc,
                                                                 user=updated.client.user,
                                                                 obj=updated)
             advice = RetirementAdvice(plan=updated, trigger=e)
-            advice.text = advice_responses.get_increase_contribution_decrease_spending(advice, updated.btc, updated.btc * 1.2)
+            advice.text = advice_responses.get_increase_contribution_decrease_spending(advice, updated.btc, updated.btc * nth_rate)
             advice.save()
 
             # contributions increased, spending decreased
@@ -533,7 +554,7 @@ equired to generate the
           ]
         }
         """
-        
+
         plan = self.get_object()
 
         # We need a date of birth for the client
@@ -691,7 +712,7 @@ equired to generate the
         employee_contributions_last_year = 0.055
         employer_contributions_last_year = 0.02
         # # #
-        
+
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
@@ -720,16 +741,16 @@ equired to generate the
                         employer_contributions_last_year,
                         state,
                         plan.client.employment_status)
-        
+
         tx.create_maindf()
-        
+
         # Convert these returned values to a format for the API
         catd = pd.concat([tx.maindf['Taxable_Accounts'][:-12], tx.maindf['After_Tax_Income'][:-12], tx.maindf['After_Tax_Income'][:-12]], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
         pser = PortfolioSerializer(instance=settings.portfolio)
         return Response({'portfolio': pser.data, 'projection': proj_data})
-    
+
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
