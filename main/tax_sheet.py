@@ -48,6 +48,36 @@ class TaxUser(object):
                  state,
                  employment_status):
 
+        print('*1 ' + str(name))
+        print('*2 ' + str(ssn))
+        print('*3 ' + str(dob))
+        print('*4 ' + str(desired_retirement_age))
+        print('*5 ' + str(life_exp))
+        print('*6 ' + str(retirement_lifestyle))
+        print('*7 ' + str(reverse_mort))
+        print('*8 ' + str(house_value))
+        print('*9 ' + str(filing_status))
+        print('*10 ' + str(retire_earn_at_fra))
+        print('*11 ' + str(retire_earn_under_fra))
+        print('*12 ' + str(total_income))
+        print('*13 ' + str(adj_gross))
+        print('*14 ' + str(federal_taxable_income))
+        print('*15 ' + str(federal_regular_tax))
+        print('*16 ' + str(after_tax_income))
+        print('*17 ' + str(other_income))
+        print('*18 ' + str(ss_fra_retirement))
+        print('*19 ' + str(paid_days))
+        print('*20 ' + str(ira_rmd_factor))
+        print('*21 ' + str(initial_401k_balance))
+        print('*22 ' + str(risk_profile_over_cpi))
+        print('*23 ' + str(projected_income_growth))
+        print('*24 ' + str(contrib_rate_employee_401k))
+        print('*25 ' + str(contrib_rate_employer_401k))
+        print('*26 ' + str(state))
+        print('*27 ' + str(employment_status))
+
+
+
         '''
         checks
         '''
@@ -809,7 +839,6 @@ class TaxUser(object):
         self.maindf['State_Tax_After_Credits'] = self.maindf['Adj_Gross_Inc'] * self.state_effective_rate_to_agi
 
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
-
 
     def validate_inputs(self,
                          name,

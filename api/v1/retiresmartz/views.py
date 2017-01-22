@@ -38,7 +38,7 @@ import pdb
 from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
-
+import pdb
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
 
@@ -575,7 +575,6 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
-        '''
         if plan.client is not None:
             print('1 ' + str(plan.client))
         else:
@@ -678,7 +677,7 @@ equired to generate the
 
         if plan.income_growth is not None:
             print('21 ' + str(plan.income_growth))
-        else:logs -f dev_betasmartz_app
+        else:
             print('plan.income_growth')
 
         if plan.client.employment_status is not None:
@@ -690,7 +689,7 @@ equired to generate the
             print('23 ' + str(plan.client.residential_address.post_code))
         else:
             print('plan.client.residential_address.post_code')
-        '''
+        
         # Get US tax projection
         ira_rmd_factor = 26.5
         # These ones are fudged ...
@@ -711,7 +710,9 @@ equired to generate the
         employee_contributions_last_year = 0.055
         employer_contributions_last_year = 0.02
         # # #
-
+        if plan.client.residential_address.post_code is None:
+            raise Exception("plan.client.residential_address.post_code is None")
+            
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
 
         tx = tax.TaxUser(plan.client,
