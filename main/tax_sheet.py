@@ -159,8 +159,8 @@ class TaxUser(object):
         years
         '''
         self.start_year = pd.Timestamp('today').year
-        self.years_to_project = round(self.life_exp - self.age)
-        self.retirement_years = round(self.life_exp - self.desired_retirement_age)
+        self.years_to_project = round(math.ceil(self.life_exp) - self.age)
+        self.retirement_years = round(math.ceil(self.life_exp) - self.desired_retirement_age)
         self.pre_retirement_years = round(self.desired_retirement_age - self.age)
         self.years = [i for i in range(self.start_year, self.start_year + self.years_to_project)]
         self.years_pre = [i for i in range(self.start_year, self.start_year + self.pre_retirement_years)]

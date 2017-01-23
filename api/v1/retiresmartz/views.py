@@ -38,7 +38,6 @@ import pdb
 from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
-import pdb
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
 
@@ -714,6 +713,9 @@ equired to generate the
             raise Exception("plan.client.residential_address.post_code is None")
             
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
+        #plan.retirement_age,
+        #plan.client.life_expectancy,
+        
 
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
