@@ -51,4 +51,7 @@ class BaseBroker(object):
     @abstractmethod
     def cancel_order(self, orderid):
         pass
+    @abstractmethod
+    def get_account_info(self, broker_account):
+        pass
 

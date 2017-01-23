@@ -23,6 +23,7 @@ from client.models import Client, ClientAccount, RiskProfileGroup, \
     AccountBeneficiary
 from statements.models import StatementOfAdvice, RecordOfAdvice, RetirementStatementOfAdvice
 from user.models import SecurityQuestion, SecurityAnswer
+from client.models import IBAccount, APEXAccount
 from address.models import Address, Region
 from django.contrib.contenttypes.models import ContentType
 from random import randrange
@@ -103,6 +104,15 @@ class FiscalYearFactory(factory.django.DjangoModelFactory):
     begin_date = factory.Sequence(lambda n: datetime(year=int(1990 + n), month=1, day=1))
     end_date = factory.Sequence(lambda n: datetime(year=int(1990 + n), month=12, day=20))
     month_ends = '31,29,31,30,31,30,31,31,30,31,30,31'
+
+
+class IBAccountFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = IBAccount
+
+class ApexAccountFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = APEXAccount
 
 
 class FirmFactory(factory.django.DjangoModelFactory):
