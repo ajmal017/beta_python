@@ -155,7 +155,9 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
         if self.height is None or self.weight is None:
             return None
         cm_to_m2 = self.height * 0.0001
-        return self.weight / cm_to_m2
+        if cm_to_m2 > 0:
+            return self.weight / cm_to_m2
+        return None
 
     @property
     def accounts_all(self):
@@ -816,6 +818,8 @@ class EmailInvite(models.Model):
 
     onboarding_data = JSONField(null=True, blank=True)
     tax_transcript = models.FileField(null=True, blank=True)
+    social_security_statement = models.FileField(null=True, blank=True)
+    partner_social_security_statement = models.FileField(null=True, blank=True)
 
     def __str__(self):
         return '{} {} {} ({})'.format(self.first_name, self.middle_name[:1],
@@ -853,11 +857,12 @@ class EmailInvite(models.Model):
             raise ValidationError('Can be resend only in status '
                                   'CREATED or SENT')
 
-        subject = "BetaSmartz client sign up form url"
+        subject = "Welcome to the {} online platform".format(self.advisor.firm.name)
 
         context = {
             'invite_url': self.advisor.get_invite_url('client', self.email),
             'advisor': self.advisor,
+            'category': 'Customer onboarding'
         }
 
         html_message = render_to_string('advisor/clients/invites/email.html',

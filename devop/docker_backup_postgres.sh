@@ -52,6 +52,16 @@ else
     docker run --link postgres:db --net betasmartz-local -e PGPASSWORD=${DEMOSTAGING_DB_PASS} pg_dump -O -h db -U betasmartz_demostaging betasmartz_demostaging > backups/betasmartz_demostaging_tmp.sql
     gzip backups/betasmartz_demostaging_tmp.sql
     mv backups/betasmartz_demostaging_tmp.sql.gz backups/betasmartz_demostaging_$(date +%s).sql.gz
+
+    echo 'Backing up ip dev database'
+    docker run --link postgres:db --net betasmartz-local -e PGPASSWORD=${IPDEV_DB_PASS} pg_dump -O -h db -U betasmartz_ipdev betasmartz_ipdev > backups/betasmartz_ipdev_tmp.sql
+    gzip backups/betasmartz_ipdev_tmp.sql
+    mv backups/betasmartz_ipdev_tmp.sql.gz backups/betasmartz_ipdev_$(date +%s).sql.gz
+
+    echo 'Backing up ip demo staging database'
+    docker run --link postgres:db --net betasmartz-local -e PGPASSWORD=${IPDEMOSTAGING_DB_PASS} pg_dump -O -h db -U betasmartz_ipdemostaging betasmartz_ipdemostaging > backups/betasmartz_ipdemostaging_tmp.sql
+    gzip backups/betasmartz_ipdemostaging_tmp.sql
+    mv backups/betasmartz_ipdemostaging_tmp.sql.gz backups/betasmartz_ipdemostaging_$(date +%s).sql.gz
 fi
 
 

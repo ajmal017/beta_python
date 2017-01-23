@@ -7,13 +7,12 @@ from django.db.models import Q
 import django_filters as filters
 from django.utils.timezone import now
 
-from notifications.models import Notification
+from notifications.models import Notification, Notify
 
 from main.models import Advisor, Goal, GoalMetric, User
 from client.models import Client
 
 ATTRS_ONCHANGE= {'onchange': 'this.form.submit();'}
-ATTRS_PERIOD_CHANGE = {'onchange': 'handlePeriodChange(this);'}
 
 logger = logging.getLogger('main.views.firm.filters')
 
@@ -40,8 +39,7 @@ class SearchFilter(filters.CharFilter):
 
 class PeriodFilter(filters.ChoiceFilter):
     PERIOD_CHOICES = (
-        (None, '- Time period -'),
-        (None, 'All time'),
+        (None, 'All Time'),
         ('1mo', '1mo'),
         ('1yr', '1yr'),
         ('ytd', 'YTD'),
@@ -106,7 +104,7 @@ class CustomEndFilter(filters.DateFilter):
         return qs
 
 class UserGroupFilter(filters.ChoiceFilter):
-    _GROUPS_DEFAULT = ('Advisors', 'Clients') # 'Supervisors'
+    _GROUPS_DEFAULT = 'Advisors', 'Clients', 'Supervisors'
 
     def __init__(self, groups=None, *args, **kwargs):
         # @group: list of groups (by name)
@@ -122,8 +120,7 @@ class UserGroupFilter(filters.ChoiceFilter):
         except:
             logger.error('Did not find expected groups for UserGroupFilter')
         choices = [
-                (None, '- Users -'),
-                (None, 'All'),
+                (None, 'All Users'),
             ]
         if groups:
             choices += groups
@@ -184,15 +181,12 @@ class UsersFilter(filters.CharFilter):
 
 class FirmActivityFilterSet(filters.FilterSet):
     VERB_CHOICES = (
-        (None, '- Activity -'),
-        (None, 'All'),
-        ('login', 'Login'),
-        ('logout', 'Logout'),
-    )
+        (None, 'All Activity'),
+    ) + tuple((i.value, i.value.title()) for i in Notify)
 
     group = UserGroupFilter(widget=forms.Select(attrs=ATTRS_ONCHANGE),
         groups=('Advisors', 'Clients', 'Supervisors'))
-    period = PeriodFilter(widget=forms.Select(attrs=ATTRS_PERIOD_CHANGE))
+    period = PeriodFilter(widget=forms.Select())
     ytd = YTDPeriodFilter(widget=forms.TextInput())
     start = CustomStartFilter(widget=forms.TextInput())
     end = CustomEndFilter(widget=forms.TextInput())

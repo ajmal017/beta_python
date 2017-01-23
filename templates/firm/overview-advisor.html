@@ -1,5 +1,5 @@
 {% extends "layouts_new/base.html" %}
-{% load i18n bootstrap3 filters %}
+{% load i18n bootstrap3 filters pricing_plan %}
 {% load static from staticfiles %}
 
 
@@ -46,7 +46,7 @@
           <div class="p-a">
             <span class="statcard-desc">Number of clients</span>
             <h2>
-              {{ object.primary_clients_size }}&nbsp;<small>primary</small> 
+              {{ object.primary_clients_size }}&nbsp;<small>primary</small>
               {{ object.secondary_clients_size }}&nbsp;<small>secondary</small>
               <!-- <small class="delta-indicator delta-positive">3%</small> -->
             </h2>
@@ -79,7 +79,7 @@
               <th>Goals</th>
               <th>Balance</th>
               <th>Return</th>
-              <th>Fee plan(bps)</th>
+              <th>Fee plan</th>
               <th>Average Term (Yrs)</th>
               <th>Average Target</th>
             </tr>
@@ -87,16 +87,16 @@
           <tbody>
             {% for item in object.client_accounts %}
               <tr>
-                <td>{{ item.pk }}</td>
+                <td>{{ item.primary_owner.pk }}</td>
                 <td>
-                  <a href="{% url "advisor:clients:detail" item.primary_owner.id%}">
+                  <a href="{% url "firm:overview-advisor-clients-detail" pk=item.primary_owner.advisor.id client_id=item.primary_owner.id %}">
                     {{ item.primary_owner.user.get_full_name }}
                   </a>
                 </td>
                 <td>{{ item.goals_length }}</td>
                 <td>{{ item.total_balance|currency }}</td>
                 <td>{{ item.average_return|floatformat:2 }}%</td>
-                <td>{{ item.fee }}</td>
+                <td>{{ item.primary_owner.my_pricing_plan|display }}</td>
                 <td>
                   {% if item.get_term %}
                     {{ item.get_term|floatformat:2}}

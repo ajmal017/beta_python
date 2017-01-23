@@ -1,7 +1,6 @@
 from calendar import timegm
 from datetime import datetime
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
@@ -25,7 +24,15 @@ class SessionExpire:
 
     def keep_alive(self):
         now = timegm(timezone.now().utctimetuple())
-        self.request.session[self._key_name] = now + settings.SESSION_LENGTH
+        self.request.session[self._key_name] = now + self.get_session_length()
+
+    def get_session_length(self):
+        user = self.request.user
+        if user.is_authenticated():
+            if user.is_client:
+                return 600  # 10 min
+            return 1800  # 30 min
+        return 300  # 5 min
 
     def check(self):
         expire_at = self.request.session.get(self._key_name)

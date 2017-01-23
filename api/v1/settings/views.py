@@ -13,6 +13,7 @@ from main import constants, models
 from main.abstract import PersonalData
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
 from main.models import AccountType, Ticker
+from user.autologout import SessionExpire
 from . import serializers
 from ..permissions import IsAdvisorOrClient
 from client import models as client_models
@@ -142,7 +143,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     @list_route(methods=['get'])
     def constants(self, request):
         return Response({
-            'session_length': settings.SESSION_LENGTH,
+            'session_length': SessionExpire(request).get_session_length(),
         })
 
     @list_route(methods=['get'], url_path='investor-risk-categories')

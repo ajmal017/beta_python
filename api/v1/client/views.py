@@ -27,7 +27,8 @@ import json
 from retiresmartz import advice_responses
 from main.event import Event
 from api.v1.utils import activity
-from main import quovo
+from django.template.loader import render_to_string
+from main import quovo, plaid
 
 logger = logging.getLogger('api.v1.client.views')
 
@@ -145,14 +146,40 @@ class ClientViewSet(ApiViewMixin,
                 client.regional_data = json.dumps(rd)
                 client.save()
 
+        if not rd.get('social_security_statement_data'):
+            # add social_security_statement and social_security_statement_data from
+            # the invitation serializer to client.regional_data
+            invitation_serializer = serializers.PrivateInvitationSerializer(request.user.invitation)
+            if invitation_serializer.data.get('social_security_statement', None) is not None:
+                rd['social_security_statement'] = invitation_serializer.data.get('social_security_statement')
+                rd['social_security_statement_data'] = invitation_serializer.data.get('social_security_statement_data')
+                client.regional_data = json.dumps(rd)
+                client.save()
+
+        if not rd.get('partner_social_security_statement_data'):
+            # add social_security_statement and social_security_statement_data from
+            # the invitation serializer to client.regional_data
+            invitation_serializer = serializers.PrivateInvitationSerializer(request.user.invitation)
+            if invitation_serializer.data.get('partner_social_security_statement', None) is not None:
+                rd['partner_social_security_statement'] = invitation_serializer.data.get('partner_social_security_statement')
+                rd['partner_social_security_statement_data'] = invitation_serializer.data.get('partner_social_security_statement_data')
+                client.regional_data = json.dumps(rd)
+                client.save()
+
         # set client invitation status to complete
         client.user.invitation.status = EmailInvite.STATUS_COMPLETE
         client.user.invitation.save()
 
         # Email the user "Welcome Aboard"
-        self.request.user.email_user('Welcome to BetaSmartz!',
-                                     "Congratulations! You've setup your first account, "
-                                     "you're ready to start using BetaSmartz!")
+        subject = 'Welcome to BetaSmartz!'
+        context = {
+            'advisor': client.advisor,
+            'login_url': client.user.login_url,
+            'category': 'Customer onboarding'
+        }
+        self.request.user.email_user(subject,
+                                     html_message=render_to_string(
+                                        'email/client/congrats_new_client_setup.html', context))
 
         headers = self.get_success_headers(serializer.data)
         serializer = self.serializer_response_class(client)
@@ -167,98 +194,6 @@ class ClientViewSet(ApiViewMixin,
         orig = Client.objects.get(pk=instance.pk)
         updated = serializer.update(instance, serializer.validated_data)
 
-        # RetirementAdvice Triggers
-        life_expectancy_field_updated = (updated.daily_exercise != orig.daily_exercise or
-                                         updated.weight != orig.weight or
-                                         updated.height != orig.height or
-                                         updated.smoker != orig.smoker or
-                                         updated.drinks != orig.drinks)
-        for plan in RetirementPlan.objects.filter(client=updated, agreed_on=None):
-            if updated.smoker != orig.smoker:
-                if updated.smoker:
-                    e = Event.RETIRESMARTZ_IS_A_SMOKER.log(None,
-                                                           user=updated.user,
-                                                           obj=updated)
-                    advice = RetirementAdvice(plan=plan, trigger=e)
-                    advice.text = advice_responses.get_smoking_yes(advice)
-                    advice.save()
-                    plan.save()  # save to update calculated_life_expectancy on plan
-                elif updated.smoker is False:
-                    e = Event.RETIRESMARTZ_IS_NOT_A_SMOKER.log(None,
-                                                               user=updated.user,
-                                                               obj=updated)
-                    advice = RetirementAdvice(plan=plan, trigger=e)
-                    advice.text = advice_responses.get_smoking_no(advice)
-                    advice.save()
-
-                    if updated.smoker is False and orig.smoker is True:
-                        plan.save()  # save to update calculated_life_expectancy on plan
-
-            if updated.daily_exercise != orig.daily_exercise:
-                # exercise only
-                e = Event.RETIRESMARTZ_EXERCISE_ONLY.log(None,
-                                                         user=updated.user,
-                                                         obj=updated)
-                advice = RetirementAdvice(plan=plan, trigger=e)
-                advice.text = advice_responses.get_exercise_only(advice)
-                advice.save()
-
-                # increase calculated_life_expectancy
-                if orig.daily_exercise is None:
-                    orig.daily_exercise = 0
-                if (updated.daily_exercise == 20 and orig.daily_exercise < 20) or \
-                   (updated.daily_exercise > 20 and orig.daily_exercise == 20) or \
-                   (updated.daily_exercise > 20 and orig.daily_exercise < 20):
-                    plan.save()
-
-            if updated.drinks != orig.drinks:
-                if updated.drinks > 1:
-                    e = Event.RETIRESMARTZ_DRINKS_MORE_THAN_ONE.log(None,
-                                                         user=updated.user,
-                                                         obj=updated)
-                    advice = RetirementAdvice(plan=plan, trigger=e)
-                    advice.text = advice_responses.get_drinks_more_than_one(advice)
-                    advice.save()
-                else:
-                    e = Event.RETIRESMARTZ_DRINKS_ONE_OR_LESS.log(None,
-                                                         user=updated.user,
-                                                         obj=updated)
-                    advice = RetirementAdvice(plan=plan, trigger=e)
-                    advice.text = advice_responses.get_drinks_one_or_less(advice)
-                    advice.save()
-                plan.save()
-
-            # frontend posts one at a time, weight then height, not together in one post
-            if (updated.weight != orig.weight or updated.height != orig.height):
-                # weight and/or height updated
-                e = Event.RETIRESMARTZ_WEIGHT_AND_HEIGHT_ONLY.log(None,
-                                                                  user=updated.user,
-                                                                  obj=updated)
-                advice = RetirementAdvice(plan=plan, trigger=e)
-                advice.text = advice_responses.get_weight_and_height_only(advice)
-                advice.save()
-
-
-            if life_expectancy_field_updated and (updated.daily_exercise and
-               updated.weight and updated.height and updated.smoker is not None and
-               updated.drinks is not None):
-                # every wellbeing field
-                e = Event.RETIRESMARTZ_ALL_WELLBEING_ENTRIES.log(None,
-                                                                 user=updated.user,
-                                                                 obj=updated)
-                advice = RetirementAdvice(plan=plan, trigger=e)
-                advice.text = advice_responses.get_all_wellbeing_entries(advice)
-                advice.save()
-        # elif life_expectancy_field_updated:
-        #     # life expectancy field updated but not all of them
-        #     # and not an individual one must be combination of
-        #     # wellbeing entries updated
-        #         e = Event.RETIRESMARTZ_COMBINATION_WELLBEING_ENTRIES.log(None,
-        #                                                                  user=updated.user,
-        #                                                                  obj=updated)
-        #         advice = RetirementAdvice(plan=plan, trigger=e)
-        #         advice.text = advice_responses.get_combination_of_more_than_one_entry_but_not_all(advice)
-        #         advice.save()
         return Response(self.serializer_response_class(updated).data)
 
     @detail_route(methods=['get'])
@@ -290,6 +225,7 @@ class ClientViewSet(ApiViewMixin,
         serializer.is_valid(raise_exception=True)
         client = serializer.save()
         return Response(serializer.data['risk_profile_responses'])
+
 
 class InvitesView(ApiViewMixin, views.APIView):
     permission_classes = []
@@ -436,21 +372,52 @@ class ClientResendInviteView(SingleObjectMixin, views.APIView):
         return Response('ok', status=status.HTTP_200_OK)
 
 
-class ExternalAccountsView(ReadOnlyApiViewMixin, views.APIView):
-    permission_classes = [IsAuthenticated, ]
-    renderer_classes = (JSONRenderer, )
-
-    def get(self, request, *args, **kwargs):
-        data = quovo.get_user_accounts(request, request.user)
-
-        return Response({'data':data})
-
-
-class IframeTokenView(ReadOnlyApiViewMixin, views.APIView):
+class QuovoGetIframeTokenView(ReadOnlyApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
 
     def get(self, request, *args, **kwargs):
         token = quovo.get_iframe_token(request, request.user)
         data = {"token": token}
-        return Response({'data':data})
+        return Response({"data": data})
+
+
+class QuovoGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer, )
+
+    def get(self, request, *args, **kwargs):
+        data = quovo.get_accounts(request, request.user)
+        return Response({"data": data})
+
+
+# Uncomment the lines below and the "authentication_classes" lines
+# in each of the Plaid classes to test without CSRF authentication.
+# The code below is from
+# http://stackoverflow.com/questions/30871033/django-rest-framework-remove-csrf
+#
+#from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+#class CsrfExemptSessionAuthentication(SessionAuthentication):
+#    def enforce_csrf(self, request):
+#        return  # To not perform the csrf check
+
+class PlaidCreateAccessTokenView(ApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer,)
+#    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+
+    def post(self, request, *args, **kwargs):
+        public_token = request.POST["public_token"]
+        success = plaid.create_access_token(request.user, public_token)
+        data = {"success": success}
+        return Response({"data": data})
+
+
+class PlaidGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
+    permission_classes = [IsAuthenticated, ]
+    renderer_classes = (JSONRenderer,)
+#    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+
+    def get(self, request, *args, **kwargs):
+        data = plaid.get_accounts(request.user)
+        return Response({"data": data})

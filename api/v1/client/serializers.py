@@ -13,10 +13,12 @@ from client.models import AccountTypeRiskProfileGroup, Client, EmailInvite, \
 from main import constants
 from main.constants import ACCOUNT_TYPE_PERSONAL
 from main.models import ExternalAsset, ExternalAssetTransfer, User
-from pdf_parsers.tax_return import parse_pdf
+from pdf_parsers.tax_return import parse_pdf as parse_tax_pdf
+from pdf_parsers.social_security import parse_pdf as parse_ss_pdf
 from user.models import SecurityAnswer
 from ..user.serializers import PhoneNumberValidationSerializer, \
     UserFieldSerializer
+from django.conf import settings
 
 logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
@@ -306,10 +308,11 @@ class InvitationSerializer(ReadOnlyModelSerializer):
     firm_name = serializers.SerializerMethodField()
     firm_logo = serializers.SerializerMethodField()
     firm_colored_logo = serializers.SerializerMethodField()
+    client_agreement_url = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailInvite
-        read_only_fields = ('email', )
+        read_only_fields = ('email', 'client_agreement_url', )
         fields = (
             'invite_key',
             'status',
@@ -321,6 +324,7 @@ class InvitationSerializer(ReadOnlyModelSerializer):
             'firm_name',
             'firm_logo',
             'firm_colored_logo',
+            'client_agreement_url',
             'email',
         )
 
@@ -332,6 +336,10 @@ class InvitationSerializer(ReadOnlyModelSerializer):
 
     def get_firm_colored_logo(self, obj):
         return obj.advisor.firm.colored_logo
+
+    def get_client_agreement_url(self, obj):
+        cau = obj.advisor.firm.client_agreement_url
+        return settings.SITE_URL + cau.url if cau else None
 
 
 class PrivateInvitationSerializer(serializers.ModelSerializer):
@@ -345,12 +353,15 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
     risk_profile_group = serializers.SerializerMethodField()
     firm_name = serializers.SerializerMethodField()
     firm_logo = serializers.SerializerMethodField()
+    client_agreement_url = serializers.SerializerMethodField()
     firm_colored_logo = serializers.SerializerMethodField()
     tax_transcript_data = serializers.SerializerMethodField()
+    social_security_statement_data = serializers.SerializerMethodField()
+    partner_social_security_statement_data = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailInvite
-        read_only_fields = ('invite_key', 'email', 'status')
+        read_only_fields = ('invite_key', 'email', 'status', 'client_agreement_url',)
         fields = (
             'email',
             'invite_key',
@@ -361,9 +372,14 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
             'advisor',
             'firm_name',
             'firm_logo',
+            'client_agreement_url',
             'firm_colored_logo',
             'tax_transcript',
             'tax_transcript_data',  # this will be stored to client.region_data.tax_transcript_data
+            'social_security_statement',
+            'social_security_statement_data',
+            'partner_social_security_statement',
+            'partner_social_security_statement_data',
         )
 
     def get_risk_profile_group(self, obj):
@@ -378,6 +394,10 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
     def get_firm_colored_logo(self, obj):
         return obj.advisor.firm.colored_logo
 
+    def get_client_agreement_url(self, obj):
+        cau = obj.advisor.firm.client_agreement_url
+        return settings.SITE_URL + cau.url if cau else None
+
     def get_tax_transcript_data(self, obj):
         # parse_pdf
         if obj.tax_transcript:
@@ -389,8 +409,28 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
             with open(tmp_filename, 'wb+') as f:
                 for chunk in obj.tax_transcript.chunks():
                     f.write(chunk)
-            obj.tax_transcript_data = parse_pdf(tmp_filename)
+            obj.tax_transcript_data = parse_tax_pdf(tmp_filename)
             return obj.tax_transcript_data
+        return None
+
+    def get_social_security_statement_data(self, obj):
+        if obj.social_security_statement:
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in obj.social_security_statement.chunks():
+                    f.write(chunk)
+            obj.social_security_statement_data = parse_ss_pdf(tmp_filename)
+            return obj.social_security_statement_data
+        return None
+
+    def get_partner_social_security_statement_data(self, obj):
+        if obj.partner_social_security_statement:
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in obj.partner_social_security_statement.chunks():
+                    f.write(chunk)
+            obj.partner_social_security_statement_data = parse_ss_pdf(tmp_filename)
+            return obj.partner_social_security_statement_data
         return None
 
 

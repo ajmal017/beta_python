@@ -1,3 +1,5 @@
+from django.contrib.auth import user_logged_in
+from django.dispatch import receiver
 from django.test import TransactionTestCase
 from django.test.runner import DiscoverRunner as BaseRunner
 from unittest.mock import patch
@@ -44,3 +46,12 @@ class NoDatabaseMixin(object):
 
 class FastTestRunner(NoDatabaseMixin, BaseRunner):
     """Actual test runner sub-class to make use of the mixin."""
+
+
+# no middleware in test, but code relies on request.user
+@receiver(user_logged_in)
+def set_request_user(sender, request, user, **kwargs):
+    try:
+        request.user
+    except AttributeError:
+        request.user = user

@@ -116,7 +116,7 @@ def login(request, template_name='registration/login.html',
 def logout(request):
     auth_logout(request)
 
-    if 'se' in request.REQUEST:
+    if 'se' in request.GET or 'se' in request.POST:
         SessionExpire(request).notify_user_its_expired()
 
     return HttpResponseRedirect(reverse('login'))

@@ -281,7 +281,7 @@ def get_increase_spending_decrease_contribution_again(advice, contrib, income):
     # TODO: Need to add $X and $Y calculations
     return "Are you sure you need to increase your spending again and reduce your \
 retirement contributions? Just think, if your contributions stayed \
-at ${:,.2f} a month you would be ${:,.2f} a week better off in retirement.".format(contrib, income)
+at ${:,.2f} a month, you would be ${:,.2f} a week better off in retirement.".format(contrib, income)
 
 
 def get_off_track_item_adjusted_to_on_track(advice):
@@ -289,7 +289,7 @@ def get_off_track_item_adjusted_to_on_track(advice):
     return "Well done, by adjusting your details your retirement goal is now on track.\n\
 We want to make sure our advice keeps you on track so that when you retire \
 in {} there are no nasty surprises. If you would like to change or see the \
-impact of any of your choices you can make changes to your details on \
+impact of any of your choices, you can make changes to your details on \
 this dashboard.".format(datetime.now().date().year + years)
 
 

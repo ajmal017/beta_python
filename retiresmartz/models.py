@@ -22,6 +22,8 @@ from dateutil.relativedelta import relativedelta
 from django.utils.functional import cached_property
 import json
 from main.abstract import TimestampedModel
+
+from main.constants import GENDER_MALE
 logger = logging.getLogger('retiresmartz.models')
 
 
@@ -399,19 +401,25 @@ class RetirementAdvice(models.Model):
     dt = models.DateTimeField(auto_now_add=True)
     read = models.DateTimeField(blank=True, null=True)
     text = models.CharField(max_length=512)
+
+    """
+    actions: List of actions JSON.
+        'label': Button label in string.
+        'type': Api type in string that front-end web app can use to get url from.
+        'url': Api URL, Both type or url should not be used together.
+        'data': JSON request data to send to backend with api request.
+    """
     actions = JSONField(null=True,
                         blank=True,
-                        help_text="List of actions [{label, url, data},...]")
+                        help_text="List of actions [{label, type/url, data},...]")
 
     objects = RetirementAdviceQueryset.as_manager()
 
     def save(self, *args, **kwargs):
         if self.actions:
-            for action in actions:
-                if not action.url:
-                    raise ValidationError('must provide action url')
-                if not action.label:
-                    raise ValidationError('must provide action label')
+            for action in self.actions:
+                if not action['label']:
+                    raise ValidationError('Must provide action label')
         super(RetirementAdvice, self).save(*args, **kwargs)
 
     def __str__(self):

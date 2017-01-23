@@ -133,6 +133,14 @@ QUOVO_API_BASE = 'https://api.quovo.com/v2/'
 QUOVO_USERNAME = 'betasmartz_prod_api'
 QUOVO_PASSWORD = 'askljfhasjed934rikah'
 
+# PLAID INTEGRATION
+PLAID_CLIENT_ID = "58360d0b46eb122e28401e66"
+PLAID_PUBLIC_KEY = "319cc1520a3be212627b736e42831c"
+PLAID_SECRET = "e2076f95025434a76b81bcfeb91c39"
+PLAID_DEVELOPMENT_URL = "https://tartan.plaid.com"
+# Use the production url below for real clients
+# PLAID_PRODUCTION_URL = "https://api.plaid.com/"
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 
@@ -145,7 +153,6 @@ USE_L10N = True
 USE_TZ = True
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_LENGTH = 300
 
 PHONENUMBER_DB_FORMAT = 'NATIONAL'
 PHONENUMBER_DEFAULT_REGION = 'US'

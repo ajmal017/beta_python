@@ -391,21 +391,27 @@ class InviteTests(APITestCase):
         # PUT: /api/v1/invites/:key
         # Tax transcript upload and parsing
         expected_tax_transcript_data = {
-            'SPOUSE NAME': 'SPOUSE M LAST',
-            'SPOUSE SSN': '222-22-2222',
+            'SPOUSE NAME': 'MELISSA',
+            'SPOUSE SSN': '477-xx-xxxx',
             'ADDRESS': {
-                'address1': '999 AVENUE RD',
+                'address1': '200 SAMPLE RD',
                 'address2': '',
-                'city': 'CITY',
-                'post_code': '10.000-90.00-800',
-                'state': 'ST'
+                'city': 'HOT SPRINGS',
+                'post_code': '33XXX',
+                'state': 'AR'
             },
-            'NAME': 'FIRST M',
-            'SSN': '111-11-1111',
+            'NAME': 'DAMON M MELISSA',
+            'SSN': '432-xx-xxxx',
             'FILING STATUS': 'Married Filing Joint',
-            'TOTAL INCOME': '$0.00'
+            'TOTAL INCOME': '67,681.00',
+            'EarnedIncomeCredit': '0.00',
+            'CombatCredit': '0.00',
+            'AddChildTaxCredit': '0.00',
+            'ExcessSSCredit': '0.00',
+            'RefundableCredit': '2,422.00',
+            'PremiumTaxCredit': '',
         }
-        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as tax_transcript:
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
             }
@@ -417,6 +423,45 @@ class InviteTests(APITestCase):
         self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
                          msg='Parsed tax_transcript_data matches expected')
 
+        expected_social_security_statement_data = {
+            'EmployerPaidThisYearMedicare': '1,177',
+            'EmployerPaidThisYearSocialSecurity': '5,033',
+            'EstimatedTaxableEarnings': '21,807',
+            'LastYearMedicare': '21,807',
+            'LastYearSS': '21,807',
+            'PaidThisYearMedicare': '1,177',
+            'PaidThisYearSocialSecurity': '4,416',
+            'RetirementAtAge62': '759',
+            'RetirementAtAge70': '1,337',
+            'RetirementAtFull': '1,078',
+            'SurvivorsChild': '808',
+            'SurvivorsSpouseAtFull': '1,077',
+            'SurvivorsSpouseWithChild': '808',
+            'SurvivorsTotalFamilyBenefitsLimit': '1,616'
+        }
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
+            data = {
+                'social_security_statement': ss_statement
+            }
+            response = self.client.put(invite_detail_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating onboarding with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['social_security_statement'], None,
+                            msg='social_security_statement_data is in the response and not None')
+        self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
+                         msg='Parsed social_security_statement_data matches expected')
+
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
+            data = {
+                'partner_social_security_statement': ss_statement
+            }
+            response = self.client.put(invite_detail_url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating onboarding with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['partner_social_security_statement'], None,
+                            msg='partner_social_security_statement_data is in the response and not None')
+        self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
+                         msg='Parsed partner_social_security_statement_data matches expected')
 
         self.assertEqual(response._headers['content-type'], ('Content-Type', 'application/json'),
                          msg='Response content type is application/json after upload')
@@ -427,21 +472,27 @@ class InviteTests(APITestCase):
 
         # re-upload tax transcript
         expected_tax_transcript_data = {
-            'SPOUSE NAME': 'SPOUSE M LAST',
-            'SPOUSE SSN': '222-22-2222',
+            'SPOUSE NAME': 'MELISSA',
+            'SPOUSE SSN': '477-xx-xxxx',
             'ADDRESS': {
-                'address1': '999 AVENUE RD',
+                'address1': '200 SAMPLE RD',
                 'address2': '',
-                'city': 'CITY',
-                'post_code': '10.000-90.00-800',
-                'state': 'ST'
+                'city': 'HOT SPRINGS',
+                'post_code': '33XXX',
+                'state': 'AR'
             },
-            'NAME': 'FIRST M',
-            'SSN': '111-11-1111',
+            'NAME': 'DAMON M MELISSA',
+            'SSN': '432-xx-xxxx',
             'FILING STATUS': 'Married Filing Joint',
-            'TOTAL INCOME': '$0.00'
+            'TOTAL INCOME': '67,681.00',
+            'EarnedIncomeCredit': '0.00',
+            'CombatCredit': '0.00',
+            'AddChildTaxCredit': '0.00',
+            'ExcessSSCredit': '0.00',
+            'RefundableCredit': '2,422.00',
+            'PremiumTaxCredit': '',
         }
-        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as tax_transcript:
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
             }
@@ -563,7 +614,7 @@ class InviteTests(APITestCase):
         self.client.force_authenticate(invite.user)
         response = self.client.post(url, {})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(mail.outbox[-1].subject, 'BetaSmartz client sign up form url',
+        self.assertEqual(mail.outbox[-1].subject, "Welcome to the {} online platform".format(invite.advisor.firm.name),
                          msg='Email outbox has email with expected resend email subject')
         lookup_invite = EmailInvite.objects.get(pk=invite.pk)
         self.assertEqual(lookup_invite.send_count, 1)

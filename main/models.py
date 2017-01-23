@@ -251,13 +251,15 @@ class User(AbstractBaseUser, PermissionsMixin):
         " Returns the short name for the user."
         return self.first_name
 
-    def email_user(self, subject, message,
+    def email_user(self, subject, message="",
                    from_email=settings.DEFAULT_FROM_EMAIL, **kwargs):
         """
         Sends an email to this User.
         """
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
+    def login_url(self):
+        return settings.SITE_URL + "/login"
 
 class FiscalYear(models.Model):
     name = models.CharField(max_length=127)
@@ -648,27 +650,47 @@ class FirmData(models.Model):
         verbose_name = "Firm detail"
 
     firm = models.OneToOneField(Firm, related_name='firm_details')
-    afsl_asic = models.CharField("AFSL/ASIC number", max_length=50)
-    afsl_asic_document = models.FileField("AFSL/ASIC doc.")
-    office_address = models.ForeignKey(Address, related_name='+')
+    afsl_asic = models.CharField("AFSL/ASIC number", max_length=50,
+                                 null=True, blank=True)
+    afsl_asic_document = models.FileField("AFSL/ASIC doc.",
+                                          null=True, blank=True)
+    office_address = models.ForeignKey(Address, related_name='+',
+                                       null=True, blank=True)
     postal_address = models.ForeignKey(Address, related_name='+')
 
     daytime_phone_num = PhoneNumberField(max_length=16)  # A firm MUST have some number to contact them by.
-    mobile_phone_num = PhoneNumberField(null=True, max_length=16)  # A firm may not have a mobile number as well.
-    fax_num = PhoneNumberField(null=True, max_length=16)  # Not all businesses have a fax.
+    mobile_phone_num = PhoneNumberField(max_length=16, null=True, blank=True)  # A firm may not have a mobile number as well.
+    fax_num = PhoneNumberField(max_length=16, null=True, blank=True)  # Not all businesses have a fax.
 
     alternate_email_address = models.EmailField("Email address",
                                                 null=True,
                                                 blank=True)
     last_change = models.DateField(auto_now=True)
-    fee_bank_account_name = models.CharField('Name', max_length=100)
+    fee_bank_account_name = models.CharField('Name', max_length=100,
+                                             null=True, blank=True)
     fee_bank_account_branch_name = models.CharField('Branch name',
-                                                    max_length=100)
-    fee_bank_account_bsb_number = models.CharField('BSB number', max_length=20)
-    fee_bank_account_number = models.CharField('Account number', max_length=20)
+                                                    max_length=100,
+                                                    null=True, blank=True)
+    fee_bank_account_bsb_number = models.CharField('BSB number',
+                                                   max_length=20,
+                                                   null=True, blank=True)
+    fee_bank_account_number = models.CharField('Account number',
+                                               max_length=20,
+                                               null=True, blank=True)
     fee_bank_account_holder_name = models.CharField('Account holder',
-                                                    max_length=100)
-    australian_business_number = models.CharField("ABN", max_length=20)
+                                                    max_length=100,
+                                                    null=True, blank=True)
+    australian_business_number = models.CharField("ABN", max_length=20,
+                                                  null=True, blank=True)
+
+    site_url = models.CharField(max_length=255,
+                                null=True,
+                                blank=True,
+                                default="https://www.betasmartz.com",
+                                help_text="Official Site URL")
+
+    def __str__(self):
+        return "FirmData for {}".format(self.firm)
 
 
 class Advisor(NeedApprobation, NeedConfirmation, PersonalData):
@@ -2877,6 +2899,11 @@ class PricingPlanClient(PricingPlanPersonBase):
                                related_name='client_overrides')
     person = models.OneToOneField('client.Client',
                                   related_name='pricing_plan')
+
+
+class PlaidUser(models.Model):
+    user = models.OneToOneField(User, related_name="plaid_user")
+    access_token = models.CharField(max_length=255)
 
 
 # --------------------------------- Signals -----------------------------------

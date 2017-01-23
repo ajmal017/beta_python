@@ -10,7 +10,7 @@ from django.core.urlresolvers import reverse
 from retiresmartz.models import RetirementAdvice
 from client.models import EmailInvite
 from main.models import InvestmentType
-mocked_now = datetime(2016, 1, 1)
+from pinax.eventlog.models import Log as EventLog
 
 
 class RetiresmartzAdviceTests(APITestCase):
@@ -22,8 +22,6 @@ class RetiresmartzAdviceTests(APITestCase):
         # self.advice_url = reverse('api:v1:client-retirement-advice', args=[self.plan.client.id, self.plan.id])
         self.plan_url = '/api/v1/clients/{}/retirement-plans/{}'.format(self.plan.client.id, self.plan.id)
         self.advice_url = '/api/v1/clients/{}/retirement-plans/{}/advice-feed'.format(self.plan.client.id, self.plan.id)
-        self.advice_url2 = '/api/v1/clients/{}/retirement-plans/{}/advice-feed'.format(self.plan2.client.id, self.plan2.id)
-        self.client_url = '/api/v1/clients/{}'.format(self.plan.client.id)
         self.invite = EmailInviteFactory.create(user=self.plan.client.user,
                                                 status=EmailInvite.STATUS_ACCEPTED)
 
@@ -33,9 +31,6 @@ class RetiresmartzAdviceTests(APITestCase):
         self.stocks_asset_class = AssetClassFactory.create(investment_type=self.stocks_type)
         self.portfolio_set = PortfolioSetFactory.create()
         self.portfolio_set.asset_classes.add(self.bonds_asset_class, self.stocks_asset_class)
-
-        self.sa1 = SecurityAnswerFactory.create(user=self.plan.client.user, question='question one')
-        self.sa2 = SecurityAnswerFactory.create(user=self.plan.client.user, question='question two')
 
     def test_decrease_retirement_age_to_62(self):
         """
@@ -207,36 +202,28 @@ class RetiresmartzAdviceTests(APITestCase):
         pre_save_count = RetirementAdvice.objects.count()
         data = {
             'smoker': True,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         prev_life_expectancy = self.plan2.selected_life_expectancy
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        response = self.client.get(self.advice_url2)
+        response = self.client.get(self.advice_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # combination advice and smoker advice
-        lookup_advice = RetirementAdvice.objects.get(plan=self.plan2)
+        lookup_advice = RetirementAdvice.objects.get(plan=self.plan)
         self.assertEqual(response.data['results'][0]['id'], lookup_advice.id)
-        self.assertEqual(response.data['results'][0]['plan'], self.plan2.id)
-        lookup_plan = RetirementPlan.objects.get(pk=self.plan2.id)
+        self.assertEqual(response.data['results'][0]['plan'], self.plan.id)
+        lookup_plan = RetirementPlan.objects.get(pk=self.plan.id)
         self.assertEqual(lookup_plan.calculated_life_expectancy, 77)
 
     def test_smoker_no(self):
         pre_save_count = RetirementAdvice.objects.count()
         data = {
             'smoker': False,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(self.advice_url)
@@ -251,13 +238,9 @@ class RetiresmartzAdviceTests(APITestCase):
         pre_save_count = RetirementAdvice.objects.count()
         data = {
             'daily_exercise': 20,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(self.advice_url)
@@ -270,13 +253,9 @@ class RetiresmartzAdviceTests(APITestCase):
         data = {
             'weight': 145.02,
             'height': 2,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(self.advice_url)
@@ -286,13 +265,9 @@ class RetiresmartzAdviceTests(APITestCase):
     def test_weight_only(self):
         data = {
             'weight': 145,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(self.advice_url)
@@ -302,13 +277,9 @@ class RetiresmartzAdviceTests(APITestCase):
     def test_height_only(self):
         data = {
             'height': 9,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(self.advice_url)
@@ -322,7 +293,7 @@ class RetiresmartzAdviceTests(APITestCase):
     #         'daily_exercise': 20,
     #     }
     #     self.client.force_authenticate(user=self.plan.client.user)
-    #     response = self.client.put(self.client_url, data)
+    #     response = self.client.put(self.plan_url, data)
     #     self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     #     response = self.client.get(self.advice_url)
@@ -332,13 +303,9 @@ class RetiresmartzAdviceTests(APITestCase):
     def test_drinks_only(self):
         data = {
             'drinks': 5,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(self.advice_url)
@@ -354,13 +321,9 @@ class RetiresmartzAdviceTests(APITestCase):
             'daily_exercise': 20,
             'smoker': False,
             'drinks': 5,
-            'question_one': self.sa1.pk,
-            'answer_one': 'test',
-            'question_two': self.sa2.pk,
-            'answer_two': 'test',
         }
         self.client.force_authenticate(user=self.plan.client.user)
-        response = self.client.put(self.client_url, data)
+        response = self.client.put(self.plan_url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(self.advice_url)
@@ -410,6 +373,23 @@ class RetiresmartzAdviceTests(APITestCase):
         response = self.client.get(self.advice_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
+
+    def test_spending_increased_contributions_decreased_again(self):
+        data = {
+            'btc': 2,
+        }
+        self.client.force_authenticate(user=self.plan.client.user)
+        response = self.client.put(self.plan_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = {
+            'btc': 1,
+        }
+        response = self.client.put(self.plan_url, data)
+        response = self.client.get(self.advice_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        event = EventLog.objects.filter(pk=response.data['results'][0]['trigger'],
+                                        action='RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN')
+        self.assertEqual(event.count(), 1)
 
     def test_spending_decreased_contributions_increased(self):
         data = {

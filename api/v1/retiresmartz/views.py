@@ -1,5 +1,4 @@
 import logging
-
 import numpy as np
 import pandas as pd
 import scipy.stats as st
@@ -13,7 +12,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_extensions.mixins import NestedViewSetMixin
-
 from api.v1.goals.serializers import PortfolioSerializer
 from api.v1.views import ApiViewMixin
 from client.models import Client
@@ -31,7 +29,15 @@ from retiresmartz.calculator.social_security import calculate_payments
 from retiresmartz.models import RetirementAdvice, RetirementPlan
 from support.models import SupportRequest
 from . import serializers
-
+from main import tax_sheet as tax
+from main import zip2state
+from main import abstract
+from main import constants
+from datetime import date, datetime
+import pdb
+from pinax.eventlog.models import Log as EventLog
+from main.inflation import inflation_level
+from functools import reduce
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
 
@@ -77,6 +83,45 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         """
         user = SupportRequest.target_user(self.request)
         client = Client.objects.filter_by_user(user).get(id=int(self.get_parents_query_dict()['client']))
+        if 'client' in serializer.validated_data:
+            if 'civil_status' in serializer.validated_data['client']:
+                client.civil_status = serializer.validated_data['client']['civil_status']
+            if 'smoker' in serializer.validated_data['client']:
+                client.smoker = serializer.validated_data['client']['smoker']
+            if 'drinks' in serializer.validated_data['client']:
+                client.drinks = serializer.validated_data['client']['drinks']
+            if 'height' in serializer.validated_data['client']:
+                client.height = serializer.validated_data['client']['height']
+            if 'weight' in serializer.validated_data['client']:
+                client.weight = serializer.validated_data['client']['weight']
+            if 'daily_exercise' in serializer.validated_data['client']:
+                client.daily_exercise = serializer.validated_data['client']['daily_exercise']
+
+            if 'home_value' in serializer.validated_data['client']:
+                client.home_value = serializer.validated_data['client']['home_value']
+            if 'home_growth' in serializer.validated_data['client']:
+                client.home_growth = serializer.validated_data['client']['home_growth']
+            if 'ss_fra_todays' in serializer.validated_data['client']:
+                client.ss_fra_todays = serializer.validated_data['client']['ss_fra_todays']
+            if 'ss_fra_retirement' in serializer.validated_data['client']:
+                client.ss_fra_retirement = serializer.validated_data['client']['ss_fra_retirement']
+            if 'state_tax_after_credits' in serializer.validated_data['client']:
+                client.state_tax_after_credits = serializer.validated_data['client']['state_tax_after_credits']
+            if 'state_tax_effrate' in serializer.validated_data['client']:
+                client.state_tax_effrate = serializer.validated_data['client']['state_tax_effrate']
+            if 'pension_name' in serializer.validated_data['client']:
+                client.pension_name = serializer.validated_data['client']['pension_name']
+            if 'pension_amount' in serializer.validated_data['client']:
+                client.pension_amount = serializer.validated_data['client']['pension_amount']
+            if 'pension_start_date' in serializer.validated_data['client']:
+                client.pension_start_date = serializer.validated_data['client']['pension_start_date']
+            if 'employee_contributions_last_year' in serializer.validated_data['client']:
+                client.employee_contributions_last_year = serializer.validated_data['client']['employee_contributions_last_year']
+            if 'employer_contributions_last_year' in serializer.validated_data['client']:
+                client.employer_contributions_last_year = serializer.validated_data['client']['employer_contributions_last_year']
+            if 'total_contributions_last_year' in serializer.validated_data['client']:
+                client.total_contributions_last_year = serializer.validated_data['client']['total_contributions_last_year']
+            client.save()
         return serializer.save(client=client)
 
     def update(self, request, *args, **kwargs):
@@ -89,7 +134,9 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         orig = RetirementPlan.objects.get(pk=instance.pk)
+        orig_client = orig.client
         updated = serializer.update(instance, serializer.validated_data)
+        updated_client = updated.client
 
         if getattr(instance, '_prefetched_objects_cache', None):
             # If 'prefetch_related' has been applied to a queryset, we need to
@@ -98,30 +145,124 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             serializer = self.get_serializer(instance)
 
         # RetirementAdvice Triggers
+        orig_daily_exercise = 0 if orig_client.daily_exercise is None else orig_client.daily_exercise
+        orig_drinks = 0 if orig_client.drinks is None else orig_client.drinks
+        orig_smoker = orig_client.smoker
+        orig_height = orig_client.height
+        orig_weight = orig_client.weight
+
+        life_expectancy_field_updated = (updated_client.daily_exercise != orig_client.daily_exercise or
+                                         updated_client.weight != orig_weight or
+                                         updated_client.height != orig_height or
+                                         updated_client.smoker != orig_smoker or
+                                         updated_client.drinks != orig_drinks)
+
+        # Advice feed for toggling smoker
+        if updated_client.smoker != orig_smoker:
+            if updated_client.smoker:
+                e = Event.RETIRESMARTZ_IS_A_SMOKER.log(None,
+                                                       user=updated_client.user,
+                                                       obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_smoking_yes(advice)
+                advice.save()
+            elif updated_client.smoker is False:
+                e = Event.RETIRESMARTZ_IS_NOT_A_SMOKER.log(None,
+                                                           user=updated_client.user,
+                                                           obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_smoking_no(advice)
+                advice.save()
+
+        # Advice feed for daily_exercise change
+        if updated_client.daily_exercise != orig_daily_exercise:
+            # exercise only
+            e = Event.RETIRESMARTZ_EXERCISE_ONLY.log(None,
+                                                     user=updated_client.user,
+                                                     obj=updated_client)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_exercise_only(advice)
+            advice.save()
+
+        # Advice feed for drinks change
+        if updated_client.drinks != orig_drinks:
+            if updated_client.drinks > 1:
+                e = Event.RETIRESMARTZ_DRINKS_MORE_THAN_ONE.log(None,
+                                                     user=updated_client.user,
+                                                     obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_drinks_more_than_one(advice)
+                advice.save()
+            else:
+                e = Event.RETIRESMARTZ_DRINKS_ONE_OR_LESS.log(None,
+                                                     user=updated_client.user,
+                                                     obj=updated_client)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_drinks_one_or_less(advice)
+                advice.save()
+
+        # frontend posts one at a time, weight then height, not together in one post
+        if (updated_client.weight != orig_weight or updated_client.height != orig_height):
+            # weight and/or height updated
+            e = Event.RETIRESMARTZ_WEIGHT_AND_HEIGHT_ONLY.log(None,
+                                                              user=updated_client.user,
+                                                              obj=updated_client)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_weight_and_height_only(advice)
+            advice.save()
+
+        if life_expectancy_field_updated and (updated_client.daily_exercise and
+           updated_client.weight and updated_client.height and updated_client.smoker is not None and
+           updated_client.drinks is not None):
+            # every wellbeing field
+            e = Event.RETIRESMARTZ_ALL_WELLBEING_ENTRIES.log(None,
+                                                             user=updated_client.user,
+                                                             obj=updated_client)
+            advice = RetirementAdvice(plan=updated, trigger=e)
+            advice.text = advice_responses.get_all_wellbeing_entries(advice)
+            advice.save()
 
         # Spending and Contributions
         # TODO: Replace income with function to calculate expected income
         # increase in these two calls to get_decrease_spending_increase_contribution
         # and get_increase_contribution_decrease_spending
         if orig.btc > updated.btc:
-            # spending increased, contributions decreased
-            e = Event.RETIRESMARTZ_SPENDABLE_INCOME_UP_CONTRIB_DOWN.log(None,
-                                                                        orig.btc,
-                                                                        updated.btc,
-                                                                        user=updated.client.user,
-                                                                        obj=updated)
-            advice = RetirementAdvice(plan=updated, trigger=e)
-            advice.text = advice_responses.get_increase_spending_decrease_contribution(advice, orig.btc, orig.btc * 1.2)
-            advice.save()
+            # spending increased, contributions decreased\
+            events = EventLog.objects.filter(
+                Q(action='RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN') |
+                Q(action='RETIRESMARTZ_SPENDING_DOWN_CONTRIB_UP')
+            ).order_by('-timestamp')
+            # TODO: calculate nth rate based on retirement age?
+            nth_rate = reduce((lambda acc, rate: acc * (1 + rate)), inflation_level[:25], 1)
+
+            if events.count() > 0 and events[0].action == 'RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN':
+                e = Event.RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN.log(None,
+                                                                            orig.btc,
+                                                                            updated.btc,
+                                                                            user=updated.client.user,
+                                                                            obj=updated)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_increase_spending_decrease_contribution_again(advice, orig.btc, orig.btc * nth_rate)
+                advice.save()
+            else:
+                e = Event.RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN.log(None,
+                                                                            orig.btc,
+                                                                            updated.btc,
+                                                                            user=updated.client.user,
+                                                                            obj=updated)
+                advice = RetirementAdvice(plan=updated, trigger=e)
+                advice.text = advice_responses.get_increase_spending_decrease_contribution(advice, orig.btc, orig.btc * nth_rate)
+                advice.save()
 
         if orig.btc < updated.btc:
-            e = Event.RETIRESMARTZ_CONTRIB_UP_SPENDING_DOWN.log(None,
+            nth_rate = reduce((lambda acc, rate: acc * (1 + rate)), inflation_level[:25], 1)
+            e = Event.RETIRESMARTZ_SPENDING_DOWN_CONTRIB_UP.log(None,
                                                                 orig.btc,
                                                                 updated.btc,
                                                                 user=updated.client.user,
                                                                 obj=updated)
             advice = RetirementAdvice(plan=updated, trigger=e)
-            advice.text = advice_responses.get_increase_contribution_decrease_spending(advice, updated.btc, updated.btc * 1.2)
+            advice.text = advice_responses.get_increase_contribution_decrease_spending(advice, updated.btc, updated.btc * nth_rate)
             advice.save()
 
             # contributions increased, spending decreased
@@ -267,6 +408,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                 advice.save()
             else:
                 # RetirementPlan now off track
+
                 e = Event.RETIRESMARTZ_OFF_TRACK_NOW.log(None,
                                                          user=updated.client.user,
                                                          obj=updated)
@@ -315,7 +457,8 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     @detail_route(methods=['get'], url_path='calculate-income-balance')
     def calculate_income_balance(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates the retirement income possible with a supplied
+        Calculates the retirement income possible with a suppli
+ed
         retirement balance and other details on the retirement plan.
         """
         # TODO: Make this work
@@ -332,7 +475,8 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     @detail_route(methods=['get'], url_path='calculate-contributions-balance')
     def calculate_contributions_balance(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates the contributions required to generate the
+        Calculates the contributions r
+equired to generate the
         given retirement balance.
         """
         # TODO: Make this work
@@ -365,6 +509,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         going up by 1000 every point, income starting
         at 200000, increasing by 50 every point.
         """
+
         retirement_plan = self.get_object()
         tickers = Ticker.objects.filter(~Q(state=Ticker.State.CLOSED.value))
         portfolio = []
@@ -407,6 +552,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
           ]
         }
         """
+
         plan = self.get_object()
 
         # We need a date of birth for the client
@@ -428,82 +574,183 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
+        if plan.client is not None:
+            print('1 ' + str(plan.client))
+        else:
+            print('plan.client')
 
-        today = timezone.now().date()
-        retire_date = max(today, plan.client.date_of_birth + relativedelta(years=plan.retirement_age))
-        death_date = max(retire_date, plan.client.date_of_birth + relativedelta(years=plan.selected_life_expectancy))
+        if plan.client.regional_data['ssn'] is not None:
+            print('2 ' + str(plan.client.regional_data['ssn']))
+        else:
+            print('plan.client.regional_data[ssn]')
 
-        # Pre-retirement income cash flow
-        income_calc = EmploymentIncome(income=plan.income / 12,
-                                       growth=0.01,
-                                       today=today,
-                                       end_date=retire_date - relativedelta(days=1))
+        if plan.retirement_age is not None:
+            print('3 ' + str(plan.retirement_age))
+        else:
+            print('plan.retirement_age')
 
-        ss_all = calculate_payments(plan.client.date_of_birth, plan.income)
-        ss_income = ss_all.get(plan.retirement_age, None)
-        if ss_income is None:
-            ss_income = ss_all[sorted(ss_all)[0]]
+        if plan.client.life_expectancy is not None:
+            print('4 ' + str(plan.client.life_expectancy))
+        else:
+            print('plan.client.life_expectancy')
 
-        cash_flows = list()
-        cash_flows.append(InflatedCashFlow(amount=ss_income, today=today, start_date=retire_date, end_date=death_date))
+        if plan.lifestyle is not None:
+            print('5 ' + str(plan.lifestyle))
+        else:
+            print('plan.lifestyle')
 
-        # TODO: Call the logic that determines the retirement accounts to figure out what accounts to use.
-        # TODO: Get the tax rate to use when withdrawing from the account at retirement
-        # For now we assume we want a tax deferred 401K
-        acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
-                                      tax_rate=0.0,
-                                      name='401k',
-                                      today=today,
-                                      opening_balance=plan.opening_tax_deferred_balance,
-                                      growth=performance,
-                                      retirement_date=retire_date,
-                                      end_date=death_date,
-                                      contributions=plan.btc / 12)
+        if plan.reverse_mortgage is not None:
+            print('6 ' + str(plan.reverse_mortgage))
+        else:
+            print('plan.reverse_mortgage')
 
-        #acc_401k = TaxDeferredAccount(dob=plan.client.date_of_birth,
-        #                              tax_rate=0.0,
-        #                              name='401k',
-        #                              today=today,
-        #                              opening_balance=plan.opening_tax_deferred_balance,
-        #                              growth=0.01,
-        #                              retirement_date=retire_date,
-        #                              end_date=death_date,
-        #                              contributions=4000 / 12)
+        if plan.client.home_value is not None:
+            print('7 ' + str(plan.client.home_value))
+        else:
+            print('plan.client.home_value')
 
-        assets = [acc_401k]
+        if plan.client.civil_status is not None:
+            print('8 ' + str(plan.client.civil_status))
+        else:
+            print('plan.client.civil_status')
 
-        if plan.reverse_mortgage and plan.retirement_home_price is not None:
-            cash_flows.append(ReverseMortgage(home_value=plan.retirement_home_price,
-                                              value_date=today,
-                                              start_date=retire_date,
-                                              end_date=death_date))
+        if plan.client.ss_fra_retirement is not None:
+            print('9 ' + str(plan.client.ss_fra_retirement))
+        else:
+            print('plan.client.ss_fra_retirement')
 
-        if plan.paid_days > 0:
-            # Average retirement income is 116 per day as of September 2016, working until age 80
-            cash_flows.append(InflatedCashFlow(amount=116*plan.paid_days,
-                                               today=today,
-                                               start_date=retire_date,
-                                               end_date=plan.client.date_of_birth + relativedelta(years=80)))
+        if plan.client.ss_fra_todays is not None:
+            print('10 ' + str(plan.client.ss_fra_todays))
+        else:
+            print('plan.client.ss_fra_todays')
 
-        # The desired cash flow generator.
-        rdcf = RetiresmartzDesiredCashFlow(current_income=income_calc,
-                                           retirement_income=plan.desired_income / 12,
-                                           today=today,
-                                           retirement_date=retire_date - relativedelta(days=1),
-                                           end_date=death_date,
-                                           replacement_ratio=plan.replacement_ratio
-                                           )
-        # Add the income cash flow to the list of cash flows.
-        cash_flows.append(rdcf)
+        if plan.client.income is not None:
+            print('11 ' + str(plan.client.income))
+        else:
+            print('plan.client.income')
 
-        calculator = Calculator(cash_flows=cash_flows, assets=assets)
-        asset_values, income_values = calculator.calculate(rdcf)
+        if plan.client.net_worth is not None:
+            print('12 ' + str(plan.client.net_worth))
+        else:
+            print('plan.client.net_worth')
+
+        if plan.client.income is not None:
+            print('13 ' + str(plan.client.income))
+        else:
+            print('plan.client.income')
+
+        if plan.atc is not None:
+            print('14 ' + str(plan.atc))
+        else:
+            print('plan.atc')
+
+        if plan.client.other_income is not None:
+            print('15 ' + str(plan.client.other_income))
+        else:
+            print('plan.client.other_income ')
+
+        if plan.client.other_income is not None:
+            print('16 ' + str(plan.client.other_income))
+        else:
+            print('plan.client.other_income')
+
+        if plan.client.ss_fra_retirement is not None:
+            print('17 ' + str(plan.client.ss_fra_retirement))
+        else:
+            print('plan.client.ss_fra_retirement')
+
+        if plan.paid_days is not None:
+            print('18 ' + str(plan.paid_days))
+        else:
+            print('plan.paid_days')
+
+        if plan.balance is not None:
+            print('19 ' + str(plan.balance))
+        else:
+            print('plan.balance')
+
+        if plan.client.risk_profile_group is not None:
+            print('20 ' + str(plan.client.risk_profile_group))
+        else:
+            print('plan.client.risk_profile_group')
+
+        if plan.income_growth is not None:
+            print('21 ' + str(plan.income_growth))
+        else:
+            print('plan.income_growth')
+
+        if plan.client.employment_status is not None:
+            print('22 ' + str(plan.client.employment_status))
+        else:
+            print('plan.client.employment_status')
+
+        if plan.client.residential_address.post_code is not None:
+            print('23 ' + str(plan.client.residential_address.post_code))
+        else:
+            print('plan.client.residential_address.post_code')
+        
+        # Get US tax projection
+        ira_rmd_factor = 26.5
+        # These ones are fudged ...
+        # dob = date(2016, 9, 28)
+        house_value = 250000.
+        retire_earn_at_fra = 3490.
+        retire_earn_under_fra = 1310.
+        other_income=40000.
+        after_tax_income = 50082.
+        federal_taxable_income = 90096.
+        federal_regular_tax = 20614.
+        ss_fra_retirement = 7002.
+        paid_days = 2
+        initial_401k_balance = 50000
+        risk_profile_over_cpi = 0.005
+        projected_income_growth = 0.01
+        federal_regular_tax = 20614
+        employee_contributions_last_year = 0.055
+        employer_contributions_last_year = 0.02
+        # # #
+        if plan.client.residential_address.post_code is None:
+            raise Exception("plan.client.residential_address.post_code is None")
+            
+        state = zip2state.get_state(int(plan.client.residential_address.post_code))
+        #plan.retirement_age,
+        #plan.client.life_expectancy,
+        
+
+        tx = tax.TaxUser(plan.client,
+                        plan.client.regional_data['ssn'],
+                        pd.Timestamp(plan.client.date_of_birth),
+                        plan.retirement_age,
+                        plan.client.life_expectancy,
+                        plan.lifestyle,
+                        plan.reverse_mortgage,
+                        house_value,
+                        plan.client.civil_status,
+                        retire_earn_at_fra,
+                        retire_earn_under_fra,
+                        plan.client.income,
+                        plan.client.net_worth,
+                        federal_taxable_income,
+                        federal_regular_tax,
+                        after_tax_income,
+                        other_income,
+                        ss_fra_retirement,
+                        paid_days,
+                        ira_rmd_factor,
+                        initial_401k_balance,
+                        risk_profile_over_cpi,
+                        projected_income_growth,
+                        employee_contributions_last_year,
+                        employer_contributions_last_year,
+                        state,
+                        plan.client.employment_status)
+
+        tx.create_maindf()
 
         # Convert these returned values to a format for the API
-        catd = pd.concat([asset_values, income_values['actual'], income_values['desired']], axis=1)
+        catd = pd.concat([tx.maindf['Taxable_Accounts'][:-12], tx.maindf['After_Tax_Income'][:-12], tx.maindf['After_Tax_Income'][:-12]], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
-
         pser = PortfolioSerializer(instance=settings.portfolio)
 
         return Response({'portfolio': pser.data, 'projection': proj_data})
@@ -512,7 +759,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
     permission_classes = (IsAuthenticated,)
-    queryset = RetirementAdvice.objects.filter(read=None)  # unread advice
+    queryset = RetirementAdvice.objects.filter(read=None).order_by('-dt')  # unread advice
     serializer_class = serializers.RetirementAdviceReadSerializer
     serializer_response_class = serializers.RetirementAdviceReadSerializer
 

@@ -352,13 +352,6 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         plan = RetirementPlan.objects.create(**validated_data)
         if plan.agreed_on: plan.generate_soa()
 
-        # Client civil_status check
-        # if 'client' in validated_data:
-        #     logger.error(validated_data['client'])
-        #     if 'civil_status' in validated_data['client']:
-        #         client.civil_status = validated_data['client']['civil_status']
-        #         client.save()
-
         return plan
 
     @transaction.atomic
@@ -377,59 +370,42 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         if 'client' in validated_data:
             if 'civil_status' in validated_data['client']:
                 instance.client.civil_status = validated_data['client']['civil_status']
-                instance.client.save()
             if 'smoker' in validated_data['client']:
                 instance.client.smoker = validated_data['client']['smoker']
-                instance.client.save()
             if 'drinks' in validated_data['client']:
                 instance.client.drinks = validated_data['client']['drinks']
-                instance.client.save()
             if 'height' in validated_data['client']:
                 instance.client.height = validated_data['client']['height']
-                instance.client.save()
             if 'weight' in validated_data['client']:
                 instance.client.weight = validated_data['client']['weight']
-                instance.client.save()
             if 'daily_exercise' in validated_data['client']:
                 instance.client.daily_exercise = validated_data['client']['daily_exercise']
-                instance.client.save()
 
             if 'home_value' in validated_data['client']:
                 instance.client.home_value = validated_data['client']['home_value']
-                instance.client.save()
             if 'home_growth' in validated_data['client']:
                 instance.client.home_growth = validated_data['client']['home_growth']
-                instance.client.save()
             if 'ss_fra_todays' in validated_data['client']:
                 instance.client.ss_fra_todays = validated_data['client']['ss_fra_todays']
-                instance.client.save()
             if 'ss_fra_retirement' in validated_data['client']:
                 instance.client.ss_fra_retirement = validated_data['client']['ss_fra_retirement']
-                instance.client.save()
             if 'state_tax_after_credits' in validated_data['client']:
                 instance.client.state_tax_after_credits = validated_data['client']['state_tax_after_credits']
-                instance.client.save()
             if 'state_tax_effrate' in validated_data['client']:
                 instance.client.state_tax_effrate = validated_data['client']['state_tax_effrate']
-                instance.client.save()
             if 'pension_name' in validated_data['client']:
                 instance.client.pension_name = validated_data['client']['pension_name']
-                instance.client.save()
             if 'pension_amount' in validated_data['client']:
                 instance.client.pension_amount = validated_data['client']['pension_amount']
-                instance.client.save()
             if 'pension_start_date' in validated_data['client']:
                 instance.client.pension_start_date = validated_data['client']['pension_start_date']
-                instance.client.save()
             if 'employee_contributions_last_year' in validated_data['client']:
                 instance.client.employee_contributions_last_year = validated_data['client']['employee_contributions_last_year']
-                instance.client.save()
             if 'employer_contributions_last_year' in validated_data['client']:
                 instance.client.employer_contributions_last_year = validated_data['client']['employer_contributions_last_year']
-                instance.client.save()
             if 'total_contributions_last_year' in validated_data['client']:
                 instance.client.total_contributions_last_year = validated_data['client']['total_contributions_last_year']
-                instance.client.save()
+            instance.client.save()
 
         for attr, value in validated_data.items():
             if str(attr) != 'client':
@@ -472,11 +448,19 @@ class RetirementPlanEincWritableSerializer(serializers.ModelSerializer):
                 field.required = False
 
 
+class AdviceFeedActionSerializer(serializers.Serializer):
+    label = serializers.CharField()
+    type = serializers.CharField()
+    url = serializers.CharField()
+    data = serializers.JSONField()
+
+
 class RetirementAdviceReadSerializer(ReadOnlyModelSerializer):
     """
         Read-Only RetirementAdvice serializer, used for
         get request for retirement-plans advice-feed endpoint
     """
+    actions = serializers.JSONField()
 
     class Meta:
         model = RetirementAdvice

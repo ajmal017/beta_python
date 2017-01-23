@@ -336,7 +336,7 @@ class AccountTests(APITestCase):
         response = self.client.post(url, data)
         # 400, account_transfer_form required for account transfer close_choice
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample.pdf'), mode="rb") as pdf_upload:
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as pdf_upload:
             data['account_transfer_form'] = pdf_upload
             response = self.client.post(url, data, format='multipart')
 

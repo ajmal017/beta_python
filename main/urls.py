@@ -1,5 +1,6 @@
 from django.conf.urls import include, patterns, url
 from django.contrib import admin
+from django.core.urlresolvers import reverse_lazy
 from django.views.decorators.csrf import csrf_exempt
 from filebrowser.sites import site
 from api.v1.user.views import PasswordResetView
@@ -111,6 +112,7 @@ urlpatterns = patterns(
     url('^terms-of-use/$', TemplateView.as_view(template_name="legal/terms_of_use.html"), name='terms_of_use'),
     url('^legal/$', TemplateView.as_view(template_name="legal/legal.html"), name='legal'),
     url('^product-brochure/$', TemplateView.as_view(template_name="legal/product_brochure.html"), name='product-brochure'),
+    url('^oddcast/$', oddcast.index, name='oddcast')
 )
 
 if settings.DEBUG:

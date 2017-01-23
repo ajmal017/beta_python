@@ -1,4 +1,4 @@
-State,Zip Code,ZIP Name/ City,FIPS (County Code),County Name,Phone Area Code
+State,Zip_Code,ZIP_Name_City,FIPS_County_Code,County_Name,Phone_Area_Code
 AA,34001,DPO,0,,0
 AA,34002,DPO,0,,0
 AA,34004,DPO,0,,0

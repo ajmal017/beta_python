@@ -1,13 +1,13 @@
 import pandas as pd
-from main import inflation
-
+from main import abstract
+from main import constants
 
 '''
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
 
 name = "John Smith"
-
+ 
 ssn  = "123456789" 
 
 dob = pd.Timestamp('1969-03-03')
@@ -22,7 +22,7 @@ life_exp = 85.
 
 house_value = 250000.
 
-filing_status = 'single'
+filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
 retire_earn_at_fra = 3490.
 
@@ -40,12 +40,6 @@ federal_taxable_income = 109996.
 
 federal_regular_tax = 20614.
 
-state_tax_after_credits = 8404.
-
-state_effective_rate_to_agi = 0.06
-
-fica = 14581.
-
 ss_fra_retirement = 7002.
 
 paid_days = 2
@@ -54,8 +48,6 @@ ira_rmd_factor = 26.5
 
 initial_401k_balance = 50000
 
-inflation_level = inflation.inflation_level
-
 risk_profile_over_cpi = 0.005
 
 projected_income_growth = 0.01
@@ -63,3 +55,9 @@ projected_income_growth = 0.01
 contrib_rate_employee_401k = 0.055
 
 contrib_rate_employer_401k = 0.02
+
+state = "CA"
+
+employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
+
+
