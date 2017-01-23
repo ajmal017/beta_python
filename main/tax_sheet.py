@@ -9,7 +9,7 @@ from main import abstract
 from main import constants
 from dateutil.relativedelta import relativedelta
 from main import inflation
-import pdb
+
 logger = logging.getLogger('taxsheet')
 inflation_level = inflation.inflation_level
 
@@ -258,6 +258,21 @@ class TaxUser(object):
 
 
     def get_capital_growth_and_balance_series(self, period, account_type, starting_balance):
+        '''
+        returns capital growth and balance series over period for account_type
+        '''
+        '''
+        for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
+        '''
+        balance = [starting_balance for i in range(period)]
+        capital_growth = [0. for i in range(period)]
+        for i in range(1, period):
+            capital_growth[i] = self.maindf['Portfolio_Return'][i] * balance[i - 1]
+            balance[i] = self.maindf[account_type + '_Employee'][i] + self.maindf[account_type + '_Employer'][i] + capital_growth[i] + balance[i - 1]
+        return capital_growth, balance
+
+
+    def get_capital_growth_and_balance_series_Roth_ira(self, period, account_type, starting_balance):
         '''
         returns capital growth and balance series over period for account_type
         '''
@@ -714,7 +729,7 @@ class TaxUser(object):
                                                                                                       np.where(self.maindf['Nontaxable_Accounts'] > 0
                                                                                                                , self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Reqd_Min_Dist'], 0)
                                                                                                       , 0))    
-        
+
         self.maindf['Tot_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Reqd_Min_Dist'] > 0,
                                                                                                    self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Tot_Non_Taxable_Dist'],
                                                                                                    np.where(self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'] > 0,
