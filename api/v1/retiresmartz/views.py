@@ -759,7 +759,7 @@ equired to generate the
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
     permission_classes = (IsAuthenticated,)
-    queryset = RetirementAdvice.objects.filter(read=None)  # unread advice
+    queryset = RetirementAdvice.objects.filter(read=None).order_by('-dt')  # unread advice
     serializer_class = serializers.RetirementAdviceReadSerializer
     serializer_response_class = serializers.RetirementAdviceReadSerializer
 
