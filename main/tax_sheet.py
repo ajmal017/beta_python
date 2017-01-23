@@ -273,21 +273,6 @@ class TaxUser(object):
         return capital_growth, balance
 
 
-    def get_capital_growth_and_balance_series_Roth_ira(self, period, account_type, starting_balance):
-        '''
-        returns capital growth and balance series over period for account_type
-        '''
-        '''
-        for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
-        '''
-        balance = [starting_balance for i in range(period)]
-        capital_growth = [0. for i in range(period)]
-        for i in range(1, period):
-            capital_growth[i] = self.maindf['Portfolio_Return'][i] * balance[i - 1]
-            balance[i] = self.maindf[account_type + '_Employee'][i] + self.maindf[account_type + '_Employer'][i] + capital_growth[i] + balance[i - 1]
-        return capital_growth, balance
-
-
     def get_projected_fed_tax(self):
         '''
         returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
@@ -654,27 +639,27 @@ class TaxUser(object):
 
         # TAXABLE ACCOUNTS
 
-        self.maindf['Taxable_Accounts'] = self.maindf['Pension_Balance'] \
-                                          + self.maindf['401k_Balance'] \
-                                          + self.maindf['Profit_Sharing_Balance'] \
-                                          + self.maindf['Money_Purchase_Balance'] \
-                                          + self.maindf['Esop_Balance'] \
-                                          + self.maindf['Roth_401k_Balance'] \
-                                          + self.maindf['Individual_401k_Balance'] \
-                                          + self.maindf['Ind_Roth_401k_Balance'] \
-                                          + self.maindf['401a_Keogh_Balance'] \
-                                          + self.maindf['Qual_Np_Balance'] \
-                                          + self.maindf['Qual_Priv_457_Balance'] \
-                                          + self.maindf['457_Balance'] \
-                                          + self.maindf['Qual_Np_Roth_Balance'] \
-                                          + self.maindf['Ira_Balance'] \
-                                          + self.maindf['Roth_Ira_Balance'] \
-                                          + self.maindf['Simple_Ira_Balance'] \
-                                          + self.maindf['Sar_Sep_Ira_Balance'] \
-                                          + self.maindf['Sep_Ira_Balance'] \
-                                          + self.maindf['Qual_Annuity_Balance'] \
-                                          + self.maindf['Tax_Def_Annuity_Balance'] \
-                                          - self.maindf['Nontaxable_Accounts']
+        self.maindf['Accumulated_Taxable_Accounts'] = self.maindf['Pension_Balance'] \
+                                                        + self.maindf['401k_Balance'] \
+                                                        + self.maindf['Profit_Sharing_Balance'] \
+                                                        + self.maindf['Money_Purchase_Balance'] \
+                                                        + self.maindf['Esop_Balance'] \
+                                                        + self.maindf['Roth_401k_Balance'] \
+                                                        + self.maindf['Individual_401k_Balance'] \
+                                                        + self.maindf['Ind_Roth_401k_Balance'] \
+                                                        + self.maindf['401a_Keogh_Balance'] \
+                                                        + self.maindf['Qual_Np_Balance'] \
+                                                        + self.maindf['Qual_Priv_457_Balance'] \
+                                                        + self.maindf['457_Balance'] \
+                                                        + self.maindf['Qual_Np_Roth_Balance'] \
+                                                        + self.maindf['Ira_Balance'] \
+                                                        + self.maindf['Roth_Ira_Balance'] \
+                                                        + self.maindf['Simple_Ira_Balance'] \
+                                                        + self.maindf['Sar_Sep_Ira_Balance'] \
+                                                        + self.maindf['Sep_Ira_Balance'] \
+                                                        + self.maindf['Qual_Annuity_Balance'] \
+                                                        + self.maindf['Tax_Def_Annuity_Balance'] \
+                                                        - self.maindf['Nontaxable_Accounts']
         
                                             
         # RETIREMENT PERIOD INCOME
@@ -724,6 +709,11 @@ class TaxUser(object):
         self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Des_Ret_Inc_Pre_Tax']
                                                                                             - self.maindf['Certain_Ret_Inc'])
 
+
+        self.maindf['Taxable_Accounts'] = self.maindf['Accumulated_Taxable_Accounts'] - self.maindf['Ret_Certain_Inc_Gap']
+
+
+        
         self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmd_factor * 12.), 0)
 
         self.maindf['Tot_Non_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Ret_Certain_Inc_Gap'] > self.maindf['Reqd_Min_Dist'],
