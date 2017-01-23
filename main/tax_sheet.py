@@ -712,7 +712,6 @@ class TaxUser(object):
 
         self.maindf['Taxable_Accounts'] = self.maindf['Accumulated_Taxable_Accounts'] - self.maindf['Ret_Certain_Inc_Gap']
 
-
         
         self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmd_factor * 12.), 0)
 
