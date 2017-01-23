@@ -11,7 +11,6 @@ from retiresmartz.models import RetirementAdvice
 from client.models import EmailInvite
 from main.models import InvestmentType
 from pinax.eventlog.models import Log as EventLog
-from django.db.models import Q
 
 
 class RetiresmartzAdviceTests(APITestCase):
@@ -388,10 +387,8 @@ class RetiresmartzAdviceTests(APITestCase):
         response = self.client.put(self.plan_url, data)
         response = self.client.get(self.advice_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        event = EventLog.objects.filter(
-            Q(pk=response.data['results'][0]['trigger'])|
-            Q(pk=response.data['results'][1]['trigger'])
-        ).filter(action='RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN')
+        event = EventLog.objects.filter(pk=response.data['results'][0]['trigger'],
+                                        action='RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN')
         self.assertEqual(event.count(), 1)
 
     def test_spending_decreased_contributions_increased(self):
