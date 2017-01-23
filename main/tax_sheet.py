@@ -217,8 +217,9 @@ class TaxUser(object):
         series (with index2) 
         '''       
         full_pre = pd.Series(series_pre, index_pre)
+        print(str(series_post))
+        print(str(index_post))
         full_post = pd.Series(series_post, index_post)
-        print(str(full_post))
         result = full_pre.append(full_post)
         return result
 
