@@ -20,6 +20,9 @@ class AreaQuotient(models.Model):
         validators=[MinValueValidator(0.0), MaxValueValidator(100.0)],
         help_text='Quotient for Rural area')
 
+    def __str__(self):
+        return '%s' % (self.id)
+
 
 class PeerGroupData(models.Model):
     AGE_GROUPS = (
@@ -40,27 +43,27 @@ class PeerGroupData(models.Model):
         help_text='Expense Category')
 
     pc_1 = models.FloatField(
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        validators=[MinValueValidator(-1.0), MaxValueValidator(1.0)],
         help_text='Rate value (0 - 1) for income $0 - $19,999')
 
     pc_2 = models.FloatField(
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        validators=[MinValueValidator(-1.0), MaxValueValidator(1.0)],
         help_text='Rate value (0 - 1) for income $20,000 - $29,999')
 
     pc_3 = models.FloatField(
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        validators=[MinValueValidator(-1.0), MaxValueValidator(1.0)],
         help_text='Rate value (0 - 1) for income $30,000 - $39,999')
 
     pc_4 = models.FloatField(
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        validators=[MinValueValidator(-1.0), MaxValueValidator(1.0)],
         help_text='Rate value (0 - 1) for income $40,000 - $49,999')
 
     pc_5 = models.FloatField(
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        validators=[MinValueValidator(-1.0), MaxValueValidator(1.0)],
         help_text='Rate value (0 - 1) for income $50,000 - $69,999')
 
     pc_7 = models.FloatField(
-        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        validators=[MinValueValidator(-1.0), MaxValueValidator(1.0)],
         help_text='Rate value (0 - 1) for income $70,000 +')
 
     northeast = models.FloatField(
