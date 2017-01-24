@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.utils.functional import cached_property
+from common.structures import ChoiceEnum
+
 """
 After looking through the addressing options available (django-postal, django-address) Neither worked well with
 addresses that have a apartment number, and chinese addresses, and had a DRF backend, so I had to roll my own :(
@@ -61,3 +63,52 @@ class Address(models.Model):
     class Meta:
         verbose_name = _('address')
         verbose_name_plural = _('addresses')
+
+
+class USState(models.Model):
+    class RegionEnum(ChoiceEnum):
+        NORTHEAST = 1, 'Northeast'
+        SOUTH = 2, 'South'
+        MIDWEST = 3, 'Midwest'
+        WEST = 4, 'West'
+
+    code = models.CharField(max_length=2, unique=True, help_text='State code')
+    name = models.CharField(max_length=32, help_text='State name')
+    region = models.IntegerField(choices=RegionEnum.choices())
+
+    def __str__(self):
+        return '{} ({})'.format(self.name, self.code)
+
+
+class USFips(models.Model):
+    class RUCC(ChoiceEnum):
+        METRO_1 = 1, 'Metro - Counties in metro areas of 1 million population or more'
+        METRO_2	= 2, 'Metro - Counties in metro areas of 250,000 to 1 million population'
+        METRO_3 = 3, 'Metro - Counties in metro areas of fewer than 250,000 population'
+        URBAN_4 = 4, 'Nonmetro - Urban population of 20,000 or more, adjacent to a metro area'
+        URBAN_5 = 5, 'Nonmetro - Urban population of 20,000 or more, not adjacent to a metro area'
+        URBAN_6 = 6, 'Nonmetro - Urban population of 2,500 to 19,999, adjacent to a metro area'
+        URBAN_7 = 7, 'Nonmetro - Urban population of 2,500 to 19,999, not adjacent to a metro area'
+        RURAL_8 = 8, 'Nonmetro - Completely rural or less than 2,500 urban population, adjacent to a metro area'
+        RURAL_9 = 9, 'Nonmetro - Completely rural or less than 2,500 urban population, not adjacent to a metro area'
+
+    fips = models.CharField(max_length=5, db_index=True, unique=True, help_text='FIPS (County Code)')
+    county_name = models.CharField(max_length=255, help_text='County Name')
+    rucc = models.IntegerField(choices=RUCC.choices())
+    state = models.ForeignKey('USState')
+
+    def __str__(self):
+        return self.fips
+
+
+class USZipcode(models.Model):
+    zip_code = models.CharField(max_length=10, db_index=True, help_text='Zip code')
+    zip_name = models.CharField(max_length=255, help_text='Zip name')
+    fips = models.ForeignKey('USFips')
+    phone_area_code = models.CharField(max_length=3, help_text='Phone area code')
+
+    class Meta:
+        unique_together = ('zip_code', 'zip_name')
+
+    def __str__(self):
+        return self.zip_code

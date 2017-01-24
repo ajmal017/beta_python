@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='AreaQuotient',
             fields=[
-                ('id', models.IntegerField(primary_key=True, help_text='Expense Category', choices=[(1, 'Alcoholic Beverage'), (2, 'Apparel & Services'), (3, 'Education & Reading'), (4, 'Entertainment'), (5, 'Food'), (6, 'Healthcare'), (7, 'Housing'), (8, 'Pensions & Social Security'), (9, 'Personal Care'), (10, 'Savings'), (11, 'Taxes'), (12, 'Tobacco'), (13, 'Transportation'), (14, 'Miscellaneous')], serialize=False)),
+                ('id', models.IntegerField(primary_key=True, help_text='Expense Category', choices=[(1, 'Alcoholic Beverage'), (2, 'Apparel & Services'), (3, 'Education'), (4, 'Entertainment'), (5, 'Food'), (6, 'Healthcare'), (7, 'Housing'), (8, 'Insuarance, Pensions & Social Security'), (9, 'Personal Care'), (10, 'READING'), (11, 'Savings'), (12, 'Taxes'), (13, 'Tobacco'), (14, 'Transportation'), (15, 'Miscellaneous')], serialize=False)),
                 ('quot_city', models.FloatField(validators=[django.core.validators.MinValueValidator(0.0), django.core.validators.MaxValueValidator(100.0)], help_text='Quotient for City')),
                 ('quot_suburb', models.FloatField(validators=[django.core.validators.MinValueValidator(0.0), django.core.validators.MaxValueValidator(100.0)], help_text='Quotient for Suburb')),
                 ('quot_rural', models.FloatField(validators=[django.core.validators.MinValueValidator(0.0), django.core.validators.MaxValueValidator(100.0)], help_text='Quotient for Rural area')),
