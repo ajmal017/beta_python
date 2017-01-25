@@ -91,7 +91,7 @@ class TaxUser(object):
         self.risk_profile_group = risk_profile_group
         self.filing_status = abstract.PersonalData.CivilStatus(filing_status)
         self.total_income = total_income
-        self.adj_gross_income = adj_gross_income
+        self.adj_gross_income = max(adj_gross_income, total_income)
         self.taxable_income = taxable_income
         self.total_payments = total_payments
         self.after_tax_income = after_tax_income
@@ -946,12 +946,6 @@ class TaxUser(object):
 
         if adj_gross_income < 0:
             raise Exception('adjusted_gross_income less than 0')
-
-        if adj_gross_income < total_income:
-            raise Exception('adjusted_gross_income < total_income')
-
-        if taxable_income < 0:
-            raise Exception('taxable_income less then 0')
 
         if federal_regular_tax < 0:
             raise Exception('federal_regular_tax less than 0')
