@@ -4,10 +4,10 @@
 <table cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0;border-collapse: collapse;vertical-align: top">
   <tbody><tr style="vertical-align: top">
     <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 25px;padding-right: 10px;padding-bottom: 10px;padding-left: 10px">
-      <div style="color:#ffffff;line-height:120%;font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif;">
-       <div style="font-size:12px;line-height:14px;color:#ffffff;font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;">Follow this link</span></strong></p><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;"><b><a href="{{ invite_url }}">{{ invite_url }}</a></b></span></strong></p><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;">to register your {{ advisor.firm.name }}&nbsp;online account.</span></strong></p></div>
+      <div style="color:{{text_color}};line-height:120%;font-family:{{font_family}};">
+       <div style="font-size:12px;line-height:14px;color:{{text_color}};font-family:{{font_family}};text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;">Follow this link</span></strong></p><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;"><b><a href="{{ invite_url }}">{{ invite_url }}</a></b></span></strong></p><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;">to register your {{ advisor.firm.name }}&nbsp;online account.</span></strong></p></div>
        <br>
-       <div style="font-size:12px;line-height:14px;color:#ffffff;font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif;text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;">To complete onboarding, you will need a recent tax transcript which you can download from <a href="https://www.irs.gov/individuals/get-transcript">www.irs.gov/indviduals/get-transcript</a> and a recent social security statement which you can download from <a href="https://www.ssa.gov/myaccount/statement.html">www.ssa.gov/myaccount/statement.html</a>.</span></strong></p></div>
+       <div style="font-size:12px;line-height:14px;color:{{text_color}};font-family:{{font_family}};text-align:left;"><p style="margin: 0;font-size: 12px;line-height: 14px;text-align: center"><strong><span style="font-size: 20px; line-height: 24px;">To complete onboarding, you will need a recent tax transcript which you can download from <a href="https://www.irs.gov/individuals/get-transcript">www.irs.gov/indviduals/get-transcript</a> and a recent social security statement which you can download from <a href="https://www.ssa.gov/myaccount/statement.html">www.ssa.gov/myaccount/statement.html</a>.</span></strong></p></div>
 
       </div>
     </td>
@@ -20,16 +20,16 @@
         <tbody><tr style="vertical-align: top">
           <td width="100%" class="button" align="center" valign="middle" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top">
             <!--[if mso]>
-              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="" style="height:42px;   v-text-anchor:middle; width:146px;" arcsize="60%"   strokecolor="#4caf50"   fillcolor="#4caf50" >
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="" style="height:42px;   v-text-anchor:middle; width:146px;" arcsize="60%"   strokecolor="{{primary_color}}"   fillcolor="{{primary_color}}" >
               <w:anchorlock/>
-                <center style="color:#ffffff; font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif; font-size:16px;">
+                <center style="color:#ffffff; font-family:{{font_family}}; font-size:16px;">
             <![endif]-->
             <!--[if !mso]><!-- -->
             <div align="center" style="display: inline-block; border-radius: 25px; -webkit-border-radius: 25px; -moz-border-radius: 25px; max-width: 25%; width: 100%; border-top: 0px solid transparent; border-right: 0px solid transparent; border-bottom: 0px solid transparent; border-left: 0px solid transparent;">
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-spacing: 0;border-collapse: collapse;vertical-align: top;height: 42">
-                <tbody><tr style="vertical-align: top"><td valign="middle" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;border-radius: 25px; -webkit-border-radius: 25px; -moz-border-radius: 25px; color: #ffffff; background-color: #4caf50; padding-top: 5px; padding-right: 20px; padding-bottom: 5px; padding-left: 20px; font-family: 'Source Sans Pro', Tahoma, Verdana, Segoe, sans-serif;text-align: center">
+                <tbody><tr style="vertical-align: top"><td valign="middle" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;border-radius: 25px; -webkit-border-radius: 25px; -moz-border-radius: 25px; color: #ffffff; background-color: {{primary_color}}; padding-top: 5px; padding-right: 20px; padding-bottom: 5px; padding-left: 20px; font-family: {{font_family}};text-align: center">
             <!--<![endif]-->
-                  <a href="{{ invite_url }}" target="_blank" style="display: inline-block;text-decoration: none;-webkit-text-size-adjust: none;text-align: center;background-color: #4caf50;color: #ffffff"> <span style="font-size:16px;line-height:32px;"><span style="font-size: 14px; line-height: 28px;" data-mce-style="font-size: 14px;">Click here</span></span>
+                  <a href="{{ invite_url }}" target="_blank" style="display: inline-block;text-decoration: none;-webkit-text-size-adjust: none;text-align: center;background-color: {{primary_color}};color: #ffffff"> <span style="font-size:16px;line-height:32px;"><span style="font-size: 14px; line-height: 28px;" data-mce-style="font-size: 14px;">Click here</span></span>
                   </a>
               <!--[if !mso]><!-- -->
                 </td></tr></tbody></table>
