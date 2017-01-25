@@ -2,7 +2,7 @@ import os
 from main.settings import *
 
 
-IB_TESTING = True
+IB_TESTING = False
 
 INSTALLED_APPS += ('django_jenkins', )
 
