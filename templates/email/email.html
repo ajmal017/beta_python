@@ -1,4 +1,5 @@
 {% load static from staticfiles %}
+{% with font_family="Open Sans, Arial, 'Helvetica Neue', Helvetica, sans-serif" slogan_color='#45a018' primary_color='#45a018' anchor_color='#ffffff' bg_color='#eee9df' header_bg_color='#eee9df' text_color='#ffffff' %}
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><head>
   <!--[if gte mso 9]><xml>
    <o:OfficeDocumentSettings>
@@ -16,6 +17,10 @@
 
   <style id="media-query">
     /* Client-specific Styles & Reset */
+    a {
+      font-weight: 400;
+      color: {{anchor_color}};
+    }
     #outlook a {
         padding: 0;
     }
@@ -120,13 +125,15 @@
   </style>
 </head>
 <body style="width: 100% !important;min-width: 100%;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100% !important;margin: 0;padding: 0;background-color: #FFFFFF">
-  <table cellpadding="0" cellspacing="0" width="100%" class="body" border="0" style="border-spacing: 0;border-collapse: collapse;vertical-align: top;height: 100%;width: 100%;table-layout: fixed">
+  <table cellpadding="0" cellspacing="0" width="100%" class="body" border="0" style="border-spacing: 0;border-collapse: collapse;vertical-align: top;width: 100%;table-layout: fixed;background-color: {{bg_color}}; text-align: center;">
+  <tr><td>
+    <table cellpadding="0" align="center" cellspacing="0" width="600" class="body" border="0" style="border-spacing: 0;border-collapse: collapse;vertical-align: top;width: 600px;table-layout: fixed">
       <tbody><tr style="vertical-align: top">
           <td class="center" align="center" valign="top" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;text-align: center;background-color: #FFFFFF">
 
               <table cellpadding="0" cellspacing="0" align="center" width="100%" border="0" style="border-spacing: 0;border-collapse: collapse;vertical-align: top">
                 <tbody><tr style="vertical-align: top">
-                  <td width="100%" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;background-color: #eee9df">
+                  <td width="100%" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;background-color: {{header_bg_color}}">
                     <!--[if gte mso 9]>
                     <table id="outlookholder" border="0" cellspacing="0" cellpadding="0" align="center"><tr><td>
                     <![endif]-->
@@ -150,8 +157,8 @@
 </td></tr></tbody></table></div><!--[if (gte mso 9)|(IE)]></td><![endif]--><!--[if (gte mso 9)|(IE)]><td valign="top" width="250" style="width:250px;"><![endif]--><div class="col num6" style="display: inline-block;vertical-align: top;text-align: center;width: 250px"><table cellpadding="0" cellspacing="0" align="center" width="100%" border="0" style="border-spacing: 0;border-collapse: collapse;vertical-align: top"><tbody><tr style="vertical-align: top"><td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;background-color: transparent;padding-top: 20px;padding-right: 0px;padding-bottom: 20px;padding-left: 0px;border-top: 0px solid transparent;border-right: 0px solid transparent;border-bottom: 0px solid transparent;border-left: 0px solid transparent"><table cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0;border-collapse: collapse;vertical-align: top">
   <tbody><tr style="vertical-align: top">
     <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 20px;padding-right: 10px;padding-bottom: 20px;padding-left: 10px">
-      <div style="color:#6E6F7A;line-height:150%;font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif;">
-       <div style="font-size:12px;line-height:18px;color:#6E6F7A;font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif;text-align:left;"><div style="text-align: right; line-height:18px; font-size:12px;"><strong><span style="font-size: 16px; line-height: 24px;">{{category}}</span></strong></div></div>
+      <div style="color:#6E6F7A;line-height:150%;font-family:{{font_family}};;">
+       <div style="font-size:12px;line-height:18px;color:#6E6F7A;font-family:{{font_family}};text-align:left;"><div style="text-align: right; line-height:18px; font-size:12px;"><strong><span style="font-size: 16px; line-height: 24px;">{{category}}</span></strong></div></div>
       </div>
     </td>
   </tr>
@@ -186,15 +193,27 @@
     </td>
   </tr>
 </tbody></table>
+
 <table cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0;border-collapse: collapse;vertical-align: top">
   <tbody><tr style="vertical-align: top">
-    <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 30px;padding-right: 0px;padding-bottom: 30px;padding-left: 0px">
-      <div style="color:#ffffff;line-height:120%;font-family:'Source Sans Pro', Tahoma, Verdana, Segoe, sans-serif;">
-      	<div style="font-size:12px;line-height:14px;color:#ffffff;font-family:'Source Sans Pro', Tahoma, Verdana, Segoe, sans-serif;text-align:left;"><p style="margin: 0;font-size: 14px;line-height: 17px;text-align: center"><strong><span style="font-size: 28px; line-height: 33px;">Dream, Plan, Achieve</span></strong></p></div>
+    <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 40px;padding-right: 0px;padding-bottom: 40px;padding-left: 0px;background-image: url({% static 'images/email_template/header-bg1.jpg' %});background-repeat: no-repeat;">
+      <div style="line-height:14px;color:{{slogan_color}};font-family:{{font_family}};font-size: 40px; line-height: 1;text-transform: uppercase;width: 200px;text-align: center;">
+        DREAM
+      </div>
+    </td>
+    <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 40px;padding-right: 0px;padding-bottom: 40px;padding-left: 0px;background-image: url({% static 'images/email_template/header-bg2.jpg' %});background-repeat: no-repeat;">
+      <div style="line-height:14px;color:{{slogan_color}};font-family:{{font_family}};font-size: 40px; line-height: 1;text-transform: uppercase;width: 200px;text-align: center;">
+        PLAN
+      </div>
+    </td>
+    <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 40px;padding-right: 0px;padding-bottom: 40px;padding-left: 0px;background-image: url({% static 'images/email_template/header-bg3.jpg' %});background-repeat: no-repeat;">
+      <div style="line-height:14px;color:{{slogan_color}};font-family:{{font_family}};font-size: 40px; line-height: 1;text-transform: uppercase;width: 200px;text-align: center;">
+        ACHIEVE
       </div>
     </td>
   </tr>
 </tbody></table>
+
 <table align="center" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-spacing: 0;border-collapse: collapse;vertical-align: top">
   <tbody><tr style="vertical-align: top">
     <td align="center" style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 10px;padding-right: 10px;padding-bottom: 10px;padding-left: 10px">
@@ -312,8 +331,8 @@
 <table cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0;border-collapse: collapse;vertical-align: top">
   <tbody><tr style="vertical-align: top">
     <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 15px;padding-right: 10px;padding-bottom: 10px;padding-left: 10px">
-      <div style="color:#ffffff;line-height:150%;font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif;">
-      	<div style="font-size:12px;line-height:18px;color:#ffffff;font-family:Open Sans, 'Helvetica Neue', Helvetica, sans-serif;text-align:left;"><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">This email is issued&nbsp;by <a style="color:#aaaaaa;text-decoration: underline;" href="http://www.betasmartz.com" target="_blank" rel="noopener noreferrer">BetaSmartz Advisory LLC</a></p><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">on behalf of <a style="color:#aaaaaa;text-decoration: underline;" href="{% if advisor.firm.firm_details %}{{ advisor.firm.firm_details.site_url }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ advisor.firm.name }}</a></p><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">{% if advisor.firm.firm_details %}{{ advisor.firm.firm_details.full_address }}{% endif %}</p><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">{% if advisor.firm.firm_details %}{{ advisor.firm.firm_details.daytime_phone_num }}{% endif %}</p></div>
+      <div style="color:#ffffff;line-height:150%;font-family:{{font_family}};">
+      	<div style="font-size:12px;line-height:18px;color:#ffffff;font-family:{{font_family}};text-align:left;"><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">This email is issued&nbsp;by <a style="color:#aaaaaa;text-decoration: underline;" href="http://www.betasmartz.com" target="_blank" rel="noopener noreferrer">BetaSmartz Advisory LLC</a></p><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">on behalf of <a style="color:#aaaaaa;text-decoration: underline;" href="{% if advisor.firm.firm_details %}{{ advisor.firm.firm_details.site_url }}{% endif %}" target="_blank" rel="noopener noreferrer">{{ advisor.firm.name }}</a></p><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">{% if advisor.firm.firm_details %}{{ advisor.firm.firm_details.full_address }}{% endif %}</p><p style="margin: 0;font-size: 14px;line-height: 21px;text-align: center">{% if advisor.firm.firm_details %}{{ advisor.firm.firm_details.daytime_phone_num }}{% endif %}</p></div>
       </div>
     </td>
   </tr>
@@ -332,5 +351,8 @@
       </tr>
   </tbody></table>
 
+</td></tr></table>
 
 </body></html>
+
+{% endwith %}
