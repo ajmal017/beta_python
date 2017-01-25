@@ -670,8 +670,20 @@ class TaxUser(object):
         '''
 
         # CERTAIN INCOME
+        if self.retirement_lifestyle == 1:
+            self.lifestyle_factor = 0.66
+
+        elif self.retirement_lifestyle == 2:
+            self.lifestyle_factor = 0.81
+
+        elif self.retirement_lifestyle == 3:
+            self.lifestyle_factor = 1
+
+        elif self.retirement_lifestyle == 4:
+            self.lifestyle_factor = 1.5
+
         
-        self.pre_des_ret_inc_pre_tax = self.retirement_lifestyle * self.maindf['Adj_Gross_Income'][0:self.pre_retirement_end]
+        self.pre_des_ret_inc_pre_tax = self.lifestyle_factor * self.maindf['Adj_Gross_Income'][0:self.pre_retirement_end]
         self.post_des_ret_inc_pre_tax = [self.pre_des_ret_inc_pre_tax[len(self.pre_des_ret_inc_pre_tax) - 1] for i in range(self.total_rows - self.pre_retirement_end)] 
         self.maindf['Des_Ret_Inc_Pre_Tax_Post_Nominal'] = self.set_full_series(self.pre_des_ret_inc_pre_tax, self.post_des_ret_inc_pre_tax)
         self.maindf['Des_Ret_Inc_Pre_Tax'] = self.maindf['Des_Ret_Inc_Pre_Tax_Post_Nominal'] * self.maindf['Inflator']
@@ -902,6 +914,7 @@ class TaxUser(object):
         print("accounts")
         print(self.maindf['Taxable_Accounts'])
 
+
     def validate_inputs(self,
                          name,
                          ssn,
@@ -961,6 +974,9 @@ class TaxUser(object):
 
         if life_exp < 0:
             raise Exception('life_exp less than 0')
+
+        if retirement_lifestyle != 1 and retirement_lifestyle != 2 and retirement_lifestyle != 3 and retirement_lifestyle != 4:
+            raise Exception('unhandled value of retirement_lifestyle')
 
         if house_value < 0:
             raise Exception('house_value less than 0')

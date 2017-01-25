@@ -12,11 +12,11 @@ ssn  = "234-45-6654"
 
 dob = pd.Timestamp('1986-01-01')
 
-desired_retirement_age = 70.
+desired_retirement_age = 66.
 
-life_exp = 79.
+life_exp = 79.3
 
-retirement_lifestyle = 0.81
+retirement_lifestyle = 2
 
 reverse_mort = True
 
