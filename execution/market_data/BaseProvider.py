@@ -9,6 +9,6 @@ class BaseProvider(object):
     def disconnect(self):
         pass
     @abstractmethod
-    def getBestBidAsk(self, symbol):
+    def get_market_depth_L1(self, symbol):
         pass
 

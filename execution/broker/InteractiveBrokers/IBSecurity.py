@@ -1,7 +1,7 @@
 from execution.models import Security
 from ib.ext.Contract import Contract
 
-class IBContract(Contract,Security):
+class IBSecurity(Contract, Security):
     def __init__(self):
         self.m_secType = 'STK'
         self.m_exchange = 'SMART'

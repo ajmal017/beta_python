@@ -15,15 +15,14 @@ from main.management.commands.rebalance import TAX_BRACKET_LESS1Y, TAX_BRACKET_M
 
 
 from client.models import ClientAccount
-from execution.broker.BaseBroker import BaseBroker
+from execution.market_data.InteractiveBrokers.IBProvider import IBProvider
 from execution.broker.ETNA.ETNABroker import ETNABroker
 from execution.broker.InteractiveBrokers.IBBroker import IBBroker
 from execution.account_groups.create_account_groups import FAAccountProfile
-from main.management.commands.rebalance import TAX_BRACKET_LESS1Y, TAX_BRACKET_MORE1Y
 from main.models import MarketOrderRequest, ExecutionRequest, Execution, Ticker, MarketOrderRequestAPEX, \
     Fill, ExecutionFill, ExecutionDistribution, Transaction, PositionLot, Sale, Order
 # TODO remove obsolete functionality
-#from execution.Obsolete.ETNA_api.send_orders import insert_order_ETNA
+
 
 short_sleep = partial(sleep, 1)
 long_sleep = partial(sleep, 10)
@@ -63,11 +62,11 @@ broker_manager =  BrokerManager()
 class ProviderManager(object):
     _providers = dict()
     def get(self, provider_name):
-        if self._providers[provider_name] is None:
+        if provider_name not in self._providers:
             if provider_name == "IB":
-                provider = IBBroker()
+                provider = IBProvider()
                 provider.connect()
-            self._providers[provider_name] = broker
+            self._providers[provider_name] = provider
         return self._providers[provider_name]
 
 
@@ -145,24 +144,46 @@ def create_orders():
     from outstanding MOR and ER create MorApex and ApexOrder
     '''
     x=1
-    ers = ExecutionRequest.objects.all().filter(order__state=MarketOrderRequest.State.APPROVED.value)\
+    ers_temp = ExecutionRequest.objects.all().filter(order__state=MarketOrderRequest.State.APPROVED.value)\
         .annotate(ticker_id=F('asset__id'))\
-        .values('ticker_id', 'order__account__broker_account')\
+        .values('ticker_id', 'order__account')\
         .annotate(volume=Sum('volume'))
+    ers = list()
 
-    """
-    for e in ers:
-        ers_for_given_volume = ExecutionRequest.objects.all().filter(asset__id=e.ticker_id)
+    class ERSkey:
+        def __init__(self):
+            self.broker = ""
+            self.broker_acc_id = ""
+            self.ticker_id = ""
+            self.volume = 0
 
-        for kokot in ers_for_given_volume:
-            kokot.market_order_request.client_account.broker
-    """
+        def __eq__(self, other):
+            if self.broker == other.broker and self.ticker_id == other.ticker_id and self.broker_acc_id == other.broker_acc_id:
+                return True
+            return False
+        def increment_volume(self, vol):
+            self.volume += vol
+
+
+    for er in ers_temp:
+        er_obj = ERSkey()
+        acc = ClientAccount.objects.get(pk=er['order__account'])
+        er_obj.broker = acc.broker
+        er_obj.broker_acc_id = acc.broker_acc_id
+        er_obj.ticker_id = er['ticker_id']
+        er_obj.volume = er['volume']
+
+        if er_obj in ers:
+            ers[ers.index(er_obj)].increment_volume(er['volume'])
+        else:
+            ers.append(er_obj)
     for grouped_volume_per_share in ers:
-        ticker = Ticker.objects.get(id=grouped_volume_per_share['ticker_id'])
+        ticker = Ticker.objects.get(id=grouped_volume_per_share.ticker_id)
 
         # TODO get actual price
-        provider_manager.get("IB")
-        order = broker_manager.get(ers.broker).create_order(price=0, quantity=grouped_volume_per_share['volume'], ticker=ticker)
+        provider = provider_manager.get("IB")
+        md = provider.get_market_depth_L1(ticker.symbol)
+        order = broker_manager.get(grouped_volume_per_share.broker).create_order(price=md.get_mid(), quantity=grouped_volume_per_share.volume, ticker=ticker)
         order.save()
         mor_ids = MarketOrderRequest.objects.all().filter(state=MarketOrderRequest.State.APPROVED.value,
                                                           execution_requests__asset_id=ticker.id).\
@@ -173,18 +194,18 @@ def create_orders():
             MarketOrderRequestAPEX.objects.create(market_order_request=mor, ticker=ticker, order=order)
 
 
-def send_order(etna_order):
-    etna_order.Status = Order.StatusChoice.Sent.value
-    etna_order.save()
-    mors = MarketOrderRequest.objects.filter(morsAPEX__order=etna_order).distinct()
+def send_order(order):
+    order.Status = Order.StatusChoice.Sent.value
+    order.save()
+    mors = MarketOrderRequest.objects.filter(morsAPEX__order=order).distinct()
     for m in mors:
         m.state = MarketOrderRequest.State.SENT.value
         m.save()
 
 
-def mark_order_as_complete(etna_order):
-    etna_order.Status = Order.StatusChoice.Filled.value
-    etna_order.save()
+def mark_order_as_complete(order):
+    order.Status = Order.StatusChoice.Filled.value
+    order.save()
 
 
 @transaction.atomic
@@ -199,7 +220,7 @@ def process_fills():
         .values('id', 'ticker_id', 'price', 'volume','executed')
 
     complete_mor_ids = set()
-    complete_etna_order_ids = set()
+    complete_order_ids = set()
     for fill in fills:
         ers = ExecutionRequest.objects\
             .filter(asset_id=fill['ticker_id'], order__morsAPEX__order__Status__in=Order.StatusChoice.complete_statuses())
@@ -214,8 +235,8 @@ def process_fills():
             mor = MarketOrderRequest.objects.get(execution_requests__id=er.id)
             complete_mor_ids.add(mor.id)
 
-            etna_order = Order.objects.get(morsAPEX__market_order_request__execution_requests__id=er.id)
-            complete_etna_order_ids.add(etna_order.id)
+            order = Order.objects.get(morsAPEX__market_order_request__execution_requests__id=er.id)
+            complete_order_ids.add(order.id)
 
             execution = Execution.objects.create(asset=ticker, volume=volume, price=fill['price'],
                                                  amount=volume*fill['price'], order=mor, executed=fill['executed'])
@@ -236,18 +257,18 @@ def process_fills():
         mor.state = MarketOrderRequest.State.COMPLETE.value
         mor.save()
 
-    for etna_order_id in complete_etna_order_ids:
-        etna_order = Order.objects.get(id=etna_order_id)
-        etna_order.Status = Order.StatusChoice.Archived.value
+    for order_id in complete_order_ids:
+        order = Order.objects.get(id=order_id)
+        order.Status = Order.StatusChoice.Archived.value
 
-        sum_fills = Fill.objects.filter(order_id=etna_order_id).aggregate(sum=Sum('volume'))
-        if sum_fills['sum'] == etna_order.Quantity:
-            etna_order.fill_info = Order.FillInfo.FILLED.value
+        sum_fills = Fill.objects.filter(order_id=order_id).aggregate(sum=Sum('volume'))
+        if sum_fills['sum'] == order.Quantity:
+            order.fill_info = Order.FillInfo.FILLED.value
         elif sum_fills['sum'] == 0:
-            etna_order.fill_info = Order.FillInfo.UNFILLED.value
+            order.fill_info = Order.FillInfo.UNFILLED.value
         else:
-            etna_order.fill_info = Order.FillInfo.PARTIALY_FILLED.value
-        etna_order.save()
+            order.fill_info = Order.FillInfo.PARTIALY_FILLED.value
+        order.save()
 
 def create_sale(ticker_id, volume, current_price, execution_distribution):
     # start selling PositionLots from 1st until quantity sold == volume

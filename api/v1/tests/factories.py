@@ -281,6 +281,19 @@ class ClientAccountFactory(factory.django.DjangoModelFactory):
     confirmed = True
     cash_balance = factory.LazyAttribute(lambda n: float(random.randrange(10000000)) / 100)
 
+class APEXAccountFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = APEXAccount
+
+    apex_account = "23_332"
+    bs_account = factory.SubFactory(ClientAccountFactory)
+
+class IBAccountFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = IBAccount
+
+    ib_account = "23_332"
+    bs_account = factory.SubFactory(ClientAccountFactory)
 
 class StatementOfAdviceFactory(factory.django.DjangoModelFactory):
     class Meta:

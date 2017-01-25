@@ -336,7 +336,7 @@ class IBAccount(models.Model):
     Specification of Interactive Brokers Account
     '''
     ib_account = models.CharField(max_length=32)
-    bs_account = models.OneToOneField('ClientAccount', related_name='ib_account')
+    bs_account = models.OneToOneField('ClientAccount', related_name='ib_account', null=True)
     broker = "IB"
 
     def __str__(self):
@@ -344,7 +344,7 @@ class IBAccount(models.Model):
 
 class APEXAccount(models.Model):
     apex_account = models.CharField(max_length=32)
-    bs_account = models.OneToOneField('ClientAccount', related_name='apex_account')
+    bs_account = models.OneToOneField('ClientAccount', related_name='apex_account', null=True)
     broker = "ETNA"
     def __str__(self):
         return self.apex_account
@@ -671,17 +671,32 @@ class ClientAccount(models.Model):
 
     @property
     def broker(self):
-        if self.ib_account is not None:
+        #account = ClientAccount.objects.filter(id=self.id)
+        #account.filter(ib_account__isnull=False)
+        if hasattr(self, 'ib_account'):
             return "IB"
-        elif self.apex_account is not None:
+        elif hasattr(self, 'apex_account'):
             return "ETNA"
+        else:
+            return None
 
     @property
     def broker_account(self):
-        if self.ib_account is not None:
+        if hasattr(self, 'ib_account'):
             return self.ib_account
-        elif self.apex_account is not None:
+        elif hasattr(self, 'apex_account'):
             return self.apex_account
+        else:
+            return None
+
+    @property
+    def broker_acc_id(self):
+        if hasattr(self, 'ib_account'):
+            return self.ib_account.ib_account
+        elif hasattr(self, 'apex_account'):
+            return self.apex_account.apex_account
+        else:
+            return None
 
 class RiskProfileGroup(models.Model):
     """
