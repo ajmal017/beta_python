@@ -258,7 +258,7 @@ class TaxUser(object):
         returns factor by which to multiply ss_fra_retirement based on desired retirement age
         '''
 
-        if self.desired_retirement_age > 61 and self.desired_retirement_age <= 62:
+        if self.desired_retirement_age <= 62:
             factor = 0.75
 
         elif self.desired_retirement_age > 62 and self.desired_retirement_age <= 63:
