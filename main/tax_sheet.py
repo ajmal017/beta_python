@@ -76,6 +76,32 @@ class TaxUser(object):
                              ira_rmd_factor,
                              inflation_level,
                              state)
+
+        print('*1 ' + str(name))
+        print('*2 ' + str(ssn))
+        print('*3 ' + str(dob))
+        print('*4 ' + str(desired_retirement_age))
+        print('*5 ' + str(life_exp))
+        print('*6 ' + str(retirement_lifestyle))
+        print('*7 ' + str(reverse_mort))
+        print('*8 ' + str(house_value))
+        print('*9 ' + str(risk_profile_group))
+        print('*10 ' + str(filing_status))
+        print('*11 ' + str(total_income))
+        print('*12 ' + str(adj_gross_income))
+        print('*13 ' + str(taxable_income))
+        print('*14 ' + str(total_payments))
+        print('*15 ' + str(after_tax_income))
+        print('*16 ' + str(income_growth))
+        print('*17 ' + str(employment_status))
+        print('*18 ' + str(ss_fra_todays))
+        print('*19 ' + str(ss_fra_retirement))
+        print('*20 ' + str(paid_days))
+        print('*21 ' + str(contrib_rate_employer_401k))
+        print('*22 ' + str(contrib_rate_employee_401k))
+        print('*23 ' + str(initial_401k_balance))
+        print('*24 ' + str(ira_rmd_factor))
+        print('*25 ' + str(state))
         
         '''
         set variables
@@ -870,7 +896,11 @@ class TaxUser(object):
         self.maindf['State_Tax_After_Credits'] = self.maindf['Adj_Gross_Inc'] * self.state_effective_rate_to_agi
 
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
+        print("income")
+        print(self.maindf['After_Tax_Income'])
 
+        print("accounts")
+        print(self.maindf['Taxable_Accounts'])
 
     def validate_inputs(self,
                          name,
