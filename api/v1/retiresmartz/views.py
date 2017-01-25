@@ -38,7 +38,7 @@ from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
 logger = logging.getLogger('api.v1.retiresmartz.views')
-
+import pdb
 
 class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
@@ -551,7 +551,6 @@ equired to generate the
           ]
         }
         """
-
         plan = self.get_object()
 
         # We need a date of birth for the client
@@ -574,31 +573,27 @@ equired to generate the
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
         
-        # Get US tax projection
+        # Get projection of future income and assets for US tax payer
         ira_rmd_factor = 26.5
-        # These ones are fudged ...
-        # dob = date(2016, 9, 28)
-        house_value = 250000.
-        retire_earn_at_fra = 3490.
-        retire_earn_under_fra = 1310.
-        other_income=40000.
-        after_tax_income = 50082.
-        federal_taxable_income = 90096.
-        federal_regular_tax = 20614.
-        ss_fra_retirement = 7002.
-        paid_days = 2
-        initial_401k_balance = 50000
-        risk_profile_over_cpi = 0.005
-        projected_income_growth = 0.01
-        federal_regular_tax = 20614
-        employee_contributions_last_year = 0.055
-        employer_contributions_last_year = 0.02
-        # # #
+        house_value = 0.
+        risk_profile_group = 0.005
+        adj_gross_income = 100000.
+        taxable_income = 0.
+        total_payments = 18219.
+        after_tax_income = 110982.
+        income_growth = 0.02
+        ss_fra_todays = 3311.
+        ss_fra_retirement = 9773.
+        paid_days = 1
+        ira_rmd_factor = 26.5
+        contrib_rate_employer_401k = 0.02
+        contrib_rate_employee_401k = 0.0
+        initial_401k_balance = 0.
+
         if plan.client.residential_address.post_code is None:
             raise Exception("plan.client.residential_address.post_code is None")
             
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
-
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(plan.client.date_of_birth),
@@ -607,34 +602,31 @@ equired to generate the
                         plan.lifestyle,
                         plan.reverse_mortgage,
                         house_value,
+                        risk_profile_group,
                         plan.client.civil_status,
-                        retire_earn_at_fra,
-                        retire_earn_under_fra,
                         plan.client.income,
-                        plan.client.net_worth,
-                        federal_taxable_income,
-                        federal_regular_tax,
+                        adj_gross_income,
+                        taxable_income,
+                        total_payments,
                         after_tax_income,
-                        other_income,
+                        income_growth,
+                        plan.client.employment_status,
+                        ss_fra_todays,
                         ss_fra_retirement,
                         paid_days,
-                        ira_rmd_factor,
+                        contrib_rate_employer_401k,
+                        contrib_rate_employee_401k,
                         initial_401k_balance,
-                        risk_profile_over_cpi,
-                        projected_income_growth,
-                        employee_contributions_last_year,
-                        employer_contributions_last_year,
-                        state,
-                        plan.client.employment_status)
+                        ira_rmd_factor,
+                        state)
 
         tx.create_maindf()
 
         # Convert these returned values to a format for the API
-        catd = pd.concat([tx.maindf['Taxable_Accounts'][:-12], tx.maindf['After_Tax_Income'][:-12], tx.maindf['After_Tax_Income'][:-12]], axis=1)
+        catd = pd.concat([tx.maindf['Taxable_Accounts'], tx.maindf['After_Tax_Income'], tx.maindf['After_Tax_Income']], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
         pser = PortfolioSerializer(instance=settings.portfolio)
-
         return Response({'portfolio': pser.data, 'projection': proj_data})
 
 

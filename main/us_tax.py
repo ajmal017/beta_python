@@ -160,22 +160,32 @@ class StateTax(object):
         '''
         return state tax for given state, income and filing_status
         '''
-        self.set_tax_engine()
-        idx = self.get_index()
+        tax_engine = self.get_tax_engine()
+        idx = self.get_index(tax_engine)
         df = pd.DataFrame(index=idx)
-        df['Rate'] = self.get_rates()
-        df['Bracket'] = self.get_brackets()
+        df['Rate'] = self.get_rates(tax_engine)
+        df['Bracket'] = self.get_brackets(tax_engine)  
+        df['Excess'] = [0. for i in range(len(idx))]
+        try:
+            if len(tax_engine) != 2 or tax_engine[0] != 'rate':
+                for i in range(1, len(idx)):
+                    if self.income > df['Bracket'].iloc[i]:
+                        df['Excess'].iloc[i-1] = df['Bracket'].iloc[i] - df['Bracket'].iloc[i - 1]
+                    else:
+                        df['Excess'].iloc[i-1] = max(self.income - df['Bracket'].iloc[i-1], 0)
+                        
+        except KeyError as e:
+            df['Excess'].iloc[0] = max(self.income, 0)
 
         # Names could be improved ... am not familiar with the correct tax terminology
         # also, deductions are not included in calculation ...
         df['Is_Greater_Than'] = np.where(float(self.income) > df['Bracket'], 1, 0)
-        df['Excess'] = self.income - df['Bracket']
         df['Bracket_Component'] = df['Rate'] * df['Excess'] * df['Is_Greater_Than']
         result = df['Bracket_Component'].sum()
         return result
 
 
-    def set_tax_engine(self):
+    def get_tax_engine(self):
         '''
         sets json with tax_engine for state and filing status
         '''
@@ -187,38 +197,52 @@ class StateTax(object):
                 found = True
 
         if found:
-            tax_engine = json_state_tax[self.get_state_tax_filing_status()]
+            return json_state_tax[self.get_state_tax_filing_status()]
 
         else:
             raise Exception('state not handled')
 
 
-    def get_index(self):
+    def get_index(self, tx_eng):
         '''
         returns index for rates and brackets for state and filing status
         '''
-        return [i for i in range(len(tax_engine))]
+        try:
+            if len(tx_eng) != 2 or tx_eng[0] != 'rate':
+                result = [i for i in range(len(tx_eng))]
+        except KeyError as e:
+                result = [0,]
+        return result
     
-
-    def get_rates(self):
+    
+    def get_rates(self, tx_eng):
         '''
         returns list with rates for state and filing status
         '''
-        return [tax_engine[i]["rate"] for i in range(len(tax_engine))]
+        try:
+            if len(tx_eng) != 2 or tx_eng[0] != 'rate':
+                result = [tx_eng[i]["rate"] for i in range(len(tx_eng))]
+        except KeyError as e:
+                result = [tx_eng["rate"]]
+        return result
 
 
-    def get_brackets(self):
+    def get_brackets(self, tx_eng):
         '''
         returns list with brackets for state and filing status
         '''
-        return [tax_engine[i]["bracket"] for i in range(len(tax_engine))]
-
+        try:
+            if len(tx_eng) != 2 or tx_eng[0] != 'rate':
+                result = [tx_eng[i]["bracket"] for i in range(len(tx_eng))]
+        except KeyError as e:
+                result = [tx_eng["bracket"]]
+        return result
+    
 
     def get_state_tax_filing_status(self):
         '''
         returns either 'Single' or 'Married_Filing_Joint' (or raises exception) based on overloaded filing_status 
         '''
-
         if self.filing_status == abstract.PersonalData.CivilStatus['SINGLE']:
             return 'Single'
 
@@ -251,7 +275,6 @@ class StateTax(object):
         
         if income < 0:
             raise Exception('income < 0')
-        
 
 FICA_RATE_SS_EMPLOYED = 0.062
 FICA_RATE_SS_SELF_EMPLOYED = 0.124

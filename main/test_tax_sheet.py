@@ -6,58 +6,54 @@ from main import constants
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
 
-name = "John Smith"
+name = "John Adams"
  
-ssn  = "123456789" 
+ssn  = "234-45-6654" 
 
-dob = pd.Timestamp('1969-03-03')
+dob = pd.Timestamp('1986-01-01')
 
 desired_retirement_age = 70.
 
-retirement_lifestyle = 1.
+life_exp = 79.
+
+retirement_lifestyle = 0.81
 
 reverse_mort = True
 
-life_exp = 85.
+house_value = 0.
 
-house_value = 250000.
+risk_profile_group = 0.005
 
 filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
-retire_earn_at_fra = 3490.
-
-retire_earn_under_fra = 1310.
-
 total_income = 100000.
 
-adj_gross = 140000.
+adj_gross_income = 100000.
 
-other_income=40000.
+taxable_income = 0.
+
+total_payments = 18219.
 
 after_tax_income = 110982.
 
-federal_taxable_income = 109996.
+income_growth = 0.02
 
-federal_regular_tax = 20614.
+employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 
-ss_fra_retirement = 7002.
+ss_fra_todays = 3311.
 
-paid_days = 2
+ss_fra_retirement = 9773.
+
+paid_days = 1
 
 ira_rmd_factor = 26.5
 
-initial_401k_balance = 50000
-
-risk_profile_over_cpi = 0.005
-
-projected_income_growth = 0.01
+contrib_rate_employer_401k = 0.02
 
 contrib_rate_employee_401k = 0.055
 
-contrib_rate_employer_401k = 0.02
+initial_401k_balance = 0.
 
 state = "CA"
-
-employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
 
 
