@@ -1,17 +1,20 @@
 from django.test import TestCase
 
-from api.v1.tests.factories import ExecutionRequestFactory, MarketOrderRequestFactory, ClientAccountFactory, GoalFactory, TickerFactory
+from api.v1.tests.factories import ExecutionRequestFactory, APEXAccountFactory, MarketOrderRequestFactory, ClientAccountFactory, GoalFactory, TickerFactory
 from execution.end_of_day import *
 from main.models import Order
-from unittest import skip
+from unittest import skipIf
+from tests.test_settings import IB_TESTING
 
+ib_testing = False
 
-@skip("Subject to refactoring related to security")
+@skipIf(not IB_TESTING,"IB Testing is manually turned off.")
 class BaseTest(TestCase):
     def setUp(self):
         self.account = ClientAccountFactory.create()
         self.goal = GoalFactory.create(account=self.account)
         self.mor = MarketOrderRequestFactory.create(account=self.account)
+        self.broker_acc1 = APEXAccountFactory.create(bs_account=self.account)
 
         self.asset = TickerFactory.create(symbol='GOOG')
         self.asset2 = TickerFactory.create(symbol='AAPL')
@@ -35,6 +38,7 @@ class BaseTest(TestCase):
 
     def test_apex_order2(self):
         self.account2 = ClientAccountFactory.create()
+        self.broker_acc2 = APEXAccountFactory.create(bs_account=self.account2)
         self.goal2 = GoalFactory.create(account=self.account2)
         self.mor2 = MarketOrderRequestFactory.create(account=self.account2)
         self.asset3 = TickerFactory.create(symbol='MSFT')
@@ -46,6 +50,7 @@ class BaseTest(TestCase):
 
     def test_apex_order3(self):
         self.account3 = ClientAccountFactory.create()
+        self.broker_acc3 = APEXAccountFactory.create(bs_account=self.account3)
         self.goal3 = GoalFactory.create(account=self.account3)
         self.mor3 = MarketOrderRequestFactory.create(account=self.account3)
         er5 = ExecutionRequestFactory.create(goal=self.goal3, asset=self.asset, volume=20, order=self.mor3)

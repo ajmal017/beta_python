@@ -4,11 +4,10 @@ from execution.broker.InteractiveBrokers.IBBroker import IBBroker
 from main.models import Order
 from client.models import IBAccount
 from unittest import skip, skipIf
+from tests.test_settings import IB_TESTING
 
 
-ib_testing = False
-
-@skipIf(not ib_testing,"IB Testing is manually turned off.")
+@skipIf(not IB_TESTING,"IB Testing is manually turned off.")
 class BaseTest(TestCase):
     def setUp(self):
         self.con = IBBroker()
@@ -33,6 +32,7 @@ class BaseTest(TestCase):
         account_info = self.con.get_account_info(account)
         self.assertTrue(account_info.cash != 0)
 
+
     def test_IB_send_order(self):
 
         order = self.con.create_order(783, 1, self.ticker)
@@ -40,13 +40,12 @@ class BaseTest(TestCase):
         self.assertTrue(order.Order_Id != -1)
         return order
 
-    @skip("Unfinished")
     def test_IB_update_order(self):
         order = self.test_IB_send_order()
         orders = []
         orders.append(order)
         self.con.update_orders(orders)
-        self.assertFalse(order.fill_info == Order.FillInfo.UNFILLED)
+        self.assertFalse(Order.FillInfo(order.fill_info) == Order.FillInfo.UNFILLED)
 
     def tearDown(self):
         self.con.disconnect()

@@ -1,6 +1,6 @@
 from datetime import datetime
 from unittest.mock import Mock
-
+from tests.test_settings import IB_TESTING
 from django.test import TestCase
 from execution.Obsolete.interactive_brokers.end_of_day.end_of_day import create_django_executions
 from execution.account_groups.account_allocations import AccountAllocations
@@ -12,9 +12,10 @@ from main.models import ExternalInstrument, InvestmentType
 from main.tests.fixture import Fixture1
 from main.management.commands.rebalance import reduce_cash
 from api.v1.tests.factories import TickerFactory
+from execution.broker.BaseBroker import BaseBroker
 from unittest import skipIf
 
-ib_testing = False
+
 
 
 class BaseTest(TestCase):
@@ -83,7 +84,7 @@ class BaseTest(TestCase):
         }
         ExecutionRequest.objects.get_or_create(id=4, defaults=params)
 
-    @skipIf(not ib_testing, "IB Testing is manually turned off.")
+    @skipIf(not IB_TESTING, "IB Testing is manually turned off.")
     def test_change_account_cash(self):
         goal1 = Fixture1.goal1()
 

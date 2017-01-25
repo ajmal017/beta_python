@@ -4,7 +4,7 @@ from datetime import datetime
 from functools import partial
 from time import sleep
 
-from execution.broker.InteractiveBrokers.IBContract import IBContract
+from execution.broker.InteractiveBrokers.IBSecurity import IBSecurity
 from ib.lib.logger import logger as basicConfig
 from ib.ext.EWrapper import EWrapper
 from ib.ext.EClientSocket import EClientSocket
@@ -26,15 +26,28 @@ class ReferenceWrapper(EWrapper):
         self._executions = {}
         self._account_info = {}
         self._requests_finished = {}
+        self._errors = {}
+        self._open_orders_end = {}
 
     def getAccountInfo(self, ib_account):
         return self._account_info[ib_account]
 
     def getExecutions(self, requestId):
-        return self._executions[requestId]
+        res = []
+        res.append(self._executions[requestId])
+        return res
 
     def isExecutionRequestFinished(self, requestId):
         return requestId in self._requests_finished
+
+    def isOpeningOfOrdersFinished(self, orderId):
+        return orderId in self._open_orders_end
+
+    def isError(self, id):
+        return id in self._errors
+
+    def getError(self, id):
+        return self._errors[id]
 
     def tickPrice(self, tickerId, field, price, canAutoExecute):
         logger.debug('tickPrice', vars())
@@ -61,6 +74,7 @@ class ReferenceWrapper(EWrapper):
         logger.debug('orderStatus', vars())
 
     def openOrder(self, orderId, contract, order, state):
+        self._open_orders_end[orderId] = state
         logger.debug('openOrder', vars())
 
     def openOrderEnd(self):
@@ -96,6 +110,7 @@ class ReferenceWrapper(EWrapper):
     def execDetails(self, reqId, contract, execution):
         logger.debug('execDetails', vars())
         self._executions[reqId]=execution
+
     def execDetailsEnd(self, reqId):
         logger.debug('execDetailsEnd', vars())
         self._requests_finished[reqId] = 'Execution'
@@ -104,6 +119,8 @@ class ReferenceWrapper(EWrapper):
         logger.debug('connectionClosed', {})
 
     def error(self, id=None, errorCode=None, errorMsg=None):
+        self._errors[id] = errorMsg
+        print('error', vars())
         logger.error('error', vars())
 
     def error_0(self, strvalue=None):
@@ -152,8 +169,6 @@ class ReferenceWrapper(EWrapper):
     def deltaNeutralValidation(self, reqId, underComp):
         logger.debug('deltaNeutralValidation', vars())
 
-    def execDetailsEnd(self, reqId):
-        logger.debug('execDetailsEnd', vars())
 
     def fundamentalData(self, reqId, data):
         logger.debug('fundamentalData', vars())
@@ -219,7 +234,7 @@ class IBBroker(BaseBroker):
         return ++self._request_id
 
     def get_security(self, symbol):
-        contract = IBContract()
+        contract = IBSecurity()
         contract.Symbol = symbol
         contract.symbol_id = 0
         contract.Currency = 'USD'
@@ -253,21 +268,30 @@ class IBBroker(BaseBroker):
 
     def send_order(self, order):
         order.__class__ = IBOrder # casting to IBOrder
+        order.prepare_IB_order()
         order_id = self._get_next_valid_order_id()
         contract = self.get_security(order.Symbol)
         order.m_transmit = True # forces IB to transmit order straight away
         self._connection.placeOrder(order_id, contract, order) # places order
         order.Status = Order.StatusChoice.Sent.value # order status is set to SENT
         order.Order_Id = order_id # sets broker specific ID
+        while not self._wrapper.isOpeningOfOrdersFinished(order_id):
+            very_short_sleep()
+            #if(self._wrapper.isError(id)):
+            #   raise Exception(self.wrapper.isError(id))
+
+
 
     def update_orders(self, orders):
         requestId = self._get_next_request_id()
         exf = ExecutionFilter()
-        self._connection.reqExecutionDetails(requestId, exf)  #
+        self._connection.reqExecutions(requestId, exf)  #
         while not self._wrapper.isExecutionRequestFinished(requestId):
             very_short_sleep()
-        for execution in self._wrapper.getExecutions[requestId]:
-            map(lambda x: x.setFills(execution.m_price, execution.m_shares) if execution.m_shares>0 and execution.m_orderId==x.Order_Id else None, orders)
+        for execution in self._wrapper.getExecutions(requestId):
+            for order in orders:
+                if execution.m_shares > 0 and execution.m_orderId == order.Order_Id:
+                    order.setFills(execution.m_price, execution.m_shares)
 
     def get_account_info(self, broker_account):
         requestId = self._get_next_request_id()

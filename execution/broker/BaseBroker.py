@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from main.models import Order
-
+from datetime import datetime, timedelta
 
 class BaseBroker(object):
     def __init__(self):
@@ -13,8 +13,8 @@ class BaseBroker(object):
                                      SecurityId=security.symbol_id,
                                      Symbol=security.Symbol,
                                      Side=side,
-                                     TimeInForce=0,
-                                     ExpireDate=0,
+                                     TimeInForce=6,
+                                     ExpireDate=int((datetime.now() + timedelta(minutes=5)).timestamp()),
                                      ticker=ticker)
         return order
     @abstractmethod
