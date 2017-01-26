@@ -275,15 +275,16 @@ class ClientViewSet(ApiViewMixin,
                 'id': item['cat'],
                 'cat': item['cat'],
                 'desc': '',
-                'amt': item['adj_ep_based_100'] / ep_sum * post_tax_income,
+                'amt': int(item['adj_ep_based_100'] / ep_sum * post_tax_income),
             }
 
         results = list(map(build_response_item, results))
         results += [{
             'id': tax_cat,
             'cat': tax_cat,
+            'who': 'self',
             'desc': '',
-            'amt': tax
+            'amt': int(tax)
         }]
 
         return Response(results)
