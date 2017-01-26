@@ -44,7 +44,7 @@ class RetirementPlan(TimestampedModel):
         HOUSING = 7, 'Housing'
         INSURANCE_PENSIONS_SOCIAL_SECURITY = 8, 'Insuarance, Pensions & Social Security'
         PERSONAL_CARE = 9, 'Personal Care'
-        READING = 10, 'READING'
+        READING = 10, 'Reading'
         SAVINGS = 11, 'Savings'
         TAXES = 12, 'Taxes'
         TOBACCO = 13, 'Tobacco'

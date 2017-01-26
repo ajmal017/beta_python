@@ -29,7 +29,11 @@ from main.event import Event
 from api.v1.utils import activity
 from django.template.loader import render_to_string
 from main import quovo, plaid
-
+from address.models import USState, USFips, USZipcode
+from consumer_expenditure.models import AreaQuotient, PeerGroupData
+from consumer_expenditure import utils as ce_utils
+from datetime import date
+from functools import reduce
 logger = logging.getLogger('api.v1.client.views')
 
 
@@ -225,6 +229,58 @@ class ClientViewSet(ApiViewMixin,
         serializer.is_valid(raise_exception=True)
         client = serializer.save()
         return Response(serializer.data['risk_profile_responses'])
+
+    @detail_route(methods=['get'], permission_classes=[IsAdvisorOrClient,], url_path='peer-group-expenses/')
+    def peer_group_expenses(self, request, pk=None, **kwargs):
+        client = Client.objects.get(pk=pk)
+        user = SupportRequest.target_user(request)
+        if (user.is_advisor and client.advisor != user.advisor) or (user.is_client and client != user.client):
+            raise exceptions.PermissionDenied("You do not have permission to get peer group data")
+
+        monthly_income = client.income / 12
+        age_group = ce_utils.get_age_group(client.age)
+        state = USState.objects.get(code=client.residential_address.region.code)
+        region_no = state.region
+        region_col = ce_utils.get_region_column_name(region_no)
+        # zipcodes = USZipcode.objects.filter(zip_code=client.residential_address.post_code)
+        # rucc = zipcodes[0].fips.rucc
+        # loc_col = ce_utils.get_location_column_name(rucc)
+        pc_col = ce_utils.get_pc_column_name(client.income)
+
+        tax_item = PeerGroupData.objects.get(age_group=age_group, expense_cat=RetirementPlan.ExpenseCategory.TAXES.value)
+        ep_pgd = getattr(tax_item, pc_col) # Expenditure from peer group data
+        region_quot = getattr(tax_item, region_col) # Location quotient region
+        tax = monthly_income * (region_quot * ep_pgd)
+
+        post_tax_income = monthly_income - tax
+
+        peer_group_data = PeerGroupData.objects.filter(
+            age_group=age_group
+        ).exclude(
+            expense_cat=RetirementPlan.ExpenseCategory.TAXES.value
+        )
+
+        results = []
+        for item in peer_group_data:
+            ep_pgd = getattr(item, pc_col) # Expenditure from peer group data
+            region_quot = getattr(item, region_col) # Location quotient region
+            results += [{
+                'cat': item.expense_cat.id,
+                'adj_ep_based_100': region_quot * ep_pgd # Adjusted % Expenditure based to 100%
+            }]
+
+        ep_sum = reduce((lambda acc, item: acc + item['adj_ep_based_100']), results, 0.0)
+        def build_response_item(item):
+            return {
+                'id': item['cat'],
+                'cat': item['cat'],
+                'desc': '',
+                'amt': item['adj_ep_based_100'] / ep_sum * post_tax_income,
+            }
+
+        results = map(build_response_item, results)
+
+        return Response(results)
 
 
 class InvitesView(ApiViewMixin, views.APIView):
