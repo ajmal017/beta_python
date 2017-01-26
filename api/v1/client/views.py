@@ -246,8 +246,8 @@ class ClientViewSet(ApiViewMixin,
         # rucc = zipcodes[0].fips.rucc
         # loc_col = ce_utils.get_location_column_name(rucc)
         pc_col = ce_utils.get_pc_column_name(client.income)
-
-        tax_item = PeerGroupData.objects.get(age_group=age_group, expense_cat=RetirementPlan.ExpenseCategory.TAXES.value)
+        tax_cat = expense_cat=RetirementPlan.ExpenseCategory.TAXES.value
+        tax_item = PeerGroupData.objects.get(age_group=age_group, expense_cat=tax_cat)
         ep_pgd = getattr(tax_item, pc_col) # Expenditure from peer group data
         region_quot = getattr(tax_item, region_col) # Location quotient region
         tax = monthly_income * (region_quot * ep_pgd)
@@ -278,7 +278,13 @@ class ClientViewSet(ApiViewMixin,
                 'amt': item['adj_ep_based_100'] / ep_sum * post_tax_income,
             }
 
-        results = map(build_response_item, results)
+        results = list(map(build_response_item, results))
+        results += [{
+            'id': tax_cat,
+            'cat': tax_cat,
+            'desc': '',
+            'amt': tax
+        }]
 
         return Response(results)
 
