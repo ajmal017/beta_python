@@ -586,7 +586,7 @@ equired to generate the
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
         initial_401k_balance = 0.
-        pdb.set_trace()
+        
         if plan.client.residential_address.post_code is None:
             raise Exception("plan.client.residential_address.post_code is None")
 
@@ -618,7 +618,7 @@ equired to generate the
                         state)
 
         user.create_maindf()
-        pdb.set_trace()
+      
         if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:
             partner = tax.TaxUser(plan.partner_data.name,
                             plan.partner_data.regional_data['ssn'],
@@ -647,7 +647,7 @@ equired to generate the
                             state)
 
             partner.create_maindf()
-        pdb.set_trace()
+       
 
         # Convert these returned values to a format for the API        
         if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:

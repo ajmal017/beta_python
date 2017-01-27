@@ -49,8 +49,8 @@ class TaxUser(object):
 
         if life_exp == desired_retirement_age:
             life_exp = life_exp + 1
+
             
-        pdb.set_trace()
         '''
         checks
         '''
@@ -929,7 +929,7 @@ class TaxUser(object):
 
         if(self.debug):
             self.show_outputs()
-        pdb.set_trace()
+        
 
         
     def validate_inputs(self,
