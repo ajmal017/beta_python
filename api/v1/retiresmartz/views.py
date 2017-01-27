@@ -579,10 +579,8 @@ equired to generate the
         taxable_income = 0.
         total_payments = 18219.
         after_tax_income = 110982.
-        income_growth = 0.02
         ss_fra_todays = 3311.
         ss_fra_retirement = 9773.
-        paid_days = 1
         ira_rmd_factor = 26.5
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
@@ -607,11 +605,11 @@ equired to generate the
                         taxable_income,
                         total_payments,
                         after_tax_income,
-                        income_growth,
+                        plan.income_growth,
                         plan.client.employment_status,
                         ss_fra_todays,
                         ss_fra_retirement,
-                        paid_days,
+                        plan.paid_days,
                         contrib_rate_employer_401k,
                         contrib_rate_employee_401k,
                         initial_401k_balance,
