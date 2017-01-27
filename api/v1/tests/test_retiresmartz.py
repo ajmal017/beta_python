@@ -281,6 +281,22 @@ class RetiresmartzTests(APITestCase):
         saved_plan = RetirementPlan.objects.get(id=response.data['id'])
         self.assertEqual(saved_plan.btc, 3200)
 
+    def test_add_plan_with_btc_0(self):
+        '''
+        Tests:
+        - clients can create a retirement plan.
+        - specifying btc on creation as 0 returns btc 0
+        '''
+        url = '/api/v1/clients/{}/retirement-plans'.format(Fixture1.client1().id)
+        self.base_plan_data['btc'] = 0
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        response = self.client.post(url, self.base_plan_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['btc'], 0)
+        self.assertNotEqual(response.data['id'], None)
+        saved_plan = RetirementPlan.objects.get(id=response.data['id'])
+        self.assertEqual(saved_plan.btc, 0)
+
     def test_add_plan_with_json_fields(self):
         '''
         Tests:

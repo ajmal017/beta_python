@@ -263,21 +263,6 @@ class RetirementPlan(TimestampedModel):
                 "Partner plan relationship must be symmetric."
             )
 
-        if self.pk:
-            # RetirementPlan is being created
-            # default btc if btc not provided
-            # SPEND = plan.spendable_income # available spending money
-            # CONTR = # contributions needed to reach their goal - not function for this yet
-            # CONTC = validated_data['income'] * validated_data.get('max_employer_match_percent') # current retirement contributions
-            if not self.btc:
-                # user did not provide their own btc
-                max_contributions = determine_accounts(self)
-                if self.max_employer_match_percent:
-                    income_btc = self.income * self.max_employer_match_percent
-                else:
-                    income_btc = self.income * 0.04
-                self.btc = min(income_btc, max_contributions[0][1])
-
         super(RetirementPlan, self).save(*args, **kwargs)
 
         if self.get_soa() is None and self.id is not None:

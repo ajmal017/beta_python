@@ -309,7 +309,7 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
         :param data:
         :return:
         """
-        if (self.context.get('request').method == 'POST' and not data.get('same_home', None)
+        if (self.context.get('request').method == 'POST' and data.get('same_home', None) is None
                 and data.get('same_location', None) is None):
             raise ValidationError("same_location must be specified if same_home is not True.")
 
@@ -325,17 +325,17 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             else:
                 raise ValidationError('retirement_postal_code required if not same_home and not same_location')
         # Default the selected life expectancy to the calculated one if not specified.
-        if not validated_data.get('selected_life_expectancy', None):
+        if validated_data.get('selected_life_expectancy', None) is None:
             validated_data['selected_life_expectancy'] = client.life_expectancy
 
-        if not validated_data.get('retirement_age', None):
+        if validated_data.get('retirement_age', None) is None:
             validated_data['retirement_age'] = 67
 
-        if not validated_data.get('btc', None):
+        if validated_data.get('btc', None) is None:
             # defaults btc
             validated_data['btc'] = validated_data['income'] * min(validated_data.get('max_employer_match_percent', 0), 0.04)
 
-        if not validated_data.get('atc', None):
+        if validated_data.get('atc', None) is None:
             # default atc
             validated_data['atc'] = 0
 
@@ -345,7 +345,7 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                 validated_data['retirement_home_price'] = home.get_growth_valuation(timezone.now().date())
 
         # Use the recommended risk for the client if no desired risk specified.
-        if not validated_data.get('desired_risk', None):
+        if validated_data.get('desired_risk', None) is None:
             bas_scores = client.get_risk_profile_bas_scores()
             validated_data['desired_risk'] = GoalSettingRiskProfile._recommend_risk(bas_scores)
 
