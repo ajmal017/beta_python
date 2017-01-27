@@ -585,12 +585,12 @@ equired to generate the
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
         initial_401k_balance = 0.
-
+        pdb.set_trace()
         if plan.client.residential_address.post_code is None:
             raise Exception("plan.client.residential_address.post_code is None")
          
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
-        tx = tax.TaxUser(plan.client,
+        user = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
                         pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
@@ -616,10 +616,48 @@ equired to generate the
                         ira_rmd_factor,
                         state)
 
-        tx.create_maindf()
+        user.create_maindf()
+        pdb.set_trace()
+        if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:
+            partner = tax.TaxUser(plan.partner_data.name,
+                            plan.partner_data.regional_data['ssn'],
+                            pd.Timestamp(plan.partner_data.date_of_birth),
+                            plan.partner_data.retirement_age,
+                            plan.partner_data.life_expectancy,
+                            plan.lifestyle,
+                            plan.reverse_mortgage,
+                            house_value,
+                            plan.desired_risk,
+                            plan.client.civil_status,
+                            plan.partner_data.income,
+                            adj_gross_income,
+                            taxable_income,
+                            total_payments,
+                            after_tax_income,
+                            plan.income_growth,
+                            plan.client.employment_status,
+                            ss_fra_todays,
+                            ss_fra_retirement,
+                            paid_days,
+                            contrib_rate_employer_401k,
+                            contrib_rate_employee_401k,
+                            initial_401k_balance,
+                            ira_rmd_factor,
+                            state)
 
-        # Convert these returned values to a format for the API
-        catd = pd.concat([tx.maindf['Taxable_Accounts'], tx.maindf['Actual_Inc'], tx.maindf['Desired_Inc']], axis=1)
+            partner.create_maindf()
+        pdb.set_trace()
+
+        # Convert these returned values to a format for the API        
+        if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:
+            user.maindf['Joint_Taxable_Accounts'] = user.maindf['Taxable_Accounts'] + partner.maindf['Taxable_Accounts']
+            user.maindf['Joint_Actual_Inc'] = user.maindf['Actual_Inc'] + partner.maindf['Actual_Inc']
+            user.maindf['Joint_Desired_Inc'] = user.maindf['Desired_Inc'] + partner.maindf['Desired_Inc']
+            catd = pd.concat([user.maindf['Joint_Taxable_Accounts'], user.maindf['Joint_Actual_Inc'], user.maindf['Joint_Desired_Inc']], axis=1)
+
+        else:
+            catd = pd.concat([user.maindf['Taxable_Accounts'], user.maindf['Actual_Inc'], user.maindf['Desired_Inc']], axis=1)
+
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
         pser = PortfolioSerializer(instance=settings.portfolio)

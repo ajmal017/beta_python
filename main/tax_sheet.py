@@ -46,7 +46,7 @@ class TaxUser(object):
                  initial_401k_balance,
                  ira_rmd_factor,
                  state):
-
+        pdb.set_trace()
         '''
         checks
         '''
@@ -126,7 +126,7 @@ class TaxUser(object):
         self.total_payments = total_payments
         self.after_tax_income = after_tax_income
         self.other_income = self.adj_gross_income - self.total_income
-        self.income_growth = income_growth
+        self.income_growth = income_growth/100.0
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
         self.ss_fra_todays = ss_fra_todays
         self.ss_fra_retirement = ss_fra_retirement
@@ -925,6 +925,7 @@ class TaxUser(object):
 
         if(self.debug):
             self.show_outputs()
+        pdb.set_trace()
 
         
     def validate_inputs(self,
