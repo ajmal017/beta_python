@@ -1,3 +1,5 @@
+from retiresmartz.models import RetirementPlan
+
 def get_age_group(age):
     return int(abs(age - 15) / 10)
 
@@ -23,3 +25,23 @@ def get_location_column_name(rucc):
     if rucc in [8, 9]:
         return 'quot_rural'
     return None
+
+def get_category_descriptions():
+    ExpenseCategory = RetirementPlan.ExpenseCategory
+    return {
+        ExpenseCategory.ALCOHOLIC_BEVERAGE.value: 'Alcoholic Beverage',
+        ExpenseCategory.APPAREL_SERVICES.value: 'Apparel & Services',
+        ExpenseCategory.EDUCATION.value: 'Education',
+        ExpenseCategory.ENTERTAINMENT.value: 'Entertainment',
+        ExpenseCategory.FOOD.value: 'Food',
+        ExpenseCategory.HEALTHCARE.value: 'Healthcare',
+        ExpenseCategory.HOUSING.value: 'Housing',
+        ExpenseCategory.INSURANCE_PENSIONS_SOCIAL_SECURITY.value: 'Insuarance, Pensions & Social Security',
+        ExpenseCategory.PERSONAL_CARE.value: 'Personal Care',
+        ExpenseCategory.READING.value: 'Reading',
+        ExpenseCategory.SAVINGS.value: 'Savings',
+        ExpenseCategory.TAXES.value: 'Taxes',
+        ExpenseCategory.TOBACCO.value: 'Tobacco',
+        ExpenseCategory.TRANSPORTATION.value: 'Transportation',
+        ExpenseCategory.MISCELLANEOUS.value: 'Miscellaneous'
+    }

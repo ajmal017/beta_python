@@ -270,11 +270,13 @@ class ClientViewSet(ApiViewMixin,
             }]
 
         ep_sum = reduce((lambda acc, item: acc + item['adj_ep_based_100']), results, 0.0)
+        descriptions = ce_utils.get_category_descriptions()
         def build_response_item(item):
             return {
                 'id': item['cat'],
                 'cat': item['cat'],
-                'desc': '',
+                'who': 'self',
+                'desc': descriptions[item['cat']],
                 'amt': int(item['adj_ep_based_100'] / ep_sum * post_tax_income),
             }
 
@@ -283,7 +285,7 @@ class ClientViewSet(ApiViewMixin,
             'id': tax_cat,
             'cat': tax_cat,
             'who': 'self',
-            'desc': '',
+            'desc': descriptions[tax_cat],
             'amt': int(tax)
         }]
 
