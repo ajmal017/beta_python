@@ -319,7 +319,7 @@ class TaxUser(object):
 
 
     def get_portfolio_return_above_cpi(self):
-        return self.desired_risk * 0.005
+        return self.desired_risk * 10.0 * 0.005
     
 
     def create_maindf(self):
@@ -921,12 +921,12 @@ class TaxUser(object):
 
         # Desired income
         self.pre_0 = [0 for i in range(self.pre_retirement_end)]
-        self.maindf['Desired_Inc'] = self.maindf['Total_Income'] + self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) 
+        self.maindf['Desired_Inc'] = (self.maindf['Total_Income'] + self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax)) * self.maindf['Inflator']
 
         if(self.debug):
             self.show_outputs()
-            
 
+        
     def validate_inputs(self,
                          name,
                          ssn,
