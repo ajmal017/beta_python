@@ -581,6 +581,7 @@ equired to generate the
         after_tax_income = 110982.
         ss_fra_todays = 3311.
         ss_fra_retirement = 9773.
+        paid_days = 1
         ira_rmd_factor = 26.5
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
@@ -588,7 +589,7 @@ equired to generate the
         pdb.set_trace()
         if plan.client.residential_address.post_code is None:
             raise Exception("plan.client.residential_address.post_code is None")
-         
+
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
         user = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
@@ -609,7 +610,7 @@ equired to generate the
                         plan.client.employment_status,
                         ss_fra_todays,
                         ss_fra_retirement,
-                        plan.paid_days,
+                        paid_days,
                         contrib_rate_employer_401k,
                         contrib_rate_employee_401k,
                         initial_401k_balance,

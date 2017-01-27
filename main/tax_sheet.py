@@ -46,6 +46,10 @@ class TaxUser(object):
                  initial_401k_balance,
                  ira_rmd_factor,
                  state):
+
+        if life_exp == desired_retirement_age:
+            life_exp = life_exp + 1
+            
         pdb.set_trace()
         '''
         checks
@@ -991,6 +995,9 @@ class TaxUser(object):
         if life_exp < 0:
             raise Exception('life_exp less than 0')
 
+        if life_exp <= desired_retirement_age:
+            raise Exception('life_exp less than or equal to desired_retirement_age')
+
         if retirement_lifestyle != 1 and retirement_lifestyle != 2 and retirement_lifestyle != 3 and retirement_lifestyle != 4:
             raise Exception('unhandled value of retirement_lifestyle')
 
@@ -1085,7 +1092,7 @@ class TaxUser(object):
         print('name:                        ' + str(name))
         print('ssn:                         ' + str(ssn))
         print('dob:                         ' + str(dob))
-        print('desired_retirment_age:       ' + str(desired_retirement_age))
+        print('desired_retirement_age:       ' + str(desired_retirement_age))
         print('life_exp:                    ' + str(life_exp))
         print('retirement_lifestyle:        ' + str(retirement_lifestyle))
         print('reverse_mort:                ' + str(reverse_mort))

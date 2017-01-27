@@ -533,9 +533,7 @@ class RetiresmartzTests(APITestCase):
                                             btc=4000,
                                             retirement_home_price=250000,
                                             paid_days=1,
-                                            retirement_age=67,
-                                            selected_life_expectancy=85,
-                                            calculated_life_expectancy=85,
+                                            retirement_age=85,
                                             lifestyle=1,
                                             reverse_mortgage=True,
                                             income_growth=0.01,
@@ -545,7 +543,7 @@ class RetiresmartzTests(APITestCase):
         
         plan.client.residential_address.post_code=94123
         
-        plan.client.life_expectancy = 85
+        plan.client.life_expectancy = 95
         plan.client.income = 100000
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
@@ -647,6 +645,9 @@ class RetiresmartzTests(APITestCase):
 
         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
+                                            retirement_age=67,
+                                            selected_life_expectancy=95,
+                                            calculated_life_expectancy=95,
 
         # populate the data needed for the optimisation,
                                             desired_risk=20)
@@ -830,9 +831,7 @@ class RetiresmartzTests(APITestCase):
                                             btc=4000,
                                             retirement_home_price=250000,
                                             paid_days=1,
-                                            retirement_age=67,
-                                            selected_life_expectancy=85,
-                                            calculated_life_expectancy=85,
+                                            retirement_age=85,
                                             lifestyle=1,
                                             reverse_mortgage=True,
                                             income_growth=0.01,
@@ -841,7 +840,7 @@ class RetiresmartzTests(APITestCase):
                                             retirement_postal_code=94123,
                                             desired_risk=0.5)
 
-        plan.client.life_expectancy = 85
+        plan.client.life_expectancy = 95
         plan.client.income = 100000
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
@@ -850,7 +849,7 @@ class RetiresmartzTests(APITestCase):
         plan.client.ss_fra_todays = 1390
         plan.client.other_income = 40000
         plan.client.net_worth = 140000
-        plan.client.regional_data['ssn'] = "123456789" 
+        plan.client.regional_data['ssn'] = "987654321" 
         
         plan.client.date_of_birth = date(1960, 1, 1)
         plan.client.save()
