@@ -319,7 +319,7 @@ class TaxUser(object):
 
 
     def get_portfolio_return_above_cpi(self):
-        return self.desired_risk * 100 * 0.005
+        return self.desired_risk * 0.005
     
 
     def create_maindf(self):
