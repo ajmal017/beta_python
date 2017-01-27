@@ -29,7 +29,7 @@ class TaxUser(object):
                  retirement_lifestyle,
                  reverse_mort,
                  house_value,
-                 risk_profile_group,
+                 desired_risk,
                  filing_status,
                  total_income,
                  adj_gross_income,
@@ -50,7 +50,10 @@ class TaxUser(object):
         '''
         checks
         '''
-        self.validate_inputs(name,
+        self.debug = True
+        
+        if (self.debug):
+            self.show_inputs(name,
                              ssn,
                              dob,
                              desired_retirement_age,
@@ -58,7 +61,7 @@ class TaxUser(object):
                              retirement_lifestyle,
                              reverse_mort,
                              house_value,
-                             risk_profile_group,
+                             desired_risk,
                              filing_status,
                              total_income,
                              adj_gross_income,
@@ -76,32 +79,33 @@ class TaxUser(object):
                              ira_rmd_factor,
                              inflation_level,
                              state)
-
-        print('*1 ' + str(name))
-        print('*2 ' + str(ssn))
-        print('*3 ' + str(dob))
-        print('*4 ' + str(desired_retirement_age))
-        print('*5 ' + str(life_exp))
-        print('*6 ' + str(retirement_lifestyle))
-        print('*7 ' + str(reverse_mort))
-        print('*8 ' + str(house_value))
-        print('*9 ' + str(risk_profile_group))
-        print('*10 ' + str(filing_status))
-        print('*11 ' + str(total_income))
-        print('*12 ' + str(adj_gross_income))
-        print('*13 ' + str(taxable_income))
-        print('*14 ' + str(total_payments))
-        print('*15 ' + str(after_tax_income))
-        print('*16 ' + str(income_growth))
-        print('*17 ' + str(employment_status))
-        print('*18 ' + str(ss_fra_todays))
-        print('*19 ' + str(ss_fra_retirement))
-        print('*20 ' + str(paid_days))
-        print('*21 ' + str(contrib_rate_employer_401k))
-        print('*22 ' + str(contrib_rate_employee_401k))
-        print('*23 ' + str(initial_401k_balance))
-        print('*24 ' + str(ira_rmd_factor))
-        print('*25 ' + str(state))
+            
+        self.validate_inputs(name,
+                             ssn,
+                             dob,
+                             desired_retirement_age,
+                             life_exp,
+                             retirement_lifestyle,
+                             reverse_mort,
+                             house_value,
+                             desired_risk,
+                             filing_status,
+                             total_income,
+                             adj_gross_income,
+                             taxable_income,
+                             total_payments,
+                             after_tax_income,
+                             income_growth,
+                             employment_status,
+                             ss_fra_todays,
+                             ss_fra_retirement,
+                             paid_days,
+                             contrib_rate_employer_401k,
+                             contrib_rate_employee_401k,
+                             initial_401k_balance,
+                             ira_rmd_factor,
+                             inflation_level,
+                             state)
         
         '''
         set variables
@@ -114,7 +118,7 @@ class TaxUser(object):
         self.retirement_lifestyle = retirement_lifestyle
         self.reverse_mort = reverse_mort
         self.house_value = house_value
-        self.risk_profile_group = risk_profile_group
+        self.desired_risk = desired_risk
         self.filing_status = abstract.PersonalData.CivilStatus(filing_status)
         self.total_income = total_income
         self.adj_gross_income = max(adj_gross_income, total_income)
@@ -312,13 +316,16 @@ class TaxUser(object):
             factor = 1.32
 
         return factor
+
+
+    def get_portfolio_return_above_cpi(self):
+        return self.desired_risk * 100 * 0.005
     
 
     def create_maindf(self):
         '''
         create the main data frame
         '''
-        
         self.maindf['Person_Age'] = [self.age + (1./12.)*(i+1) for i in range(self.total_rows)]
 
 
@@ -332,10 +339,10 @@ class TaxUser(object):
         self.pre_proj_inflation_rate = [inflation_level[i]/12. for i in range(self.pre_retirement_end)] 
         self.post_proj_inflation_rate = [inflation_level[self.retirement_start + i]/12. for i in range(self.total_rows - self.pre_retirement_end)] 
 
-        self.maindf['Portfolio_Return'] = self.maindf['Proj_Inflation_Rate'] + self.risk_profile_group/12.
-        self.pre_portfolio_return = [inflation_level[i]/12. + self.risk_profile_group/12. for i in range(self.pre_retirement_end)]
+        self.maindf['Portfolio_Return'] = self.maindf['Proj_Inflation_Rate'] + self.get_portfolio_return_above_cpi()/12.
+        self.pre_portfolio_return = [inflation_level[i]/12. + self.get_portfolio_return_above_cpi()/12. for i in range(self.pre_retirement_end)]
         self.post_portfolio_return = [inflation_level[self.retirement_start
-                                                           + i]/12. + self.risk_profile_group/12.
+                                                           + i]/12. + self.get_portfolio_return_above_cpi()/12.
                                       for i in range(self.total_rows - self.pre_retirement_end)]
 
         self.maindf['Retire_Work_Inc_Daily_Rate'] = [116*(1+self.income_growth/12.)**i for i in range(self.total_rows)]
@@ -908,12 +915,17 @@ class TaxUser(object):
         self.maindf['State_Tax_After_Credits'] = self.maindf['Adj_Gross_Inc'] * self.state_effective_rate_to_agi
 
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
-        print("income")
-        print(self.maindf['After_Tax_Income'])
 
-        print("accounts")
-        print(self.maindf['Taxable_Accounts'])
+        # Actual income
+        self.maindf['Actual_Inc'] = self.maindf['Total_Income'] + self.maindf['Tot_Inc']
 
+        # Desired income
+        self.pre_0 = [0 for i in range(self.pre_retirement_end)]
+        self.maindf['Desired_Inc'] = self.maindf['Total_Income'] + self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) 
+
+        if(self.debug):
+            self.show_outputs()
+            
 
     def validate_inputs(self,
                          name,
@@ -924,12 +936,12 @@ class TaxUser(object):
                          retirement_lifestyle,
                          reverse_mort,
                          house_value,
-                         risk_profile_group,
+                         desired_risk,
                          filing_status,
                          total_income,
                          adj_gross_income,
                          taxable_income,
-                         federal_regular_tax,
+                         total_payments,
                          after_tax_income,
                          income_growth,
                          employment_status,
@@ -959,6 +971,9 @@ class TaxUser(object):
         if not retirement_lifestyle:
             raise Exception('retirement_lifestyle not provided')
 
+        if not desired_risk:
+            raise Exception('desired_risk not provided')
+
         if not ira_rmd_factor:
             raise Exception('ira_rmd_factor not provided')
 
@@ -978,6 +993,9 @@ class TaxUser(object):
         if retirement_lifestyle != 1 and retirement_lifestyle != 2 and retirement_lifestyle != 3 and retirement_lifestyle != 4:
             raise Exception('unhandled value of retirement_lifestyle')
 
+        if desired_risk < 0 or desired_risk > 1:
+            raise Exception('desired_risk outside 0 <= desired_risk <= 1')
+
         if house_value < 0:
             raise Exception('house_value less than 0')
 
@@ -993,8 +1011,11 @@ class TaxUser(object):
         if adj_gross_income < 0:
             raise Exception('adjusted_gross_income less than 0')
 
-        if federal_regular_tax < 0:
-            raise Exception('federal_regular_tax less than 0')
+        if taxable_income < 0:
+            raise Exception('taxable_income less than 0')
+
+        if total_payments < 0:
+            raise Exception('total_payments less than 0')
 
         if after_tax_income < 0:
             raise Exception('after_tax_income less than 0')
@@ -1030,4 +1051,72 @@ class TaxUser(object):
 
         if self.age <= 0:
             raise Exception("age less than or equal to 0")
+
+
+    def show_inputs(self,
+                     name,
+                     ssn,
+                     dob,
+                     desired_retirement_age,
+                     life_exp,
+                     retirement_lifestyle,
+                     reverse_mort,
+                     house_value,
+                     desired_risk,
+                     filing_status,
+                     total_income,
+                     adj_gross_income,
+                     taxable_income,
+                     total_payments,
+                     after_tax_income,
+                     income_growth,
+                     employment_status,
+                     ss_fra_todays,
+                     ss_fra_retirement,
+                     paid_days,
+                     contrib_rate_employer_401k,
+                     contrib_rate_employee_401k,
+                     initial_401k_balance,
+                     ira_rmd_factor,
+                     inflation_level,
+                     state):
+        print("-----------------------------Retirement model INPUTS -------------------")
+        print('name:                        ' + str(name))
+        print('ssn:                         ' + str(ssn))
+        print('dob:                         ' + str(dob))
+        print('desired_retirment_age:       ' + str(desired_retirement_age))
+        print('life_exp:                    ' + str(life_exp))
+        print('retirement_lifestyle:        ' + str(retirement_lifestyle))
+        print('reverse_mort:                ' + str(reverse_mort))
+        print('house_value:                 ' + str(house_value))
+        print('desired_risk:                ' + str(desired_risk))
+        print('filing_status:               ' + str(filing_status))
+        print('total_income:                ' + str(total_income))
+        print('adj_gross_income:            ' + str(adj_gross_income))
+        print('taxable_income:              ' + str(taxable_income))
+        print('total_payments:              ' + str(total_payments))
+        print('after_tax_income:            ' + str(after_tax_income))
+        print('income_growth:               ' + str(income_growth))
+        print('employment_status:           ' + str(employment_status))
+        print('ss_fra_todays:               ' + str(ss_fra_todays))
+        print('ss_fra_retirement:           ' + str(ss_fra_retirement))
+        print('paid_days:                   ' + str(paid_days))
+        print('contrib_rate_employer_401k:  ' + str(contrib_rate_employer_401k))
+        print('contrib_rate_employee_401k:  ' + str(contrib_rate_employee_401k))
+        print('initial_401k_balance:        ' + str(initial_401k_balance))
+        print('ira_rmd_factor:              ' + str(ira_rmd_factor))
+        print('state:                       ' + str(state))
+        print("[Set self.debug=False to hide these]")
+        
+
+    def show_outputs(self):
+        print("--------------------------------------Retirement model OUTPUTS -------------------")
+        print("--------------------------------------Taxable_Accounts ---------------------------")
+        print(self.maindf['Taxable_Accounts'])
+        print("--------------------------------------Actual_Inc ---------------------------")
+        print(self.maindf['Actual_Inc'])
+        print("--------------------------------------Desired_Inc ---------------------------")
+        print(self.maindf['Desired_Inc'])
+        print("[Set self.debug=False to hide these]")
+        
         

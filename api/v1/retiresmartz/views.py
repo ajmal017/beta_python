@@ -574,9 +574,7 @@ equired to generate the
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
         
         # Get projection of future income and assets for US tax payer
-        ira_rmd_factor = 26.5
         house_value = 0.
-        risk_profile_group = 0.005
         adj_gross_income = 100000.
         taxable_income = 0.
         total_payments = 18219.
@@ -592,7 +590,7 @@ equired to generate the
 
         if plan.client.residential_address.post_code is None:
             raise Exception("plan.client.residential_address.post_code is None")
-            
+         
         state = zip2state.get_state(int(plan.client.residential_address.post_code))
         tx = tax.TaxUser(plan.client,
                         plan.client.regional_data['ssn'],
@@ -602,7 +600,7 @@ equired to generate the
                         plan.lifestyle,
                         plan.reverse_mortgage,
                         house_value,
-                        risk_profile_group,
+                        plan.desired_risk,
                         plan.client.civil_status,
                         plan.client.income,
                         adj_gross_income,
@@ -623,10 +621,11 @@ equired to generate the
         tx.create_maindf()
 
         # Convert these returned values to a format for the API
-        catd = pd.concat([tx.maindf['Taxable_Accounts'], tx.maindf['After_Tax_Income'], tx.maindf['After_Tax_Income']], axis=1)
+        catd = pd.concat([tx.maindf['Taxable_Accounts'], tx.maindf['Actual_Inc'], tx.maindf['Desired_Inc']], axis=1)
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
         pser = PortfolioSerializer(instance=settings.portfolio)
+        
         return Response({'portfolio': pser.data, 'projection': proj_data})
 
 

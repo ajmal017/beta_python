@@ -527,6 +527,7 @@ class RetiresmartzTests(APITestCase):
 
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
+        
         plan = RetirementPlanFactory.create(income=100000,
                                             desired_income=81000,
                                             btc=4000,
@@ -539,7 +540,8 @@ class RetiresmartzTests(APITestCase):
                                             reverse_mortgage=True,
                                             income_growth=0.01,
                                             balance=50000,
-                                            atc=110982)
+                                            atc=110982,
+                                            desired_risk=0.5)
         
         plan.client.residential_address.post_code=94123
         
@@ -646,7 +648,8 @@ class RetiresmartzTests(APITestCase):
         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
 
-        # populate the data needed for the optimisation
+        # populate the data needed for the optimisation,
+                                            desired_risk=20)
         # We need at least 500 days as the cycles go up to 70 days and we need at least 7 cycles.
         populate_prices(500, asof=mocked_now.date())
         populate_cycle_obs(500, asof=mocked_now.date())
@@ -663,7 +666,8 @@ class RetiresmartzTests(APITestCase):
         # First try and calculate without a client date of birth. Make sure we get the correct 400
         old_dob = plan.client.date_of_birth
         plan.client.date_of_birth = None
-        plan.client.save()
+        plan.client.save(),
+                                            desired_risk=20)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -820,6 +824,7 @@ class RetiresmartzTests(APITestCase):
 
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
+        
         plan = RetirementPlanFactory.create(income=100000,
                                             desired_income=81000,
                                             btc=4000,
@@ -833,7 +838,8 @@ class RetiresmartzTests(APITestCase):
                                             income_growth=0.01,
                                             balance=50000,
                                             atc=110982,
-                                            retirement_postal_code=94123)
+                                            retirement_postal_code=94123,
+                                            desired_risk=0.5)
 
         plan.client.life_expectancy = 85
         plan.client.income = 100000
