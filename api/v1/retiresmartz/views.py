@@ -624,9 +624,9 @@ equired to generate the
         print(" ************************************************************** ")
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             print(" ************************************************************** ")
-            print("partner: " + str(plan.partner_data.name))
+            print("partner: " + str(plan.client))
             print(" ************************************************************** ")
-            partner = tax.TaxUser(plan.partner_data.name,
+            partner = tax.TaxUser(plan.client,
                             plan.partner_data.regional_data['ssn'],
                             pd.Timestamp(plan.partner_data.date_of_birth),
                             plan.partner_data.retirement_age,
