@@ -137,7 +137,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         updated = serializer.update(instance, serializer.validated_data)
         updated_client = updated.client
 
-        if getattr(instance, '_prefetched_objects_cache', None):
+        if getattr(instance, '_prefetched_objects_cache', None) is not None:
             # If 'prefetch_related' has been applied to a queryset, we need to
             # refresh the instance from the database.
             instance = self.get_object()
