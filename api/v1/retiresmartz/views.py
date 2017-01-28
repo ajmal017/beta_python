@@ -622,7 +622,7 @@ equired to generate the
         print(" ************************************************************** ")
         print("plan.client.civil_status = " + str(plan.client.civil_status))
         print(" ************************************************************** ")
-        if plan.client.civil_status == 1 or plan.client.civil_status == -1:
+        if plan.client.civil_status == -10 or plan.client.civil_status == -9:
             print(" ************************************************************** ")
             print("partner: " + str(plan.client))
             print(" ************************************************************** ")
