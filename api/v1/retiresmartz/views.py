@@ -627,7 +627,7 @@ equired to generate the
             print("partner: " + str(plan.client))
             print(" ************************************************************** ")
             partner = tax.TaxUser(plan.client,
-                            plan.partner_data.regional_data['ssn'],
+                            plan.client.regional_data['ssn'],
                             pd.Timestamp(plan.partner_data.date_of_birth),
                             plan.partner_data.retirement_age,
                             plan.partner_data.life_expectancy,
