@@ -656,7 +656,7 @@ equired to generate the
        
 
         # Convert these returned values to a format for the API        
-        if plan.client.civil_status == 1 or plan.client.civil_status == 2:
+        if plan.client.civil_status == -1 or plan.client.civil_status == -2:
             print(" ************************************************************** ")
             print("if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:")
             print(" ************************************************************** ")
