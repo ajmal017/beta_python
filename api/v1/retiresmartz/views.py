@@ -618,8 +618,14 @@ equired to generate the
                         state)
 
         user.create_maindf()
-      
+        
+        print(" ************************************************************** ")
+        print("plan.client.civil_status = " + str(plan.client.civil_status))
+        print(" ************************************************************** ")
         if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:
+            print(" ************************************************************** ")
+            print("partner: " + str(plan.partner_data.name))
+            print(" ************************************************************** ")
             partner = tax.TaxUser(plan.partner_data.name,
                             plan.partner_data.regional_data['ssn'],
                             pd.Timestamp(plan.partner_data.date_of_birth),
@@ -651,12 +657,18 @@ equired to generate the
 
         # Convert these returned values to a format for the API        
         if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:
+            print(" ************************************************************** ")
+            print("if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:")
+            print(" ************************************************************** ")
             user.maindf['Joint_Taxable_Accounts'] = user.maindf['Taxable_Accounts'] + partner.maindf['Taxable_Accounts']
             user.maindf['Joint_Actual_Inc'] = user.maindf['Actual_Inc'] + partner.maindf['Actual_Inc']
             user.maindf['Joint_Desired_Inc'] = user.maindf['Desired_Inc'] + partner.maindf['Desired_Inc']
             catd = pd.concat([user.maindf['Joint_Taxable_Accounts'], user.maindf['Joint_Actual_Inc'], user.maindf['Joint_Desired_Inc']], axis=1)
 
         else:
+            print(" ************************************************************** ")
+            print("else")
+            print(" ************************************************************** ")
             catd = pd.concat([user.maindf['Taxable_Accounts'], user.maindf['Actual_Inc'], user.maindf['Desired_Inc']], axis=1)
 
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)

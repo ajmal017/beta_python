@@ -345,8 +345,7 @@ class TaxUser(object):
 
         self.maindf['Portfolio_Return'] = self.maindf['Proj_Inflation_Rate'] + self.get_portfolio_return_above_cpi()/12.
         self.pre_portfolio_return = [inflation_level[i]/12. + self.get_portfolio_return_above_cpi()/12. for i in range(self.pre_retirement_end)]
-        self.post_portfolio_return = [inflation_level[self.retirement_start
-                                                           + i]/12. + self.get_portfolio_return_above_cpi()/12.
+        self.post_portfolio_return = [inflation_level[self.retirement_start + i]/12. + self.get_portfolio_return_above_cpi()/12.
                                       for i in range(self.total_rows - self.pre_retirement_end)]
 
         self.maindf['Retire_Work_Inc_Daily_Rate'] = [116*(1+self.income_growth/12.)**i for i in range(self.total_rows)]
