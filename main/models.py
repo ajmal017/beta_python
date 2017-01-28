@@ -1406,6 +1406,7 @@ class Portfolio(models.Model):
     er = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
     # Also has 'items' field from PortfolioItem
+    rebalance = models.BooleanField(default=True)
 
     def __str__(self):
         result = u'Portfolio #%s' % self.id
