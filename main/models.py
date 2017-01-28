@@ -1447,6 +1447,12 @@ class GoalSetting(models.Model):
     def get_portfolio_items_all(self):
         return self.portfolio.items.all()
 
+    @cached_property
+    def can_rebalance(self):
+        if self.rebalance and self.portfolio.rebalance:
+            return True
+        return False
+
     @property
     def risk_score(self):
         """
