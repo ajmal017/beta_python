@@ -63,7 +63,9 @@ class FederalTax(object):
         returns one of 'Single', 'Married_Fil_Joint', 'Married_Fil_Sep', 'Head_Of_House', 'Qual_Widow_Dep_Child',
         'Married_Fil_Sep_Live_Apart' (or raising exception) depending on filing_status
         '''
-
+        print(" ************************************************************** ")
+        print("in US Tax: filing_status  " + str(filing_status))
+        print(" ************************************************************** ")
         if filing_status == abstract.PersonalData.CivilStatus['SINGLE']:
             return 'Single'
 
