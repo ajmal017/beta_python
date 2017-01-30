@@ -8,14 +8,16 @@ logger = logging.getLogger('api.v1.retiresmartz.advice_responses')
 
 # On Track / Off Track
 def get_on_track(advice):
-    return 'If you would like to change any of your retirement details \
-you can do so by clicking on the items on this or the previous screen.'
+    return 'Well done. You are on track. If you would like to change any of \
+your retirement details you can do so by clicking on bubbles on the chart to \
+adjust when you want to retire and your life expectancy.'
 
 
 def get_off_track(advice):
-    return 'I recommend changing some of your retirement details \
-by clicking on this or the previous screen.  This will help you \
-to plan to be on track to a better retirement.'
+    return 'Ok, well we are going to have to make a few changes \
+to get you back on track. I recommend making some changes to your \
+retirement goal details by clicking on this or the previous screen. \
+This will help you to plan to get on track to achieve your dream retirement.'
 
 
 # Change Retirement Age
@@ -120,8 +122,7 @@ profile by clicking on the life expectancy bubble.'
 
 def get_smoking_yes(advice):
     return 'You could improve your life expectancy score \
-by quitting smoking. Do you intend to quit smoking in \
-the near future? Yes/No'
+by quitting smoking.'
 
 
 def get_quitting_smoking(advice):
@@ -155,7 +156,7 @@ your life expectancy by over %s years' % diff
 
 
 def get_exercise_only(advice):
-    return "Thanks for telling us about your exercise. Exercise \
+    return "Thanks for telling us about the exercise you do. Exercise \
 does impact your life expectancy. Regular exercise for at \
 least 20 minutes each day 5 times a week increases your \
 life expectancy by up to 3.2 years."
@@ -210,7 +211,7 @@ def get_protective_move(advice):
         risk = str(risk)[2:]
     return "I can see you have adjusted your risk profile to be more \
 protective. We base your risk profile on the risk questionnaire \
-you completed and recommended {}. By adjusting the slider you \
+you completed and determined your score to be {}. By adjusting the slider you \
 change the asset allocation in your retirement goal.".format(str(risk))
 
 
@@ -246,7 +247,7 @@ def get_dynamic_move(advice):
         risk = str(risk)[2:]
     return "I can see you have adjusted your risk profile to be more dynamic. \
 We base your risk profile on the risk questionnaire you completed and \
-recommended {}. By adjusting the slider you change the asset allocation \
+determined your score to be {}. By adjusting the slider you change the asset allocation \
 in your retirement goal.\nYou will be taking more risk.".format(str(risk))
 
 
@@ -264,8 +265,8 @@ def get_increase_spending_decrease_contribution(advice, contrib, income):
     #         max_contribution = 24000
 
     rv = "Hey big spender! I can see you want to spend a bit more. \
-If you decreased your spending by ${:,.2f} a week, you could increase your \
-retirement income by ${:,.2f} a week.".format(contrib, income)
+If you decreased your spending by ${:,.2f} a month, you could increase your \
+retirement income by ${:,.2f} a month.".format(contrib / 12, income / 12)
     if advice.plan.client.employment_status == constants.EMPLOYMENT_STATUS_EMMPLOYED:
         rv += " Your employer will match these contributions making it easier to reach your goal."
 
@@ -274,14 +275,14 @@ retirement income by ${:,.2f} a week.".format(contrib, income)
 
 def get_increase_contribution_decrease_spending(advice, contrib, income):
     return "Well done, by increasing your retirement contributions to ${:,.2f} \
-a month, you have increased your retirement income by ${:,.2f} a week.".format(contrib, income)
+a month, you have increased your retirement income by ${:,.2f} a month.".format(contrib / 12, income / 12)
 
 
 def get_increase_spending_decrease_contribution_again(advice, contrib, income):
     # TODO: Need to add $X and $Y calculations
     return "Are you sure you need to increase your spending again and reduce your \
 retirement contributions? Just think, if your contributions stayed \
-at ${:,.2f} a month, you would be ${:,.2f} a week better off in retirement.".format(contrib, income)
+at ${:,.2f} a month, you would be ${:,.2f} a week better off in retirement.".format(contrib / 12, income / 52)
 
 
 def get_off_track_item_adjusted_to_on_track(advice):

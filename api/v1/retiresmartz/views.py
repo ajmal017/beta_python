@@ -37,6 +37,7 @@ from datetime import date, datetime
 from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
+import time
 logger = logging.getLogger('api.v1.retiresmartz.views')
 import pdb
 
@@ -232,7 +233,8 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                 Q(action='RETIRESMARTZ_SPENDING_DOWN_CONTRIB_UP')
             ).order_by('-timestamp')
             # TODO: calculate nth rate based on retirement age?
-            nth_rate = reduce((lambda acc, rate: acc * (1 + rate)), inflation_level[:25], 1)
+            years = updated.retirement_age - updated.client.age
+            nth_rate = reduce((lambda acc, rate: acc * (1 + rate)), inflation_level[:years], 1)
 
             if events.count() > 0 and events[0].action == 'RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN':
                 e = Event.RETIRESMARTZ_SPENDING_UP_CONTRIB_DOWN_AGAIN.log(None,
@@ -572,7 +574,7 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
-        
+
         # Get projection of future income and assets for US tax payer
         house_value = 0.
         adj_gross_income = 100000.
@@ -586,7 +588,7 @@ equired to generate the
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
         initial_401k_balance = 0.
-        
+
         if plan.client.residential_address.post_code is None:
             raise Exception("plan.client.residential_address.post_code is None")
 
@@ -618,7 +620,7 @@ equired to generate the
                         state)
 
         user.create_maindf()
-        
+
         print(" ************************************************************** ")
         print("plan.client.civil_status = " + str(plan.client.civil_status))
         print(" ************************************************************** ")
@@ -653,9 +655,9 @@ equired to generate the
                             state)
 
             partner.create_maindf()
-       
 
-        # Convert these returned values to a format for the API        
+
+        # Convert these returned values to a format for the API
         if plan.client.civil_status == -1 or plan.client.civil_status == -2:
             print(" ************************************************************** ")
             print("if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:")
@@ -674,8 +676,64 @@ equired to generate the
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
         pser = PortfolioSerializer(instance=settings.portfolio)
-        
-        return Response({'portfolio': pser.data, 'projection': proj_data})
+
+        # log status of on/off track change.
+        reload_feed = False
+        on_track = self.check_is_on_track(proj_data, plan)
+        events = EventLog.objects.filter(
+            Q(action='RETIRESMARTZ_ON_TRACK_NOW') |
+            Q(action='RETIRESMARTZ_OFF_TRACK_NOW')
+        ).order_by('-timestamp')
+
+        if on_track and (events.count() == 0 or events[0].action == 'RETIRESMARTZ_OFF_TRACK_NOW'):
+            e = Event.RETIRESMARTZ_ON_TRACK_NOW.log(None,
+                                                    user=plan.client.user,
+                                                    obj=plan)
+            advice = RetirementAdvice(plan=plan, trigger=e)
+            advice.text = advice_responses.get_off_track_item_adjusted_to_on_track(advice)
+            advice.save()
+            reload_feed = True
+
+        if not on_track and (events.count() == 0 or events[0].action == 'RETIRESMARTZ_ON_TRACK_NOW'):
+            e = Event.RETIRESMARTZ_OFF_TRACK_NOW.log(None,
+                                                    user=plan.client.user,
+                                                    obj=plan)
+            advice = RetirementAdvice(plan=plan, trigger=e)
+            advice.text = advice_responses.get_on_track_item_adjusted_to_on_track(advice)
+            advice.save()
+            reload_feed = True
+
+        return Response({'portfolio': pser.data, 'projection': proj_data, 'reload_feed': reload_feed})
+
+    def check_is_on_track(self, proj_data, plan):
+        def value_at_retirement(retirement_date, arr):
+            for item in arr:
+                if item['x'] >= retirement_date:
+                    return item['y']
+            return 0
+
+        def value_map(item_array):
+            return {
+                'x': item_array[0] * 8.64e4, # epoch days => epoch ms
+                'y': item_array[2]
+            }
+
+        def target_value_map(item_array):
+            return {
+                'x': item_array[0] * 8.64e4, # epoch days => epoch ms
+                'y': item_array[3]
+            }
+
+        values = list(map(value_map, proj_data))
+        target_values = list(map(target_value_map, proj_data))
+
+        retirement_date = plan.client.date_of_birth + relativedelta(years=+plan.retirement_age)
+        rt_dt_epoch = time.mktime(retirement_date.timetuple())
+
+        rt_value = value_at_retirement(rt_dt_epoch, values)
+        target_rt_value = value_at_retirement(rt_dt_epoch, target_values)
+
+        return target_rt_value >= rt_value
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
