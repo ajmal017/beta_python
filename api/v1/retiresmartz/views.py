@@ -582,6 +582,10 @@ equired to generate the
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
         initial_401k_balance = 0.
+        ss_fra_todays = 3300
+        ss_fra_retirement = 9100
+        # plan.client.ss_fra_todays,
+        # plan.client.ss_fra_retirement,
 
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
@@ -597,8 +601,8 @@ equired to generate the
                         total_payments,
                         plan.income_growth,
                         plan.client.employment_status,
-                        plan.client.ss_fra_todays,
-                        plan.client.ss_fra_retirement,
+                        ss_fra_todays,
+                        ss_fra_retirement,
                         plan.paid_days,
                         contrib_rate_employer_401k,
                         contrib_rate_employee_401k,
