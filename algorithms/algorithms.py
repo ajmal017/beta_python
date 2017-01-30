@@ -34,6 +34,7 @@ class RebalanceAlorithm(object):
         :param idata:
         :return: A MarketOrderRequest and the list of associated ExecutionRequests
         """
+        pass
 
 
 class RiskAlgorithm(object):

@@ -1406,6 +1406,7 @@ class Portfolio(models.Model):
     er = models.FloatField()
     created = models.DateTimeField(auto_now_add=True)
     # Also has 'items' field from PortfolioItem
+    rebalance = models.BooleanField(default=True)
 
     def __str__(self):
         result = u'Portfolio #%s' % self.id
@@ -1445,6 +1446,12 @@ class GoalSetting(models.Model):
 
     def get_portfolio_items_all(self):
         return self.portfolio.items.all()
+
+    @cached_property
+    def can_rebalance(self):
+        if self.rebalance and self.portfolio.rebalance:
+            return True
+        return False
 
     @property
     def risk_score(self):
