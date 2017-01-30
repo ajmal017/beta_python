@@ -4,14 +4,14 @@ dir = os.path.dirname(__file__)
 file_name = os.path.join(dir, 'zipcode_list.csv')
 zip_codes = pd.read_csv(file_name)
   
-def get_state(zip):
+def get_state(zip_code):
 
     # check input is valid
-    validate_input(zip)
+    validate_input(zip_code)
 
     # look for the state
     for i in range(len(zip_codes["Zip_Code"])):
-        if zip == zip_codes["Zip_Code"][i]:
+        if zip_code == zip_codes["Zip_Code"][i]:
             return zip_codes["State"][i]
 
     return 'FL'
@@ -19,11 +19,16 @@ def get_state(zip):
     # a fudge so that can demo without tripping up
 
 
-def validate_input(zip):
-    if not zip:
-        raise Exception("zip not provided")
+def validate_input(zip_code):
+    if not zip_code:
+        raise Exception("zip_code not provided")
 
     else:
-        if type(zip) != int:
-            raise Exception("zip must be integer")
+        if type(zip_code) != int:
+            raise Exception("zip_code must be integer")
+
+        '''
+        elif zip_code < 10000 or zip_code > 99999:
+            raise Exception("zip_code not of correct form")
+        '''
     

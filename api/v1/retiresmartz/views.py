@@ -30,7 +30,6 @@ from retiresmartz.models import RetirementAdvice, RetirementPlan
 from support.models import SupportRequest
 from . import serializers
 from main import tax_sheet as tax
-from main import zip2state
 from main import abstract
 from main import constants
 from datetime import date, datetime
@@ -580,22 +579,11 @@ equired to generate the
         adj_gross_income = 100000.
         taxable_income = 0.
         total_payments = 18219.
-        after_tax_income = 110982.
-        ss_fra_todays = 3311.
-        ss_fra_retirement = 9773.
-        paid_days = 1
-        ira_rmd_factor = 26.5
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
         initial_401k_balance = 0.
 
-        if plan.client.residential_address.post_code is None:
-            raise Exception("plan.client.residential_address.post_code is None")
-
-        state = zip2state.get_state(int(plan.client.residential_address.post_code))
-        user = tax.TaxUser(plan.client,
-                        plan.client.regional_data['ssn'],
-                        pd.Timestamp(plan.client.date_of_birth),
+        user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
                         plan.client.life_expectancy,
                         plan.lifestyle,
@@ -607,42 +595,37 @@ equired to generate the
                         adj_gross_income,
                         taxable_income,
                         total_payments,
-                        after_tax_income,
                         plan.income_growth,
                         plan.client.employment_status,
-                        ss_fra_todays,
-                        ss_fra_retirement,
-                        paid_days,
+                        plan.client.ss_fra_todays,
+                        plan.client.ss_fra_retirement,
+                        plan.paid_days,
                         contrib_rate_employer_401k,
                         contrib_rate_employee_401k,
                         initial_401k_balance,
-                        ira_rmd_factor,
-                        state)
+                        int(plan.client.residential_address.post_code))
 
         user.create_maindf()
 
         print(" ************************************************************** ")
         print("plan.client.civil_status = " + str(plan.client.civil_status))
         print(" ************************************************************** ")
-        if plan.client.civil_status == -10 or plan.client.civil_status == -9:
+        if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             print(" ************************************************************** ")
-            print("partner: " + str(plan.client))
+            print("partner: ")
             print(" ************************************************************** ")
-            partner = tax.TaxUser(plan.client,
-                            plan.client.regional_data['ssn'],
-                            pd.Timestamp(plan.partner_data.dob),
-                            plan.partner_data.retirement_age,
-                            plan.partner_data.life_expectancy,
+            partner = tax.TaxUser(pd.Timestamp(plan.partner_plan.dob),
+                            plan.partner_plan.retirement_age,
+                            plan.partner_plan.life_expectancy,
                             plan.lifestyle,
                             plan.reverse_mortgage,
                             house_value,
                             plan.desired_risk,
                             plan.client.civil_status,
-                            plan.partner_data.income,
+                            plan.partner_plan.income,
                             adj_gross_income,
                             taxable_income,
                             total_payments,
-                            after_tax_income,
                             plan.income_growth,
                             plan.client.employment_status,
                             ss_fra_todays,
@@ -651,14 +634,12 @@ equired to generate the
                             contrib_rate_employer_401k,
                             contrib_rate_employee_401k,
                             initial_401k_balance,
-                            ira_rmd_factor,
-                            state)
+                            int(plan.client.residential_address.post_code))
 
             partner.create_maindf()
 
-
-        # Convert these returned values to a format for the API
-        if plan.client.civil_status == -1 or plan.client.civil_status == -2:
+        # Convert these returned values to a format for the API        
+        if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             print(" ************************************************************** ")
             print("if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:")
             print(" ************************************************************** ")

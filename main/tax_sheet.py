@@ -9,6 +9,7 @@ from main import abstract
 from main import constants
 from dateutil.relativedelta import relativedelta
 from main import inflation
+from main import zip2state
 import pdb
 
 logger = logging.getLogger('taxsheet')
@@ -21,8 +22,6 @@ class TaxUser(object):
     '''
 
     def __init__(self,
-                 name,
-                 ssn,
                  dob,
                  desired_retirement_age,
                  life_exp,
@@ -35,7 +34,6 @@ class TaxUser(object):
                  adj_gross_income,
                  taxable_income,
                  total_payments,
-                 after_tax_income,
                  income_growth,
                  employment_status,
                  ss_fra_todays,
@@ -44,22 +42,15 @@ class TaxUser(object):
                  contrib_rate_employer_401k,
                  contrib_rate_employee_401k,
                  initial_401k_balance,
-                 ira_rmd_factor,
-                 state):
+                 zip_code):
 
-        if life_exp == desired_retirement_age:
-            life_exp = life_exp + 1
-
-            
         '''
         checks
         '''
         self.debug = True
         
         if (self.debug):
-            self.show_inputs(name,
-                             ssn,
-                             dob,
+            self.show_inputs(dob,
                              desired_retirement_age,
                              life_exp,
                              retirement_lifestyle,
@@ -71,7 +62,6 @@ class TaxUser(object):
                              adj_gross_income,
                              taxable_income,
                              total_payments,
-                             after_tax_income,
                              income_growth,
                              employment_status,
                              ss_fra_todays,
@@ -80,13 +70,10 @@ class TaxUser(object):
                              contrib_rate_employer_401k,
                              contrib_rate_employee_401k,
                              initial_401k_balance,
-                             ira_rmd_factor,
                              inflation_level,
-                             state)
+                             zip_code)
             
-        self.validate_inputs(name,
-                             ssn,
-                             dob,
+        self.validate_inputs(dob,
                              desired_retirement_age,
                              life_exp,
                              retirement_lifestyle,
@@ -98,7 +85,6 @@ class TaxUser(object):
                              adj_gross_income,
                              taxable_income,
                              total_payments,
-                             after_tax_income,
                              income_growth,
                              employment_status,
                              ss_fra_todays,
@@ -107,15 +93,12 @@ class TaxUser(object):
                              contrib_rate_employer_401k,
                              contrib_rate_employee_401k,
                              initial_401k_balance,
-                             ira_rmd_factor,
                              inflation_level,
-                             state)
+                             zip_code)
         
         '''
         set variables
         '''
-        self.name = name
-        self.ssn = ssn
         self.dob = dob
         self.desired_retirement_age = desired_retirement_age
         self.life_exp = life_exp
@@ -125,12 +108,11 @@ class TaxUser(object):
         self.desired_risk = desired_risk
         self.filing_status = abstract.PersonalData.CivilStatus(filing_status)
         self.total_income = total_income
-        self.adj_gross_income = max(adj_gross_income, total_income)
+        self.adj_gross_income = max(adj_gross_income, total_income) #adj_gross_income must be at least as big as total_income
         self.taxable_income = taxable_income
         self.total_payments = total_payments
-        self.after_tax_income = after_tax_income
         self.other_income = self.adj_gross_income - self.total_income
-        self.income_growth = income_growth/100.0
+        self.income_growth = income_growth
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
         self.ss_fra_todays = ss_fra_todays
         self.ss_fra_retirement = ss_fra_retirement
@@ -138,20 +120,20 @@ class TaxUser(object):
         self.contrib_rate_employee_401k = contrib_rate_employee_401k
         self.contrib_rate_employer_401k = contrib_rate_employer_401k
         self.initial_401k_balance = initial_401k_balance
-        self.ira_rmd_factor = ira_rmd_factor
-        self.state = state
+        self.ira_rmd_factor = 26.5
+        self.state = zip2state.get_state(zip_code)
 
 
         '''
         age
         '''
-        self.age = ((pd.Timestamp('today')-self.dob).days)/365.
+        self.age = ((pd.Timestamp('today')-self.dob).days)/365.25
         self.validate_age()
 
         '''
         retirememt period
         '''
-        
+        self.validate_life_exp_and_des_retire_age()
         self.pre_retirement_end = math.ceil((self.desired_retirement_age - self.age) * 12)  # i.e. last period in which TaxUser is younger than desired retirement age
                                                                                              # NB this period has index self.pre_retirement_end - 1
                                                                                             
@@ -353,7 +335,6 @@ class TaxUser(object):
         '''
         get the 'flators'
         '''
-        
         self.pre_deflator = [0. for i in range(self.pre_retirement_end)]
         self.pre_deflator[self.pre_retirement_end - 1] = 1. * (1 - self.pre_proj_inflation_rate[self.pre_retirement_end - 1])                                                                                          
         for i in range (1, self.pre_retirement_end):
@@ -764,23 +745,6 @@ class TaxUser(object):
         self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Des_Ret_Inc_Pre_Tax']
                                                                                             - self.maindf['Certain_Ret_Inc'])
 
-        self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts_Pre_Deccumulation'] /(self.ira_rmd_factor * 12.), 0)
-
-        self.maindf['Tot_Non_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Ret_Certain_Inc_Gap'] > self.maindf['Reqd_Min_Dist'],
-                                                                                                      np.where(self.maindf['Nontaxable_Accounts'] > 0
-                                                                                                               , self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Reqd_Min_Dist'], 0)
-                                                                                                      , 0))    
-
-        self.maindf['Tot_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Reqd_Min_Dist'] > 0,
-                                                                                                   self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Tot_Non_Taxable_Dist'],
-                                                                                                   np.where(self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'] > 0,
-                                                                                                            self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'],
-                                                                                                            0)))
-
-        self.maindf['Ret_Inc_Gap'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Certain_Inc_Gap']
-                                                                                     - self.maindf['Tot_Non_Taxable_Dist']
-                                                                                     - self.maindf['Tot_Taxable_Dist'])
-
         '''
         for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
         ''' 
@@ -799,6 +763,23 @@ class TaxUser(object):
 
         self.maindf['Taxable_Accounts'] = np.where(self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance'] > 0,
                                                    self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance'], 0)
+
+        self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmd_factor * 12.), 0)
+
+        self.maindf['Tot_Non_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Ret_Certain_Inc_Gap'] > self.maindf['Reqd_Min_Dist'],
+                                                                                                      np.where(self.maindf['Nontaxable_Accounts'] > 0
+                                                                                                               , self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Reqd_Min_Dist'], 0)
+                                                                                                      , 0))    
+
+        self.maindf['Tot_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Reqd_Min_Dist'] > 0,
+                                                                                                   self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Tot_Non_Taxable_Dist'],
+                                                                                                   np.where(self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'] > 0,
+                                                                                                            self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'],
+                                                                                                            0)))
+
+        self.maindf['Ret_Inc_Gap'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Certain_Inc_Gap']
+                                                                                     - self.maindf['Tot_Non_Taxable_Dist']
+                                                                                     - self.maindf['Tot_Taxable_Dist'])
 
         
         # CALCULATION OF AFTER TAX INCOME
@@ -924,16 +905,13 @@ class TaxUser(object):
 
         # Desired income
         self.pre_0 = [0 for i in range(self.pre_retirement_end)]
-        self.maindf['Desired_Inc'] = (self.maindf['Total_Income'] + self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax)) * self.maindf['Inflator']
+        self.maindf['Desired_Inc'] = self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) * self.maindf['Inflator']
 
         if(self.debug):
             self.show_outputs()
         
-
         
     def validate_inputs(self,
-                         name,
-                         ssn,
                          dob,
                          desired_retirement_age,
                          life_exp,
@@ -946,7 +924,6 @@ class TaxUser(object):
                          adj_gross_income,
                          taxable_income,
                          total_payments,
-                         after_tax_income,
                          income_growth,
                          employment_status,
                          ss_fra_todays,
@@ -955,14 +932,10 @@ class TaxUser(object):
                          contrib_rate_employer_401k,
                          contrib_rate_employee_401k,
                          initial_401k_balance,
-                         ira_rmd_factor,
                          inflation_level,
-                         state):
-
+                         zip_code):
+        
         # Null checks
-        if not name:
-            raise Exception('name not provided')
-
         if not dob:
             raise Exception('dob not provided')
 
@@ -970,6 +943,7 @@ class TaxUser(object):
             raise Exception('desired_retirement_age not provided')
 
         if not life_exp:
+            pdb.set_trace()
             raise Exception('life_exp no provided')
 
         if not retirement_lifestyle:
@@ -978,13 +952,10 @@ class TaxUser(object):
         if not desired_risk:
             raise Exception('desired_risk not provided')
 
-        if not ira_rmd_factor:
-            raise Exception('ira_rmd_factor not provided')
-
         if not inflation_level:
             raise Exception('inflation_level not provided')
 
-        if not state:
+        if not zip_code:
             raise Exception('state not provided')
 
         # other checks
@@ -994,8 +965,8 @@ class TaxUser(object):
         if life_exp < 0:
             raise Exception('life_exp less than 0')
 
-        if life_exp <= desired_retirement_age:
-            raise Exception('life_exp less than or equal to desired_retirement_age')
+        if life_exp < desired_retirement_age:
+            raise Exception('life_exp less than desired_retirement_age')
 
         if retirement_lifestyle != 1 and retirement_lifestyle != 2 and retirement_lifestyle != 3 and retirement_lifestyle != 4:
             raise Exception('unhandled value of retirement_lifestyle')
@@ -1024,9 +995,6 @@ class TaxUser(object):
         if total_payments < 0:
             raise Exception('total_payments less than 0')
 
-        if after_tax_income < 0:
-            raise Exception('after_tax_income less than 0')
-
         if paid_days < 0:
             raise Exception('paid_days less than 0')
 
@@ -1048,8 +1016,12 @@ class TaxUser(object):
         if contrib_rate_employee_401k > 1:
             raise Exception('contrib_rate_employee_401k greater than 1 (i.e. > 100%)')
 
-        if len(state) != 2:
-            raise Exception('state does not have two characters, so not of correct format for US states')
+        if type(zip_code) != int:
+            raise Exception("zip_code must be integer")
+        '''
+        if zip_code < 10000 or zip_code > 99999:
+            raise Exception("zip_code not of correct form")
+        ''' 
 
 
     def validate_age(self):
@@ -1060,9 +1032,12 @@ class TaxUser(object):
             raise Exception("age less than or equal to 0")
 
 
+    def validate_life_exp_and_des_retire_age(self):
+        if self.life_exp == self.desired_retirement_age:
+            self.life_exp = self.life_exp + 1
+
+
     def show_inputs(self,
-                     name,
-                     ssn,
                      dob,
                      desired_retirement_age,
                      life_exp,
@@ -1075,7 +1050,6 @@ class TaxUser(object):
                      adj_gross_income,
                      taxable_income,
                      total_payments,
-                     after_tax_income,
                      income_growth,
                      employment_status,
                      ss_fra_todays,
@@ -1084,12 +1058,9 @@ class TaxUser(object):
                      contrib_rate_employer_401k,
                      contrib_rate_employee_401k,
                      initial_401k_balance,
-                     ira_rmd_factor,
                      inflation_level,
-                     state):
+                     zip_code):
         print("-----------------------------Retirement model INPUTS -------------------")
-        print('name:                        ' + str(name))
-        print('ssn:                         ' + str(ssn))
         print('dob:                         ' + str(dob))
         print('desired_retirement_age:       ' + str(desired_retirement_age))
         print('life_exp:                    ' + str(life_exp))
@@ -1102,7 +1073,6 @@ class TaxUser(object):
         print('adj_gross_income:            ' + str(adj_gross_income))
         print('taxable_income:              ' + str(taxable_income))
         print('total_payments:              ' + str(total_payments))
-        print('after_tax_income:            ' + str(after_tax_income))
         print('income_growth:               ' + str(income_growth))
         print('employment_status:           ' + str(employment_status))
         print('ss_fra_todays:               ' + str(ss_fra_todays))
@@ -1111,8 +1081,7 @@ class TaxUser(object):
         print('contrib_rate_employer_401k:  ' + str(contrib_rate_employer_401k))
         print('contrib_rate_employee_401k:  ' + str(contrib_rate_employee_401k))
         print('initial_401k_balance:        ' + str(initial_401k_balance))
-        print('ira_rmd_factor:              ' + str(ira_rmd_factor))
-        print('state:                       ' + str(state))
+        print('zip_code:                    ' + str(zip_code))
         print("[Set self.debug=False to hide these]")
         
 
