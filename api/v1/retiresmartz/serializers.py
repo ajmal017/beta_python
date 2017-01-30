@@ -87,7 +87,7 @@ class ExpensesSerializer(serializers.Serializer):
     desc = serializers.CharField()
     cat = serializers.IntegerField(validators=[make_category_validator(RetirementPlan.ExpenseCategory)])
     who = serializers.CharField(validators=[who_validator])
-    amt = serializers.IntegerField()
+    amt = serializers.FloatField()
 
 
 class SavingsSerializer(serializers.Serializer):
@@ -95,7 +95,7 @@ class SavingsSerializer(serializers.Serializer):
     desc = serializers.CharField()
     cat = serializers.IntegerField(validators=[make_category_validator(RetirementPlan.SavingCategory)])
     who = serializers.CharField(validators=[who_validator])
-    amt = serializers.IntegerField()
+    amt = serializers.FloatField()
 
 
 class InitialDepositsSerializer(serializers.Serializer):
