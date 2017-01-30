@@ -112,7 +112,7 @@ class TaxUser(object):
         self.taxable_income = taxable_income
         self.total_payments = total_payments
         self.other_income = self.adj_gross_income - self.total_income
-        self.income_growth = income_growth
+        self.income_growth = income_growth/100.
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
         self.ss_fra_todays = ss_fra_todays
         self.ss_fra_retirement = ss_fra_retirement
