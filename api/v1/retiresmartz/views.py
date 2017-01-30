@@ -684,7 +684,7 @@ equired to generate the
                                                     user=plan.client.user,
                                                     obj=plan)
             advice = RetirementAdvice(plan=plan, trigger=e)
-            advice.text = advice_responses.get_on_track_item_adjusted_to_on_track(advice)
+            advice.text = advice_responses.get_on_track_item_adjusted_to_off_track(advice)
             advice.save()
             reload_feed = True
 
