@@ -252,7 +252,7 @@ in your retirement goal.\nYou will be taking more risk.".format(str(risk))
 
 
 # Contributions / Spending
-def get_increase_spending_decrease_contribution(advice, contrib, income):
+def get_increase_spending_decrease_contribution(advice, diff_now, diff_later):
     # TODO: Need to add $X and $Y calculations, max_contributions needs to come in
     # if advice.plan.client.account.account_type == constants.ACCOUNT_TYPE_401K or \
     #    advice.plan.client.account.account_type == constants.ACCOUNT_TYPE_ROTH401K:
@@ -266,7 +266,7 @@ def get_increase_spending_decrease_contribution(advice, contrib, income):
 
     rv = "Hey big spender! I can see you want to spend a bit more. \
 If you decreased your spending by ${:,.2f} a month, you could increase your \
-retirement income by ${:,.2f} a month.".format(contrib / 12, income / 12)
+retirement income by ${:,.2f} a month.".format(diff_now / 12, diff_later / 12)
     if advice.plan.client.employment_status == constants.EMPLOYMENT_STATUS_EMMPLOYED:
         rv += " Your employer will match these contributions making it easier to reach your goal."
 
@@ -282,7 +282,7 @@ def get_increase_spending_decrease_contribution_again(advice, contrib, income):
     # TODO: Need to add $X and $Y calculations
     return "Are you sure you need to increase your spending again and reduce your \
 retirement contributions? Just think, if your contributions stayed \
-at ${:,.2f} a month, you would be ${:,.2f} a week better off in retirement.".format(contrib / 12, income / 52)
+at ${:,.2f} a month, you would be ${:,.2f} a month better off in retirement.".format(contrib / 12, income / 12)
 
 
 def get_off_track_item_adjusted_to_on_track(advice):
