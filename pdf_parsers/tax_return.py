@@ -45,9 +45,7 @@ keywords = {
     'PaymentsColumn2': ['TOTAL PAYMENTS PER COMPUTER:\n\n', '\n\nRefund or Amount Owed'],
     'RefundColumn': ['BAL DUE/OVER PYMT USING COMPUTER FIGURES:\n\n', '\n\nThird Party Designee'],
     'TaxAndCreditsColumn': ['GENERAL BUSINESS CREDITS:\n\n', 'Tax Return Transcript'],
-    'date_of_birth': ['', ''],
-    'date_of_birth_spouse': ['', ''],
-    'exemptions': ['', ''],
+    'exemptions': ['EXEMPTION NUMBER:\n', '\nDEPENDENT 1 NAME CTRL:'],
 }
 
 output = {
@@ -65,6 +63,9 @@ output = {
                 'TaxAndCreditsColumn': '',
                 'blind': '',
                 'blind_spouse': '',
+                'exemptions': '',
+                'date_of_birth': '',
+                'date_of_birth_spouse': '',
             }
         },
         {
@@ -207,6 +208,7 @@ def clean_results(results):
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
     clean_output['blind'] = results['sections'][0]['fields']['blind']
     clean_output['blind_spouse'] = results['sections'][0]['fields']['blind_spouse']
+    clean_output['exemptions'] = results['sections'][0]['fields']['exemptions']
 
     clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
 
