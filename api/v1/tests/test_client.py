@@ -259,6 +259,8 @@ class ClientTests(APITestCase):
         # lets test income update
         old_income = self.betasmartz_client.income
         new_income = old_income + 5000.0
+        old_other_income = self.betasmartz_client.other_income
+        new_other_income = old_other_income + 1000.0
         new_occupation = '11-0000'
         new_industry_sector = 'NAICS 11'
         new_student_loan = True
@@ -267,6 +269,7 @@ class ClientTests(APITestCase):
         new_date_of_birth = date(1990, 1, 1)
         data = {
             'income': new_income,
+            'other_income': new_other_income,
             'occupation': new_occupation,
             'industry_sector': new_industry_sector,
             'student_loan': new_student_loan,

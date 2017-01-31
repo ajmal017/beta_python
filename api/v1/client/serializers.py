@@ -78,6 +78,7 @@ class ClientCreateSerializer(serializers.ModelSerializer):
             'employment_status',
             RESIDENTIAL_ADDRESS_KEY,
             'income',
+            'other_income',
             'occupation',
             'industry_sector',
             'employer_type',
@@ -148,6 +149,7 @@ class ClientUpdateSerializer(serializers.ModelSerializer):
             'employment_status',
             RESIDENTIAL_ADDRESS_KEY,
             'income',
+            'other_income',
             'occupation',
             'industry_sector',
             'employer_type',
@@ -504,7 +506,7 @@ class PersonalInfoSerializer(serializers.ModelSerializer):
         model = Client
         fields = ('first_name', 'middle_name', 'last_name', 'address', 'phone',
                   'employment_status', 'occupation', 'industry_sector', 'employer',
-                  'income', 'net_worth')
+                  'income', 'other_income', 'net_worth')
 
     def save(self, **kwargs):
         new_address = self.validated_data.pop('residential_address', None)
