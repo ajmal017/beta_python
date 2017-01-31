@@ -30,15 +30,12 @@ from retiresmartz.models import RetirementAdvice, RetirementPlan
 from support.models import SupportRequest
 from . import serializers
 from main import tax_sheet as tax
-from main import abstract
-from main import constants
-from datetime import date, datetime
 from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
 import time
 logger = logging.getLogger('api.v1.retiresmartz.views')
-import pdb
+
 
 class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
