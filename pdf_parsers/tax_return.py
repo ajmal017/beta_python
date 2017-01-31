@@ -13,7 +13,6 @@ import sys
 import json
 import subprocess
 import logging
-import re
 import random
 import string
 
@@ -45,6 +44,10 @@ keywords = {
     'PaymentsColumn': ['AMOUNT PAID WITH FORM 4868:\n\n', 'Tax Return Transcript'],
     'PaymentsColumn2': ['TOTAL PAYMENTS PER COMPUTER:\n\n', '\n\nRefund or Amount Owed'],
     'RefundColumn': ['BAL DUE/OVER PYMT USING COMPUTER FIGURES:\n\n', '\n\nThird Party Designee'],
+    'TaxAndCreditsColumn': ['GENERAL BUSINESS CREDITS:\n\n', 'Tax Return Transcript'],
+    'date_of_birth': ['', ''],
+    'date_of_birth_spouse': ['', ''],
+    'exemptions': ['', ''],
 }
 
 output = {
@@ -58,7 +61,10 @@ output = {
                 "NAME": "",
                 "SPOUSE NAME": "",
                 "ADDRESS": "",
-                "FILING STATUS": ""
+                "FILING STATUS": "",
+                'TaxAndCreditsColumn': '',
+                'blind': '',
+                'blind_spouse': '',
             }
         },
         {
@@ -134,6 +140,13 @@ def parse_text(string):
                     if len(chunks) > 5:
                         output["sections"][i]["fields"]['RefundableCredit'] = chunks[5]
 
+                elif k == 'TaxAndCreditsColumn':
+                    chunks = res.split('\n')
+                    logger.error(chunks)
+                    if len(chunks) > 5:
+                        output["sections"][i]["fields"]['blind'] = chunks[1]
+                        output["sections"][i]["fields"]['blind_spouse'] = chunks[3]
+
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
         i += 1
@@ -141,7 +154,7 @@ def parse_text(string):
 
 
 def parse_vector_pdf(fl):
-    # logger.error(get_pdf_content_lines(fl))
+    logger.error(get_pdf_content_lines(fl))
     res = get_pdf_content_lines(fl).decode("utf-8")
     return parse_text(res)
 
@@ -192,6 +205,9 @@ def clean_results(results):
     clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
     clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
     clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
+    clean_output['blind'] = results['sections'][0]['fields']['blind']
+    clean_output['blind_spouse'] = results['sections'][0]['fields']['blind_spouse']
+
     clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
 
     clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit'].strip('$ ')
