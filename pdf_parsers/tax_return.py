@@ -64,8 +64,11 @@ output = {
                 'blind': '',
                 'blind_spouse': '',
                 'exemptions': '',
-                'date_of_birth': '',
-                'date_of_birth_spouse': '',
+                # not finding below in 2006 sample
+                # 'residency_status': '',
+                # 'spouse_residency_status': '',
+                # 'date_of_birth': '',
+                # 'date_of_birth_spouse': '',
             }
         },
         {
