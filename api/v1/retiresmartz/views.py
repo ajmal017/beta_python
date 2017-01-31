@@ -577,34 +577,32 @@ equired to generate the
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
 
         # Get projection of future income and assets for US tax payer
-        house_value = 0.
+        #house_value = 0.
         adj_gross_income = 100000.
         taxable_income = 0.
         total_payments = 18219.
         contrib_rate_employer_401k = 0.02
         contrib_rate_employee_401k = 0.0
         initial_401k_balance = 0.
-        ss_fra_todays = 3300
-        ss_fra_retirement = 9100
-        # plan.client.ss_fra_todays,
-        # plan.client.ss_fra_retirement,
-
+        #ss_fra_todays = 3300
+        #ss_fra_retirement = 9100
+        
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
                         plan.client.life_expectancy,
                         plan.lifestyle,
                         plan.reverse_mortgage,
-                        house_value,
+                        plan.client.home_value,
                         plan.desired_risk,
                         plan.client.civil_status,
                         plan.client.income,
-                        adj_gross_income,
+                        plan.client.other_income,
                         taxable_income,
                         total_payments,
                         plan.income_growth,
                         plan.client.employment_status,
-                        ss_fra_todays,
-                        ss_fra_retirement,
+                        plan.client.ss_fra_todays,
+                        plan.client.ss_fra_retirement,
                         plan.paid_days,
                         contrib_rate_employer_401k,
                         contrib_rate_employee_401k,
@@ -629,7 +627,7 @@ equired to generate the
                             plan.desired_risk,
                             plan.client.civil_status,
                             plan.partner_plan.income,
-                            adj_gross_income,
+                            plan.client.other_income,
                             taxable_income,
                             total_payments,
                             plan.income_growth,

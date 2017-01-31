@@ -31,7 +31,7 @@ class TaxUser(object):
                  desired_risk,
                  filing_status,
                  total_income,
-                 adj_gross_income,
+                 other_income,
                  taxable_income,
                  total_payments,
                  income_growth,
@@ -59,7 +59,7 @@ class TaxUser(object):
                              desired_risk,
                              filing_status,
                              total_income,
-                             adj_gross_income,
+                             other_income,
                              taxable_income,
                              total_payments,
                              income_growth,
@@ -82,7 +82,7 @@ class TaxUser(object):
                              desired_risk,
                              filing_status,
                              total_income,
-                             adj_gross_income,
+                             other_income,
                              taxable_income,
                              total_payments,
                              income_growth,
@@ -108,10 +108,10 @@ class TaxUser(object):
         self.desired_risk = desired_risk
         self.filing_status = abstract.PersonalData.CivilStatus(filing_status)
         self.total_income = total_income
-        self.adj_gross_income = max(adj_gross_income, total_income) #adj_gross_income must be at least as big as total_income
+        #self.adj_gross_income = max(adj_gross_income, total_income) #adj_gross_income must be at least as big as total_income
         self.taxable_income = taxable_income
         self.total_payments = total_payments
-        self.other_income = self.adj_gross_income - self.total_income
+        self.other_income = other_income
         self.income_growth = income_growth/100.
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
         self.ss_fra_todays = ss_fra_todays
@@ -921,7 +921,7 @@ class TaxUser(object):
                          desired_risk,
                          filing_status,
                          total_income,
-                         adj_gross_income,
+                         other_income,
                          taxable_income,
                          total_payments,
                          income_growth,
@@ -986,8 +986,8 @@ class TaxUser(object):
         if total_income < 0:
             raise Exception('total_income less than 0')
 
-        if adj_gross_income < 0:
-            raise Exception('adjusted_gross_income less than 0')
+        if other_income < 0:
+            raise Exception('other_income less than 0')
 
         if taxable_income < 0:
             raise Exception('taxable_income less than 0')
@@ -1047,7 +1047,7 @@ class TaxUser(object):
                      desired_risk,
                      filing_status,
                      total_income,
-                     adj_gross_income,
+                     other_income,
                      taxable_income,
                      total_payments,
                      income_growth,
@@ -1070,7 +1070,7 @@ class TaxUser(object):
         print('desired_risk:                ' + str(desired_risk))
         print('filing_status:               ' + str(filing_status))
         print('total_income:                ' + str(total_income))
-        print('adj_gross_income:            ' + str(adj_gross_income))
+        print('other_income:                ' + str(other_income))
         print('taxable_income:              ' + str(taxable_income))
         print('total_payments:              ' + str(total_payments))
         print('income_growth:               ' + str(income_growth))
