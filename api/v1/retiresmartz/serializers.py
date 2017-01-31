@@ -452,7 +452,6 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             if 'total_contributions_last_year' in validated_data['client']:
                 instance.client.total_contributions_last_year = validated_data['client']['total_contributions_last_year']
 
-            logger.error(validated_data)
             if 'user' in validated_data['client']:
                 if 'tax_transcript' in validated_data['client']['user']['invitation']:
                     instance.client.user.invitation.tax_transcript = validated_data['client']['user']['invitation']['tax_transcript']
@@ -463,7 +462,6 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                             f.write(chunk)
                     instance.client.regional_data['tax_transcript'] = instance.client.user.invitation.tax_transcript.url
                     instance.client.regional_data['tax_transcript_data'] = parse_tax_pdf(tmp_filename)
-                    # instance.client.save()
 
                 if 'social_security_statement' in validated_data['client']['user']['invitation']:
                     instance.client.user.invitation.social_security_statement = validated_data['client']['user']['invitation']['social_security_statement']
@@ -475,7 +473,6 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                             f.write(chunk)
                     instance.client.regional_data['social_security_statement'] = instance.client.user.invitation.social_security_statement.url
                     instance.client.regional_data['social_security_statement_data'] = parse_ss_pdf(tmp_filename)
-                    # instance.client.save()
 
                 if 'partner_social_security_statement' in validated_data['client']['user']['invitation']:
                     instance.client.user.invitation.partner_social_security_statement = validated_data['client']['user']['invitation']['partner_social_security_statement']
@@ -486,7 +483,6 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                             f.write(chunk)
                     instance.client.regional_data['partner_social_security_statement'] = instance.client.user.invitation.partner_social_security_statement.url
                     instance.client.regional_data['partner_social_security_statement_data'] = parse_ss_pdf(tmp_filename)
-                    # instance.client.save()
             instance.client.save()
 
         for attr, value in validated_data.items():
