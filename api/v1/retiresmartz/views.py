@@ -251,7 +251,9 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                                                                             user=updated.client.user,
                                                                             obj=updated)
                 advice = RetirementAdvice(plan=updated, trigger=e)
-                advice.text = advice_responses.get_increase_spending_decrease_contribution(advice, orig.btc, orig.btc * nth_rate)
+                advice.text = advice_responses.get_increase_spending_decrease_contribution(advice,
+                                                                                           orig.btc - updated.btc,
+                                                                                           (orig.btc - updated.btc) * nth_rate)
                 advice.save()
 
         if orig.btc < updated.btc:
@@ -642,7 +644,7 @@ equired to generate the
 
             partner.create_maindf()
 
-        # Convert these returned values to a format for the API        
+        # Convert these returned values to a format for the API
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             print(" ************************************************************** ")
             print("if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:")
