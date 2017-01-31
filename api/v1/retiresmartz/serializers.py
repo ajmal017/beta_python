@@ -139,11 +139,11 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     total_contributions_last_year = serializers.SerializerMethodField(required=False)
 
     tax_transcript = serializers.FileField(source='client.user.invitation.tax_transcript', required=False)
-    tax_transcript_data = serializers.SerializerMethodField()
+    tax_transcript_data = serializers.SerializerMethodField(required=False)
     social_security_statement = serializers.SerializerMethodField(source='client.user.invitation.social_security_statement', required=False)
-    social_security_statement_data = serializers.SerializerMethodField()
+    social_security_statement_data = serializers.SerializerMethodField(required=False)
     partner_social_security_statement = serializers.SerializerMethodField(source='client.user.invitation.partner_social_security_statement', required=False)
-    partner_social_security_statement_data = serializers.SerializerMethodField()
+    partner_social_security_statement_data = serializers.SerializerMethodField(required=False)
 
     class Meta:
         model = RetirementPlan
@@ -212,7 +212,7 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
 
     def get_tax_transcript(self, obj):
         try:
-            return obj.client.user.invitation.tax_transcript
+            return obj.client.user.invitation.tax_transcript.url
         except:
             return None
 
@@ -222,25 +222,23 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
         return None
 
     def get_social_security_statement(self, obj):
-        # try:
-        #     return obj.client.user.invitation.social_security_statement
-        # except:
+        if 'social_security_statement' in obj.client.regional_data:
+            return obj.client.regional_data.get('social_security_statement', None)
         return None
 
     def get_social_security_statement_data(self, obj):
         if 'social_security_statement_data' in obj.client.regional_data:
-            return obj.client.regional_data['social_security_statement_data']
+            return obj.client.regional_data.get('social_security_statement_data', None)
         return None
 
     def get_partner_social_security_statement(self, obj):
-        # try:
-        #     return obj.client.user.invitation.partner_social_security_statement
-        # except:
+        if 'partner_social_security_statement' in obj.client.regional_data:
+            return obj.client.regional_data.get('partner_social_security_statement', None)
         return None
 
-    def partner_social_security_statement_data(self, obj):
+    def get_partner_social_security_statement_data(self, obj):
         if 'partner_social_security_statement_data' in obj.client.regional_data:
-            return obj.client.regional_data['partner_social_security_statement_data']
+            return obj.client.regional_data.get('partner_social_security_statement_data', None)
         return None
 
 
@@ -463,18 +461,21 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                     with open(tmp_filename, 'wb+') as f:
                         for chunk in validated_data['client']['user']['invitation']['tax_transcript'].chunks():
                             f.write(chunk)
+                    instance.client.regional_data['tax_transcript'] = instance.client.user.invitation.tax_transcript.url
                     instance.client.regional_data['tax_transcript_data'] = parse_tax_pdf(tmp_filename)
-                    instance.client.save()
+                    # instance.client.save()
 
                 if 'social_security_statement' in validated_data['client']['user']['invitation']:
                     instance.client.user.invitation.social_security_statement = validated_data['client']['user']['invitation']['social_security_statement']
                     instance.client.user.invitation.save()
+                    logger.error(instance.client.user.invitation.social_security_statement)
                     tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
                     with open(tmp_filename, 'wb+') as f:
                         for chunk in validated_data['client']['user']['invitation']['social_security_statement'].chunks():
                             f.write(chunk)
+                    instance.client.regional_data['social_security_statement'] = instance.client.user.invitation.social_security_statement.url
                     instance.client.regional_data['social_security_statement_data'] = parse_ss_pdf(tmp_filename)
-                    instance.client.save()
+                    # instance.client.save()
 
                 if 'partner_social_security_statement' in validated_data['client']['user']['invitation']:
                     instance.client.user.invitation.partner_social_security_statement = validated_data['client']['user']['invitation']['partner_social_security_statement']
@@ -483,8 +484,9 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                     with open(tmp_filename, 'wb+') as f:
                         for chunk in validated_data['client']['user']['invitation']['partner_social_security_statement'].chunks():
                             f.write(chunk)
+                    instance.client.regional_data['partner_social_security_statement'] = instance.client.user.invitation.partner_social_security_statement.url
                     instance.client.regional_data['partner_social_security_statement_data'] = parse_ss_pdf(tmp_filename)
-                    instance.client.save()
+                    # instance.client.save()
             instance.client.save()
 
         for attr, value in validated_data.items():

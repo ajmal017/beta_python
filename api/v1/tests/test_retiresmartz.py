@@ -118,6 +118,7 @@ class RetiresmartzTests(APITestCase):
                 'partner_social_security_statement': ss_statement
             }
             response = self.client.put(url, data, format='multipart')
+        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['partner_social_security_statement_data'], None,
