@@ -7,7 +7,7 @@ from django.utils.timezone import now
 from rest_framework import status
 from rest_framework.test import APITestCase
 from api.v1.tests.factories import ExternalAssetFactory, MarkowitzScaleFactory, MarketIndexFactory, \
-    PortfolioSetFactory, RetirementStatementOfAdviceFactory
+    PortfolioSetFactory, RetirementStatementOfAdviceFactory, EmailInviteFactory
 from common.constants import GROUP_SUPPORT_STAFF
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction, \
     populate_inflation
@@ -21,8 +21,10 @@ from pinax.eventlog.models import log
 from retiresmartz.calculator.social_security import calculate_payments
 from main import constants
 from main import abstract
-import pdb
+import os
+from django.conf import settings
 mocked_now = datetime(2016, 1, 1)
+
 
 class RetiresmartzTests(APITestCase):
     def setUp(self):
@@ -42,6 +44,90 @@ class RetiresmartzTests(APITestCase):
 
     def tearDown(self):
         self.client.logout()
+
+    def test_update_plan_with_pdf_uploads(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        invite = EmailInviteFactory.create(user=plan.client.user)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        expected_tax_transcript_data = {
+            'SPOUSE NAME': 'MELISSA',
+            'SPOUSE SSN': '477-xx-xxxx',
+            'ADDRESS': {
+                'address1': '200 SAMPLE RD',
+                'address2': '',
+                'city': 'HOT SPRINGS',
+                'post_code': '33XXX',
+                'state': 'AR'
+            },
+            'NAME': 'DAMON M MELISSA',
+            'SSN': '432-xx-xxxx',
+            'FILING STATUS': 'Married Filing Joint',
+            'TOTAL INCOME': '67,681.00',
+            'EarnedIncomeCredit': '0.00',
+            'CombatCredit': '0.00',
+            'AddChildTaxCredit': '0.00',
+            'ExcessSSCredit': '0.00',
+            'RefundableCredit': '2,422.00',
+            'PremiumTaxCredit': '',
+        }
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
+            data = {
+                'tax_transcript': tax_transcript
+            }
+            response = self.client.put(url, data, format='multipart')
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating retirement plan with tax_transcript PDF returns OK')
+        # self.assertNotEqual(response.data['tax_transcript'], None,
+        #                     msg='tax_transcript is in the response and not None')
+        self.assertNotEqual(response.data['tax_transcript_data'], None,
+                            msg='tax_transcript_data is in the response and not None')
+        self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
+                         msg='Parsed tax_transcript_data matches expected')
+
+        expected_social_security_statement_data = {
+            'EmployerPaidThisYearMedicare': '1,177',
+            'EmployerPaidThisYearSocialSecurity': '5,033',
+            'EstimatedTaxableEarnings': '21,807',
+            'LastYearMedicare': '21,807',
+            'LastYearSS': '21,807',
+            'PaidThisYearMedicare': '1,177',
+            'PaidThisYearSocialSecurity': '4,416',
+            'RetirementAtAge62': '759',
+            'RetirementAtAge70': '1,337',
+            'RetirementAtFull': '1,078',
+            'SurvivorsChild': '808',
+            'SurvivorsSpouseAtFull': '1,077',
+            'SurvivorsSpouseWithChild': '808',
+            'SurvivorsTotalFamilyBenefitsLimit': '1,616'
+        }
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
+            data = {
+                'social_security_statement': ss_statement
+            }
+            response = self.client.put(url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating retirement plan with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['social_security_statement'], None,
+                            msg='social_security_statement_data is in the response and not None')
+        self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
+                         msg='Parsed social_security_statement_data matches expected')
+
+        with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
+            data = {
+                'partner_social_security_statement': ss_statement
+            }
+            response = self.client.put(url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating retirement plan with tax_transcript PDF returns OK')
+        self.assertNotEqual(response.data['partner_social_security_statement'], None,
+                            msg='partner_social_security_statement_data is in the response and not None')
+        self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
+                         msg='Parsed partner_social_security_statement_data matches expected')
+
+        self.assertEqual(response._headers['content-type'], ('Content-Type', 'application/json'),
+                         msg='Response content type is application/json after upload')
 
     def test_add_plan_with_client_field_updates(self):
         '''
