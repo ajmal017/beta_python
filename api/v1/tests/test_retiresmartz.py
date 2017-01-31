@@ -76,7 +76,6 @@ class RetiresmartzTests(APITestCase):
                 'tax_transcript': tax_transcript
             }
             response = self.client.put(url, data, format='multipart')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
         # self.assertNotEqual(response.data['tax_transcript'], None,
@@ -109,7 +108,7 @@ class RetiresmartzTests(APITestCase):
             response = self.client.put(url, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
-        self.assertNotEqual(response.data['social_security_statement'], None,
+        self.assertNotEqual(response.data['social_security_statement_data'], None,
                             msg='social_security_statement_data is in the response and not None')
         self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
                          msg='Parsed social_security_statement_data matches expected')
@@ -121,7 +120,7 @@ class RetiresmartzTests(APITestCase):
             response = self.client.put(url, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
-        self.assertNotEqual(response.data['partner_social_security_statement'], None,
+        self.assertNotEqual(response.data['partner_social_security_statement_data'], None,
                             msg='partner_social_security_statement_data is in the response and not None')
         self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
                          msg='Parsed partner_social_security_statement_data matches expected')
