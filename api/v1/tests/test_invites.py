@@ -410,6 +410,11 @@ class InviteTests(APITestCase):
             'ExcessSSCredit': '0.00',
             'RefundableCredit': '2,422.00',
             'PremiumTaxCredit': '',
+            'adjusted_gross_income': '63,505.00',
+            'taxable_income': '40,705.00',
+            'blind': 'N',
+            'blind_spouse': 'N',
+            'exemptions': '4',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
@@ -491,6 +496,11 @@ class InviteTests(APITestCase):
             'ExcessSSCredit': '0.00',
             'RefundableCredit': '2,422.00',
             'PremiumTaxCredit': '',
+            'adjusted_gross_income': '63,505.00',
+            'taxable_income': '40,705.00',
+            'blind': 'N',
+            'blind_spouse': 'N',
+            'exemptions': '4',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {

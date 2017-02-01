@@ -46,6 +46,8 @@ keywords = {
     'RefundColumn': ['BAL DUE/OVER PYMT USING COMPUTER FIGURES:\n\n', '\n\nThird Party Designee'],
     'TaxAndCreditsColumn': ['GENERAL BUSINESS CREDITS:\n\n', 'Tax Return Transcript'],
     'exemptions': ['EXEMPTION NUMBER:\n', '\nDEPENDENT 1 NAME CTRL:'],
+    'adjusted_column': ['ADJUSTED GROSS INCOME PER COMPUTER:', 'Tax and Credits'],
+    'tax_and_credits_column': ['FORM 3800 GENERAL BUSINESS CREDITS:', 'Tax Return Transcript'],
 }
 
 output = {
@@ -74,6 +76,8 @@ output = {
         {
             "name": "Income",
             "fields": {
+                'adjusted_column': '',
+                'adjusted_gross_income': '',
                 'PaymentsColumn': '',
                 'PaymentsColumn2': '',
                 'TotalIncomeColumn': '',
@@ -87,6 +91,9 @@ output = {
                 'RefundableCredit': '',
                 'PremiumTaxCredit': '',
                 'TotalPayments': '',
+
+                'tax_and_credits_column': '',
+                'taxable_income': '',
             }
         }
     ]
@@ -144,9 +151,19 @@ def parse_text(string):
                     if len(chunks) > 5:
                         output["sections"][i]["fields"]['RefundableCredit'] = chunks[5]
 
-                elif k == 'TaxAndCreditsColumn':
+                elif k == 'adjusted_column':
+                    chunks = res.split('\n')
+                    if len(chunks) > 5:
+                        output["sections"][i]["fields"]['adjusted_gross_income'] = chunks[6]
+
+                elif k == 'tax_and_credits_column':
                     chunks = res.split('\n')
                     logger.error(chunks)
+                    if len(chunks) > 5:
+                        output["sections"][i]["fields"]['taxable_income'] = chunks[8]
+
+                elif k == 'TaxAndCreditsColumn':
+                    chunks = res.split('\n')
                     if len(chunks) > 5:
                         output["sections"][i]["fields"]['blind'] = chunks[1]
                         output["sections"][i]["fields"]['blind_spouse'] = chunks[3]
@@ -216,12 +233,15 @@ def clean_results(results):
     clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
 
     clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit'].strip('$ ')
-    clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit']
-    clean_output['ExcessSSCredit'] = results['sections'][1]['fields']['ExcessSSCredit']
-    clean_output['AddChildTaxCredit'] = results['sections'][1]['fields']['AddChildTaxCredit']
+    clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit'].strip('$ ')
+    clean_output['ExcessSSCredit'] = results['sections'][1]['fields']['ExcessSSCredit'].strip('$ ')
+    clean_output['AddChildTaxCredit'] = results['sections'][1]['fields']['AddChildTaxCredit'].strip('$ ')
     clean_output['RefundableCredit'] = results['sections'][1]['fields']['RefundableCredit'].strip('$ ')
     clean_output['PremiumTaxCredit'] = results['sections'][1]['fields']['PremiumTaxCredit'].strip('$ ')
 
+    clean_output['adjusted_gross_income'] = results['sections'][1]['fields']['adjusted_gross_income'].strip('$ ')
+    clean_output['taxable_income'] = results['sections'][1]['fields']['taxable_income'].strip('$ ')
+    logger.error(clean_output)
     return clean_output
 
 
