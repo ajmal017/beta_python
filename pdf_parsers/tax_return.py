@@ -49,6 +49,7 @@ keywords = {
     'adjusted_column': ['ADJUSTED GROSS INCOME PER COMPUTER:', 'Tax and Credits'],
     'tax_and_credits_column': ['FORM 3800 GENERAL BUSINESS CREDITS:', 'Tax Return Transcript'],
     'tax_period': ['Tax Period Ending:', 'The following items reflect the amount as shown on the return'],
+    'other_taxes_column': ['TOTAL TAX LIABILITY TP FIGURES PER COMPUTER:', 'Payments'],
 }
 
 output = {
@@ -100,6 +101,9 @@ output = {
                 'exemption_amount': '',
                 'tentative_tax': '',
                 'std_deduction': '',
+
+                'other_taxes_column': '',
+                'se_tax': '',
             }
         }
     ]
@@ -170,6 +174,11 @@ def parse_text(string):
                         output["sections"][i]["fields"]['exemption_amount'] = chunks[7]
                         output["sections"][i]["fields"]['taxable_income'] = chunks[8]
                         output["sections"][i]["fields"]['tentative_tax'] = chunks[11]
+
+                elif k == 'other_taxes_column':
+                    chunks = res.split('\n')
+                    if len(chunks) > 1:
+                        output["sections"][i]["fields"]['se_tax'] = chunks[0]
 
                 elif k == 'TaxAndCreditsColumn':
                     chunks = res.split('\n')
@@ -256,6 +265,7 @@ def clean_results(results):
     clean_output['exemption_amount'] = results['sections'][1]['fields']['exemption_amount'].strip('$ ')
     clean_output['tentative_tax'] = results['sections'][1]['fields']['tentative_tax'].strip('$ ')
     clean_output['std_deduction'] = results['sections'][1]['fields']['std_deduction'].strip('$ ')
+    clean_output['se_tax'] = results['sections'][1]['fields']['se_tax'].strip('$ ')
     logger.error(clean_output)
     return clean_output
 
