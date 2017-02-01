@@ -104,6 +104,7 @@ output = {
 
                 'other_taxes_column': '',
                 'se_tax': '',
+                'total_tax': '',
             }
         }
     ]
@@ -177,8 +178,10 @@ def parse_text(string):
 
                 elif k == 'other_taxes_column':
                     chunks = res.split('\n')
-                    if len(chunks) > 1:
+                    logger.error(chunks)
+                    if len(chunks) > 25:
                         output["sections"][i]["fields"]['se_tax'] = chunks[0]
+                        output["sections"][i]["fields"]['total_tax'] = chunks[24]
 
                 elif k == 'TaxAndCreditsColumn':
                     chunks = res.split('\n')
@@ -266,6 +269,7 @@ def clean_results(results):
     clean_output['tentative_tax'] = results['sections'][1]['fields']['tentative_tax'].strip('$ ')
     clean_output['std_deduction'] = results['sections'][1]['fields']['std_deduction'].strip('$ ')
     clean_output['se_tax'] = results['sections'][1]['fields']['se_tax'].strip('$ ')
+    clean_output['total_tax'] = results['sections'][1]['fields']['total_tax'].strip('$ ')
     logger.error(clean_output)
     return clean_output
 
