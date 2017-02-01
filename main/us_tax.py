@@ -324,7 +324,7 @@ class Fica(object):
     
 
     def get_for_ss(self):
-
+        
         if self.employment_status[0] == constants.EMPLOYMENT_STATUS_EMMPLOYED:
             '''
             For social security = IF employment_status is employed then multiply wages,

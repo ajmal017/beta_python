@@ -762,8 +762,9 @@ class TaxUser(object):
                                             
         # DECCUMULATION
 
-        self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Des_Ret_Inc_Pre_Tax']
-                                                                                            - self.maindf['Certain_Ret_Inc'])
+        self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(np.where(self.maindf['Des_Ret_Inc_Pre_Tax'] > self.maindf['Certain_Ret_Inc'], 
+                                                                                                     self.maindf['Certain_Ret_Inc']- self.maindf['Certain_Ret_Inc'],
+                                                                                                     0))
 
         '''
         for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
@@ -968,9 +969,6 @@ class TaxUser(object):
 
         if not retirement_lifestyle:
             raise Exception('retirement_lifestyle not provided')
-
-        if not desired_risk:
-            raise Exception('desired_risk not provided')
 
         if not inflation_level:
             raise Exception('inflation_level not provided')
