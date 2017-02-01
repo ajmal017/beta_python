@@ -423,6 +423,7 @@ class InviteTests(APITestCase):
             'tax_period': 'Dec. 31, 2005',
             'se_tax': '6,052.00',
             'total_tax': '9,431.00',
+            'total_credits': '2,000.00',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
@@ -517,6 +518,7 @@ class InviteTests(APITestCase):
             'tax_period': 'Dec. 31, 2005',
             'se_tax': '6,052.00',
             'total_tax': '9,431.00',
+            'total_credits': '2,000.00',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
