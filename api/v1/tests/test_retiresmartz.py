@@ -543,7 +543,7 @@ class RetiresmartzTests(APITestCase):
 
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
-        
+
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -554,7 +554,7 @@ class RetiresmartzTests(APITestCase):
                                             desired_risk=0.5,
                                             selected_life_expectancy=95.,
                                             retirement_postal_code=90210)
-        
+
         plan.client.residential_address.post_code=int(94123)
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
@@ -565,7 +565,7 @@ class RetiresmartzTests(APITestCase):
         plan.client.net_worth = 140000
         plan.client.date_of_birth = date(1960, 1, 1)
         plan.client.save()
-        
+
         # some tickers for portfolio
         bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')
         stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
@@ -753,9 +753,35 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(response.data['expenses'][0]['id'], 1)
         self.assertEqual(response.data['expenses'][0]['amt'], 10000)
 
+    def test_add_retirement_plan_with_retirement_accounts(self):
+        retirement_accounts = [{
+            "id": 1,
+            "name": 'test account',
+            "cat": 3,
+            "acc_type": constants.US_RETIREMENT_ACCOUNT_TYPES[0],
+            "owner": "self",
+            "balance": 12345,
+            "balance_efdt": date(2020, 1, 1),
+            "contrib_amt": 1234,
+            "contrib_period": "yearly",
+            "employer_match": 0.5,
+            "employer_match_type": "income"
+        }]
+        self.base_plan_data['retirement_accounts'] = retirement_accounts
+        url = '/api/v1/clients/{}/retirement-plans'.format(Fixture1.client1().id)
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        response = self.client.post(url, self.base_plan_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        saved_plan = RetirementPlan.objects.get(id=response.data['id'])
+        self.assertNotEqual(response.data['retirement_accounts'], None)
+        self.assertEqual(response.data['retirement_accounts'][0]['id'], 1)
+        self.assertEqual(response.data['retirement_accounts'][0]['name'], 'test account')
+        self.assertEqual(response.data['retirement_accounts'][0]['acc_type'], constants.US_RETIREMENT_ACCOUNT_TYPES[0])
+        self.assertEqual(response.data['retirement_accounts'][0]['balance_efdt'], '2020-01-01')
+
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
-        
+
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -766,7 +792,7 @@ class RetiresmartzTests(APITestCase):
                                             desired_risk=0.5,
                                             selected_life_expectancy=95.,
                                             retirement_postal_code=90210)
-        
+
         plan.client.residential_address.post_code=int(94123)
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
