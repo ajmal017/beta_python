@@ -94,6 +94,7 @@ output = {
 
                 'tax_and_credits_column': '',
                 'taxable_income': '',
+                'exemption_amount': '',
             }
         }
     ]
@@ -160,6 +161,7 @@ def parse_text(string):
                     chunks = res.split('\n')
                     logger.error(chunks)
                     if len(chunks) > 5:
+                        output["sections"][i]["fields"]['exemption_amount'] = chunks[7]
                         output["sections"][i]["fields"]['taxable_income'] = chunks[8]
 
                 elif k == 'TaxAndCreditsColumn':
@@ -241,6 +243,7 @@ def clean_results(results):
 
     clean_output['adjusted_gross_income'] = results['sections'][1]['fields']['adjusted_gross_income'].strip('$ ')
     clean_output['taxable_income'] = results['sections'][1]['fields']['taxable_income'].strip('$ ')
+    clean_output['exemption_amount'] = results['sections'][1]['fields']['exemption_amount'].strip('$ ')
     logger.error(clean_output)
     return clean_output
 
