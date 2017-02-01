@@ -78,6 +78,7 @@ output = {
             "fields": {
                 'adjusted_column': '',
                 'adjusted_gross_income': '',
+                'total_adjustments': '',
                 'PaymentsColumn': '',
                 'PaymentsColumn2': '',
                 'TotalIncomeColumn': '',
@@ -96,6 +97,7 @@ output = {
                 'taxable_income': '',
                 'exemption_amount': '',
                 'tentative_tax': '',
+                'std_deduction': '',
             }
         }
     ]
@@ -156,12 +158,13 @@ def parse_text(string):
                 elif k == 'adjusted_column':
                     chunks = res.split('\n')
                     if len(chunks) > 5:
+                        output["sections"][i]["fields"]['total_adjustments'] = chunks[4]
                         output["sections"][i]["fields"]['adjusted_gross_income'] = chunks[6]
 
                 elif k == 'tax_and_credits_column':
                     chunks = res.split('\n')
-                    logger.error(chunks)
                     if len(chunks) > 5:
+                        output["sections"][i]["fields"]['std_deduction'] = chunks[4]
                         output["sections"][i]["fields"]['exemption_amount'] = chunks[7]
                         output["sections"][i]["fields"]['taxable_income'] = chunks[8]
                         output["sections"][i]["fields"]['tentative_tax'] = chunks[11]
@@ -244,9 +247,11 @@ def clean_results(results):
     clean_output['PremiumTaxCredit'] = results['sections'][1]['fields']['PremiumTaxCredit'].strip('$ ')
 
     clean_output['adjusted_gross_income'] = results['sections'][1]['fields']['adjusted_gross_income'].strip('$ ')
+    clean_output['total_adjustments'] = results['sections'][1]['fields']['total_adjustments'].strip('$ ')
     clean_output['taxable_income'] = results['sections'][1]['fields']['taxable_income'].strip('$ ')
     clean_output['exemption_amount'] = results['sections'][1]['fields']['exemption_amount'].strip('$ ')
     clean_output['tentative_tax'] = results['sections'][1]['fields']['tentative_tax'].strip('$ ')
+    clean_output['std_deduction'] = results['sections'][1]['fields']['std_deduction'].strip('$ ')
     logger.error(clean_output)
     return clean_output
 
