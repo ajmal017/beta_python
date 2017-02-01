@@ -82,7 +82,7 @@ output = {
                 'PaymentsColumn': '',
                 'PaymentsColumn2': '',
                 'TotalIncomeColumn': '',
-                "TotalIncome": "",
+                "total_income": "",
                 'EarnedIncomeCredit': '',
                 'CombatCredit': '',
                 'ExcessSSCredit': '',
@@ -91,7 +91,7 @@ output = {
                 'RefundColumn': '',
                 'RefundableCredit': '',
                 'PremiumTaxCredit': '',
-                'TotalPayments': '',
+                'total_payments': '',
 
                 'tax_and_credits_column': '',
                 'taxable_income': '',
@@ -136,7 +136,7 @@ def parse_text(string):
                 elif k == "TotalIncomeColumn":
                     chunks = res.split('\n')
                     if len(chunks) > 2:
-                        output["sections"][i]["fields"]['TotalIncome'] = chunks[-2]
+                        output["sections"][i]["fields"]['total_income'] = chunks[-2]
                 elif k == 'PaymentsColumn':
                     chunks = [s for s in res.split('\n') if s != '$']
                     if len(chunks) > 11:
@@ -148,7 +148,7 @@ def parse_text(string):
                 elif k == 'PaymentsColumn2':
                     chunks = res.split('\n')
                     if len(chunks) > 6:
-                        output["sections"][i]["fields"]['TotalPayments'] = chunks[6]
+                        output["sections"][i]["fields"]['total_payments'] = chunks[6]
 
                 elif k == 'RefundColumn':
                     chunks = res.split('\n')
@@ -237,7 +237,8 @@ def clean_results(results):
     clean_output['blind_spouse'] = results['sections'][0]['fields']['blind_spouse']
     clean_output['exemptions'] = results['sections'][0]['fields']['exemptions']
 
-    clean_output['TOTAL INCOME'] = results['sections'][1]['fields']['TotalIncome'].strip('$ ')
+    clean_output['total_income'] = results['sections'][1]['fields']['total_income'].strip('$ ')
+    clean_output['total_payments'] = results['sections'][1]['fields']['total_payments'].strip('$ ')
 
     clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit'].strip('$ ')
     clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit'].strip('$ ')
