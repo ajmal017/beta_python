@@ -76,6 +76,7 @@ class RetiresmartzTests(APITestCase):
             'blind_spouse': 'N',
             'exemptions': '4',
             'exemption_amount': '12,800.00',
+            'tentative_tax': '5,379.00',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
