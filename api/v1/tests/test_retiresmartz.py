@@ -53,7 +53,7 @@ class RetiresmartzTests(APITestCase):
         expected_tax_transcript_data = {
             'name_spouse': 'MELISSA',
             'SPOUSE SSN': '477-xx-xxxx',
-            'ADDRESS': {
+            'address': {
                 'address1': '200 SAMPLE RD',
                 'address2': '',
                 'city': 'HOT SPRINGS',

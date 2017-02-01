@@ -39,7 +39,7 @@ keywords = {
     'name': ['\nNAME(S) SHOWN ON RETURN:', '\nADDRESS:\n'],
     'SSN': ['\nSSN:', '\nSPOUSE SSN:'],
     'SPOUSE SSN': ['\nSPOUSE SSN:', '\nNAME(S) SHOWN ON RETURN:'],
-    'ADDRESS': ['\nADDRESS:\n\n', '\n\nFILING STATUS:'],
+    'address': ['\nADDRESS:\n\n', '\n\nFILING STATUS:'],
     'TotalIncomeColumn': ['TOTAL INCOME PER COMPUTER:\n\nPage 3 of 8\n\n', '\n\nAdjustments to Income'],
     'PaymentsColumn': ['AMOUNT PAID WITH FORM 4868:\n\n', 'Tax Return Transcript'],
     'PaymentsColumn2': ['TOTAL PAYMENTS PER COMPUTER:\n\n', '\n\nRefund or Amount Owed'],
@@ -60,7 +60,7 @@ output = {
                 "SPOUSE SSN": "",
                 "name": "",
                 "name_spouse": "",
-                "ADDRESS": "",
+                "address": "",
                 "filing_status": "",
                 'TaxAndCreditsColumn': '',
                 'blind': '',
@@ -231,7 +231,7 @@ def clean_results(results):
     clean_output['SPOUSE SSN'] = results['sections'][0]['fields']['SPOUSE SSN']
     clean_output['name'] = results['sections'][0]['fields']['name']
     clean_output['name_spouse'] = results['sections'][0]['fields']['name_spouse']
-    clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
+    clean_output['address'] = parse_address(results['sections'][0]['fields']['address'])
     clean_output['filing_status'] = results['sections'][0]['fields']['filing_status']
     clean_output['blind'] = results['sections'][0]['fields']['blind']
     clean_output['blind_spouse'] = results['sections'][0]['fields']['blind_spouse']
