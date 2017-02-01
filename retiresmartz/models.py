@@ -212,7 +212,7 @@ class RetirementPlan(TimestampedModel):
         old_setting = self.goal_setting
         self.goal_setting = new_setting
         if not(old_setting and old_setting.retirement_plan.agreed_on):
-             self.save()
+            self.save()
 
         if old_setting is not None:
                 old_group = old_setting.metric_group
