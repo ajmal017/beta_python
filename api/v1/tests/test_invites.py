@@ -391,25 +391,39 @@ class InviteTests(APITestCase):
         # PUT: /api/v1/invites/:key
         # Tax transcript upload and parsing
         expected_tax_transcript_data = {
-            'SPOUSE NAME': 'MELISSA',
-            'SPOUSE SSN': '477-xx-xxxx',
-            'ADDRESS': {
+            'name_spouse': 'MELISSA',
+            'SSN_spouse': '477-xx-xxxx',
+            'address': {
                 'address1': '200 SAMPLE RD',
                 'address2': '',
                 'city': 'HOT SPRINGS',
                 'post_code': '33XXX',
                 'state': 'AR'
             },
-            'NAME': 'DAMON M MELISSA',
+            'name': 'DAMON M MELISSA',
             'SSN': '432-xx-xxxx',
-            'FILING STATUS': 'Married Filing Joint',
-            'TOTAL INCOME': '67,681.00',
-            'EarnedIncomeCredit': '0.00',
-            'CombatCredit': '0.00',
-            'AddChildTaxCredit': '0.00',
-            'ExcessSSCredit': '0.00',
-            'RefundableCredit': '2,422.00',
-            'PremiumTaxCredit': '',
+            'filing_status': 'Married Filing Joint',
+            'total_income': '67,681.00',
+            'total_payments': '7,009.00',
+            'earned_income_credit': '0.00',
+            'combat_credit': '0.00',
+            'add_child_tax_credit': '0.00',
+            'excess_ss_credit': '0.00',
+            'refundable_credit': '2,422.00',
+            'premium_tax_credit': '',
+            'adjusted_gross_income': '63,505.00',
+            'taxable_income': '40,705.00',
+            'blind': 'N',
+            'blind_spouse': 'N',
+            'exemptions': '4',
+            'exemption_amount': '12,800.00',
+            'tentative_tax': '5,379.00',
+            'std_deduction': '10,000.00',
+            'total_adjustments': '4,176.00',
+            'tax_period': 'Dec. 31, 2005',
+            'se_tax': '6,052.00',
+            'total_tax': '9,431.00',
+            'total_credits': '2,000.00',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
@@ -472,25 +486,39 @@ class InviteTests(APITestCase):
 
         # re-upload tax transcript
         expected_tax_transcript_data = {
-            'SPOUSE NAME': 'MELISSA',
-            'SPOUSE SSN': '477-xx-xxxx',
-            'ADDRESS': {
+            'name_spouse': 'MELISSA',
+            'SSN_spouse': '477-xx-xxxx',
+            'address': {
                 'address1': '200 SAMPLE RD',
                 'address2': '',
                 'city': 'HOT SPRINGS',
                 'post_code': '33XXX',
                 'state': 'AR'
             },
-            'NAME': 'DAMON M MELISSA',
+            'name': 'DAMON M MELISSA',
             'SSN': '432-xx-xxxx',
-            'FILING STATUS': 'Married Filing Joint',
-            'TOTAL INCOME': '67,681.00',
-            'EarnedIncomeCredit': '0.00',
-            'CombatCredit': '0.00',
-            'AddChildTaxCredit': '0.00',
-            'ExcessSSCredit': '0.00',
-            'RefundableCredit': '2,422.00',
-            'PremiumTaxCredit': '',
+            'filing_status': 'Married Filing Joint',
+            'total_income': '67,681.00',
+            'total_payments': '7,009.00',
+            'earned_income_credit': '0.00',
+            'combat_credit': '0.00',
+            'add_child_tax_credit': '0.00',
+            'excess_ss_credit': '0.00',
+            'refundable_credit': '2,422.00',
+            'premium_tax_credit': '',
+            'adjusted_gross_income': '63,505.00',
+            'taxable_income': '40,705.00',
+            'blind': 'N',
+            'blind_spouse': 'N',
+            'exemptions': '4',
+            'exemption_amount': '12,800.00',
+            'tentative_tax': '5,379.00',
+            'std_deduction': '10,000.00',
+            'total_adjustments': '4,176.00',
+            'tax_period': 'Dec. 31, 2005',
+            'se_tax': '6,052.00',
+            'total_tax': '9,431.00',
+            'total_credits': '2,000.00',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
@@ -534,9 +562,9 @@ class InviteTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         regional_data_load = json.loads(response.data['regional_data'])
         self.assertNotEqual(regional_data_load['tax_transcript'], None)
-        self.assertEqual(regional_data_load['tax_transcript_data']['FILING STATUS'],
-                         expected_tax_transcript_data['FILING STATUS'],
-                         msg='Parsed tax_transcript_data FILING STATUS parsed successfully')
+        self.assertEqual(regional_data_load['tax_transcript_data']['filing_status'],
+                         expected_tax_transcript_data['filing_status'],
+                         msg='Parsed tax_transcript_data filing_status parsed successfully')
 
     def test_complete_invitation(self):
 
