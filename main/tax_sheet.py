@@ -72,6 +72,19 @@ class TaxUser(object):
                              initial_401k_balance,
                              inflation_level,
                              zip_code)
+
+            
+        if not other_income:
+            other_income = 0.
+            
+        if not house_value:
+            house_value = 0.
+            
+        if not ss_fra_todays:
+            ss_fra_todays = 0.
+            
+        if not ss_fra_retirement:
+            ss_fra_retirement = 0.
             
         self.validate_inputs(dob,
                              desired_retirement_age,
@@ -954,18 +967,6 @@ class TaxUser(object):
 
         if not inflation_level:
             raise Exception('inflation_level not provided')
-
-        if not other_income:
-            other_income = 0
-            
-        if not house_value:
-            house_value = 0
-            
-        if not ss_fra_todays:
-            ss_fra_todays = 0
-            
-        if not ss_fra_retirement:
-            ss_fra_retirement = 0
 
         if not zip_code:
             raise Exception('state not provided')
