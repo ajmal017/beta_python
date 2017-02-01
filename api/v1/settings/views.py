@@ -44,6 +44,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'employment_statuses': self.employment_statuses(request).data,
             'external_asset_types': self.external_asset_types(request).data,
             'investor_risk_categories': self.investor_risk_categories(request).data,
+            'retirement_account_categories': self.retirement_account_categories(request).data,
             'retirement_saving_categories': self.retirement_saving_categories(request).data,
             'retirement_expense_categories': self.retirement_expense_categories(request).data,
             'retirement_housing_categories': self.retirement_housing_categories(request).data,
@@ -150,6 +151,11 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     def investor_risk_categories(self, request):
         categories = client_models.RiskCategory.objects.all()
         serializer = serializers.InvestorRiskCategorySerializer(categories, many=True)
+        return Response(serializer.data)
+
+    @list_route(methods=['get'], url_path='retirement-account-categories')
+    def retirement_account_categories(self, request):
+        serializer = serializers.EnumSerializer(retirement_models.RetirementPlan.AccountCategory)
         return Response(serializer.data)
 
     @list_route(methods=['get'], url_path='retirement-saving-categories')

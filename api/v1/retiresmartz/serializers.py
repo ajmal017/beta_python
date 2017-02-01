@@ -16,6 +16,8 @@ from main.risk_profiler import GoalSettingRiskProfile
 from retiresmartz.models import RetirementAdvice, RetirementPlan, \
     RetirementPlanEinc
 
+from django.core.validators import MaxValueValidator, MinValueValidator
+
 logger = logging.getLogger('api.v1.retiresmartz.serializers')
 
 
@@ -82,6 +84,37 @@ def partner_data_validator(value):
         raise ValidationError("Invalid partner_data object")
 
 
+def period_validator(value):
+    if value not in ['monthly', 'yearly']:
+        raise ValidationError("'period' must be (monthly|yearly)")
+
+
+def matching_type_validator(value):
+    if value not in ['none', 'income', 'contributions']:
+        raise ValidationError("'matching type' must be (none|income|contributions)")
+
+
+def make_retirement_account_type_validator():
+    def category_validator(value):
+        if value not in constants.US_RETIREMENT_ACCOUNT_TYPES:
+            raise ValidationError("'cat' for %s must be one of %s" % (value, constants.US_RETIREMENT_ACCOUNT_TYPES))
+    return category_validator
+
+
+class RetirementAccountsSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    cat = serializers.IntegerField(validators=[make_category_validator(RetirementPlan.AccountCategory)])
+    acc_type = serializers.IntegerField(validators=[make_retirement_account_type_validator()])
+    owner = serializers.CharField(validators=[who_validator])
+    balance = serializers.FloatField()
+    balance_efdt = serializers.DateField()
+    contrib_amt = serializers.FloatField()
+    contrib_period = serializers.CharField(validators=[period_validator])
+    employer_match = serializers.FloatField(validators=[MinValueValidator(0), MaxValueValidator(1)])
+    employer_match_type = serializers.CharField(validators=[matching_type_validator])
+
+
 class ExpensesSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     desc = serializers.CharField()
@@ -110,6 +143,7 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     expenses = serializers.JSONField()
     savings = serializers.JSONField()
     initial_deposits = serializers.JSONField()
+    retirement_accounts = serializers.JSONField()
     partner_data = serializers.JSONField()
     portfolio = PortfolioSerializer()
     on_track = serializers.BooleanField()
@@ -213,6 +247,9 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                                              help_text=RetirementPlan._meta.get_field('initial_deposits').help_text,
                                              validators=[make_json_list_validator('initial_deposits',
                                                                                   InitialDepositsSerializer)])
+    retirement_accounts = serializers.JSONField(required=False,
+                                 help_text=RetirementPlan._meta.get_field('retirement_accounts').help_text,
+                                 validators=[make_json_list_validator('retirement_accounts', RetirementAccountsSerializer)])
     selected_life_expectancy = serializers.IntegerField(required=False)
     retirement_age = serializers.IntegerField(required=False)
     desired_risk = serializers.FloatField(required=False)
@@ -291,7 +328,7 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             'employee_contributions_last_year',
             'employer_contributions_last_year',
             'total_contributions_last_year',
-
+            'retirement_accounts',
         )
 
     def __init__(self, *args, **kwargs):

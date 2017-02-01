@@ -28,6 +28,16 @@ logger = logging.getLogger('retiresmartz.models')
 
 
 class RetirementPlan(TimestampedModel):
+    class AccountCategory(ChoiceEnum):
+        EMPLOYER_DESCRETIONARY_CONTRIB = 1, 'Employer Discretionary Contributions'
+        EMPLOYER_MATCHING_CONTRIB = 2, 'Employer Matching Contributions'
+        SALARY_PRE_TAX_ELECTIVE_DEFERRAL = 3, 'Salary/ Pre-Tax Elective Deferral'
+        AFTER_TAX_ROTH_CONTRIB = 4, 'After-Tax Roth Contributions'
+        AFTER_TAX_CONTRIB = 5, 'After Tax Contributions'
+        SELF_EMPLOYED_PRE_TAX_CONTRIB = 6, 'Self Employed Pre-Tax Contributions'
+        SELF_EMPLOYED_AFTER_TAX_CONTRIB = 7, 'Self Employed After Tax Contributions'
+        DORMANT_ACCOUNT_NO_CONTRIB = 8, 'Dormant account, no contributions'
+
     class LifestyleCategory(ChoiceEnum):
         OK = 1, 'Doing OK'
         COMFORTABLE = 2, 'Comfortable'
@@ -123,13 +133,20 @@ class RetirementPlan(TimestampedModel):
         help_text="Will BetaSmartz manage your partner's "
                   "retirement assets as well?")
 
+    retirement_accounts = JSONField(
+        null=True,
+        blank=True,
+        help_text="List of retirement accounts [{id, name, acc_type, owner, balance, balance_efdt, contrib_amt, contrib_period, employer_match, employer_match_type},...]")
+
     expenses = JSONField(
         null=True,
         blank=True,
         help_text="List of expenses [{id, desc, cat, who, amt},...]")
+
     savings = JSONField(null=True,
                         blank=True,
                         help_text="List of savings [{id, desc, cat, who, amt},...]")
+
     initial_deposits = JSONField(null=True,
                                  blank=True,
                                  help_text="List of deposits [{id, asset, goal, amt},...]")
