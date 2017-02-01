@@ -547,14 +547,14 @@ class RetiresmartzTests(APITestCase):
         plan = RetirementPlanFactory.create(income=100000,
                                             retirement_home_price=250000,
                                             paid_days=1,
-                                            retirement_age=85,
+                                            retirement_age=69,
                                             lifestyle=1,
                                             reverse_mortgage=True,
                                             income_growth=0.01,
                                             desired_risk=0.5)
         
         plan.client.residential_address.post_code=int(94123)
-        plan.client.life_expectancy = 95
+        plan.selected_life_expectancy = 95
         plan.client.income = 100000
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
@@ -759,14 +759,14 @@ class RetiresmartzTests(APITestCase):
         plan = RetirementPlanFactory.create(income=100000,
                                             retirement_home_price=250000,
                                             paid_days=1,
-                                            retirement_age=85,
+                                            retirement_age=69,
                                             lifestyle=1,
                                             reverse_mortgage=True,
                                             income_growth=0.01,
                                             desired_risk=0.5)
         
         plan.client.residential_address.post_code=int(94123)
-        plan.client.life_expectancy = 95
+        plan.selected_life_expectancy = 95
         plan.client.income = 100000
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
