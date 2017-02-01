@@ -85,14 +85,14 @@ output = {
                 'PaymentsColumn2': '',
                 'TotalIncomeColumn': '',
                 "total_income": "",
-                'EarnedIncomeCredit': '',
-                'CombatCredit': '',
-                'ExcessSSCredit': '',
-                'AddChildTaxCredit': '',
+                'earned_income_credit': '',
+                'combat_credit': '',
+                'excess_ss_credit': '',
+                'add_child_tax_credit': '',
 
                 'RefundColumn': '',
-                'RefundableCredit': '',
-                'PremiumTaxCredit': '',
+                'refundable_credit': '',
+                'premium_tax_credit': '',
                 'total_payments': '',
 
                 'tax_and_credits_column': '',
@@ -142,10 +142,10 @@ def parse_text(string):
                 elif k == 'PaymentsColumn':
                     chunks = [s for s in res.split('\n') if s != '$']
                     if len(chunks) > 11:
-                        output["sections"][i]["fields"]['EarnedIncomeCredit'] = chunks[2]
-                        output["sections"][i]["fields"]['CombatCredit'] = chunks[7]
-                        output["sections"][i]["fields"]['ExcessSSCredit'] = chunks[9]
-                        output["sections"][i]["fields"]['AddChildTaxCredit'] = chunks[11]
+                        output["sections"][i]["fields"]['earned_income_credit'] = chunks[2]
+                        output["sections"][i]["fields"]['combat_credit'] = chunks[7]
+                        output["sections"][i]["fields"]['excess_ss_credit'] = chunks[9]
+                        output["sections"][i]["fields"]['add_child_tax_credit'] = chunks[11]
 
                 elif k == 'PaymentsColumn2':
                     chunks = res.split('\n')
@@ -155,7 +155,7 @@ def parse_text(string):
                 elif k == 'RefundColumn':
                     chunks = res.split('\n')
                     if len(chunks) > 5:
-                        output["sections"][i]["fields"]['RefundableCredit'] = chunks[5]
+                        output["sections"][i]["fields"]['refundable_credit'] = chunks[5]
 
                 elif k == 'adjusted_column':
                     chunks = res.split('\n')
@@ -243,12 +243,12 @@ def clean_results(results):
     clean_output['total_income'] = results['sections'][1]['fields']['total_income'].strip('$ ')
     clean_output['total_payments'] = results['sections'][1]['fields']['total_payments'].strip('$ ')
 
-    clean_output['EarnedIncomeCredit'] = results['sections'][1]['fields']['EarnedIncomeCredit'].strip('$ ')
-    clean_output['CombatCredit'] = results['sections'][1]['fields']['CombatCredit'].strip('$ ')
-    clean_output['ExcessSSCredit'] = results['sections'][1]['fields']['ExcessSSCredit'].strip('$ ')
-    clean_output['AddChildTaxCredit'] = results['sections'][1]['fields']['AddChildTaxCredit'].strip('$ ')
-    clean_output['RefundableCredit'] = results['sections'][1]['fields']['RefundableCredit'].strip('$ ')
-    clean_output['PremiumTaxCredit'] = results['sections'][1]['fields']['PremiumTaxCredit'].strip('$ ')
+    clean_output['earned_income_credit'] = results['sections'][1]['fields']['earned_income_credit'].strip('$ ')
+    clean_output['combat_credit'] = results['sections'][1]['fields']['combat_credit'].strip('$ ')
+    clean_output['excess_ss_credit'] = results['sections'][1]['fields']['excess_ss_credit'].strip('$ ')
+    clean_output['add_child_tax_credit'] = results['sections'][1]['fields']['add_child_tax_credit'].strip('$ ')
+    clean_output['refundable_credit'] = results['sections'][1]['fields']['refundable_credit'].strip('$ ')
+    clean_output['premium_tax_credit'] = results['sections'][1]['fields']['premium_tax_credit'].strip('$ ')
 
     clean_output['adjusted_gross_income'] = results['sections'][1]['fields']['adjusted_gross_income'].strip('$ ')
     clean_output['total_adjustments'] = results['sections'][1]['fields']['total_adjustments'].strip('$ ')
