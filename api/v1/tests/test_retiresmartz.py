@@ -51,7 +51,7 @@ class RetiresmartzTests(APITestCase):
         url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
         self.client.force_authenticate(user=Fixture1.client1().user)
         expected_tax_transcript_data = {
-            'SPOUSE NAME': 'MELISSA',
+            'name_spouse': 'MELISSA',
             'SPOUSE SSN': '477-xx-xxxx',
             'ADDRESS': {
                 'address1': '200 SAMPLE RD',
@@ -60,9 +60,9 @@ class RetiresmartzTests(APITestCase):
                 'post_code': '33XXX',
                 'state': 'AR'
             },
-            'NAME': 'DAMON M MELISSA',
+            'name': 'DAMON M MELISSA',
             'SSN': '432-xx-xxxx',
-            'FILING STATUS': 'Married Filing Joint',
+            'filing_status': 'Married Filing Joint',
             'total_income': '67,681.00',
             'total_payments': '7,009.00',
             'EarnedIncomeCredit': '0.00',

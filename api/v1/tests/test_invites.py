@@ -391,7 +391,7 @@ class InviteTests(APITestCase):
         # PUT: /api/v1/invites/:key
         # Tax transcript upload and parsing
         expected_tax_transcript_data = {
-            'SPOUSE NAME': 'MELISSA',
+            'name_spouse': 'MELISSA',
             'SPOUSE SSN': '477-xx-xxxx',
             'ADDRESS': {
                 'address1': '200 SAMPLE RD',
@@ -400,9 +400,9 @@ class InviteTests(APITestCase):
                 'post_code': '33XXX',
                 'state': 'AR'
             },
-            'NAME': 'DAMON M MELISSA',
+            'name': 'DAMON M MELISSA',
             'SSN': '432-xx-xxxx',
-            'FILING STATUS': 'Married Filing Joint',
+            'filing_status': 'Married Filing Joint',
             'total_income': '67,681.00',
             'total_payments': '7,009.00',
             'EarnedIncomeCredit': '0.00',
@@ -482,7 +482,7 @@ class InviteTests(APITestCase):
 
         # re-upload tax transcript
         expected_tax_transcript_data = {
-            'SPOUSE NAME': 'MELISSA',
+            'name_spouse': 'MELISSA',
             'SPOUSE SSN': '477-xx-xxxx',
             'ADDRESS': {
                 'address1': '200 SAMPLE RD',
@@ -491,9 +491,9 @@ class InviteTests(APITestCase):
                 'post_code': '33XXX',
                 'state': 'AR'
             },
-            'NAME': 'DAMON M MELISSA',
+            'name': 'DAMON M MELISSA',
             'SSN': '432-xx-xxxx',
-            'FILING STATUS': 'Married Filing Joint',
+            'filing_status': 'Married Filing Joint',
             'total_income': '67,681.00',
             'total_payments': '7,009.00',
             'EarnedIncomeCredit': '0.00',
@@ -554,9 +554,9 @@ class InviteTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         regional_data_load = json.loads(response.data['regional_data'])
         self.assertNotEqual(regional_data_load['tax_transcript'], None)
-        self.assertEqual(regional_data_load['tax_transcript_data']['FILING STATUS'],
-                         expected_tax_transcript_data['FILING STATUS'],
-                         msg='Parsed tax_transcript_data FILING STATUS parsed successfully')
+        self.assertEqual(regional_data_load['tax_transcript_data']['filing_status'],
+                         expected_tax_transcript_data['filing_status'],
+                         msg='Parsed tax_transcript_data filing_status parsed successfully')
 
     def test_complete_invitation(self):
 

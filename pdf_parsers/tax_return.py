@@ -35,8 +35,8 @@ def get_pdf_content_lines(pdf_file_path):
 # the pairs in the list e.g. SSN is found between "SSN:", "SPOUSE SSN:"
 keywords = {
     'IntroChunk': ['SHOWN ON RETURN:\n', '\n\nADDRESS:\n'],
-    "FILING STATUS": ["\n\nFILING STATUS:\n", "\nFORM NUMBER:\n"],
-    'NAME': ['\nNAME(S) SHOWN ON RETURN:', '\nADDRESS:\n'],
+    "filing_status": ["\n\nFILING STATUS:\n", "\nFORM NUMBER:\n"],
+    'name': ['\nNAME(S) SHOWN ON RETURN:', '\nADDRESS:\n'],
     'SSN': ['\nSSN:', '\nSPOUSE SSN:'],
     'SPOUSE SSN': ['\nSPOUSE SSN:', '\nNAME(S) SHOWN ON RETURN:'],
     'ADDRESS': ['\nADDRESS:\n\n', '\n\nFILING STATUS:'],
@@ -58,10 +58,10 @@ output = {
                 'IntroChunk': '',
                 "SSN": "",
                 "SPOUSE SSN": "",
-                "NAME": "",
-                "SPOUSE NAME": "",
+                "name": "",
+                "name_spouse": "",
                 "ADDRESS": "",
-                "FILING STATUS": "",
+                "filing_status": "",
                 'TaxAndCreditsColumn': '',
                 'blind': '',
                 'blind_spouse': '',
@@ -128,11 +128,11 @@ def parse_text(string):
         for k, v in list(section["fields"].items()):
             if k in list(keywords.keys()):
                 res = parse_item(k, string)
-                if k == 'NAME':
+                if k == 'name':
                     if '&' in res:
                         csplit = res.split('&')
-                        output["sections"][i]["fields"]['NAME'] = csplit[0] + csplit[1].split(' ')[-1]
-                        output["sections"][i]["fields"]['SPOUSE NAME'] = csplit[1].strip(' ')
+                        output["sections"][i]["fields"]['name'] = csplit[0] + csplit[1].split(' ')[-1]
+                        output["sections"][i]["fields"]['name_spouse'] = csplit[1].strip(' ')
                 elif k == "TotalIncomeColumn":
                     chunks = res.split('\n')
                     if len(chunks) > 2:
@@ -229,10 +229,10 @@ def clean_results(results):
     clean_output = {}
     clean_output['SSN'] = results['sections'][0]['fields']['SSN']
     clean_output['SPOUSE SSN'] = results['sections'][0]['fields']['SPOUSE SSN']
-    clean_output['NAME'] = results['sections'][0]['fields']['NAME']
-    clean_output['SPOUSE NAME'] = results['sections'][0]['fields']['SPOUSE NAME']
+    clean_output['name'] = results['sections'][0]['fields']['name']
+    clean_output['name_spouse'] = results['sections'][0]['fields']['name_spouse']
     clean_output['ADDRESS'] = parse_address(results['sections'][0]['fields']['ADDRESS'])
-    clean_output['FILING STATUS'] = results['sections'][0]['fields']['FILING STATUS']
+    clean_output['filing_status'] = results['sections'][0]['fields']['filing_status']
     clean_output['blind'] = results['sections'][0]['fields']['blind']
     clean_output['blind_spouse'] = results['sections'][0]['fields']['blind_spouse']
     clean_output['exemptions'] = results['sections'][0]['fields']['exemptions']
