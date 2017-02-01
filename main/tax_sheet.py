@@ -712,14 +712,21 @@ class TaxUser(object):
 
         self.maindf['Nominal_Annuity_Payments'] = [0. for i in range(self.total_rows)]
         self.maindf['Annuity_Payments'] = self.maindf['Deflator'] * self.maindf['Nominal_Annuity_Payments']
-        
-        self.post_reverse_mortgage = np.where(self.age > 0,
-                                                   np.where(self.maindf['Total_Income'] == 0
-                                                            , self.maindf['Home_Value'][self.retirement_start - 1] * (0.9/(self.retirement_years * 12.))
-                                                            , 0)
-                                                   , 0)[self.pre_retirement_end:]
-        self.pre_reverse_mortage = [self.post_reverse_mortgage[0] for i in range (self.pre_retirement_end)]
-        self.maindf['Reverse_Mortgage_Nominal'] = self.set_full_series(self.pre_reverse_mortage, self.post_reverse_mortgage)
+
+        if self.reverse_mort:
+            self.post_reverse_mortgage = np.where(self.age > 0,
+                                                        np.where(self.maindf['Total_Income'] == 0,
+                                                                 np.where(self.maindf['Person_Age'] > 62,
+                                                                          self.maindf['Home_Value'][self.retirement_start - 1] * (0.9/(self.retirement_years * 12.)),
+                                                                          0),
+                                                                 0),
+                                                        0)[self.pre_retirement_end:]
+
+        else:
+            self.post_reverse_mortgage = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+            
+        self.pre_reverse_mortgage = [self.post_reverse_mortgage[0] for i in range (self.pre_retirement_end)]
+        self.maindf['Reverse_Mortgage_Nominal'] = self.set_full_series(self.pre_reverse_mortgage, self.post_reverse_mortgage)
         self.maindf['Reverse_Mortgage'] = self.maindf['Deflator'] * self.maindf['Reverse_Mortgage_Nominal']
         
         self.maindf['Certain_Ret_Inc'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Soc_Sec_Benefit']

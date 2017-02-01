@@ -544,18 +544,18 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
         
-        plan = RetirementPlanFactory.create(income=100000,
-                                            retirement_home_price=250000,
+        plan = RetirementPlanFactory.create(income=100000.,
+                                            retirement_home_price=250000.,
                                             paid_days=1,
-                                            retirement_age=69,
+                                            retirement_age=69.,
                                             lifestyle=1,
                                             reverse_mortgage=True,
                                             income_growth=0.01,
-                                            desired_risk=0.5)
+                                            desired_risk=0.5,
+                                            selected_life_expectancy=95.,
+                                            retirement_postal_code=90210)
         
         plan.client.residential_address.post_code=int(94123)
-        plan.selected_life_expectancy = 95
-        plan.client.income = 100000
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
         plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
@@ -756,18 +756,18 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
         
-        plan = RetirementPlanFactory.create(income=100000,
-                                            retirement_home_price=250000,
+        plan = RetirementPlanFactory.create(income=100000.,
+                                            retirement_home_price=250000.,
                                             paid_days=1,
-                                            retirement_age=69,
+                                            retirement_age=69.,
                                             lifestyle=1,
                                             reverse_mortgage=True,
                                             income_growth=0.01,
-                                            desired_risk=0.5)
+                                            desired_risk=0.5,
+                                            selected_life_expectancy=95.,
+                                            retirement_postal_code=90210)
         
         plan.client.residential_address.post_code=int(94123)
-        plan.selected_life_expectancy = 95
-        plan.client.income = 100000
         plan.client.home_value = 250000
         plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
         plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value

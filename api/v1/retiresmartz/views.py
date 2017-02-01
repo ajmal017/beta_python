@@ -593,7 +593,7 @@ equired to generate the
                         plan.client.home_value,
                         plan.desired_risk,
                         plan.client.civil_status,
-                        plan.client.income,
+                        plan.income,
                         plan.client.other_income,
                         taxable_income,
                         total_payments,

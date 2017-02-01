@@ -14,9 +14,9 @@ life_exp = 79.3
 
 retirement_lifestyle = 4
 
-reverse_mort = True
+reverse_mort = False
 
-house_value = 0.
+house_value = 250000.
 
 risk_profile_group = 0.005
 
