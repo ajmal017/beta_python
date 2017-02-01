@@ -38,7 +38,7 @@ keywords = {
     "filing_status": ["\n\nFILING STATUS:\n", "\nFORM NUMBER:\n"],
     'name': ['\nNAME(S) SHOWN ON RETURN:', '\nADDRESS:\n'],
     'SSN': ['\nSSN:', '\nSPOUSE SSN:'],
-    'SPOUSE SSN': ['\nSPOUSE SSN:', '\nNAME(S) SHOWN ON RETURN:'],
+    'SSN_spouse': ['\nSPOUSE SSN:', '\nNAME(S) SHOWN ON RETURN:'],
     'address': ['\nADDRESS:\n\n', '\n\nFILING STATUS:'],
     'TotalIncomeColumn': ['TOTAL INCOME PER COMPUTER:\n\nPage 3 of 8\n\n', '\n\nAdjustments to Income'],
     'PaymentsColumn': ['AMOUNT PAID WITH FORM 4868:\n\n', 'Tax Return Transcript'],
@@ -48,6 +48,7 @@ keywords = {
     'exemptions': ['EXEMPTION NUMBER:\n', '\nDEPENDENT 1 NAME CTRL:'],
     'adjusted_column': ['ADJUSTED GROSS INCOME PER COMPUTER:', 'Tax and Credits'],
     'tax_and_credits_column': ['FORM 3800 GENERAL BUSINESS CREDITS:', 'Tax Return Transcript'],
+    'tax_period': ['Tax Period Ending:', 'The following items reflect the amount as shown on the return'],
 }
 
 output = {
@@ -57,7 +58,7 @@ output = {
             "fields": {
                 'IntroChunk': '',
                 "SSN": "",
-                "SPOUSE SSN": "",
+                "SSN_spouse": "",
                 "name": "",
                 "name_spouse": "",
                 "address": "",
@@ -66,6 +67,7 @@ output = {
                 'blind': '',
                 'blind_spouse': '',
                 'exemptions': '',
+                'tax_period': '',
                 # not finding below in 2006 sample
                 # 'residency_status': '',
                 # 'spouse_residency_status': '',
@@ -228,7 +230,7 @@ def parse_address(addr_str):
 def clean_results(results):
     clean_output = {}
     clean_output['SSN'] = results['sections'][0]['fields']['SSN']
-    clean_output['SPOUSE SSN'] = results['sections'][0]['fields']['SPOUSE SSN']
+    clean_output['SSN_spouse'] = results['sections'][0]['fields']['SSN_spouse']
     clean_output['name'] = results['sections'][0]['fields']['name']
     clean_output['name_spouse'] = results['sections'][0]['fields']['name_spouse']
     clean_output['address'] = parse_address(results['sections'][0]['fields']['address'])
@@ -236,6 +238,7 @@ def clean_results(results):
     clean_output['blind'] = results['sections'][0]['fields']['blind']
     clean_output['blind_spouse'] = results['sections'][0]['fields']['blind_spouse']
     clean_output['exemptions'] = results['sections'][0]['fields']['exemptions']
+    clean_output['tax_period'] = results['sections'][0]['fields']['tax_period'].replace('\n', '').strip(' ')
 
     clean_output['total_income'] = results['sections'][1]['fields']['total_income'].strip('$ ')
     clean_output['total_payments'] = results['sections'][1]['fields']['total_payments'].strip('$ ')

@@ -392,7 +392,7 @@ class InviteTests(APITestCase):
         # Tax transcript upload and parsing
         expected_tax_transcript_data = {
             'name_spouse': 'MELISSA',
-            'SPOUSE SSN': '477-xx-xxxx',
+            'SSN_spouse': '477-xx-xxxx',
             'address': {
                 'address1': '200 SAMPLE RD',
                 'address2': '',
@@ -420,6 +420,7 @@ class InviteTests(APITestCase):
             'tentative_tax': '5,379.00',
             'std_deduction': '10,000.00',
             'total_adjustments': '4,176.00',
+            'tax_period': 'Dec. 31, 2005',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
@@ -483,7 +484,7 @@ class InviteTests(APITestCase):
         # re-upload tax transcript
         expected_tax_transcript_data = {
             'name_spouse': 'MELISSA',
-            'SPOUSE SSN': '477-xx-xxxx',
+            'SSN_spouse': '477-xx-xxxx',
             'address': {
                 'address1': '200 SAMPLE RD',
                 'address2': '',
@@ -511,6 +512,7 @@ class InviteTests(APITestCase):
             'tentative_tax': '5,379.00',
             'std_deduction': '10,000.00',
             'total_adjustments': '4,176.00',
+            'tax_period': 'Dec. 31, 2005',
         }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
