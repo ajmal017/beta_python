@@ -1449,8 +1449,11 @@ class GoalSetting(models.Model):
 
     @cached_property
     def can_rebalance(self):
-        if self.rebalance and self.portfolio.rebalance:
-            return True
+        if self.rebalance and self.goal:
+            if hasattr(self, 'portfolio'):
+                if self.portfolio.rebalance:
+                    if self.goal.approved_settings is not None:
+                        return True
         return False
 
     @property
@@ -1470,8 +1473,9 @@ class GoalSetting(models.Model):
             return self.goal_selected
         if hasattr(self, 'goal_approved'):
             return self.goal_approved
-        # Must be an active goal
-        return self.goal_active
+        if hasattr(self, 'goal_active'):
+            return self.goal_active
+        return None
 
 
 class GoalMetricGroup(models.Model):
