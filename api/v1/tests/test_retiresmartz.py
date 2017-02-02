@@ -670,6 +670,7 @@ class RetiresmartzTests(APITestCase):
         stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
 
         TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
@@ -908,6 +909,7 @@ class RetiresmartzTests(APITestCase):
         stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
 
         TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
