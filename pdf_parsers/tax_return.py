@@ -182,7 +182,6 @@ def parse_text(string):
 
                 elif k == 'tax_and_credits_column2':
                     chunks = res.split('\n')
-                    logger.error(chunks)
                     if len(chunks) > 5:
                         output["sections"][i]["fields"]['total_credits'] = chunks[9]
 
@@ -280,7 +279,7 @@ def clean_results(results):
     clean_output['se_tax'] = results['sections'][1]['fields']['se_tax'].strip('$ ')
     clean_output['total_tax'] = results['sections'][1]['fields']['total_tax'].strip('$ ')
     clean_output['total_credits'] = results['sections'][1]['fields']['total_credits'].strip('$ ')
-    logger.error(clean_output)
+
     return clean_output
 
 
