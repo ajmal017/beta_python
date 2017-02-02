@@ -395,6 +395,7 @@ class GoalTests(APITestCase):
         # otherwise, No valid instruments found
 
         TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
+        TickerFactory.create(symbol='AGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
@@ -435,6 +436,7 @@ class GoalTests(APITestCase):
         # otherwise, No valid instruments found
 
         TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
+        TickerFactory.create(symbol='AGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
@@ -471,6 +473,7 @@ class GoalTests(APITestCase):
         # tickers for testing portfolio calculations in goals endpoint
         # otherwise, No valid instruments found
         TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
+        TickerFactory.create(symbol='AGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
