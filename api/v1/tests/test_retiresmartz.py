@@ -52,8 +52,6 @@ class RetiresmartzTests(APITestCase):
             'date_of_estimate': timezone.now().date(),
         }
         response = self.client.put(url, data)
-        print('date_of_estimate response.data')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Updating retirement plan with date_of_estimate returns OK')
         self.assertNotEqual(response.data['date_of_estimate'], None,
