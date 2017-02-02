@@ -135,6 +135,7 @@ class CalculationTest(TestCase):
         fund0 = TickerFactory.create(symbol='IAGG', asset_class=asset_class1)
         fund1 = TickerFactory.create(symbol='ITOT', asset_class=asset_class2)
         fund0 = TickerFactory.create(symbol='IPO')
+        fund0 = TickerFactory.create(symbol='AGG', asset_class=asset_class1)
         fund6 = TickerFactory.create(symbol='rest')
 
         ps1 = PortfolioSetFactory \
