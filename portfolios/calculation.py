@@ -314,10 +314,12 @@ def optimize_settings(settings, idata, data_provider, execution_provider, risk_s
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Optimising settings using lambda: {}, \ncovars: {}".format(lam, lcovars))
 
-    #weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, constraints)
-
-    weights = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
-    cost = 1
+    from main.settings import KFA_PORTFOLIO
+    if not KFA_PORTFOLIO:
+        weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, constraints)
+    else:
+        weights = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
+        cost = 1
 
     return weights, cost, xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, \
            lcovars, mu
@@ -546,16 +548,18 @@ def calculate_portfolio(settings, data_provider, execution_provider, retry=True,
     decrease = 1
     modelportfolio_constraints = [1]
 
-    '''while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0 and retry:
-        modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
-            settings_instruments=settings_instruments,
-            xs=xs,
-            risk_profile=risk_profile,
-            decrease=decrease)
-        constraints = list(constraints_without_model)
-        constraints += modelportfolio_constraints
-        weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, constraints)
-        decrease += 1'''
+    from main.settings import KFA_PORTFOLIO
+    if not KFA_PORTFOLIO:
+        while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0 and retry:
+            modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
+                settings_instruments=settings_instruments,
+                xs=xs,
+                risk_profile=risk_profile,
+                decrease=decrease)
+            constraints = list(constraints_without_model)
+            constraints += modelportfolio_constraints
+            weights, cost = markowitz_optimizer_3(xs, lcovars, lam, mu, constraints)
+            decrease += 1
 
     if not weights.any():
         raise Unsatisfiable("Could not find an appropriate allocation for Risk Profile: {}".format(risk_profile))

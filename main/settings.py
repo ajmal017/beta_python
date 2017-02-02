@@ -25,6 +25,7 @@ IB_PORT = 7496
 IB_HOST = 'localhost'
 IB_CLIENT_ID = 0
 IB_PROVIDER_CLIENT_ID = 1
+KFA_PORTFOLIO = False
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
