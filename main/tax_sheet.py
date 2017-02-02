@@ -1078,8 +1078,7 @@ class TaxUser(object):
         
         print("-----------------------------Retirement model INPUTS -------------------")
         print(str(retirement_accounts))
-        ret_acc = json.loads(str(retirement_accounts))
-        print(str(ret_acc))
+        print(str(retirement_accounts[0]['acc_type']))
         print('dob:                         ' + str(dob))
         print('desired_retirement_age:       ' + str(desired_retirement_age))
         print('life_exp:                    ' + str(life_exp))

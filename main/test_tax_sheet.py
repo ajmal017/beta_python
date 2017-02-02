@@ -48,8 +48,5 @@ initial_401k_balance = 0.
 
 zip_code = 94213
 
-retirement_accounts = """{"type":"example_type",
-                       "balance":1000,
-                       "contrib_period":"monthly"}"""
-
+retirement_accounts = """[{"owner":"self", "acc_type":5, "balance":2500}]"""
 
