@@ -48,14 +48,18 @@ class RetiresmartzTests(APITestCase):
         plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
         url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
         self.client.force_authenticate(user=Fixture1.client1().user)
+        expected_date = timezone.now().date()
         data = {
-            'date_of_estimate': timezone.now().date(),
+            'date_of_estimate': expected_date,
         }
         response = self.client.put(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Updating retirement plan with date_of_estimate returns OK')
         self.assertNotEqual(response.data['date_of_estimate'], None,
                             msg='date_of_estimate is in the response and not None')
+        lookup_plan = RetirementPlan.objects.get(id=plan.id)
+        self.assertEqual(lookup_plan.date_of_estimate, expected_date,
+                         msg='date_of_estimate matches expected date')
 
     def test_update_plan_with_pdf_uploads(self):
         plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
