@@ -48,4 +48,5 @@ initial_401k_balance = 0.
 
 zip_code = 94213
 
-retirement_accounts = [{"owner":"self", "acc_type":5, "balance":2500}]
+retirement_accounts = [{"owner":"self", "acc_type":5, "balance":2500},
+                       {"owner":"self", "acc_type":5, "balance":2500}]

@@ -598,7 +598,7 @@ equired to generate the
                         plan.client.ss_fra_todays,
                         plan.client.ss_fra_retirement,
                         plan.paid_days,
-                        json.loads(plan.retirement_accounts),
+                        json.loads(str(plan.retirement_accounts)),
                         contrib_rate_employer_401k,
                         contrib_rate_employee_401k,
                         initial_401k_balance,
