@@ -578,7 +578,7 @@ class ClientTests(APITestCase):
             'ssn': '555-55-5555',
             'politically_exposed': True,
             'tax_transcript': 'some.random.url',
-            'tax_transcript_data': {"FILING STATUS":"test"},
+            'tax_transcript_data': {"filing_status":"test"},
         }
         data = {
             "advisor_agreement": True,
@@ -606,7 +606,7 @@ class ClientTests(APITestCase):
         self.assertNotEqual(usr.id, 44)
         self.assertEqual(response.data['user']['id'], usr.id)
         regional_data_load = response.data.get('regional_data')
-        self.assertEqual(regional_data_load['tax_transcript_data']['FILING STATUS'], 'test')
+        self.assertEqual(regional_data_load['tax_transcript_data']['filing_status'], 'test')
 
     def test_update_client_drinks(self):
         url = '/api/v1/clients/%s' % self.betasmartz_client.id

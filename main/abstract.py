@@ -71,7 +71,8 @@ class PersonalData(models.Model):
             'ssn': f([US], str, True),
             'politically_exposed': f([US], bool, True),
             'tax_transcript': f([US], str),  # url to file
-            'tax_transcript_data': f([US], str),  # JSON Object
+            'tax_transcript_data': f([US], dict),  # JSON Object
+            'tax_transcript_data_ex': f([US], dict),  # JSON Object
             'social_security_statement': f([US], str),  # url to file
             'social_security_statement_data': f([US], str),  # JSON Object
             'partner_social_security_statement': f([US], str),  # url to file
@@ -137,7 +138,7 @@ class PersonalData(models.Model):
     @cached_property
     def tax_filing_status(self):
         try:
-            return self.regional_data['tax_transcript_data']['FILING STATUS']
+            return self.regional_data['tax_transcript_data']['filing_status']
         except:
             return None
 
