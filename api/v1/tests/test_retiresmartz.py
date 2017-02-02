@@ -44,9 +44,24 @@ class RetiresmartzTests(APITestCase):
     def tearDown(self):
         self.client.logout()
 
+    def test_update_plan_date_of_estimate(self):
+        plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
+        url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        data = {
+            'date_of_estimate': timezone.now().date(),
+        }
+        response = self.client.put(url, data)
+        print('date_of_estimate response.data')
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK,
+                         msg='Updating retirement plan with date_of_estimate returns OK')
+        self.assertNotEqual(response.data['date_of_estimate'], None,
+                            msg='date_of_estimate is in the response and not None')
+
     def test_update_plan_with_pdf_uploads(self):
         plan = RetirementPlanFactory.create(calculated_life_expectancy=92)
-        invite = EmailInviteFactory.create(user=plan.client.user)
+        invite = EmailInviteFactory.create(user=plan.client.user)  # user needs an associated invite
         url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
         self.client.force_authenticate(user=Fixture1.client1().user)
         expected_tax_transcript_data = {

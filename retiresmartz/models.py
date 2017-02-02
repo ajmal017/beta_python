@@ -201,6 +201,8 @@ class RetirementPlan(TimestampedModel):
     # balance of retirement account number
     balance = models.FloatField(null=True, blank=True)
 
+    date_of_estimate = models.DateField(null=True, blank=True)
+
     # Install the custom manager that knows how to filter.
     objects = RetirementPlanQuerySet.as_manager()
 

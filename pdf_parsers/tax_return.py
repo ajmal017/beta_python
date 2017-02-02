@@ -204,7 +204,7 @@ def parse_text(string):
 
 
 def parse_vector_pdf(fl):
-    logger.error(get_pdf_content_lines(fl))
+    # logger.error(get_pdf_content_lines(fl))
     res = get_pdf_content_lines(fl).decode("utf-8")
     return parse_text(res)
 

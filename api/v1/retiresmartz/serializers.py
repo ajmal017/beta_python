@@ -179,6 +179,8 @@ class RetirementPlanSerializer(ReadOnlyModelSerializer):
     partner_social_security_statement = serializers.SerializerMethodField(source='client.user.invitation.partner_social_security_statement', required=False)
     partner_social_security_statement_data = serializers.SerializerMethodField(required=False)
 
+    date_of_estimate = serializers.DateField(required=False)
+
     class Meta:
         model = RetirementPlan
         # Goal setting is an internal field that doesn't need to be shared externally.
@@ -322,6 +324,8 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
     social_security_statement = serializers.FileField(source='client.user.invitation.social_security_statement', required=False)
     partner_social_security_statement = serializers.FileField(source='client.user.invitation.partner_social_security_statement', required=False)
 
+    date_of_estimate = serializers.DateField(required=False)
+
     class Meta:
         model = RetirementPlan
         fields = (
@@ -376,6 +380,7 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
             'tax_transcript',
             'social_security_statement',
             'partner_social_security_statement',
+            'date_of_estimate',
         )
 
     def __init__(self, *args, **kwargs):
