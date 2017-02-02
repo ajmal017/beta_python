@@ -659,8 +659,7 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
 
-        ret_accts = """[{"owner":"self", "acc_type":5, "balance":2500}]"""
-
+        ret_accts = [{"owner":"self", "acc_type":5, "balance":2500}]
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -901,7 +900,7 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
 
-        ret_accts = """[{"owner":"self", "acc_type":5, "balance":2500}]"""
+        ret_accts = [{"owner":"self", "acc_type":5, "balance":2500}]
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
