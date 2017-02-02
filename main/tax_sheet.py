@@ -2,6 +2,7 @@ import logging
 import math
 import pandas as pd
 import numpy as np
+import json
 from main import inflation
 from main import us_tax
 from main import test_tax_sheet as tst_tx
@@ -39,6 +40,7 @@ class TaxUser(object):
                  ss_fra_todays,
                  ss_fra_retirement,
                  paid_days,
+                 retirement_accounts,
                  contrib_rate_employer_401k,
                  contrib_rate_employee_401k,
                  initial_401k_balance,
@@ -67,6 +69,7 @@ class TaxUser(object):
                              ss_fra_todays,
                              ss_fra_retirement,
                              paid_days,
+                             retirement_accounts,
                              contrib_rate_employer_401k,
                              contrib_rate_employee_401k,
                              initial_401k_balance,
@@ -120,7 +123,6 @@ class TaxUser(object):
         self.desired_risk = desired_risk
         self.filing_status = abstract.PersonalData.CivilStatus(filing_status)
         self.total_income = total_income
-        #self.adj_gross_income = max(adj_gross_income, total_income) #adj_gross_income must be at least as big as total_income
         self.taxable_income = taxable_income
         self.total_payments = total_payments
         self.other_income = adj_gross_income - total_income
@@ -939,6 +941,8 @@ class TaxUser(object):
                          initial_401k_balance,
                          inflation_level,
                          zip_code):
+
+        adj_gross_income = self.validate_adj_gross_income(adj_gross_income, total_income)
         
         # Null checks
         if not dob:
@@ -1033,9 +1037,20 @@ class TaxUser(object):
             raise Exception("age less than or equal to 0")
 
     def validate_life_exp_and_des_retire_age(self):
+        '''
+        model requires at least one period (i.e. one month) between retirement_age and life_expectancy
+        '''
         if self.life_exp == self.desired_retirement_age:
             self.life_exp = self.life_exp + 1
 
+    def validate_adj_gross_income(self, tot_inc, adj_gr_inc):
+        '''
+        adjusted_gross_income must be at least as large as total_income.
+
+        returns adjusted_total_income at least as large as total income.
+        '''
+        return max(adj_gr_inc, tot_inc)
+    
     def show_inputs(self,
                      dob,
                      desired_retirement_age,
@@ -1054,12 +1069,16 @@ class TaxUser(object):
                      ss_fra_todays,
                      ss_fra_retirement,
                      paid_days,
+                     retirement_accounts,
                      contrib_rate_employer_401k,
                      contrib_rate_employee_401k,
                      initial_401k_balance,
                      inflation_level,
                      zip_code):
+        
         print("-----------------------------Retirement model INPUTS -------------------")
+        ret_acc = json.loads(retirement_accounts)
+        print(str(ret_acc))
         print('dob:                         ' + str(dob))
         print('desired_retirement_age:       ' + str(desired_retirement_age))
         print('life_exp:                    ' + str(life_exp))

@@ -643,6 +643,10 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
 
+        ret_accts = """{"type":"example_type",
+                       "balance":1000,
+                       "contrib_period":"monthly"}"""
+
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -652,7 +656,8 @@ class RetiresmartzTests(APITestCase):
                                             income_growth=0.01,
                                             desired_risk=0.5,
                                             selected_life_expectancy=95.,
-                                            retirement_postal_code=90210)
+                                            retirement_postal_code=90210,
+                                            retirement_accounts=ret_accts)
 
         plan.client.residential_address.post_code=int(94123)
         plan.client.home_value = 250000
@@ -882,6 +887,10 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
 
+        ret_accts = """{"type":"example_type",
+                       "balance":1000,
+                       "contrib_period":"monthly"}"""
+
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -891,7 +900,8 @@ class RetiresmartzTests(APITestCase):
                                             income_growth=0.01,
                                             desired_risk=0.5,
                                             selected_life_expectancy=95.,
-                                            retirement_postal_code=90210)
+                                            retirement_postal_code=90210,
+                                            retirement_accounts=ret_accts)
 
         plan.client.residential_address.post_code=int(94123)
         plan.client.home_value = 250000
