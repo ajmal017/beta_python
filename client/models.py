@@ -69,8 +69,8 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                                   max_length=20, null=True, blank=True)
     industry_sector = models.CharField(choices=constants.INDUSTRY_TYPES,
                                        max_length=20, null=True, blank=True)
-    employer_type = models.CharField(choices=constants.EMPLOYER_TYPES,
-                                     max_length=30, null=True, blank=True)
+    employer_type = models.IntegerField(choices=constants.EMPLOYER_TYPES,
+                                        null=True, blank=True)
     student_loan = models.NullBooleanField(null=True, blank=True)
     employer = models.CharField(max_length=255, null=True, blank=True)
     smoker = models.NullBooleanField(null=True, blank=True)

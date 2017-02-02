@@ -81,11 +81,11 @@ class AdvisorTest(BaseTest):
             'politically_exposed': True,
             'ssn': '555-55-5555',
             'tax_transcript': 'https://some.url/on/softlayer/cloud/storage',
-            'tax_transcript_data': json.dumps(test_transcript_data),
+            'tax_transcript_data': test_transcript_data,
         }
         advisor.clean()
         self.assertEqual(advisor.regional_data.get('tax_transcript'), 'https://some.url/on/softlayer/cloud/storage')
-        self.assertEqual(json.loads(advisor.regional_data.get('tax_transcript_data')), test_transcript_data)
+        self.assertEqual(advisor.regional_data.get('tax_transcript_data'), test_transcript_data)
 
     def test_security_statement(self):
         advisor = AdvisorFactory.create()
