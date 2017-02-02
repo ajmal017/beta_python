@@ -25,7 +25,6 @@ import os
 from django.conf import settings
 mocked_now = datetime(2016, 1, 1)
 
-
 class RetiresmartzTests(APITestCase):
     def setUp(self):
         self.support_group = GroupFactory(name=GROUP_SUPPORT_STAFF)
@@ -643,9 +642,7 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
 
-        ret_accts = """{"type":"example_type",
-                       "balance":1000,
-                       "contrib_period":"monthly"}"""
+        ret_accts = """[{"owner":"self", "acc_type":5, "balance":2500}]"""
 
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
@@ -887,10 +884,7 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
 
-        ret_accts = """{"type":"example_type",
-                       "balance":1000,
-                       "contrib_period":"monthly"}"""
-
+        ret_accts = """[{"owner":"self", "acc_type":5, "balance":2500}]"""
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -919,8 +913,8 @@ class RetiresmartzTests(APITestCase):
         stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
 
         TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
-        TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
 

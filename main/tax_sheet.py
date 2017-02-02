@@ -1075,12 +1075,11 @@ class TaxUser(object):
                      initial_401k_balance,
                      inflation_level,
                      zip_code):
-        
         print("-----------------------------Retirement model INPUTS -------------------")
         print(str(retirement_accounts))
         print(str(retirement_accounts[0]['acc_type']))
         print('dob:                         ' + str(dob))
-        print('desired_retirement_age:       ' + str(desired_retirement_age))
+        print('desired_retirement_age:      ' + str(desired_retirement_age))
         print('life_exp:                    ' + str(life_exp))
         print('retirement_lifestyle:        ' + str(retirement_lifestyle))
         print('reverse_mort:                ' + str(reverse_mort))

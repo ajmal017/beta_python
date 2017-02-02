@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
+import json
 import scipy.stats as st
 from dateutil.relativedelta import relativedelta
 from django.db.models import Q
@@ -35,7 +36,6 @@ from main.inflation import inflation_level
 from functools import reduce
 import time
 logger = logging.getLogger('api.v1.retiresmartz.views')
-
 
 class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
@@ -550,7 +550,6 @@ equired to generate the
         }
         """
         plan = self.get_object()
-
         # We need a date of birth for the client
         if not plan.client.date_of_birth:
             raise ValidationError("Client must have a date of birth entered to calculate retirement plans.")
@@ -599,7 +598,7 @@ equired to generate the
                         plan.client.ss_fra_todays,
                         plan.client.ss_fra_retirement,
                         plan.paid_days,
-                        plan.retirement_accounts,
+                        json.loads(plan.retirement_accounts),
                         contrib_rate_employer_401k,
                         contrib_rate_employee_401k,
                         initial_401k_balance,
