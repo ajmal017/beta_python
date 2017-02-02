@@ -7,7 +7,7 @@ import logging
 
 import copy
 import numpy as np
-from main.models import Ticker
+from main.models import Ticker, GoalSetting
 from portfolios.algorithms.markowitz import markowitz_optimizer_3
 from portfolios.providers.execution.abstract import Reason, ExecutionProviderAbstract
 from portfolios.calculation import \
@@ -20,6 +20,10 @@ from django.utils import timezone
 from datetime import timedelta, date, datetime
 from portfolios.management.commands.measure_goals import get_risk_score
 from portfolios.returns import get_return_history
+from django.core.management.base import BaseCommand
+
+from portfolios.providers.data.django import DataProviderDjango
+from portfolios.calculation import get_instruments
 logger = logging.getLogger('rebalance')
 
 TAX_BRACKET_LESS1Y = 0.3
@@ -679,3 +683,17 @@ def archive_goal(goal):
     # TODO: Once we've received response from the market that the goal has no more positions,
     # TODO: complete the goal's archive process.
     # TODO: goal.complete_archive()
+
+
+class Command(BaseCommand):
+    help = 'Rebalances GoalSettings if they are are able to be rebalanced.'
+
+    def handle(self, *args, **options):
+        from portfolios.providers.execution.django import ExecutionProviderDjango
+        data_provider = DataProviderDjango(timezone.now().date())
+        execution_provider = ExecutionProviderDjango()
+        idata = get_instruments(data_provider)
+        for gs in GoalSetting.objects.all():
+            if gs.can_rebalance:
+                logger.info('Rebalancing goal %s' % gs.goal)
+                rebalance(gs.goal, idata, data_provider, execution_provider)
