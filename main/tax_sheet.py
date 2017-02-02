@@ -1077,7 +1077,7 @@ class TaxUser(object):
                      zip_code):
         
         print("-----------------------------Retirement model INPUTS -------------------")
-        ret_acc = json.loads(retirement_accounts)
+        ret_acc = json.loads(str(retirement_accounts))
         print(str(ret_acc))
         print('dob:                         ' + str(dob))
         print('desired_retirement_age:       ' + str(desired_retirement_age))
