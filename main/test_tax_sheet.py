@@ -8,13 +8,13 @@ test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py
 
 dob = pd.Timestamp('1986-01-01')
 
-desired_retirement_age = 64.
+desired_retirement_age = 70.
 
-life_exp = 89.
+life_exp = 79.
 
-retirement_lifestyle = 1
+retirement_lifestyle = 4
 
-reverse_mort = False
+reverse_mort = True
 
 house_value = 500000.
 
@@ -24,13 +24,13 @@ filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
 total_income = 100000.
 
-adj_gross_income = 100.
+adj_gross_income = 100000.
 
 taxable_income = 0.
 
 total_payments = 18219.
 
-income_growth = 0.02
+income_growth = 2
 
 employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 

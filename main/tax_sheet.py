@@ -31,7 +31,7 @@ class TaxUser(object):
                  desired_risk,
                  filing_status,
                  total_income,
-                 other_income,
+                 adj_gross_income,
                  taxable_income,
                  total_payments,
                  income_growth,
@@ -59,7 +59,7 @@ class TaxUser(object):
                              desired_risk,
                              filing_status,
                              total_income,
-                             other_income,
+                             adj_gross_income,
                              taxable_income,
                              total_payments,
                              income_growth,
@@ -72,10 +72,9 @@ class TaxUser(object):
                              initial_401k_balance,
                              inflation_level,
                              zip_code)
-
             
-        if not other_income:
-            other_income = 0.
+        if not adj_gross_income:
+            adj_gross_income = total_income
             
         if not house_value:
             house_value = 0.
@@ -95,7 +94,7 @@ class TaxUser(object):
                              desired_risk,
                              filing_status,
                              total_income,
-                             other_income,
+                             adj_gross_income,
                              taxable_income,
                              total_payments,
                              income_growth,
@@ -124,7 +123,7 @@ class TaxUser(object):
         #self.adj_gross_income = max(adj_gross_income, total_income) #adj_gross_income must be at least as big as total_income
         self.taxable_income = taxable_income
         self.total_payments = total_payments
-        self.other_income = other_income
+        self.other_income = adj_gross_income - total_income
         self.income_growth = income_growth/100.
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
         self.ss_fra_todays = ss_fra_todays
@@ -136,7 +135,6 @@ class TaxUser(object):
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
 
-
         '''
         age
         '''
@@ -147,11 +145,9 @@ class TaxUser(object):
         retirememt period
         '''
         self.validate_life_exp_and_des_retire_age()
-        self.pre_retirement_end = math.ceil((self.desired_retirement_age - self.age) * 12)  # i.e. last period in which TaxUser is younger than desired retirement age
-                                                                                             # NB this period has index self.pre_retirement_end - 1
+        self.pre_retirement_end = math.ceil((self.desired_retirement_age - self.age) * 12)  # i.e. last period in which TaxUser is younger than desired retirement age                                                                                  # NB this period has index self.pre_retirement_end - 1
                                                                                             
-        self.retirement_start = self.pre_retirement_end + 1                                 # i.e. first period in which TaxUser is older than desired retirement age
-                                                                                            # NB this period has index self.retirement_start - 1
+        self.retirement_start = self.pre_retirement_end + 1                                 # i.e. first period in which TaxUser is older than desired retirement age                                                                                   # NB this period has index self.retirement_start - 1
 
         '''
         years
@@ -329,7 +325,6 @@ class TaxUser(object):
 
 
         # MONTHLY GROWTH RATE ASSUMPTIONS
-
         self.pre_proj_inc_growth_monthly = [self.income_growth/12. for i in range(self.pre_retirement_end)]
         self.post_proj_inc_growth_monthly = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Proj_Inc_Growth_Monthly'] = self.set_full_series(self.pre_proj_inc_growth_monthly, self.post_proj_inc_growth_monthly)
@@ -369,7 +364,6 @@ class TaxUser(object):
 
 
         # INCOME RELATED - WORKING PERIOD
-
         '''
         get pre-retirement  income flator
         '''
@@ -424,7 +418,6 @@ class TaxUser(object):
 
 
         # INCOME RELATED - EMPLOYEE CONTRIBUTIONS
-
         self.contrib_rate_employee_pension = 0.0
         self.maindf['Pension_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_pension
 
@@ -486,7 +479,6 @@ class TaxUser(object):
 
 
         # INCOME RELATED - EMPLOYER CONTRIBUTIONS
-
         self.contrib_rate_employer_pension = 0.0
         self.maindf['Pension_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_pension
 
@@ -548,7 +540,6 @@ class TaxUser(object):
 
 
         # ACCOUNT CAPITAL GROWTH AND ACCOUNT BALANCE
-
         self.starting_balance_pension = 0.0
         self.capital_growth_pension, self.balance_pension = self.get_capital_growth_and_balance_series(self.total_rows, 'Pension', self.starting_balance_pension )
         self.maindf['Pension_Capital_Growth'] = self.capital_growth_pension
@@ -648,9 +639,7 @@ class TaxUser(object):
                                                       self.maindf['Roth_401k_Balance'] + self.maindf['Ind_Roth_401k_Balance'] + self.maindf['Roth_Ira_Balance'],
                                                       0)
 
-
         # 401K
-        
         '''
         for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
         ''' 
@@ -686,12 +675,10 @@ class TaxUser(object):
         elif self.retirement_lifestyle == 4:
             self.lifestyle_factor = 1.5
 
-        
         self.pre_des_ret_inc_pre_tax = self.lifestyle_factor * self.maindf['Adj_Gross_Income'][0:self.pre_retirement_end]
         self.post_des_ret_inc_pre_tax = [self.pre_des_ret_inc_pre_tax[len(self.pre_des_ret_inc_pre_tax) - 1] for i in range(self.total_rows - self.pre_retirement_end)] 
         self.maindf['Des_Ret_Inc_Pre_Tax_Post_Nominal'] = self.set_full_series(self.pre_des_ret_inc_pre_tax, self.post_des_ret_inc_pre_tax)
         self.maindf['Des_Ret_Inc_Pre_Tax'] = self.maindf['Des_Ret_Inc_Pre_Tax_Post_Nominal'] * self.maindf['Inflator']
-
 
         '''
         use the 'flators'
@@ -713,6 +700,7 @@ class TaxUser(object):
         self.maindf['Nominal_Annuity_Payments'] = [0. for i in range(self.total_rows)]
         self.maindf['Annuity_Payments'] = self.maindf['Deflator'] * self.maindf['Nominal_Annuity_Payments']
 
+        # REVERSE MORTGAGE
         if self.reverse_mort:
             self.post_reverse_mortgage = np.where(self.age > 0,
                                                         np.where(self.maindf['Total_Income'] == 0,
@@ -735,8 +723,7 @@ class TaxUser(object):
                                                                                         + self.maindf['Annuity_Payments']
                                                                                         + self.maindf['Reverse_Mortgage'])
 
-        # TAXABLE ACCOUNTS
-
+        # TAXABLE ACCOUNTS PRE DECCUMULATION
         self.maindf['Taxable_Accounts_Pre_Deccumulation'] = self.maindf['Pension_Balance'] \
                                                         + self.maindf['401k_Balance'] \
                                                         + self.maindf['Profit_Sharing_Balance'] \
@@ -758,14 +745,10 @@ class TaxUser(object):
                                                         + self.maindf['Qual_Annuity_Balance'] \
                                                         + self.maindf['Tax_Def_Annuity_Balance'] \
                                                         - self.maindf['Nontaxable_Accounts']
+                                      
+        self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Des_Ret_Inc_Pre_Tax']- self.maindf['Certain_Ret_Inc'])
         
-                                            
         # DECCUMULATION
-
-        self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(np.where(self.maindf['Des_Ret_Inc_Pre_Tax'] > self.maindf['Certain_Ret_Inc'], 
-                                                                                                     self.maindf['Certain_Ret_Inc']- self.maindf['Certain_Ret_Inc'],
-                                                                                                     0))
-
         '''
         for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
         ''' 
@@ -782,6 +765,8 @@ class TaxUser(object):
         self.maindf['Deccumulation_Capital_Growth'] = self.set_full_series(self.pre_deccumulation_capital_growth, self.post_deccumulation_capital_growth)
         self.maindf['Deccumulation_Balance'] = self.set_full_series(self.pre_deccumulation_balance, self.post_deccumulation_balance)
 
+
+        # TAXABLE ACCOUNTS POST-DECCUMULATION
         self.maindf['Taxable_Accounts'] = np.where(self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance'] > 0,
                                                    self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance'], 0)
 
@@ -931,7 +916,6 @@ class TaxUser(object):
         if(self.debug):
             self.show_outputs()
         
-        
     def validate_inputs(self,
                          dob,
                          desired_retirement_age,
@@ -942,7 +926,7 @@ class TaxUser(object):
                          desired_risk,
                          filing_status,
                          total_income,
-                         other_income,
+                         adj_gross_income,
                          taxable_income,
                          total_payments,
                          income_growth,
@@ -1004,8 +988,8 @@ class TaxUser(object):
         if total_income < 0:
             raise Exception('total_income less than 0')
 
-        if other_income < 0:
-            raise Exception('other_income less than 0')
+        if adj_gross_income < 0:
+            raise Exception('adj_gross_income less than 0')
 
         if taxable_income < 0:
             raise Exception('taxable_income less than 0')
@@ -1041,7 +1025,6 @@ class TaxUser(object):
             raise Exception("zip_code not of correct form")
         ''' 
 
-
     def validate_age(self):
         if self.age >= self.desired_retirement_age:
             raise Exception("age greater than or equal to desired retirement age")
@@ -1049,11 +1032,9 @@ class TaxUser(object):
         if self.age <= 0:
             raise Exception("age less than or equal to 0")
 
-
     def validate_life_exp_and_des_retire_age(self):
         if self.life_exp == self.desired_retirement_age:
             self.life_exp = self.life_exp + 1
-
 
     def show_inputs(self,
                      dob,
@@ -1065,7 +1046,7 @@ class TaxUser(object):
                      desired_risk,
                      filing_status,
                      total_income,
-                     other_income,
+                     adj_gross_income,
                      taxable_income,
                      total_payments,
                      income_growth,
@@ -1088,7 +1069,7 @@ class TaxUser(object):
         print('desired_risk:                ' + str(desired_risk))
         print('filing_status:               ' + str(filing_status))
         print('total_income:                ' + str(total_income))
-        print('other_income:                ' + str(other_income))
+        print('adj_gross_income:            ' + str(adj_gross_income))
         print('taxable_income:              ' + str(taxable_income))
         print('total_payments:              ' + str(total_payments))
         print('income_growth:               ' + str(income_growth))
@@ -1102,7 +1083,6 @@ class TaxUser(object):
         print('zip_code:                    ' + str(zip_code))
         print("[Set self.debug=False to hide these]")
         
-
     def show_outputs(self):
         print("--------------------------------------Retirement model OUTPUTS -------------------")
         print("--------------------------------------Taxable_Accounts ---------------------------")
