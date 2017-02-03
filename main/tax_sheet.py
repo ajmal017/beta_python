@@ -29,14 +29,12 @@ class TaxUser(object):
                  desired_retirement_age,
                  life_exp,
                  retirement_lifestyle,
+                 total_income,
                  reverse_mort,
                  house_value,
                  desired_risk,
                  filing_status,
-                 total_income,
-                 adj_gross_income,
-                 taxable_income,
-                 total_payments,
+                 tax_transcript_data,
                  external_income,
                  income_growth,
                  employment_status,
@@ -56,14 +54,12 @@ class TaxUser(object):
                              desired_retirement_age,
                              life_exp,
                              retirement_lifestyle,
+                             total_income,
                              reverse_mort,
                              house_value,
                              desired_risk,
                              filing_status,
-                             total_income,
-                             adj_gross_income,
-                             taxable_income,
-                             total_payments,
+                             tax_transcript_data,
                              external_income,
                              income_growth,
                              employment_status,
@@ -73,6 +69,12 @@ class TaxUser(object):
                              retirement_accounts,
                              inflation_level,
                              zip_code)
+
+            adj_gross_income = tax_transcript_data['adjusted_gross_income']
+
+            total_payments = tax_transcript_data['total_payments']
+
+            taxable_income = tax_transcript_data['taxable_income']
             
         if not adj_gross_income:
             adj_gross_income = total_income
@@ -90,14 +92,14 @@ class TaxUser(object):
                              desired_retirement_age,
                              life_exp,
                              retirement_lifestyle,
+                             total_income,
                              reverse_mort,
                              house_value,
                              desired_risk,
                              filing_status,
-                             total_income,
                              adj_gross_income,
-                             taxable_income,
                              total_payments,
+                             taxable_income,
                              external_income,
                              income_growth,
                              employment_status,
@@ -764,14 +766,14 @@ class TaxUser(object):
                          desired_retirement_age,
                          life_exp,
                          retirement_lifestyle,
+                         total_income,
                          reverse_mort,
                          house_value,
                          desired_risk,
                          filing_status,
-                         total_income,
                          adj_gross_income,
-                         taxable_income,
                          total_payments,
+                         taxable_income,
                          external_income,
                          income_growth,
                          employment_status,
@@ -880,14 +882,12 @@ class TaxUser(object):
                      desired_retirement_age,
                      life_exp,
                      retirement_lifestyle,
+                     total_income,
                      reverse_mort,
                      house_value,
                      desired_risk,
                      filing_status,
-                     total_income,
-                     adj_gross_income,
-                     taxable_income,
-                     total_payments,
+                     tax_transcript_data,
                      external_income,
                      income_growth,
                      employment_status,
@@ -902,14 +902,12 @@ class TaxUser(object):
         print('desired_retirement_age:      ' + str(desired_retirement_age))
         print('life_exp:                    ' + str(life_exp))
         print('retirement_lifestyle:        ' + str(retirement_lifestyle))
+        print('total_income:                ' + str(total_income))
         print('reverse_mort:                ' + str(reverse_mort))
         print('house_value:                 ' + str(house_value))
         print('desired_risk:                ' + str(desired_risk))
         print('filing_status:               ' + str(filing_status))
-        print('total_income:                ' + str(total_income))
-        print('adj_gross_income:            ' + str(adj_gross_income))
-        print('taxable_income:              ' + str(taxable_income))
-        print('total_payments:              ' + str(total_payments))
+        print('tax_transcript_data          ' + str(tax_transcript_data))
         print('external_income              ' + str(external_income))
         print('income_growth:               ' + str(income_growth))
         print('employment_status:           ' + str(employment_status))
