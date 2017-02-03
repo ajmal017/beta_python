@@ -683,7 +683,8 @@ class RetiresmartzTests(APITestCase):
                                             desired_risk=0.5,
                                             selected_life_expectancy=95.,
                                             retirement_postal_code=90210,
-                                            retirement_accounts=ret_accts)
+                                            retirement_accounts=ret_accts,
+                                            btc=10000)
 
         plan.client.residential_address.post_code=int(94123)
         plan.client.home_value = 250000
@@ -937,7 +938,8 @@ class RetiresmartzTests(APITestCase):
                                             desired_risk=0.5,
                                             selected_life_expectancy=95.,
                                             retirement_postal_code=90210,
-                                            retirement_accounts=ret_accts)
+                                            retirement_accounts=ret_accts,
+                                            btc=10000)
 
         plan.client.residential_address.post_code=int(94123)
         plan.client.home_value = 250000

@@ -23,7 +23,9 @@ class Command(NoArgsCommand):
                               tst_tx.ss_fra_retirement,
                               tst_tx.paid_days,
                               tst_tx.retirement_accounts,
-                              tst_tx.zip_code)
+                              tst_tx.zip_code,
+                              tst_tx.btc_orig,
+                              tst_tx.btc_updated)
     
         tst_cls.create_maindf()
         

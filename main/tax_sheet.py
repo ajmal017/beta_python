@@ -35,14 +35,15 @@ class TaxUser(object):
                  desired_risk,
                  filing_status,
                  tax_transcript_data,
-                 external_income,
+                 plans,
                  income_growth,
                  employment_status,
                  ss_fra_todays,
                  ss_fra_retirement,
                  paid_days,
                  retirement_accounts,
-                 zip_code):
+                 zip_code,
+                 btc):
 
         '''
         checks
@@ -60,7 +61,7 @@ class TaxUser(object):
                              desired_risk,
                              filing_status,
                              tax_transcript_data,
-                             external_income,
+                             plans,
                              income_growth,
                              employment_status,
                              ss_fra_todays,
@@ -68,7 +69,8 @@ class TaxUser(object):
                              paid_days,
                              retirement_accounts,
                              inflation_level,
-                             zip_code)
+                             zip_code,
+                             btc)
 
         try:
             adj_gross_income = tax_transcript_data['adjusted_gross_income']
@@ -106,7 +108,7 @@ class TaxUser(object):
                              adj_gross_income,
                              total_payments,
                              taxable_income,
-                             external_income,
+                             plans,
                              income_growth,
                              employment_status,
                              ss_fra_todays,
@@ -114,7 +116,8 @@ class TaxUser(object):
                              paid_days,
                              retirement_accounts,
                              inflation_level,
-                             zip_code)
+                             zip_code,
+                             btc)
         
         '''
         set variables
@@ -129,8 +132,8 @@ class TaxUser(object):
         self.filing_status = abstract.PersonalData.CivilStatus(filing_status)
         self.total_income = total_income
         self.taxable_income = taxable_income
+        self.plans = plans
         self.total_payments = total_payments
-        self.external_income = external_income
         self.other_income = max(0, adj_gross_income - total_income)
         self.income_growth = income_growth/100.
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
@@ -143,6 +146,7 @@ class TaxUser(object):
         self.initial_401k_balance = 0
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
+        self.btc = btc
 
         '''
         age
@@ -360,38 +364,238 @@ class TaxUser(object):
         monthly_contrib_employer = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
 
         return init_balance, monthly_contrib_employee, monthly_contrib_employer
-
+            
 
     def get_retirement_account_index(self, acnt_type):
         for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
             if acnt_type['acc_type'] == constants.US_RETIREMENT_ACCOUNT_TYPES[i]:
                 return i
         raise Exception('unrecognized account type')
-                
 
-    def get_retirement_income(self):
+
+    def get_retirement_income_details_from_plans(self):
         '''
-        returns self.maindf['Annuity_Payments'] determined from retirement income.
+        returns a list of tuples (begin_date, monthly amount) for each source of external_income in plans  
         '''
-        self.maindf['Temp_Annuity_Payments_Nominal'] = 0
+        external_income = []
 
-        if not self.external_income:
-            return 0.
+        for plan in self.plans:
+            try:
+                if plan.external_income.all() != []:
+                    begin_date = plan.external_income.all()[0].begin_date
+                    amount = plan.external_income.all()[0].amount
+                    detail = (begin_date, amount)
+                    external_income.append(detail)
+            except:
+                print(str(plan) + " not of expected form")
+        print("XXX   " + str(external_income))
+        return external_income 
 
+
+    def get_a_retirement_income(self, begin_date, amount):
+        '''
+        returns self.maindf['This_Annuity_Payments'] determined from retirement income.
+        '''
+        self.maindf['This_Annuity_Payments_Nominal'] = 0
         try:
-            months_to_annuity_start = math.ceil(((pd.Timestamp(self.external_income['begin_date']) - pd.Timestamp('today')).days) * (12./365.25))
-
+            months_to_annuity_start = math.ceil(((pd.Timestamp(begin_date) - pd.Timestamp('today')).days) * (12./365.25))
             if months_to_annuity_start > 0 and months_to_annuity_start < self.total_rows:
                 pre_ret_inc = [0. for i in range(months_to_annuity_start)]
-                post_ret_inc_nominal = [self.external_income['amount'] for i in range(self.total_rows - months_to_annuity_start)]
+                post_ret_inc_nominal = [amount for i in range(self.total_rows - months_to_annuity_start)]
                 dateind_pre_annuity = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(months_to_annuity_start)]
                 dateind_post_annuity = [dateind_pre_annuity[len(dateind_pre_annuity)-1] + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows - months_to_annuity_start)]
-                self.maindf['Temp_Annuity_Payments_Nominal'] = self.maindf['Temp_Annuity_Payments_Nominal'] + self.set_full_series_with_indices(pre_ret_inc, post_ret_inc_nominal, dateind_pre_annuity, dateind_post_annuity)
-
-            return self.maindf['Temp_Annuity_Payments_Nominal'] * (1 + self.maindf['Proj_Inflation_Rate']).cumprod()
-
+                self.maindf['This_Annuity_Payments_Nominal'] = self.maindf['This_Annuity_Payments_Nominal'] + self.set_full_series_with_indices(pre_ret_inc, post_ret_inc_nominal, dateind_pre_annuity, dateind_post_annuity)
+            print("YYY   " + str(self.maindf['This_Annuity_Payments_Nominal']))
+            return self.maindf['This_Annuity_Payments_Nominal'] * (1 + self.maindf['Proj_Inflation_Rate']).cumprod()
         except:
             return 0
+
+
+    def get_all_retirement_income(self):
+        '''
+        returns self.maindf['Annuity_Payments'], the sum of all retirment incomes.
+        '''
+        self.maindf['All_Annuity_Payments'] = 0
+        retirement_income_details = []
+        retirement_income_details = self.get_retirement_income_details_from_plans()
+        for detail in retirement_income_details:
+            self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0]. details[1])
+        print("ZZZ   " + str(self.maindf['All_Annuity_Payments'])) 
+        return self.maindf['All_Annuity_Payments']
+
+
+    def validate_inputs(self,
+                         dob,
+                         desired_retirement_age,
+                         life_exp,
+                         retirement_lifestyle,
+                         total_income,
+                         reverse_mort,
+                         house_value,
+                         desired_risk,
+                         filing_status,
+                         adj_gross_income,
+                         total_payments,
+                         taxable_income,
+                         plans,
+                         income_growth,
+                         employment_status,
+                         ss_fra_todays,
+                         ss_fra_retirement,
+                         paid_days,
+                         retirement_accounts,
+                         inflation_level,
+                         zip_code,
+                         btc):
+
+        # adj_gross_income cannot be less than total_income
+        adj_gross_income = self.validate_adj_gross_income(adj_gross_income, total_income)
+        
+        # Null checks
+        if not dob:
+            raise Exception('dob not provided')
+
+        if not desired_retirement_age:
+            raise Exception('desired_retirement_age not provided')
+
+        if not life_exp:
+            raise Exception('life_exp no provided')
+
+        if not retirement_lifestyle:
+            raise Exception('retirement_lifestyle not provided')
+
+        if not inflation_level:
+            raise Exception('inflation_level not provided')
+
+        if not zip_code:
+            raise Exception('state not provided')
+
+        # other checks
+        if desired_retirement_age < 0:
+            raise Exception('desired_retirement_age less than 0')
+
+        if life_exp < 0:
+            raise Exception('life_exp less than 0')
+
+        if life_exp < desired_retirement_age:
+            raise Exception('life_exp less than desired_retirement_age')
+
+        if retirement_lifestyle != 1 and retirement_lifestyle != 2 and retirement_lifestyle != 3 and retirement_lifestyle != 4:
+            raise Exception('unhandled value of retirement_lifestyle')
+
+        if desired_risk < 0 or desired_risk > 1:
+            raise Exception('desired_risk outside 0 <= desired_risk <= 1')
+
+        if house_value < 0:
+            raise Exception('house_value less than 0')
+
+        if ss_fra_todays < 0:
+            raise Exception('ss_fra_todays less than 0')
+
+        if ss_fra_retirement < 0:
+            raise Exception('ss_underfra_todays less than 0')
+
+        if total_income < 0:
+            raise Exception('total_income less than 0')
+
+        if adj_gross_income < 0:
+            raise Exception('adj_gross_income less than 0')
+
+        if taxable_income < 0:
+            raise Exception('taxable_income less than 0')
+
+        if total_payments < 0:
+            raise Exception('total_payments less than 0')
+
+        if paid_days < 0:
+            raise Exception('paid_days less than 0')
+
+        if paid_days > 30:
+            raise Exception('paid_days greater than 30 per month')
+
+        if type(zip_code) != int:
+            raise Exception("zip_code must be integer")
+        '''
+        if zip_code < 10000 or zip_code > 99999:
+            raise Exception("zip_code not of correct form")
+        ''' 
+
+        if btc < 0:
+            raise Exception('btc less than 0')
+
+    def validate_age(self):
+        if self.age >= self.desired_retirement_age:
+            raise Exception("age greater than or equal to desired retirement age")
+
+        if self.age <= 0:
+            raise Exception("age less than or equal to 0")
+
+    def validate_life_exp_and_des_retire_age(self):
+        '''
+        model requires at least one period (i.e. one month) between retirement_age and life_expectancy
+        '''
+        if self.life_exp == self.desired_retirement_age:
+            self.life_exp = self.life_exp + 1
+
+    def validate_adj_gross_income(self, tot_inc, adj_gr_inc):
+        '''
+        adjusted_gross_income must be at least as large as total_income.
+        returns adjusted_total_income at least as large as total income.
+        '''
+        return max(adj_gr_inc, tot_inc)
+    
+    def show_inputs(self,
+                     dob,
+                     desired_retirement_age,
+                     life_exp,
+                     retirement_lifestyle,
+                     total_income,
+                     reverse_mort,
+                     house_value,
+                     desired_risk,
+                     filing_status,
+                     tax_transcript_data,
+                     plans,
+                     income_growth,
+                     employment_status,
+                     ss_fra_todays,
+                     ss_fra_retirement,
+                     paid_days,
+                     retirement_accounts,
+                     inflation_level,
+                     zip_code,
+                     btc):
+        print("-----------------------------Retirement model INPUTS -------------------")
+        print('dob:                         ' + str(dob))
+        print('desired_retirement_age:      ' + str(desired_retirement_age))
+        print('life_exp:                    ' + str(life_exp))
+        print('retirement_lifestyle:        ' + str(retirement_lifestyle))
+        print('total_income:                ' + str(total_income))
+        print('reverse_mort:                ' + str(reverse_mort))
+        print('house_value:                 ' + str(house_value))
+        print('desired_risk:                ' + str(desired_risk))
+        print('filing_status:               ' + str(filing_status))
+        print('tax_transcript_data          ' + str(tax_transcript_data))
+        print('plans:                       ' + str(plans))
+        print('income_growth:               ' + str(income_growth))
+        print('employment_status:           ' + str(employment_status))
+        print('ss_fra_todays:               ' + str(ss_fra_todays))
+        print('ss_fra_retirement:           ' + str(ss_fra_retirement))
+        print('paid_days:                   ' + str(paid_days))
+        print('zip_code:                    ' + str(zip_code))
+        print('retirement_accounts:         ' + str(retirement_accounts))
+        print('btc:                         ' + str(btc))
+        print("[Set self.debug=False to hide these]")
+        
+    def show_outputs(self):
+        print("--------------------------------------Retirement model OUTPUTS -------------------")
+        print("--------------------------------------Taxable_Accounts ---------------------------")
+        print(self.maindf['Taxable_Accounts'])
+        print("--------------------------------------Actual_Inc ---------------------------")
+        print(self.maindf['Actual_Inc'])
+        print("--------------------------------------Desired_Inc ---------------------------")
+        print(self.maindf['Desired_Inc'])
+        print("[Set self.debug=False to hide these]")
                 
 
     def create_maindf(self):
@@ -572,7 +776,7 @@ class TaxUser(object):
         self.maindf['Nominal_Pension_Payments'] = [0. for i in range(self.total_rows)]
         self.maindf['Pension_Payments'] = self.maindf['Deflator'] * self.maindf['Nominal_Pension_Payments']
 
-        self.maindf['Annuity_Payments'] = self.get_retirement_income()
+        self.maindf['Annuity_Payments'] = self.get_all_retirement_income()
 
         # REVERSE MORTGAGE
         if self.reverse_mort:
@@ -766,172 +970,3 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
-
-    def validate_inputs(self,
-                         dob,
-                         desired_retirement_age,
-                         life_exp,
-                         retirement_lifestyle,
-                         total_income,
-                         reverse_mort,
-                         house_value,
-                         desired_risk,
-                         filing_status,
-                         adj_gross_income,
-                         total_payments,
-                         taxable_income,
-                         external_income,
-                         income_growth,
-                         employment_status,
-                         ss_fra_todays,
-                         ss_fra_retirement,
-                         paid_days,
-                         retirement_accounts,
-                         inflation_level,
-                         zip_code):
-
-        # adj_gross_income cannot be less than total_income
-        adj_gross_income = self.validate_adj_gross_income(adj_gross_income, total_income)
-        
-        # Null checks
-        if not dob:
-            raise Exception('dob not provided')
-
-        if not desired_retirement_age:
-            raise Exception('desired_retirement_age not provided')
-
-        if not life_exp:
-            raise Exception('life_exp no provided')
-
-        if not retirement_lifestyle:
-            raise Exception('retirement_lifestyle not provided')
-
-        if not inflation_level:
-            raise Exception('inflation_level not provided')
-
-        if not zip_code:
-            raise Exception('state not provided')
-
-        # other checks
-        if desired_retirement_age < 0:
-            raise Exception('desired_retirement_age less than 0')
-
-        if life_exp < 0:
-            raise Exception('life_exp less than 0')
-
-        if life_exp < desired_retirement_age:
-            raise Exception('life_exp less than desired_retirement_age')
-
-        if retirement_lifestyle != 1 and retirement_lifestyle != 2 and retirement_lifestyle != 3 and retirement_lifestyle != 4:
-            raise Exception('unhandled value of retirement_lifestyle')
-
-        if desired_risk < 0 or desired_risk > 1:
-            raise Exception('desired_risk outside 0 <= desired_risk <= 1')
-
-        if house_value < 0:
-            raise Exception('house_value less than 0')
-
-        if ss_fra_todays < 0:
-            raise Exception('ss_fra_todays less than 0')
-
-        if ss_fra_retirement < 0:
-            raise Exception('ss_underfra_todays less than 0')
-
-        if total_income < 0:
-            raise Exception('total_income less than 0')
-
-        if adj_gross_income < 0:
-            raise Exception('adj_gross_income less than 0')
-
-        if taxable_income < 0:
-            raise Exception('taxable_income less than 0')
-
-        if total_payments < 0:
-            raise Exception('total_payments less than 0')
-
-        if paid_days < 0:
-            raise Exception('paid_days less than 0')
-
-        if paid_days > 30:
-            raise Exception('paid_days greater than 30 per month')
-
-        if type(zip_code) != int:
-            raise Exception("zip_code must be integer")
-        '''
-        if zip_code < 10000 or zip_code > 99999:
-            raise Exception("zip_code not of correct form")
-        ''' 
-
-    def validate_age(self):
-        if self.age >= self.desired_retirement_age:
-            raise Exception("age greater than or equal to desired retirement age")
-
-        if self.age <= 0:
-            raise Exception("age less than or equal to 0")
-
-    def validate_life_exp_and_des_retire_age(self):
-        '''
-        model requires at least one period (i.e. one month) between retirement_age and life_expectancy
-        '''
-        if self.life_exp == self.desired_retirement_age:
-            self.life_exp = self.life_exp + 1
-
-    def validate_adj_gross_income(self, tot_inc, adj_gr_inc):
-        '''
-        adjusted_gross_income must be at least as large as total_income.
-        returns adjusted_total_income at least as large as total income.
-        '''
-        return max(adj_gr_inc, tot_inc)
-    
-    def show_inputs(self,
-                     dob,
-                     desired_retirement_age,
-                     life_exp,
-                     retirement_lifestyle,
-                     total_income,
-                     reverse_mort,
-                     house_value,
-                     desired_risk,
-                     filing_status,
-                     tax_transcript_data,
-                     external_income,
-                     income_growth,
-                     employment_status,
-                     ss_fra_todays,
-                     ss_fra_retirement,
-                     paid_days,
-                     retirement_accounts,
-                     inflation_level,
-                     zip_code):
-        print("-----------------------------Retirement model INPUTS -------------------")
-        print('dob:                         ' + str(dob))
-        print('desired_retirement_age:      ' + str(desired_retirement_age))
-        print('life_exp:                    ' + str(life_exp))
-        print('retirement_lifestyle:        ' + str(retirement_lifestyle))
-        print('total_income:                ' + str(total_income))
-        print('reverse_mort:                ' + str(reverse_mort))
-        print('house_value:                 ' + str(house_value))
-        print('desired_risk:                ' + str(desired_risk))
-        print('filing_status:               ' + str(filing_status))
-        print('tax_transcript_data          ' + str(tax_transcript_data))
-        print('external_income              ' + str(external_income))
-        print('income_growth:               ' + str(income_growth))
-        print('employment_status:           ' + str(employment_status))
-        print('ss_fra_todays:               ' + str(ss_fra_todays))
-        print('ss_fra_retirement:           ' + str(ss_fra_retirement))
-        print('paid_days:                   ' + str(paid_days))
-        print('zip_code:                    ' + str(zip_code))
-        print('retirement_accounts:         ' + str(retirement_accounts))
-        print("[Set self.debug=False to hide these]")
-        
-    def show_outputs(self):
-        print("--------------------------------------Retirement model OUTPUTS -------------------")
-        print("--------------------------------------Taxable_Accounts ---------------------------")
-        print(self.maindf['Taxable_Accounts'])
-        print("--------------------------------------Actual_Inc ---------------------------")
-        print(self.maindf['Actual_Inc'])
-        print("--------------------------------------Desired_Inc ---------------------------")
-        print(self.maindf['Desired_Inc'])
-        print("[Set self.debug=False to hide these]")
-        
-        

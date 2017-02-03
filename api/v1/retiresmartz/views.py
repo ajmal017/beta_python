@@ -572,57 +572,13 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
-        print('=====================')
-        print(RetirementPlanEinc.objects.all())
-        print('=====================')
-        for o in RetirementPlanEinc.objects.all():
-            print(str(o))
-            try:
-                print(str(o.name))
-            except:
-                print("cannot print name")
-                
-            try:
-                print(str(o.plan))
-            except:
-                print("cannot print plan") 
-                
-            try:
-                print(str(o.plan.income))
-            except:
-                print("cannot print plan.income") 
-                
-            try:
-                print(str(o.plan.external_income.all()))
-            except:
-                print("cannot print plan.external_income.all()") 
-                
-            try:
-                print(str(o.plan.external_income.amount.all()))
-            except:
-                print("cannot print plan.external_income.amount.all()") 
-                
-            try:
-                print(str(o.plan.external_income.begin_date.all()))
-            except:
-                print("cannot print plan.external_income.begin_date.all()") 
-                
-            try:
-                print(str(o.external_income.all()))
-            except:
-                print("cannot print external_income.all()") 
-                
-            try:
-                print(str(o.external_income.amount.all()))
-            except:
-                print("cannot print external_income.amount.all()") 
-                
-            try:
-                print(str(o.external_income.begin_date.all()))
-            except:
-                print("cannot print external_income.begin_date.all()") 
             
         print('=====================')
+        print('plan.btc =====     ' + str(plan.btc))    
+        print('=====================')
+
+        # Get external_income plans
+        plans = RetirementPlan.objects.all()
         
         # Get projection of future income and assets for US tax payer
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
@@ -635,7 +591,7 @@ equired to generate the
                         plan.desired_risk,
                         plan.client.civil_status,
                         plan.client.regional_data['tax_transcript_data'],
-                        plan.external_income,
+                        plans,
                         plan.income_growth,
                         plan.client.employment_status,
                         plan.client.ss_fra_todays,
@@ -643,9 +599,11 @@ equired to generate the
                         plan.paid_days,
                         plan.retirement_accounts,
                         int(self.get_zip_code(plan.retirement_postal_code,
-                                              plan.client.residential_address.post_code)))
+                                              plan.client.residential_address.post_code)),
+                        plan.btc)
 
         user.create_maindf()
+        
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             partner = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
@@ -657,7 +615,7 @@ equired to generate the
                         plan.desired_risk,
                         plan.client.civil_status,
                         plan.client.regional_data['tax_transcript_data'],
-                        plan.external_income,
+                        plans,
                         plan.income_growth,
                         plan.client.employment_status,
                         plan.client.ss_fra_todays,
@@ -665,7 +623,8 @@ equired to generate the
                         plan.paid_days,
                         plan.retirement_accounts,
                         int(self.get_zip_code(plan.retirement_postal_code,
-                                              plan.client.residential_address.post_code)))
+                                              plan.client.residential_address.post_code)),
+                        plan.btc)
 
             partner.create_maindf()
 
