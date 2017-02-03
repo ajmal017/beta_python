@@ -577,6 +577,31 @@ equired to generate the
         print('=====================')
         for o in RetirementPlanEinc.objects.all():
             print(str(o))
+            try:
+                print(str(o.name))
+            except:
+                print("cannot print name")
+                
+            try:
+                print(str(o.plan))
+            except:
+                print("cannot print plan") 
+                
+            try:
+                print(str(o.plan.income))
+            except:
+                print("cannot print plan.income") 
+                
+            try:
+                print(str(o.plan.amount))
+            except:
+                print("cannot print plan.amount") 
+                
+            try:
+                print(str(o.plan.begin_date))
+            except:
+                print("cannot print plan.begin_date") 
+            
         print('=====================')
         
         # Get projection of future income and assets for US tax payer

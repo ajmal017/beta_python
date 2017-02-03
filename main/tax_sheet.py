@@ -131,7 +131,7 @@ class TaxUser(object):
         self.taxable_income = taxable_income
         self.total_payments = total_payments
         self.external_income = external_income
-        self.other_income = adj_gross_income - total_income
+        self.other_income = max(0, adj_gross_income - total_income)
         self.income_growth = income_growth/100.
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
         self.ss_fra_todays = ss_fra_todays
@@ -763,10 +763,10 @@ class TaxUser(object):
         # Desired income
         self.pre_0 = [0 for i in range(self.pre_retirement_end)]
         self.maindf['Desired_Inc'] = self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) * self.maindf['Inflator']
-
+        
         if(self.debug):
             self.show_outputs()
-        
+
     def validate_inputs(self,
                          dob,
                          desired_retirement_age,
