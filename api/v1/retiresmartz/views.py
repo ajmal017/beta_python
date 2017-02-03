@@ -570,6 +570,10 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
+
+        print("---------------------------------------------------")
+        print(str(plan.client.regional_data['tax_transcript_data']))
+        print("---------------------------------------------------")
        
         # Get projection of future income and assets for US tax payer
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
@@ -581,9 +585,9 @@ equired to generate the
                         plan.desired_risk,
                         plan.client.civil_status,
                         plan.income,
-                        plan.client.regional_data['tax_transcript_data'][0]['adjusted_gross_income'],
-                        plan.client.regional_data['tax_transcript_data'][0]['taxable_income'],
-                        plan.client.regional_data['tax_transcript_data'][0]['total_payments'],
+                        plan.client.regional_data['tax_transcript_data']['adjusted_gross_income'],
+                        plan.client.regional_data['tax_transcript_data']['taxable_income'],
+                        plan.client.regional_data['tax_transcript_data']['total_payments'],
                         plan.external_income,
                         plan.income_growth,
                         plan.client.employment_status,
@@ -605,9 +609,9 @@ equired to generate the
                         plan.desired_risk,
                         plan.client.civil_status,
                         plan.income,
-                        plan.client.regional_data['tax_transcript_data'][0]['adjusted_gross_income'],
-                        plan.client.regional_data['tax_transcript_data'][0]['taxable_income'],
-                        plan.client.regional_data['tax_transcript_data'][0]['total_payments'],
+                        plan.client.regional_data['tax_transcript_data']['adjusted_gross_income'],
+                        plan.client.regional_data['tax_transcript_data']['taxable_income'],
+                        plan.client.regional_data['tax_transcript_data']['total_payments'],
                         plan.external_income,
                         plan.income_growth,
                         plan.client.employment_status,

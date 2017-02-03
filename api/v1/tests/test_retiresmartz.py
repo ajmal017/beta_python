@@ -691,7 +691,7 @@ class RetiresmartzTests(APITestCase):
         plan.client.ss_fra_retirement = 3490
         plan.client.ss_fra_todays = 1390
         plan.client.date_of_birth = date(1960, 1, 1)
-        plan.client.regional_data['tax_transcript_data'] = [{'adjusted_gross_income': 110000, 'taxable_income':10000, 'total_payments':5000}]
+        plan.client.regional_data['tax_transcript_data'] = {'adjusted_gross_income': 110000, 'taxable_income':10000, 'total_payments':5000}
         plan.client.save()
 
         # some tickers for portfolio
@@ -943,7 +943,7 @@ class RetiresmartzTests(APITestCase):
         plan.client.ss_fra_retirement = 3490
         plan.client.ss_fra_todays = 1390
         plan.client.date_of_birth = date(1960, 1, 1)
-        plan.client.regional_data['tax_transcript_data'] = [{'adjusted_gross_income': 110000, 'taxable_income':10000, 'total_payments':5000}]
+        plan.client.regional_data['tax_transcript_data'] = {'adjusted_gross_income': 110000, 'taxable_income':10000, 'total_payments':5000}
         plan.client.save()
 
         # some tickers for portfolio
