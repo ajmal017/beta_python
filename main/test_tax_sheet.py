@@ -1,6 +1,7 @@
 import pandas as pd
 from main import abstract
 from main import constants
+from datetime import date
 
 '''
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
@@ -60,3 +61,4 @@ retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner'
                        {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Profit sharing', 'employer_match': 1, 'contrib_amt': 10, 'balance': 36, 'acc_type': 14, 'cat': 2, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'ESOP', 'employer_match': 0.27, 'contrib_amt': 10, 'balance': 50, 'acc_type': 17, 'cat': 7, 'contrib_period': 'monthly'}]
 
+external_income = {'amount':150, 'begin_date': date(2020, 1, 1)}

@@ -18,6 +18,7 @@ class Command(NoArgsCommand):
                               tst_tx.adj_gross_income,
                               tst_tx.taxable_income,
                               tst_tx.total_payments,
+                              tst_tx.external_income,
                               tst_tx.income_growth,
                               tst_tx.employment_status,
                               tst_tx.ss_fra_todays,

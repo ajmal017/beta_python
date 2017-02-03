@@ -37,6 +37,7 @@ class TaxUser(object):
                  adj_gross_income,
                  taxable_income,
                  total_payments,
+                 external_income,
                  income_growth,
                  employment_status,
                  ss_fra_todays,
@@ -63,6 +64,7 @@ class TaxUser(object):
                              adj_gross_income,
                              taxable_income,
                              total_payments,
+                             external_income,
                              income_growth,
                              employment_status,
                              ss_fra_todays,
@@ -96,6 +98,7 @@ class TaxUser(object):
                              adj_gross_income,
                              taxable_income,
                              total_payments,
+                             external_income,
                              income_growth,
                              employment_status,
                              ss_fra_todays,
@@ -119,6 +122,7 @@ class TaxUser(object):
         self.total_income = total_income
         self.taxable_income = taxable_income
         self.total_payments = total_payments
+        self.external_income = external_income
         self.other_income = adj_gross_income - total_income
         self.income_growth = income_growth/100.
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
@@ -357,6 +361,31 @@ class TaxUser(object):
         raise Exception('unrecognized account type')
                 
 
+    def get_retirement_income(self):
+        '''
+        returns self.maindf['Annuity_Payments'] determined from retirement income.
+        '''
+        self.maindf['Temp_Annuity_Payments_Nominal'] = 0
+
+        if not self.external_income:
+            return 0.
+
+        try:
+            months_to_annuity_start = math.ceil(((pd.Timestamp(self.external_income['begin_date']) - pd.Timestamp('today')).days) * (12./365.25))
+
+            if months_to_annuity_start > 0 and months_to_annuity_start < self.total_rows:
+                pre_ret_inc = [0. for i in range(months_to_annuity_start)]
+                post_ret_inc_nominal = [self.external_income['amount'] for i in range(self.total_rows - months_to_annuity_start)]
+                dateind_pre_annuity = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(months_to_annuity_start)]
+                dateind_post_annuity = [dateind_pre_annuity[len(dateind_pre_annuity)-1] + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows - months_to_annuity_start)]
+                self.maindf['Temp_Annuity_Payments_Nominal'] = self.maindf['Temp_Annuity_Payments_Nominal'] + self.set_full_series_with_indices(pre_ret_inc, post_ret_inc_nominal, dateind_pre_annuity, dateind_post_annuity)
+
+            return self.maindf['Temp_Annuity_Payments_Nominal'] * (1 + self.maindf['Proj_Inflation_Rate']).cumprod()
+
+        except:
+            return 0
+                
+
     def create_maindf(self):
         '''
         create the main data frame
@@ -535,8 +564,7 @@ class TaxUser(object):
         self.maindf['Nominal_Pension_Payments'] = [0. for i in range(self.total_rows)]
         self.maindf['Pension_Payments'] = self.maindf['Deflator'] * self.maindf['Nominal_Pension_Payments']
 
-        self.maindf['Nominal_Annuity_Payments'] = [0. for i in range(self.total_rows)]
-        self.maindf['Annuity_Payments'] = self.maindf['Deflator'] * self.maindf['Nominal_Annuity_Payments']
+        self.maindf['Annuity_Payments'] = self.get_retirement_income()
 
         # REVERSE MORTGAGE
         if self.reverse_mort:
@@ -744,6 +772,7 @@ class TaxUser(object):
                          adj_gross_income,
                          taxable_income,
                          total_payments,
+                         external_income,
                          income_growth,
                          employment_status,
                          ss_fra_todays,
@@ -859,6 +888,7 @@ class TaxUser(object):
                      adj_gross_income,
                      taxable_income,
                      total_payments,
+                     external_income,
                      income_growth,
                      employment_status,
                      ss_fra_todays,
@@ -880,6 +910,7 @@ class TaxUser(object):
         print('adj_gross_income:            ' + str(adj_gross_income))
         print('taxable_income:              ' + str(taxable_income))
         print('total_payments:              ' + str(total_payments))
+        print('external_income              ' + str(external_income))
         print('income_growth:               ' + str(income_growth))
         print('employment_status:           ' + str(employment_status))
         print('ss_fra_todays:               ' + str(ss_fra_todays))

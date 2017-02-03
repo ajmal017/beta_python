@@ -23,6 +23,7 @@ from main import constants
 from main import abstract
 import os
 from django.conf import settings
+
 mocked_now = datetime(2016, 1, 1)
 
 class RetiresmartzTests(APITestCase):
@@ -659,7 +660,17 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
 
-        ret_accts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'}]
+        ret_accts = [{'employer_match_type': 'contributions',
+                      'id': 1,
+                      'owner': 'self',
+                      'balance_efdt': '2017-02-02',
+                      'name': '401K',
+                      'employer_match': 0.49,
+                      'contrib_amt': 250,
+                      'balance': 25000,
+                      'acc_type': 5,
+                      'cat': 2,
+                      'contrib_period': 'monthly'}]
         
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
@@ -679,11 +690,8 @@ class RetiresmartzTests(APITestCase):
         plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
         plan.client.ss_fra_retirement = 3490
         plan.client.ss_fra_todays = 1390
-        plan.client.other_income = 40000
-        plan.client.net_worth = 140000
         plan.client.date_of_birth = date(1960, 1, 1)
-        plan.client.regional_data['tax_transcript_data'] = [{'taxable_income':10000, 'total_payments':5000}]
-        
+        plan.client.regional_data['tax_transcript_data'] = [{'adjusted_gross_income': 110000, 'taxable_income':10000, 'total_payments':5000}]
         plan.client.save()
 
         # some tickers for portfolio
@@ -903,7 +911,18 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
 
-        ret_accts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'}]
+
+        ret_accts = [{'employer_match_type': 'contributions',
+                      'id': 1,
+                      'owner': 'self',
+                      'balance_efdt': '2017-02-02',
+                      'name': '401K',
+                      'employer_match': 0.49,
+                      'contrib_amt': 250,
+                      'balance': 25000,
+                      'acc_type': 5,
+                      'cat': 2,
+                      'contrib_period': 'monthly'}]
         
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
@@ -923,11 +942,8 @@ class RetiresmartzTests(APITestCase):
         plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
         plan.client.ss_fra_retirement = 3490
         plan.client.ss_fra_todays = 1390
-        plan.client.other_income = 40000
-        plan.client.net_worth = 140000
         plan.client.date_of_birth = date(1960, 1, 1)
-        plan.client.regional_data['tax_transcript_data'] = [{'taxable_income':10000, 'total_payments':5000}]
-        
+        plan.client.regional_data['tax_transcript_data'] = [{'adjusted_gross_income': 110000, 'taxable_income':10000, 'total_payments':5000}]
         plan.client.save()
 
         # some tickers for portfolio
