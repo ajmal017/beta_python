@@ -83,7 +83,7 @@ class TaxUser(object):
         try:
             taxable_income = tax_transcript_data['taxable_income']
         except:
-            total_income = 0
+            taxable_income = 0
             
         if not house_value:
             house_value = 0.
@@ -93,7 +93,7 @@ class TaxUser(object):
             
         if not ss_fra_retirement:
             ss_fra_retirement = 0.
-            
+        
         self.validate_inputs(dob,
                              desired_retirement_age,
                              life_exp,

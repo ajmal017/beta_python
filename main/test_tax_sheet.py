@@ -47,9 +47,7 @@ regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
                                             "exemption_amount":0,
                                             "total_credits":0,
                                             "exemptions":3,
-                                            "taxable_income":0,
                                             "SSN_spouse":"123-45-6789\n987-65-4321",
-                                            "total_payments":0,
                                             "blind":False,
                                             "add_child_tax_credit":0,
                                             "name":"THOMAS E TAXPAYER",
@@ -103,3 +101,5 @@ zip_code = 94213
 
 
 #                                            "adjusted_gross_income":1370
+#                                            "taxable_income":0,
+#                                            "total_payments":0,

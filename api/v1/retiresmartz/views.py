@@ -575,6 +575,10 @@ equired to generate the
         print('=====================')
         print(RetirementPlanEinc.objects.all())
         print('=====================')
+        for o in RetirementPlanEinc.objects.all():
+            print(str(o))
+        print('=====================')
+        
         # Get projection of future income and assets for US tax payer
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
