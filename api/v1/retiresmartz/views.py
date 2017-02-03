@@ -593,34 +593,34 @@ equired to generate the
                 print("cannot print plan.income") 
                 
             try:
-                print(str(o.plan.external_income))
+                print(str(o.plan.external_income.all()))
             except:
-                print("cannot print plan.external_income") 
+                print("cannot print plan.external_income.all()") 
                 
             try:
-                print(str(o.plan.external_income.amount))
+                print(str(o.plan.external_income.amount.all()))
             except:
-                print("cannot print plan.external_income.amount") 
+                print("cannot print plan.external_income.amount.all()") 
                 
             try:
-                print(str(o.plan.external_income.begin_date))
+                print(str(o.plan.external_income.begin_date.all()))
             except:
-                print("cannot print plan.external_income.begin_date") 
+                print("cannot print plan.external_income.begin_date.all()") 
                 
             try:
-                print(str(o.external_income))
+                print(str(o.external_income.all()))
             except:
-                print("cannot print external_income") 
+                print("cannot print external_income.all()") 
                 
             try:
-                print(str(o.external_income.amount))
+                print(str(o.external_income.amount.all()))
             except:
-                print("cannot print external_income.amount") 
+                print("cannot print external_income.amount.all()") 
                 
             try:
-                print(str(o.external_income.begin_date))
+                print(str(o.external_income.begin_date.all()))
             except:
-                print("cannot print external_income.begin_date") 
+                print("cannot print external_income.begin_date.all()") 
             
         print('=====================')
         
