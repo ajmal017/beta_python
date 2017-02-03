@@ -593,14 +593,34 @@ equired to generate the
                 print("cannot print plan.income") 
                 
             try:
-                print(str(o.plan.amount))
+                print(str(o.plan.external_income))
             except:
-                print("cannot print plan.amount") 
+                print("cannot print plan.external_income") 
                 
             try:
-                print(str(o.plan.begin_date))
+                print(str(o.plan.external_income.amount))
             except:
-                print("cannot print plan.begin_date") 
+                print("cannot print plan.external_income.amount") 
+                
+            try:
+                print(str(o.plan.external_income.begin_date))
+            except:
+                print("cannot print plan.external_income.begin_date") 
+                
+            try:
+                print(str(o.external_income))
+            except:
+                print("cannot print external_income") 
+                
+            try:
+                print(str(o.external_income.amount))
+            except:
+                print("cannot print external_income.amount") 
+                
+            try:
+                print(str(o.external_income.begin_date))
+            except:
+                print("cannot print external_income.begin_date") 
             
         print('=====================')
         
