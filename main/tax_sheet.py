@@ -70,14 +70,20 @@ class TaxUser(object):
                              inflation_level,
                              zip_code)
 
+        try:
             adj_gross_income = tax_transcript_data['adjusted_gross_income']
+        except:
+            adj_gross_income = 0
 
+        try:
             total_payments = tax_transcript_data['total_payments']
+        except:
+            total_payments = 0
 
+        try:
             taxable_income = tax_transcript_data['taxable_income']
-            
-        if not adj_gross_income:
-            adj_gross_income = total_income
+        except:
+            total_income = 0
             
         if not house_value:
             house_value = 0.

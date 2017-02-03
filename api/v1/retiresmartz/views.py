@@ -35,6 +35,8 @@ from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
 import time
+import pdb
+from retiresmartz.models import RetirementPlanEinc
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
@@ -570,11 +572,9 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
-
-        print("---------------------------------------------------")
-        print(str(plan.client.regional_data['tax_transcript_data']))
-        print("---------------------------------------------------")
-       
+        print('=====================')
+        print(RetirementPlanEinc.objects.all())
+        print('=====================')
         # Get projection of future income and assets for US tax payer
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
@@ -602,14 +602,12 @@ equired to generate the
                         plan.retirement_age,
                         plan.selected_life_expectancy,
                         plan.lifestyle,
+                        plan.income,
                         False,
                         plan.client.home_value,
                         plan.desired_risk,
                         plan.client.civil_status,
-                        plan.income,
-                        plan.client.regional_data['tax_transcript_data']['adjusted_gross_income'],
-                        plan.client.regional_data['tax_transcript_data']['taxable_income'],
-                        plan.client.regional_data['tax_transcript_data']['total_payments'],
+                        plan.client.regional_data['tax_transcript_data'],
                         plan.external_income,
                         plan.income_growth,
                         plan.client.employment_status,

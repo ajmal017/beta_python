@@ -52,7 +52,6 @@ regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
                                             "total_payments":0,
                                             "blind":False,
                                             "add_child_tax_credit":0,
-                                            "adjusted_gross_income":1370,
                                             "name":"THOMAS E TAXPAYER",
                                             "address":{     "address2":"",
                                                             "state":"USA",
@@ -103,4 +102,4 @@ zip_code = 94213
 
 
 
-
+#                                            "adjusted_gross_income":1370
