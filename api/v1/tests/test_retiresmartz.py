@@ -26,6 +26,7 @@ from django.conf import settings
 
 mocked_now = datetime(2016, 1, 1)
 
+
 class RetiresmartzTests(APITestCase):
     def setUp(self):
         self.support_group = GroupFactory(name=GROUP_SUPPORT_STAFF)

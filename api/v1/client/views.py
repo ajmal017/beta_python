@@ -453,33 +453,23 @@ class QuovoGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
         return Response({"data": data})
 
 
-# Uncomment the lines below and the "authentication_classes" lines
-# in each of the Plaid classes to test without CSRF authentication.
-# The code below is from
-# http://stackoverflow.com/questions/30871033/django-rest-framework-remove-csrf
-#
-#from rest_framework.authentication import BasicAuthentication, SessionAuthentication
-#class CsrfExemptSessionAuthentication(SessionAuthentication):
-#    def enforce_csrf(self, request):
-#        return  # To not perform the csrf check
-
 class PlaidCreateAccessTokenView(ApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
-#    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
 
     def post(self, request, *args, **kwargs):
-        public_token = request.POST["public_token"]
+        public_token = request.data.get('public_token', None)
+        if public_token is None:
+            return Response('missing public_token', status=status.HTTP_400_BAD_REQUEST)
         success = plaid.create_access_token(request.user, public_token)
         data = {"success": success}
-        return Response({"data": data})
+        return Response(data)
 
 
 class PlaidGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
-#    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
 
     def get(self, request, *args, **kwargs):
         data = plaid.get_accounts(request.user)
-        return Response({"data": data})
+        return Response(data)

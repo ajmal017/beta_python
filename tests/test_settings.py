@@ -12,6 +12,8 @@ PAGE_DEFAULT_TEMPLATE = "support/base.html"
 PAGE_LANGUAGES = (('en-us', 'US English'),)
 STATIC_URL = '/static/'
 
+PLAID_PUBLIC_KEY = "test_key"
+
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
     'rest_framework.authentication.SessionAuthentication',
 )
