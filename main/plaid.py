@@ -1,11 +1,9 @@
 from django.conf import settings
 from main.models import PlaidUser
-import os
-import requests
 import logging
+from plaid import Client as PlaidClient
 logger = logging.getLogger('main.plaid')
 
-from plaid import Client as PlaidClient
 PlaidClient.config({
     'url': settings.PLAID_DEVELOPMENT_URL
 })

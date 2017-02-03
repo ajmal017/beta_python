@@ -24,15 +24,12 @@ from . import serializers
 from api.v1.goals.serializers import GoalSerializer
 import logging
 import json
-from retiresmartz import advice_responses
-from main.event import Event
 from api.v1.utils import activity
 from django.template.loader import render_to_string
 from main import quovo, plaid
 from address.models import USState, USFips, USZipcode
 from consumer_expenditure.models import AreaQuotient, PeerGroupData
 from consumer_expenditure import utils as ce_utils
-from datetime import date
 from functools import reduce
 logger = logging.getLogger('api.v1.client.views')
 
