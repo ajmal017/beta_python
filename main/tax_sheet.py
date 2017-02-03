@@ -16,6 +16,8 @@ import pdb
 logger = logging.getLogger('taxsheet')
 inflation_level = inflation.inflation_level
 
+NUM_US_RETIREMENT_ACCOUNT_TYPES = len(constants.US_RETIREMENT_ACCOUNT_TYPES)
+
 class TaxUser(object):
 
     '''
@@ -41,9 +43,6 @@ class TaxUser(object):
                  ss_fra_retirement,
                  paid_days,
                  retirement_accounts,
-                 contrib_rate_employer_401k,
-                 contrib_rate_employee_401k,
-                 initial_401k_balance,
                  zip_code):
 
         '''
@@ -70,9 +69,6 @@ class TaxUser(object):
                              ss_fra_retirement,
                              paid_days,
                              retirement_accounts,
-                             contrib_rate_employer_401k,
-                             contrib_rate_employee_401k,
-                             initial_401k_balance,
                              inflation_level,
                              zip_code)
             
@@ -105,9 +101,7 @@ class TaxUser(object):
                              ss_fra_todays,
                              ss_fra_retirement,
                              paid_days,
-                             contrib_rate_employer_401k,
-                             contrib_rate_employee_401k,
-                             initial_401k_balance,
+                             retirement_accounts,
                              inflation_level,
                              zip_code)
         
@@ -131,9 +125,10 @@ class TaxUser(object):
         self.ss_fra_todays = ss_fra_todays
         self.ss_fra_retirement = ss_fra_retirement
         self.paid_days = paid_days
-        self.contrib_rate_employee_401k = contrib_rate_employee_401k
-        self.contrib_rate_employer_401k = contrib_rate_employer_401k
-        self.initial_401k_balance = initial_401k_balance
+        self.retirement_accounts = retirement_accounts
+        self.contrib_rate_employee_401k = 0
+        self.contrib_rate_employer_401k = 0
+        self.initial_401k_balance = 0
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
 
@@ -165,7 +160,7 @@ class TaxUser(object):
         '''
         remenant
 
-        period to retirement may not be a whole number of years.
+        period to retirement may not be a whole number of yinit_balance, monthly_contrib_employee, monthly_contrib_employerears.
         'remenant' = periods representing this 'gap'
         '''
         self.remenant_periods = self.pre_retirement_end - (12 * len(self.years_pre))   
@@ -184,6 +179,12 @@ class TaxUser(object):
             raise Exception("supplied inflation data does not cover the full period required")
         
         self.annual_inflation = [sum(inflation_level[j*12:(j*12)+12])/12. for j in range(len(self.indices_for_inflation))]
+
+        '''
+        retirement_accounts
+        '''
+        self.ret_account_init_balance_401k = 0
+        self.init_balance, self.monthly_contrib_employee, self.monthly_contrib_employer = self.get_retirement_accounts()
 
         '''
         data frame indices
@@ -256,7 +257,7 @@ class TaxUser(object):
 
     def get_capital_growth_and_balance_series(self, period, account_type, starting_balance):
         '''
-        returns capital growth and balance series over period for account_type
+        returns capital growth and balance series over period for account_tyconstants.US_RETIREMENT_ACCOUNT_TYPEpe
         '''
         '''
         for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
@@ -318,6 +319,43 @@ class TaxUser(object):
     def get_portfolio_return_above_cpi(self):
         return self.desired_risk * 10.0 * 0.005
     
+
+    def get_retirement_accounts(self):
+        '''
+        returns lists of initial balances and monthly employee and employer contribution percentages, indexed according to constants.US_RETIREMENT_ACCOUNT_TYPES
+        '''
+        init_balance = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        employer_match_income = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        
+        for acnt in self.retirement_accounts:
+            i = self.get_retirement_account_index(acnt)
+            init_balance[i] = init_balance[i] + acnt['balance']
+
+            if acnt['contrib_amt'] > 0:
+                if acnt['contrib_period'] == 'monthly':
+                    monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']
+                else:
+                    monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']/12.
+
+            if acnt['employer_match_type'] == 'contributions':
+                employer_match_contributions[i] = employer_match_contributions[i] + acnt['employer_match']
+            else:
+                employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
+                    
+        monthly_contrib_employee = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
+        monthly_contrib_employer = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
+
+        return init_balance, monthly_contrib_employee, monthly_contrib_employer
+
+
+    def get_retirement_account_index(self, acnt_type):
+        for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
+            if acnt_type['acc_type'] == constants.US_RETIREMENT_ACCOUNT_TYPES[i]:
+                return i
+        raise Exception('unrecognized account type')
+                
 
     def create_maindf(self):
         '''
@@ -419,250 +457,48 @@ class TaxUser(object):
         self.maindf['Home_Value'] = self.house_value * (1+self.maindf['Proj_Inflation_Rate']).cumprod()
 
 
-        # INCOME RELATED - EMPLOYEE CONTRIBUTIONS
-        self.contrib_rate_employee_pension = 0.0
-        self.maindf['Pension_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_pension
+        # INCOME RELATED - ACCOUNTS
 
-        self.maindf['401k_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_401k
-
-        self.contrib_rate_employee_profit_sharing = 0.0
-        self.maindf['Profit_Sharing_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_profit_sharing
-
-        self.contrib_rate_employee_money_purchase = 0.0
-        self.maindf['Money_Purchase_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_money_purchase
+        self.maindf['All_Accounts'] = 0
         
-        self.contrib_rate_employee_esop = 0.0
-        self.maindf['Esop_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_esop
+        for acnt in self.retirement_accounts:
+            j = self.get_retirement_account_index(acnt)
+            self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee[j]
+            self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer[j]
+
+            pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(j), self.init_balance[j] )       
+            post_balance = [pre_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
+            post_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+                    
+            for i in range(1, self.total_rows - self.pre_retirement_end): 
+                post_capital_growth[i] = ((self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i]) + (self.post_portfolio_return[i] * post_balance[i - 1]) 
+
+                if (self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i] + post_capital_growth[i] + post_balance[i - 1] > 0:
+                    post_balance[i] = post_capital_growth[i] + post_balance[i - 1]
+                else:
+                    post_balance[i] = 0.
+
+            self.maindf[str(j) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
+            self.maindf[str(j) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
+            self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(j) + '_Balance']
+
+        # NONTAXABLE ACCOUNTS
+        # FOLLOWING NEEDS RE-WRITE; VERY FRAGILE ... WHAT IF ORDER OF THE ACCOUNTS IN constants:US_RETIREMENT_ACCOUNT_TYPES IS CHANGED?
+        self.maindf['Nontaxable_Accounts'] = 0
+
+        if '9_Balance' in self.maindf:
+            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['9_Balance']  # Ind Roth _401K
+
+        if '19_Balance' in self.maindf:
+            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['19_Balance'] # Roth IRA
+
+        if '18_Balance' in self.maindf:
+            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['18_Balance'] # Roth 401k
+
+
+        # TAXABLE ACCOUNTS PRE DECCUMULATION
+        self.maindf['Taxable_Accounts_Pre_Deccumulation'] = self.maindf['All_Accounts'] - self.maindf['Nontaxable_Accounts']
         
-        self.contrib_rate_employee_roth_401k = 0.0
-        self.maindf['Roth_401k_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_roth_401k
-
-        self.contrib_rate_employee_individual_401k = 0.0
-        self.maindf['Individual_401k_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_individual_401k
-      
-        self.contrib_rate_employee_ind_roth_401k = 0.0
-        self.maindf['Ind_Roth_401k_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_ind_roth_401k
-
-        self.contrib_rate_employee_401a_Keogh = 0.0
-        self.maindf['401a_Keogh_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_401a_Keogh
-
-        self.contrib_rate_employee_qual_np = 0.0
-        self.maindf['Qual_Np_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_qual_np
-
-        self.contrib_rate_employee_qual_priv_457 = 0.0
-        self.maindf['Qual_Priv_457_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_qual_priv_457
- 
-        self.contrib_rate_employee_457 = 0.0
-        self.maindf['457_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_457
-
-        self.contrib_rate_employee_qual_np_roth = 0.0
-        self.maindf['Qual_Np_Roth_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_qual_np_roth
-
-        self.contrib_rate_employee_ira = 0.0
-        self.maindf['Ira_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_ira
-
-        self.contrib_rate_employee_roth_ira = 0.0
-        self.maindf['Roth_Ira_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_roth_ira
-
-        self.contrib_rate_employee_simple_ira = 0.0
-        self.maindf['Simple_Ira_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_simple_ira
-
-        self.contrib_rate_employee_sar_sep_ira = 0.0
-        self.maindf['Sar_Sep_Ira_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_sar_sep_ira
- 
-        self.contrib_rate_employee_sep_ira = 0.0
-        self.maindf['Sep_Ira_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_sep_ira
-
-        self.contrib_rate_employee_qual_annuity = 0.0
-        self.maindf['Qual_Annuity_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_qual_annuity
-
-        self.contrib_rate_employee_tax_def_annuity = 0.0
-        self.maindf['Tax_Def_Annuity_Employee'] = self.maindf['Total_Income'] * self.contrib_rate_employee_tax_def_annuity
-
-
-        # INCOME RELATED - EMPLOYER CONTRIBUTIONS
-        self.contrib_rate_employer_pension = 0.0
-        self.maindf['Pension_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_pension
-
-        self.maindf['401k_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_401k
-
-        self.contrib_rate_employer_profit_sharing = 0.0
-        self.maindf['Profit_Sharing_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_profit_sharing
-
-        self.contrib_rate_employer_money_purchase = 0.0
-        self.maindf['Money_Purchase_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_money_purchase
-
-        self.contrib_rate_employer_esop = 0.0
-        self.maindf['Esop_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_esop
-
-        self.contrib_rate_employer_roth_401k = 0.0
-        self.maindf['Roth_401k_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_roth_401k
-
-        self.contrib_rate_employer_individual_401k = 0.0
-        self.maindf['Individual_401k_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_individual_401k
-
-        self.contrib_rate_employer_ind_roth_401k = 0.0
-        self.maindf['Ind_Roth_401k_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_ind_roth_401k
-
-        self.contrib_rate_employer_401a_Keogh = 0.0
-        self.maindf['401a_Keogh_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_401a_Keogh
-
-        self.contrib_rate_employer_qual_np = 0.0
-        self.maindf['Qual_Np_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_qual_np
-
-        self.contrib_rate_employer_qual_priv_457 = 0.0
-        self.maindf['Qual_Priv_457_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_qual_priv_457
-
-        self.contrib_rate_employer_457 = 0.0 
-        self.maindf['457_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_457
-
-        self.contrib_rate_employer_qual_np_roth = 0.0
-        self.maindf['Qual_Np_Roth_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_qual_np_roth
-
-        self.contrib_rate_employer_ira = 0.0
-        self.maindf['Ira_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_ira
-
-        self.contrib_rate_employer_roth_ira = 0.0
-        self.maindf['Roth_Ira_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_roth_ira
-
-        self.contrib_rate_employer_simple_ira = 0.0
-        self.maindf['Simple_Ira_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_simple_ira
-
-        self.contrib_rate_employer_sar_sep_ira = 0.0
-        self.maindf['Sar_Sep_Ira_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_sar_sep_ira
-
-        self.contrib_rate_employer_sep_ira = 0.0
-        self.maindf['Sep_Ira_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_sep_ira
-
-        self.contrib_rate_employer_qual_annuity = 0.0
-        self.maindf['Qual_Annuity_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_qual_annuity
-
-        self.contrib_rate_employer_tax_def_annuity = 0.0
-        self.maindf['Tax_Def_Annuity_Employer'] = self.maindf['Total_Income'] * self.contrib_rate_employer_tax_def_annuity
-
-
-        # ACCOUNT CAPITAL GROWTH AND ACCOUNT BALANCE
-        self.starting_balance_pension = 0.0
-        self.capital_growth_pension, self.balance_pension = self.get_capital_growth_and_balance_series(self.total_rows, 'Pension', self.starting_balance_pension )
-        self.maindf['Pension_Capital_Growth'] = self.capital_growth_pension
-        self.maindf['Pension_Balance'] = self.balance_pension
-
-        self.starting_balance_profit_sharing = 0.0
-        self.capital_growth_profit_sharing, self.balance_profit_sharing = self.get_capital_growth_and_balance_series(self.total_rows, 'Profit_Sharing', self.starting_balance_profit_sharing )
-        self.maindf['Profit_Sharing_Capital_Growth'] = self.capital_growth_profit_sharing
-        self.maindf['Profit_Sharing_Balance'] = self.balance_profit_sharing
-
-        self.starting_balance_money_purchase = 0.0
-        self.capital_growth_money_purchase, self.balance_money_purchase = self.get_capital_growth_and_balance_series(self.total_rows, 'Money_Purchase', self.starting_balance_money_purchase )
-        self.maindf['Money_Purchase_Capital_Growth'] = self.capital_growth_money_purchase
-        self.maindf['Money_Purchase_Balance'] = self.balance_money_purchase
-
-        self.starting_balance_esop = 0.0
-        self.capital_growth_esop, self.balance_esop = self.get_capital_growth_and_balance_series(self.total_rows, 'Esop', self.starting_balance_esop )
-        self.maindf['Esop_Capital_Growth'] = self.capital_growth_money_purchase
-        self.maindf['Esop_Balance'] = self.balance_esop
-
-        self.starting_balance_roth_401k = 0.0
-        self.capital_growth_roth_401k, self.balance_roth_401k = self.get_capital_growth_and_balance_series(self.total_rows, 'Roth_401k', self.starting_balance_roth_401k )
-        self.maindf['Roth_401k_Capital_Growth'] = self.capital_growth_roth_401k
-        self.maindf['Roth_401k_Balance'] = self.balance_roth_401k
-
-        self.starting_balance_individual_401k = 0.0
-        self.capital_growth_individual_401k, self.balance_individual_401k = self.get_capital_growth_and_balance_series(self.total_rows, 'Individual_401k', self.starting_balance_individual_401k )
-        self.maindf['Individual_401k_Capital_Growth'] = self.capital_growth_individual_401k
-        self.maindf['Individual_401k_Balance'] = self.balance_individual_401k
-
-        self.starting_balance_ind_roth_401k = 0.0
-        self.capital_growth_ind_roth_401k, self.balance_ind_roth_401k = self.get_capital_growth_and_balance_series(self.total_rows, 'Ind_Roth_401k', self.starting_balance_ind_roth_401k )
-        self.maindf['Ind_Roth_401k_Capital_Growth'] = self.capital_growth_ind_roth_401k
-        self.maindf['Ind_Roth_401k_Balance'] = self.balance_ind_roth_401k
-
-        self.starting_balance_401a_Keogh = 0.0
-        self.capital_growth_401a_Keogh, self.balance_401a_Keogh = self.get_capital_growth_and_balance_series(self.total_rows, '401a_Keogh', self.starting_balance_401a_Keogh )
-        self.maindf['401a_Keogh_Capital_Growth'] = self.capital_growth_401a_Keogh
-        self.maindf['401a_Keogh_Balance'] = self.balance_401a_Keogh
-
-        self.starting_balance_qual_np = 0.0
-        self.capital_growth_qual_np, self.balance_qual_np = self.get_capital_growth_and_balance_series(self.total_rows, 'Qual_Np', self.starting_balance_qual_np )
-        self.maindf['Qual_Np_Capital_Growth'] = self.capital_growth_qual_np
-        self.maindf['Qual_Np_Balance'] = self.balance_qual_np
-
-        self.starting_balance_qual_priv_457 = 0.0
-        self.capital_growth_qual_priv_457, self.balance_qual_priv_457 = self.get_capital_growth_and_balance_series(self.total_rows, 'Qual_Priv_457', self.starting_balance_qual_priv_457 )
-        self.maindf['Qual_Priv_457_Capital_Growth'] = self.capital_growth_qual_priv_457
-        self.maindf['Qual_Priv_457_Balance'] = self.balance_qual_priv_457
-
-        self.starting_balance_457 = 0.0
-        self.capital_growth_457, self.balance_457 = self.get_capital_growth_and_balance_series(self.total_rows, '457', self.starting_balance_457 )
-        self.maindf['457_Capital_Growth'] = self.capital_growth_457
-        self.maindf['457_Balance'] = self.balance_457
-
-        self.starting_balance_qual_np_roth = 0.0
-        self.capital_growth_qual_np_roth, self.balance_qual_np_roth = self.get_capital_growth_and_balance_series(self.total_rows, 'Qual_Np_Roth', self.starting_balance_qual_np_roth )
-        self.maindf['Qual_Np_Roth_Capital_Growth'] = self.capital_growth_qual_np_roth
-        self.maindf['Qual_Np_Roth_Balance'] = self.balance_qual_np_roth
-
-        self.starting_balance_ira = 0.0
-        self.capital_growth_ira, self.balance_ira = self.get_capital_growth_and_balance_series(self.total_rows, 'Ira', self.starting_balance_ira )
-        self.maindf['Ira_Capital_Growth'] = self.capital_growth_ira
-        self.maindf['Ira_Balance'] = self.balance_ira
-
-        self.starting_balance_roth_ira = 0.0
-        self.capital_growth_roth_ira, self.balance_roth_ira = self.get_capital_growth_and_balance_series(self.total_rows, 'Roth_Ira', self.starting_balance_roth_ira )
-        self.maindf['Roth_Ira_Capital_Growth'] = self.capital_growth_roth_ira
-        self.maindf['Roth_Ira_Balance'] = self.balance_roth_ira
-
-        self.starting_balance_simple_ira = 0.0
-        self.capital_growth_simple_ira, self.balance_simple_ira = self.get_capital_growth_and_balance_series(self.total_rows, 'Simple_Ira', self.starting_balance_simple_ira )
-        self.maindf['Simple_Ira_Capital_Growth'] = self.capital_growth_simple_ira
-        self.maindf['Simple_Ira_Balance'] = self.balance_simple_ira
-
-        self.starting_balance_sar_sep_ira = 0.0
-        self.capital_growth_sar_sep_ira, self.balance_sar_sep_ira = self.get_capital_growth_and_balance_series(self.total_rows, 'Sar_Sep_Ira', self.starting_balance_sar_sep_ira )
-        self.maindf['Sar_Sep_Ira_Capital_Growth'] = self.capital_growth_sar_sep_ira
-        self.maindf['Sar_Sep_Ira_Balance'] = self.balance_sar_sep_ira
-
-        self.starting_balance_sep_ira = 0.0
-        self.capital_growth_sep_ira, self.balance_sep_ira = self.get_capital_growth_and_balance_series(self.total_rows, 'Sep_Ira', self.starting_balance_sep_ira )
-        self.maindf['Sep_Ira_Capital_Growth'] = self.capital_growth_sep_ira
-        self.maindf['Sep_Ira_Balance'] = self.balance_sep_ira
-
-        self.starting_balance_qual_annuity = 0.0
-        self.capital_growth_qual_annuity, self.balance_qual_annuity = self.get_capital_growth_and_balance_series(self.total_rows, 'Qual_Annuity', self.starting_balance_qual_annuity )
-        self.maindf['Qual_Annuity_Capital_Growth'] = self.capital_growth_qual_annuity
-        self.maindf['Qual_Annuity_Balance'] = self.balance_qual_annuity
-
-        self.starting_balance_tax_def_annuity = 0.0
-        self.capital_growth_tax_def_annuity, self.balance_tax_def_annuity = self.get_capital_growth_and_balance_series(self.total_rows, 'Tax_Def_Annuity', self.starting_balance_tax_def_annuity )
-        self.maindf['Tax_Def_Annuity_Capital_Growth'] = self.capital_growth_tax_def_annuity
-        self.maindf['Tax_Def_Annuity_Balance'] = self.balance_tax_def_annuity
-        
-        self.maindf['Nontaxable_Accounts'] = np.where(self.maindf['Roth_401k_Balance'] + self.maindf['Ind_Roth_401k_Balance'] + self.maindf['Roth_Ira_Balance'] > 0,
-                                                      self.maindf['Roth_401k_Balance'] + self.maindf['Ind_Roth_401k_Balance'] + self.maindf['Roth_Ira_Balance'],
-                                                      0)
-
-        # 401K
-        '''
-        for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
-        ''' 
-        self.pre_401k_capital_growth, self.pre_401k_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, '401k', self.initial_401k_balance )        
-
-        self.post_401k_balance = [self.pre_401k_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
-        self.post_401k_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
-                
-        for i in range(1, self.total_rows - self.pre_retirement_end): 
-            self.post_401k_capital_growth[i] = ((self.contrib_rate_employee_401k + self.contrib_rate_employer_401k) * self.post_total_income[i]) + (self.post_portfolio_return[i] * self.post_401k_balance[i - 1]) 
-
-            if (self.contrib_rate_employee_401k + self.contrib_rate_employer_401k) * self.post_total_income[i] + self.post_401k_capital_growth[i] + self.post_401k_balance[i - 1] > 0:
-                self.post_401k_balance[i] = self.post_401k_capital_growth[i] + self.post_401k_balance[i - 1]
-            else:
-                self.post_401k_balance[i] = 0.
-
-        self.maindf['401k_Capital_Growth'] = self.set_full_series(self.pre_401k_capital_growth, self.post_401k_capital_growth)
-        self.maindf['401k_Balance'] = self.set_full_series(self.pre_401k_balance, self.post_401k_balance)
-        '''
-        glad to have got that out of the way ...
-        '''
 
         # CERTAIN INCOME
         if self.retirement_lifestyle == 1:
@@ -724,29 +560,6 @@ class TaxUser(object):
                                                                                         + self.maindf['Pension_Payments']
                                                                                         + self.maindf['Annuity_Payments']
                                                                                         + self.maindf['Reverse_Mortgage'])
-
-        # TAXABLE ACCOUNTS PRE DECCUMULATION
-        self.maindf['Taxable_Accounts_Pre_Deccumulation'] = self.maindf['Pension_Balance'] \
-                                                        + self.maindf['401k_Balance'] \
-                                                        + self.maindf['Profit_Sharing_Balance'] \
-                                                        + self.maindf['Money_Purchase_Balance'] \
-                                                        + self.maindf['Esop_Balance'] \
-                                                        + self.maindf['Roth_401k_Balance'] \
-                                                        + self.maindf['Individual_401k_Balance'] \
-                                                        + self.maindf['Ind_Roth_401k_Balance'] \
-                                                        + self.maindf['401a_Keogh_Balance'] \
-                                                        + self.maindf['Qual_Np_Balance'] \
-                                                        + self.maindf['Qual_Priv_457_Balance'] \
-                                                        + self.maindf['457_Balance'] \
-                                                        + self.maindf['Qual_Np_Roth_Balance'] \
-                                                        + self.maindf['Ira_Balance'] \
-                                                        + self.maindf['Roth_Ira_Balance'] \
-                                                        + self.maindf['Simple_Ira_Balance'] \
-                                                        + self.maindf['Sar_Sep_Ira_Balance'] \
-                                                        + self.maindf['Sep_Ira_Balance'] \
-                                                        + self.maindf['Qual_Annuity_Balance'] \
-                                                        + self.maindf['Tax_Def_Annuity_Balance'] \
-                                                        - self.maindf['Nontaxable_Accounts']
                                       
         self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Des_Ret_Inc_Pre_Tax']- self.maindf['Certain_Ret_Inc'])
         
@@ -936,12 +749,11 @@ class TaxUser(object):
                          ss_fra_todays,
                          ss_fra_retirement,
                          paid_days,
-                         contrib_rate_employer_401k,
-                         contrib_rate_employee_401k,
-                         initial_401k_balance,
+                         retirement_accounts,
                          inflation_level,
                          zip_code):
 
+        # adj_gross_income cannot be less than total_income
         adj_gross_income = self.validate_adj_gross_income(adj_gross_income, total_income)
         
         # Null checks
@@ -952,7 +764,6 @@ class TaxUser(object):
             raise Exception('desired_retirement_age not provided')
 
         if not life_exp:
-            pdb.set_trace()
             raise Exception('life_exp no provided')
 
         if not retirement_lifestyle:
@@ -1007,21 +818,6 @@ class TaxUser(object):
         if paid_days > 30:
             raise Exception('paid_days greater than 30 per month')
 
-        if initial_401k_balance < 0:
-            raise Exception('initial_401k_balance less than 0')
-
-        if contrib_rate_employer_401k < 0:
-            raise Exception('contrib_rate_employer_401k less than 0')
-
-        if contrib_rate_employer_401k > 1:
-            raise Exception('contrib_rate_employer_401k greater than 1 (i.e. > 100%)')
-
-        if contrib_rate_employee_401k < 0:
-            raise Exception('contrib_rate_employee_401k less than 0')
-
-        if contrib_rate_employee_401k > 1:
-            raise Exception('contrib_rate_employee_401k greater than 1 (i.e. > 100%)')
-
         if type(zip_code) != int:
             raise Exception("zip_code must be integer")
         '''
@@ -1070,14 +866,9 @@ class TaxUser(object):
                      ss_fra_retirement,
                      paid_days,
                      retirement_accounts,
-                     contrib_rate_employer_401k,
-                     contrib_rate_employee_401k,
-                     initial_401k_balance,
                      inflation_level,
                      zip_code):
         print("-----------------------------Retirement model INPUTS -------------------")
-        print(str(retirement_accounts))
-        print(retirement_accounts[0]['acc_type'])
         print('dob:                         ' + str(dob))
         print('desired_retirement_age:      ' + str(desired_retirement_age))
         print('life_exp:                    ' + str(life_exp))
@@ -1095,10 +886,8 @@ class TaxUser(object):
         print('ss_fra_todays:               ' + str(ss_fra_todays))
         print('ss_fra_retirement:           ' + str(ss_fra_retirement))
         print('paid_days:                   ' + str(paid_days))
-        print('contrib_rate_employer_401k:  ' + str(contrib_rate_employer_401k))
-        print('contrib_rate_employee_401k:  ' + str(contrib_rate_employee_401k))
-        print('initial_401k_balance:        ' + str(initial_401k_balance))
         print('zip_code:                    ' + str(zip_code))
+        print('retirement_accounts:         ' + str(retirement_accounts))
         print("[Set self.debug=False to hide these]")
         
     def show_outputs(self):

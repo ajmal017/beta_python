@@ -659,7 +659,10 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate(self):
 
-        ret_accts = [{"owner":"self", "acc_type":5, "balance":2500}]
+        ret_accts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Roth', 'employer_match': 0.07, 'contrib_amt': 100, 'balance': 3000, 'acc_type': 6, 'cat': 1, 'contrib_period': 'yearly'}]
+        
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -900,7 +903,9 @@ class RetiresmartzTests(APITestCase):
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_retirement_plan_calculate_notgenerated(self):
 
-        ret_accts = [{"owner":"self", "acc_type":5, "balance":2500}]
+        ret_accts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Roth', 'employer_match': 0.07, 'contrib_amt': 100, 'balance': 3000, 'acc_type': 6, 'cat': 1, 'contrib_period': 'yearly'}]
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,

@@ -24,9 +24,6 @@ class Command(NoArgsCommand):
                               tst_tx.ss_fra_retirement,
                               tst_tx.paid_days,
                               tst_tx.retirement_accounts,
-                              tst_tx.contrib_rate_employer_401k,
-                              tst_tx.contrib_rate_employee_401k,
-                              tst_tx.initial_401k_balance,
                               tst_tx.zip_code)
     
         tst_cls.create_maindf()

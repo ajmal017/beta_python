@@ -599,9 +599,6 @@ equired to generate the
                         plan.client.ss_fra_retirement,
                         plan.paid_days,
                         plan.retirement_accounts,
-                        contrib_rate_employer_401k,
-                        contrib_rate_employee_401k,
-                        initial_401k_balance,
                         int(self.get_zip_code(plan.retirement_postal_code,
                                               plan.client.residential_address.post_code)))
 
@@ -614,29 +611,26 @@ equired to generate the
             print(" ************************************************************** ")
             print("partner: ")
             print(" ************************************************************** ")
-            partner = tax.TaxUser(pd.Timestamp(plan.partner_plan.dob),
-                            plan.partner_plan.retirement_age,
-                            plan.partner_plan.selected_life_expectancy,
-                            plan.lifestyle,
-                            plan.reverse_mortgage,
-                            house_value,
-                            plan.desired_risk,
-                            plan.client.civil_status,
-                            plan.partner_plan.income,
-                            plan.client.other_income,
-                            taxable_income,
-                            total_payments,
-                            plan.income_growth,
-                            plan.client.employment_status,
-                            ss_fra_todays,
-                            ss_fra_retirement,
-                            paid_days,
-                            plan.retirement_accounts,
-                            contrib_rate_employer_401k,
-                            contrib_rate_employee_401k,
-                            initial_401k_balance,
-                            int(self.get_zip_code(plan.retirement_postal_code,
-                                                  plan.client.residential_address.post_code)))
+            partner = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
+                        plan.retirement_age,
+                        plan.selected_life_expectancy,
+                        plan.lifestyle,
+                        False,
+                        plan.client.home_value,
+                        plan.desired_risk,
+                        plan.client.civil_status,
+                        plan.income,
+                        plan.client.other_income,
+                        taxable_income,
+                        total_payments,
+                        plan.income_growth,
+                        plan.client.employment_status,
+                        plan.client.ss_fra_todays,
+                        plan.client.ss_fra_retirement,
+                        plan.paid_days,
+                        plan.retirement_accounts,
+                        int(self.get_zip_code(plan.retirement_postal_code,
+                                              plan.client.residential_address.post_code)))
 
             partner.create_maindf()
 
