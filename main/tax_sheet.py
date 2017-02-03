@@ -160,7 +160,7 @@ class TaxUser(object):
         '''
         remenant
 
-        period to retirement may not be a whole number of yinit_balance, monthly_contrib_employee, monthly_contrib_employerears.
+        period to retirement may not be a whole number of years.
         'remenant' = periods representing this 'gap'
         '''
         self.remenant_periods = self.pre_retirement_end - (12 * len(self.years_pre))   
