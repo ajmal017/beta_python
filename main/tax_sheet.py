@@ -842,7 +842,6 @@ class TaxUser(object):
     def validate_adj_gross_income(self, tot_inc, adj_gr_inc):
         '''
         adjusted_gross_income must be at least as large as total_income.
-
         returns adjusted_total_income at least as large as total income.
         '''
         return max(adj_gr_inc, tot_inc)

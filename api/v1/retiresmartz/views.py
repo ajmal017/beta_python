@@ -35,6 +35,7 @@ from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
 import time
+import pdb
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
 class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
@@ -569,12 +570,8 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
-
+        pdb.set_trace()
         # Get projection of future income and assets for US tax payer
-        adj_gross_income = 100000.
-        taxable_income = 0.
-        total_payments = 18219.
-        
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
                         plan.selected_life_expectancy,
@@ -585,8 +582,8 @@ equired to generate the
                         plan.client.civil_status,
                         plan.income,
                         plan.client.other_income,
-                        taxable_income,
-                        total_payments,
+                        plan.client.regional_data['tax_transcript_data'][0]['taxable_income'],
+                        plan.client.regional_data['tax_transcript_data'][0]['total_payments'],
                         plan.income_growth,
                         plan.client.employment_status,
                         plan.client.ss_fra_todays,
@@ -597,14 +594,7 @@ equired to generate the
                                               plan.client.residential_address.post_code)))
 
         user.create_maindf()
-
-        print(" ************************************************************** ")
-        print("plan.client.civil_status = " + str(plan.client.civil_status))
-        print(" ************************************************************** ")
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
-            print(" ************************************************************** ")
-            print("partner: ")
-            print(" ************************************************************** ")
             partner = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
                         plan.selected_life_expectancy,
@@ -615,8 +605,8 @@ equired to generate the
                         plan.client.civil_status,
                         plan.income,
                         plan.client.other_income,
-                        taxable_income,
-                        total_payments,
+                        plan.client.regional_data['tax_transcript_data'][0]['taxable_income'],
+                        plan.client.regional_data['tax_transcript_data'][0]['total_payments'],
                         plan.income_growth,
                         plan.client.employment_status,
                         plan.client.ss_fra_todays,
@@ -630,18 +620,12 @@ equired to generate the
 
         # Convert these returned values to a format for the API        
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
-            print(" ************************************************************** ")
-            print("if plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_SEPARATELY_LIVED_TOGETHER'] or plan.client.civil_status == abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY']:")
-            print(" ************************************************************** ")
             user.maindf['Joint_Taxable_Accounts'] = user.maindf['Taxable_Accounts'] + partner.maindf['Taxable_Accounts']
             user.maindf['Joint_Actual_Inc'] = user.maindf['Actual_Inc'] + partner.maindf['Actual_Inc']
             user.maindf['Joint_Desired_Inc'] = user.maindf['Desired_Inc'] + partner.maindf['Desired_Inc']
             catd = pd.concat([user.maindf['Joint_Taxable_Accounts'], user.maindf['Joint_Actual_Inc'], user.maindf['Joint_Desired_Inc']], axis=1)
 
         else:
-            print(" ************************************************************** ")
-            print("else")
-            print(" ************************************************************** ")
             catd = pd.concat([user.maindf['Taxable_Accounts'], user.maindf['Actual_Inc'], user.maindf['Desired_Inc']], axis=1)
 
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
