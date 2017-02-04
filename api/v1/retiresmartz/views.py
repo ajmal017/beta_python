@@ -574,7 +574,8 @@ equired to generate the
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
             
         print('=====================')
-        print('plan.btc =====     ' + str(plan.btc))    
+        print('plan.btc =====     ' + str(plan.btc)) 
+        print('plan.expenses =====     ' + str(plan.expenses))    
         print('=====================')
 
         # Get external_income plans
@@ -698,7 +699,7 @@ equired to generate the
         rt_value = value_at_retirement(rt_dt_epoch, values)
         target_rt_value = value_at_retirement(rt_dt_epoch, target_values)
 
-        return rt_value >= target_rt_value
+        return target_rt_value >= rt_value
 
     def get_zip_code(self, retirement_zip_code, residential_zip_code):
         '''
