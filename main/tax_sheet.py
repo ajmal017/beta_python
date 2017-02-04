@@ -48,7 +48,7 @@ class TaxUser(object):
         '''
         checks
         '''
-        self.debug = True
+        self.debug = False
         
         if (self.debug):
             self.show_inputs(dob,
@@ -425,7 +425,7 @@ class TaxUser(object):
         '''
         'btc factor' is multiplied by all retirement account contributions. btc varies 0 -> 100 (0 = high spending, 100 = high saving) 
         '''
-        return (self.btc/10000.)*2.0
+        return (self.btc/100000.)*2.0
 
 
     def validate_inputs(self,
