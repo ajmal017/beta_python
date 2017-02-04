@@ -11,6 +11,7 @@ from main import constants
 from dateutil.relativedelta import relativedelta
 from main import inflation
 from main import zip2state
+from ssa import ssa
 import pdb
 
 logger = logging.getLogger('taxsheet')
@@ -48,7 +49,7 @@ class TaxUser(object):
         '''
         checks
         '''
-        self.debug = False
+        self.debug = True
         
         if (self.debug):
             self.show_inputs(dob,
@@ -387,7 +388,8 @@ class TaxUser(object):
                     detail = (begin_date, amount)
                     external_income.append(detail)
             except:
-                print(str(plan) + " not of expected form")
+                if (self.debug):
+                    print(str(plan) + " not of expected form")
         return external_income 
 
 
@@ -423,7 +425,14 @@ class TaxUser(object):
 
     def get_btc_factor(self):
         '''
-        'btc factor' is multiplied by all retirement account contributions. btc varies 0 -> 100 (0 = high spending, 100 = high saving) 
+        'btc factor' is multiplied by all retirement account contributions. btc varies 0 -> 100000 (0 = high spending, 100000 = high saving)
+
+        The BTC/expenses pie chart ("Monthly View") has been hooked up to the graph, too. I applied a simple algorithm as follows; as you move
+        BTC around the pie chart, its value varies from 0% (all spending) to 100% (all saving). I have set up a link to the retirement account
+        contributions (for both employee and employer). If BTC is at 50% i.e. half way between full saving and full spending, the retirement
+        plans contribute normally. If however, BTC goes up to 100% (i.e. all saving), then the contributions double. If BTC goes to 0% (i.e.
+        all spending), then retirement plan contributions go to zero.  Please note, you need to set up at least one retirement account to see
+        the effect. 
         '''
         return (self.btc/100000.)*2.0
 
