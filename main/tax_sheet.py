@@ -419,7 +419,7 @@ class TaxUser(object):
         retirement_income_details = []
         retirement_income_details = self.get_retirement_income_details_from_plans()
         for detail in retirement_income_details:
-            self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0]. details[1])
+            self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0], detail[1])
         print("ZZZ   " + str(self.maindf['All_Annuity_Payments'])) 
         return self.maindf['All_Annuity_Payments']
 
