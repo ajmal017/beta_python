@@ -344,27 +344,27 @@ class TaxUser(object):
         monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         employer_match_income = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
-        
-        for acnt in self.retirement_accounts:
-            i = self.get_retirement_account_index(acnt)
-            init_balance[i] = init_balance[i] + acnt['balance']
+        if self.retirement_accounts is not None:
+            for acnt in self.retirement_accounts:
+                i = self.get_retirement_account_index(acnt)
+                init_balance[i] = init_balance[i] + acnt['balance']
 
-            if acnt['contrib_amt'] > 0:
-                if acnt['contrib_period'] == 'monthly':
-                    monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']
+                if acnt['contrib_amt'] > 0:
+                    if acnt['contrib_period'] == 'monthly':
+                        monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']
+                    else:
+                        monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']/12.
+
+                if acnt['employer_match_type'] == 'contributions':
+                    employer_match_contributions[i] = employer_match_contributions[i] + acnt['employer_match']
                 else:
-                    monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']/12.
-
-            if acnt['employer_match_type'] == 'contributions':
-                employer_match_contributions[i] = employer_match_contributions[i] + acnt['employer_match']
-            else:
-                employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
+                    employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
                     
         monthly_contrib_employee = [(self.get_btc_factor() * (monthly_contrib_amt_employee[i]/(self.total_income/12.))) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
         monthly_contrib_employer = [(self.get_btc_factor() * ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee[i]))/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
 
         return init_balance, monthly_contrib_employee, monthly_contrib_employer
-            
+
 
     def get_retirement_account_index(self, acnt_type):
         for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
@@ -705,27 +705,28 @@ class TaxUser(object):
         # INCOME RELATED - ACCOUNTS
 
         self.maindf['All_Accounts'] = 0
-        
-        for acnt in self.retirement_accounts:
-            j = self.get_retirement_account_index(acnt)
-            self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee[j]
-            self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer[j]
 
-            pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(j), self.init_balance[j] )       
-            post_balance = [pre_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
-            post_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
-                    
-            for i in range(1, self.total_rows - self.pre_retirement_end): 
-                post_capital_growth[i] = ((self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i]) + (self.post_portfolio_return[i] * post_balance[i - 1]) 
+        if self.retirement_accounts is not None:
+            for acnt in self.retirement_accounts:
+                j = self.get_retirement_account_index(acnt)
+                self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee[j]
+                self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer[j]
 
-                if (self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i] + post_capital_growth[i] + post_balance[i - 1] > 0:
-                    post_balance[i] = post_capital_growth[i] + post_balance[i - 1]
-                else:
-                    post_balance[i] = 0.
+                pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(j), self.init_balance[j] )       
+                post_balance = [pre_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
+                post_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+                        
+                for i in range(1, self.total_rows - self.pre_retirement_end): 
+                    post_capital_growth[i] = ((self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i]) + (self.post_portfolio_return[i] * post_balance[i - 1]) 
 
-            self.maindf[str(j) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
-            self.maindf[str(j) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
-            self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(j) + '_Balance']
+                    if (self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i] + post_capital_growth[i] + post_balance[i - 1] > 0:
+                        post_balance[i] = post_capital_growth[i] + post_balance[i - 1]
+                    else:
+                        post_balance[i] = 0.
+
+                self.maindf[str(j) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
+                self.maindf[str(j) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
+                self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(j) + '_Balance']
 
         # NONTAXABLE ACCOUNTS
         # FOLLOWING NEEDS RE-WRITE; VERY FRAGILE ... WHAT IF ORDER OF THE ACCOUNTS IN constants:US_RETIREMENT_ACCOUNT_TYPES IS CHANGED?

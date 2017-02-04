@@ -575,7 +575,7 @@ equired to generate the
 
         # Get external_income plans
         plans = RetirementPlan.objects.all()
-        
+
         # Get projection of future income and assets for US tax payer
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
@@ -586,7 +586,7 @@ equired to generate the
                         plan.client.home_value,
                         plan.desired_risk,
                         plan.client.civil_status,
-                        plan.client.regional_data['tax_transcript_data'],
+                        plan.client.regional_data.get('tax_transcript_data', None),
                         plans,
                         plan.income_growth,
                         plan.client.employment_status,
@@ -599,7 +599,7 @@ equired to generate the
                         plan.btc)
 
         user.create_maindf()
-        
+
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             partner = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
@@ -610,7 +610,7 @@ equired to generate the
                         plan.client.home_value,
                         plan.desired_risk,
                         plan.client.civil_status,
-                        plan.client.regional_data['tax_transcript_data'],
+                        plan.client.regional_data.get('tax_transcript_data', None),
                         plans,
                         plan.income_growth,
                         plan.client.employment_status,
