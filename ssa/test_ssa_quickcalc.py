@@ -15,7 +15,7 @@ def test_ssa_quickcalc():
                                                                 1, 2048, 4, 30, 1986)
     assert(ret_age == 62)
     assert(ret_date == 2048)
-    assert(ret_amount == 6160.0)
+    assert(ret_amount == 6031.0)
     print('ssa.get_social_security_benefit is working as expected')
 
 
