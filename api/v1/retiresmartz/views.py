@@ -572,11 +572,6 @@ equired to generate the
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
-            
-        print('=====================')
-        print('plan.btc =====     ' + str(plan.btc)) 
-        print('plan.expenses =====     ' + str(plan.expenses))    
-        print('=====================')
 
         # Get external_income plans
         plans = RetirementPlan.objects.all()

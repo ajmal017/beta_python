@@ -48,7 +48,7 @@ class TaxUser(object):
         '''
         checks
         '''
-        self.debug = True
+        self.debug = False
         
         if (self.debug):
             self.show_inputs(dob,
@@ -360,8 +360,8 @@ class TaxUser(object):
             else:
                 employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
                     
-        monthly_contrib_employee = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
-        monthly_contrib_employer = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
+        monthly_contrib_employee = [(self.get_btc_factor() * (monthly_contrib_amt_employee[i]/(self.total_income/12.))) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
+        monthly_contrib_employer = [(self.get_btc_factor() * ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee[i]))/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
 
         return init_balance, monthly_contrib_employee, monthly_contrib_employer
             
@@ -388,7 +388,6 @@ class TaxUser(object):
                     external_income.append(detail)
             except:
                 print(str(plan) + " not of expected form")
-        print("XXX   " + str(external_income))
         return external_income 
 
 
@@ -405,7 +404,6 @@ class TaxUser(object):
                 dateind_pre_annuity = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(months_to_annuity_start)]
                 dateind_post_annuity = [dateind_pre_annuity[len(dateind_pre_annuity)-1] + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows - months_to_annuity_start)]
                 self.maindf['This_Annuity_Payments_Nominal'] = self.maindf['This_Annuity_Payments_Nominal'] + self.set_full_series_with_indices(pre_ret_inc, post_ret_inc_nominal, dateind_pre_annuity, dateind_post_annuity)
-            print("YYY   " + str(self.maindf['This_Annuity_Payments_Nominal']))
             return self.maindf['This_Annuity_Payments_Nominal'] * (1 + self.maindf['Proj_Inflation_Rate']).cumprod()
         except:
             return 0
@@ -420,8 +418,14 @@ class TaxUser(object):
         retirement_income_details = self.get_retirement_income_details_from_plans()
         for detail in retirement_income_details:
             self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0], detail[1])
-        print("ZZZ   " + str(self.maindf['All_Annuity_Payments'])) 
         return self.maindf['All_Annuity_Payments']
+
+
+    def get_btc_factor(self):
+        '''
+        'btc factor' is multiplied by all retirement account contributions. btc varies 0 -> 100 (0 = high spending, 100 = high saving) 
+        '''
+        return (self.btc/100.)*2.0
 
 
     def validate_inputs(self,
