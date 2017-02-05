@@ -25,6 +25,8 @@ risk_profile_group = 0.005
 
 filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
+# regional_data = {"tax_transcript_data":None}
+
 regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
                   "ssn":"123-12-3412",
                   "tax_transcript_data_ex":{   "selfEmploymentTax":0,
@@ -75,6 +77,7 @@ regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
                                             "name_spouse":"TAMARA B TAXPAYER" }
                   }
 
+
 external_income = {'amount':0, 'begin_date': date(2020, 1, 1)}
 
 income_growth = 1
@@ -98,6 +101,8 @@ retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner'
                        {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'MPA', 'employer_match': 0.57, 'contrib_amt': 10, 'balance': 300, 'acc_type': 16, 'cat': 6, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Profit sharing', 'employer_match': 1, 'contrib_amt': 10, 'balance': 36, 'acc_type': 14, 'cat': 2, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'ESOP', 'employer_match': 0.27, 'contrib_amt': 10, 'balance': 50, 'acc_type': 17, 'cat': 7, 'contrib_period': 'monthly'}]
+
+#retirement_accounts = []
 
 zip_code = 94213
 
