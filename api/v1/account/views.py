@@ -3,6 +3,9 @@ import logging
 from django.conf import settings
 from django.db import transaction
 from django.db.models.query_utils import Q
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils.functional import curry
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import NotFound, PermissionDenied, \
@@ -14,9 +17,9 @@ from api.v1.permissions import IsAdvisorOrClient
 from api.v1.utils import activity
 from api.v1.views import ApiViewMixin
 from client.models import AccountBeneficiary, ClientAccount, \
-    CloseAccountRequest
+    CloseAccountRequest, JointAccountConfirmationModel
 from main import constants
-from main.models import AccountType
+from main.models import AccountType, User
 from support.models import SupportRequest
 from . import serializers
 
@@ -165,6 +168,24 @@ class AccountViewSet(ApiViewMixin,
     @list_route(methods=['POST'])
     def joint(self, request):
         return self.create_new_account(request)
+
+    @list_route(methods=['POST'], url_path='joint/resend-email')
+    def joint_resend_email(self, request):
+        client = SupportRequest.target_user(self.request).client
+        account = ClientAccount.objects.get(primary_owner=client, account_type=constants.ACCOUNT_TYPE_JOINT)
+        print(client.id, account.signatories.first())
+        cosignee = account.signatories.first()
+        jacm = JointAccountConfirmationModel.objects.get(account=account)
+        context = RequestContext(request, {
+            'confirmation': jacm,
+        })
+        render = curry(render_to_string, context=context)
+        cosignee.user.email_user(
+            render('email/client/joint-confirm/subject.txt').strip(),
+            message=render('email/client/joint-confirm/message.txt'),
+            html_message=render('email/client/joint-confirm/message.html'),
+        )
+        return Response('ok', status=status.HTTP_200_OK)
 
     @detail_route(methods=['get', 'post'], url_path='beneficiaries')
     def beneficiaries(self, request, pk=None, **kwargs):
