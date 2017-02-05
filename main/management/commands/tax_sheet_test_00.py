@@ -20,7 +20,6 @@ class Command(NoArgsCommand):
                               tst_tx.income_growth,
                               tst_tx.employment_status,
                               tst_tx.ss_fra_todays,
-                              tst_tx.ss_fra_retirement,
                               tst_tx.paid_days,
                               tst_tx.retirement_accounts,
                               tst_tx.zip_code,

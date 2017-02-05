@@ -11,7 +11,7 @@ from main import constants
 from dateutil.relativedelta import relativedelta
 from main import inflation
 from main import zip2state
-from ssa import ssa
+from ssa import ssa as ssa
 import pdb
 
 logger = logging.getLogger('taxsheet')
@@ -40,7 +40,6 @@ class TaxUser(object):
                  income_growth,
                  employment_status,
                  ss_fra_todays,
-                 ss_fra_retirement,
                  paid_days,
                  retirement_accounts,
                  zip_code,
@@ -66,7 +65,6 @@ class TaxUser(object):
                              income_growth,
                              employment_status,
                              ss_fra_todays,
-                             ss_fra_retirement,
                              paid_days,
                              retirement_accounts,
                              inflation_level,
@@ -93,9 +91,6 @@ class TaxUser(object):
             
         if not ss_fra_todays:
             ss_fra_todays = 0.
-            
-        if not ss_fra_retirement:
-            ss_fra_retirement = 0.
         
         self.validate_inputs(dob,
                              desired_retirement_age,
@@ -113,7 +108,6 @@ class TaxUser(object):
                              income_growth,
                              employment_status,
                              ss_fra_todays,
-                             ss_fra_retirement,
                              paid_days,
                              retirement_accounts,
                              inflation_level,
@@ -139,7 +133,6 @@ class TaxUser(object):
         self.income_growth = income_growth/100.
         self.employment_status = constants.EMPLOYMENT_STATUSES[employment_status]
         self.ss_fra_todays = ss_fra_todays
-        self.ss_fra_retirement = ss_fra_retirement
         self.paid_days = paid_days
         self.retirement_accounts = retirement_accounts
         self.contrib_rate_employee_401k = 0
@@ -218,6 +211,24 @@ class TaxUser(object):
         self.maindf = pd.DataFrame(index=self.dateind)
 
 
+    def get_ss_fra_retirement(self):
+        '''
+        returns ss_fra_retirement scraped from https://www.ssa.gov/oact/quickcalc
+        '''
+        try:
+            ss_fra_retirement = ssa.get_social_security_benefit(self.total_income,
+                                                                0,
+                                                                0,
+                                                                self.dateind_post[0].month,
+                                                                self.dateind_post[0].year,
+                                                                self.dob.month,
+                                                                self.dob.day,
+                                                                self.dob.year)[2]
+        except:
+            raise Exception("Failed to scrape ss_fra_retirement from https://www.ssa.gov/oact/quickcalc")
+        return ss_fra_retirement
+    
+
     def set_full_series(self, series_pre, series_post):
         '''
         returns full series by appending pre-retirement and post-retirement series
@@ -226,7 +237,6 @@ class TaxUser(object):
         full_post = pd.Series(series_post, index=self.dateind_post)
         result = full_pre.append(full_post)
         return result
-
     
     def set_full_series_with_indices(self, series_pre, series_post, index_pre, index_post):
         '''
@@ -345,6 +355,7 @@ class TaxUser(object):
         monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         employer_match_income = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
                 i = self.get_retirement_account_index(acnt)
@@ -365,7 +376,7 @@ class TaxUser(object):
         monthly_contrib_employer = [(self.get_btc_factor() * ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee[i]))/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
 
         return init_balance, monthly_contrib_employee, monthly_contrib_employer
-
+            
 
     def get_retirement_account_index(self, acnt_type):
         for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
@@ -454,7 +465,6 @@ class TaxUser(object):
                          income_growth,
                          employment_status,
                          ss_fra_todays,
-                         ss_fra_retirement,
                          paid_days,
                          retirement_accounts,
                          inflation_level,
@@ -504,9 +514,6 @@ class TaxUser(object):
 
         if ss_fra_todays < 0:
             raise Exception('ss_fra_todays less than 0')
-
-        if ss_fra_retirement < 0:
-            raise Exception('ss_underfra_todays less than 0')
 
         if total_income < 0:
             raise Exception('total_income less than 0')
@@ -572,7 +579,6 @@ class TaxUser(object):
                      income_growth,
                      employment_status,
                      ss_fra_todays,
-                     ss_fra_retirement,
                      paid_days,
                      retirement_accounts,
                      inflation_level,
@@ -593,7 +599,6 @@ class TaxUser(object):
         print('income_growth:               ' + str(income_growth))
         print('employment_status:           ' + str(employment_status))
         print('ss_fra_todays:               ' + str(ss_fra_todays))
-        print('ss_fra_retirement:           ' + str(ss_fra_retirement))
         print('paid_days:                   ' + str(paid_days))
         print('zip_code:                    ' + str(zip_code))
         print('retirement_accounts:         ' + str(retirement_accounts))
@@ -714,7 +719,7 @@ class TaxUser(object):
         # INCOME RELATED - ACCOUNTS
 
         self.maindf['All_Accounts'] = 0
-
+        
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
                 j = self.get_retirement_account_index(acnt)
@@ -778,6 +783,7 @@ class TaxUser(object):
         '''
         self.inflated_ss_fra_todays = self.ss_fra_todays * self.pre_inflator[self.pre_retirement_end - 1]
         self.nominal_soc_sec_benefit_pre = [self.inflated_ss_fra_todays for i in range(self.pre_retirement_end)]
+        self.ss_fra_retirement = self.get_ss_fra_retirement()
         self.nominal_soc_sec_benefit_post = [(self.ss_fra_retirement * self.get_soc_sec_factor()) for i in range(self.total_rows - self.pre_retirement_end)]
         
         self.maindf['Nominal_Soc_Sec_Benefit'] = self.set_full_series(self.nominal_soc_sec_benefit_pre, self.nominal_soc_sec_benefit_post)
