@@ -7,11 +7,11 @@ from datetime import date
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
 
-dob = pd.Timestamp('1986-01-01')
+dob = pd.Timestamp('2016-09-28')
 
-desired_retirement_age = 67.
+desired_retirement_age = 37.
 
-life_exp = 77.
+life_exp = 80.
 
 retirement_lifestyle = 2
 

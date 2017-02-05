@@ -20,7 +20,6 @@ inflation_level = inflation.inflation_level
 NUM_US_RETIREMENT_ACCOUNT_TYPES = len(constants.US_RETIREMENT_ACCOUNT_TYPES)
 
 class TaxUser(object):
-
     '''
     Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v4.xlsx).
     '''
@@ -147,7 +146,12 @@ class TaxUser(object):
         '''
         self.age = ((pd.Timestamp('today')-self.dob).days)/365.25
         self.validate_age()
-
+        if (self.debug):
+            print("---and then")
+            print('self.dob:                         ' + str(self.dob))
+            print('self.age:                         ' + str(self.age))
+            print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+            print('self.life_exp:                    ' + str(self.life_exp))
         '''
         retirememt period
         '''
@@ -210,7 +214,6 @@ class TaxUser(object):
         '''
         self.maindf = pd.DataFrame(index=self.dateind)
 
-
     def get_ss_fra_retirement(self):
         '''
         returns ss_fra_retirement scraped from https://www.ssa.gov/oact/quickcalc
@@ -228,7 +231,6 @@ class TaxUser(object):
             raise Exception("Failed to scrape ss_fra_retirement from https://www.ssa.gov/oact/quickcalc")
         return ss_fra_retirement
     
-
     def set_full_series(self, series_pre, series_post):
         '''
         returns full series by appending pre-retirement and post-retirement series
@@ -248,7 +250,6 @@ class TaxUser(object):
         result = full_pre.append(full_post)
         return result
 
-
     def get_full_post_retirement_and_pre_deflated(self, temp_df_column):
         '''
         returns data frame column having 'real' (c.f. 'nominal') vales, where post retirement is calculated
@@ -259,7 +260,6 @@ class TaxUser(object):
         result = self.maindf['Deflator'] * self.set_full_series(nominal_pre, real_post)
         return result
     
-
     def get_full_post_retirement_and_pre_set_zero(self, temp_df_column):
         '''
         returns data frame column having 'real' (c.f. 'nominal') values, where post retirement is calculated
@@ -270,7 +270,6 @@ class TaxUser(object):
         result = self.set_full_series(nominal_pre, real_post)
         return result
     
-
     def get_full_pre_retirement_and_post_set_zero(self, temp_df_column):
         '''
         returns data frame column having 'real' (c.f. 'nominal') values, where pre retirement is calculated
@@ -280,7 +279,6 @@ class TaxUser(object):
         real_post = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         result = self.set_full_series(nominal_pre, real_post)
         return result
-
 
     def get_capital_growth_and_balance_series(self, period, account_type, starting_balance):
         '''
@@ -296,17 +294,14 @@ class TaxUser(object):
             balance[i] = self.maindf[account_type + '_Employee'][i] + self.maindf[account_type + '_Employer'][i] + capital_growth[i] + balance[i - 1]
         return capital_growth, balance
 
-
     def get_projected_fed_tax(self):
         '''
         returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
         '''
-
         taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
         taxFed.create_tax_engine()
         taxFed.create_tax_projected()
         self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
-
 
     def get_soc_sec_factor(self):
         '''
@@ -342,11 +337,9 @@ class TaxUser(object):
 
         return factor
 
-
     def get_portfolio_return_above_cpi(self):
         return self.desired_risk * 10.0 * 0.005
     
-
     def get_retirement_accounts(self):
         '''
         returns lists of initial balances and monthly employee and employer contribution percentages, indexed according to constants.US_RETIREMENT_ACCOUNT_TYPES
@@ -377,13 +370,11 @@ class TaxUser(object):
 
         return init_balance, monthly_contrib_employee, monthly_contrib_employer
             
-
     def get_retirement_account_index(self, acnt_type):
         for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
             if acnt_type['acc_type'] == constants.US_RETIREMENT_ACCOUNT_TYPES[i]:
                 return i
         raise Exception('unrecognized account type')
-
 
     def get_retirement_income_details_from_plans(self):
         '''
@@ -403,7 +394,6 @@ class TaxUser(object):
                     print(str(plan) + " not of expected form")
         return external_income 
 
-
     def get_a_retirement_income(self, begin_date, amount):
         '''
         returns self.maindf['This_Annuity_Payments'] determined from retirement income.
@@ -421,7 +411,6 @@ class TaxUser(object):
         except:
             return 0
 
-
     def get_all_retirement_income(self):
         '''
         returns self.maindf['Annuity_Payments'], the sum of all retirment incomes.
@@ -432,7 +421,6 @@ class TaxUser(object):
         for detail in retirement_income_details:
             self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0], detail[1])
         return self.maindf['All_Annuity_Payments']
-
 
     def get_btc_factor(self):
         '''
@@ -446,7 +434,6 @@ class TaxUser(object):
         the effect. 
         '''
         return (self.btc/100000.)*2.0
-
 
     def validate_inputs(self,
                          dob,
@@ -550,44 +537,39 @@ class TaxUser(object):
         if self.age <= 0:
             raise Exception("age less than or equal to 0")
 
+        
+        if (self.debug):
+            print("---before")
+            print('self.dob:                         ' + str(self.dob))
+            print('self.age:                         ' + str(self.age))
+            print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+            print('self.life_exp:                    ' + str(self.life_exp))
+
         # need the following for https://www.ssa.gov/oact/quickcalc to accept inputs
         # only accepts ages greater than 21
         if self.age < 22.:
-            if (self.debug):
-                print("---before")
-                print('self.age:                 ' + str(self.age))
-                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-                print('self.life_exp:            ' + str(self.life_exp))
             years_below_22 = 22. - self.age
             self.age = 22.
-            self.desired_retirement_age = self.desired_retirement_age + years_below_22
+            self.dob = pd.Timestamp('today').date() - relativedelta(years=22)
+            self.desired_retirement_age = min(self.desired_retirement_age + years_below_22, self.age + 59.)
             self.life_exp = self.life_exp + years_below_22
-            if (self.debug):
-                print("---after")
-                print('self.age:                         ' + str(self.age))
-                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-                print('self.life_exp:                    ' + str(self.life_exp))
-                print("[Set self.debug=False to hide these]")
 
         # need the following for https://www.ssa.gov/oact/quickcalc to accept inputs
         # only accepts ages less than 92
         if self.age > 92.:
-            if (self.debug):
-                print("---before")
-                print('self.age:                         ' + str(self.age))
-                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-                print('self.life_exp:                    ' + str(self.life_exp))
             years_above_92 = self.age - 92.
             self.age = 92.
-            self.desired_retirement_age = self.desired_retirement_age - years_above_92
+            self.dob = pd.Timestamp('today').date() - relativedelta(years=92)
+            self.desired_retirement_age = max(self.desired_retirement_age - years_above_92, 23.)
             self.life_exp = self.life_exp - years_above_92
-            if (self.debug):
-                print("---after")
-                print('self.age:                         ' + str(self.age))
-                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-                print('self.life_exp:                    ' + str(self.life_exp))
-                print("[Set self.debug=False to hide these]")
 
+        if (self.debug):
+            print("---after")
+            print('self.dob:                         ' + str(self.dob))
+            print('self.age:                         ' + str(self.age))
+            print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+            print('self.life_exp:                    ' + str(self.life_exp))
+            print("[Set self.debug=False to hide these]")
 
     def validate_life_exp_and_des_retire_age(self):
         '''
@@ -654,7 +636,6 @@ class TaxUser(object):
         print(self.maindf['Desired_Inc'])
         print("[Set self.debug=False to hide these]")
                 
-
     def create_maindf(self):
         '''
         create the main data frame

@@ -33,7 +33,6 @@ def ssa_quickcalc_soup(earnings, last_earn, last_year_earn,
         'dobmon': dob_month,  # dob month
         'dobday': dob_day,  # dob day
         'yob': dob_year,  # dob year
-
     }
     r = requests.post(url, data)
     soup = BeautifulSoup(r.content, 'html.parser')
