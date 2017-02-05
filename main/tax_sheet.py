@@ -556,35 +556,37 @@ class TaxUser(object):
             if (self.debug):
                 print("---before")
                 print('self.age:                 ' + str(self.age))
-                print('self.retirement_age:      ' + str(self.desired_retirement_age))
+                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
                 print('self.life_exp:            ' + str(self.life_exp))
             years_below_22 = 22. - self.age
             self.age = 22.
-            self.retirement_age = self.retirement_age + years_below_22
+            self.desired_retirement_age = self.desired_retirement_age + years_below_22
             self.life_exp = self.life_exp + years_below_22
             if (self.debug):
                 print("---after")
-                print('self.age:                 ' + str(self.age))
-                print('self.retirement_age:      ' + str(self.desired_retirement_age))
-                print('self.life_exp:            ' + str(self.life_exp))
+                print('self.age:                         ' + str(self.age))
+                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+                print('self.life_exp:                    ' + str(self.life_exp))
+                print("[Set self.debug=False to hide these]")
 
         # need the following for https://www.ssa.gov/oact/quickcalc to accept inputs
         # only accepts ages less than 92
         if self.age > 92.:
             if (self.debug):
                 print("---before")
-                print('self.age:                 ' + str(self.age))
-                print('self.retirement_age:      ' + str(self.desired_retirement_age))
-                print('self.life_exp:            ' + str(self.life_exp))
+                print('self.age:                         ' + str(self.age))
+                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+                print('self.life_exp:                    ' + str(self.life_exp))
             years_above_92 = self.age - 92.
             self.age = 92.
-            self.retirement_age = self.retirement_age - years_above_92
+            self.desired_retirement_age = self.desired_retirement_age - years_above_92
             self.life_exp = self.life_exp - years_above_92
             if (self.debug):
                 print("---after")
-                print('self.age:                 ' + str(self.age))
-                print('self.retirement_age:      ' + str(self.desired_retirement_age))
-                print('self.life_exp:            ' + str(self.life_exp))
+                print('self.age:                         ' + str(self.age))
+                print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+                print('self.life_exp:                    ' + str(self.life_exp))
+                print("[Set self.debug=False to hide these]")
 
 
     def validate_life_exp_and_des_retire_age(self):
