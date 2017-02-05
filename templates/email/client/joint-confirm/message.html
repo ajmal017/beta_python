@@ -1,15 +1,28 @@
-<html>
-<body>
-<h1>Dear {{ confirmation.cosignee.user.first_name }},</h1>
+{% extends 'email/email.html' %}
 
-<p>Click this <a href="{{ request.scheme }}://{{ request.get_host }}{% url "confirm-joint-account" token=confirmation.token %}">link</a> to confirm that you
-  agree to create a joint account with {{ confirmation.primary_owner.full_name }}.</p>
+{% block message %}
+<table cellpadding="0" cellspacing="0" width="100%" style="border-spacing: 0;border-collapse: collapse;vertical-align: top">
+  <tbody><tr style="vertical-align: top">
+    <td style="word-break: break-word;border-collapse: collapse !important;vertical-align: top;padding-top: 25px;padding-right: 10px;padding-bottom: 10px;padding-left: 10px">
+      <div style="color:{{text_color}};line-height:120%;font-family:{{font_family}};">
 
-<p>
-  Regards,<br>
-  &nbsp;{{ confirmation.cosignee.advisor.user.full_name }}<br>
-  &nbsp;{{ confirmation.cosignee.firm }}
-</p>
+        <div style="padding-bottom:20px;font-size:30px;line-height:40px;color:{{text_color}};font-family:{{font_family}};text-align:left;">
+          Dear {{ confirmation.cosignee.user.first_name }},
+        </div>
 
-</body>
-</html>
+        <div style="padding-bottom:20px;font-size:20px;line-height:30px;color:{{text_color}};font-family:{{font_family}};text-align:left;">
+          Click this <a href="{{ request.scheme }}://{{ request.get_host }}{% url "confirm-joint-account" token=confirmation.token %}">here</a> to confirm that you
+          agree to create a joint account with {{ confirmation.primary_owner.full_name }}.
+        </div>
+
+        <div style="padding-bottom:20px;font-size:20px;line-height:30px;color:{{text_color}};font-family:{{font_family}};text-align:left;">
+          Regards,<br>
+          &nbsp;{{ confirmation.cosignee.advisor.user.full_name }}<br>
+          &nbsp;{{ confirmation.cosignee.firm }}
+        </div>
+
+      </div>
+    </td>
+  </tr></tbody>
+</table>
+{% endblock %}
