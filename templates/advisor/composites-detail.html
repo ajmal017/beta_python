@@ -70,7 +70,22 @@
           {% for account in object.accounts.all %}
             <tr>
               <td>{{ account.name }}</td>
-ˆ              <td>{{ account.primary_owner.my_pricing_plan|display:"total" }}</td>
+              <td>
+                <span class="pricingPlanView">
+                  {{ account.primary_owner.my_pricing_plan|display:"total" }}
+                  <small> <a onclick="$('.pricingPlanEdit').toggle(); $('.pricingPlanView').toggle();" class="icon icon-pencil"></a></small>
+                </span>
+                <span class="pricingPlanEdit" style="display:none">
+                  <form method="post" class="form-inline" style="display: inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="object_pk" value={{object.pk}} />
+                    <input type="hidden" name="pricing_plan_pk" value="{{account.primary_owner.my_pricing_plan.pk}}"/>
+                    <input type="number" name="pricing_plan_bps" style="width:80px" value="{{ account.primary_owner.my_pricing_plan.bps }}">bps</input> , 
+                    $<input type="number" name="pricing_plan_fixed" style="width:80px" value="{{ account.primary_owner.my_pricing_plan.fixed }}"/>
+                    <button type="submit">Save</button>
+                  </form>
+                </span>
+              </td>
               <td><a
                   href="{% url "client:page" account.primary_owner.id %}"
                   class="btn btn-primary-outline btn-xs"
@@ -101,7 +116,7 @@
                       <td>{{ goal.total_return|currency }}</td>
                       <td>
                         {% if goal.is_active %}
-                        <form method="post" class="portfolio">
+                        <form method="post" target="_self" class="portfolio">
                           {% csrf_token %}
                           <input type="hidden" name="goal_id"
                                  value="{{ goal.id }}">

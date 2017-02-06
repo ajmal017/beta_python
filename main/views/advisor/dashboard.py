@@ -19,7 +19,7 @@ from django.views.generic import CreateView, DetailView, ListView, \
 from address.models import Address, Region
 from client.models import Client, ClientAccount
 from main.constants import (INVITATION_CLIENT)
-from main.models import AccountGroup, Advisor, Goal, Platform, PortfolioSet, \
+from main.models import AccountGroup, Advisor, Goal, PricingPlan, Platform, PortfolioSet, \
     User
 from main.views.base import AdvisorView, ClientView
 from notifications.models import Notify
@@ -238,6 +238,9 @@ class AdvisorAccountGroupDetails(DetailView, AdvisorView):
     def post(self, request, **kwargs):
         goal_id = request.POST.get('goal_id', None)
         portfolio_id = request.POST.get('portfolio_id', None)
+        pricing_plan_pk = request.POST.get('pricing_plan_pk', None)
+        object_pk = request.POST.get('object_pk', None)
+
         if goal_id and portfolio_id:
             try:
                 goal = Goal.objects.get(pk=goal_id)
@@ -247,13 +250,28 @@ class AdvisorAccountGroupDetails(DetailView, AdvisorView):
                     goal.save(update_fields=['portfolio_set'])
             except ObjectDoesNotExist:
                 pass
+
+        if pricing_plan_pk:
+            try:
+                plan = PricingPlan.objects.get(pk=pricing_plan_pk)
+                bps = request.POST.get('pricing_plan_bps', None)
+                fixed = request.POST.get('pricing_plan_fixed', None)
+                plan.bps = bps
+                plan.fixed = fixed
+                plan.save(update_fields=['bps','fixed'])
+            except ObjectDoesNotExist:
+                pass
+
+        return HttpResponseRedirect(
+            reverse('advisor:composites-detail',kwargs={'pk': object_pk})
+        )
         # FIXME: hack, emulates ApiRenderer output
-        return JsonResponse({
-            'meta': {
-                'session_expires_on': SessionExpire(request).expire_time(),
-            },
-            'error': []
-        })
+        # return JsonResponse({
+        #     'meta': {
+        #         'session_expires_on': SessionExpire(request).expire_time(),
+        #     },
+        #     'error': []
+        # })
 
 
 class AdvisorAccountGroupClients(DetailView, AdvisorView):
@@ -393,6 +411,21 @@ class AdvisorCompositeOverview(ListView, AdvisorView):
     template_name = 'advisor/overview.html'
     context_object_name = 'groups'
 
+    def get_context_data(self, **kwargs):
+        ctx = super(AdvisorCompositeOverview, self).get_context_data(
+            **kwargs)
+        ctx["groups"] = self.get_queryset()
+
+        pre_clients = Client.objects.filter(user__prepopulated=False,
+                                            advisor=self.advisor)
+        clients = []
+
+        for client in set(pre_clients.distinct().all()):
+            if not client.accounts.count():
+                clients.append(client)
+
+        ctx['clients'] = clients
+        return ctx
     def get_queryset(self):
         q = super(AdvisorCompositeOverview, self).get_queryset()
         return q.filter(Q(advisor=self.advisor) |

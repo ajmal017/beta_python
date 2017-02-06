@@ -99,7 +99,7 @@
                 <td>{{ item.primary_owner.my_pricing_plan|display }}</td>
                 <td>
                   {% if item.get_term %}
-                    {{ item.get_term|floatformat:2}}
+                    {{ item.get_term|floatformat:1}}
                   {% else %}
                     &ndash;
                   {% endif %}
