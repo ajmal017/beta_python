@@ -40,6 +40,7 @@ keywords = {
     'LastYearSS': ['Taxed\nMedicare\nEarnings\n\n', '\nNot yet recorded\n\n'],
     'LastYearMedicare': ['\nNot yet recorded\n\n', '\n\nYou and your family may be eligible for valuable benefits'],
     'PaidColumn': ['You paid:\t\nYour employers paid:\t\n\n', '\n\nNote: Currently, you and your employer each pay'],
+    'date_of_estimate': ['at full retirement age\n\n', '\n\nYour Social Security Statement'],
 }
 
 output = {
@@ -57,6 +58,7 @@ output = {
                 'SurvivorsSpouseAtFull': '',
                 'SurvivorsTotalFamilyBenefitsLimit': '',
                 'EstimatedTaxableEarnings': '',
+                'date_of_estimate': '',
             }
         },
         {
@@ -126,6 +128,11 @@ def parse_text(string):
                 elif k == 'LastYearMedicare':
                     last_year_taxed_medicare_earnings = res.split('\n')[3]
                     output['sections'][i]['fields']['LastYearMedicare'] = last_year_taxed_medicare_earnings.strip('$')
+                elif k == 'date_of_estimate':
+                    chunks = res.split('\n')
+                    if len(chunks) > 1:
+                        output['sections'][i]['fields']['date_of_estimate'] = chunks[-1]
+
                 if output["sections"][i]["fields"][k] == "":
                     output["sections"][i]["fields"][k] = res
 
@@ -134,6 +141,7 @@ def parse_text(string):
 
 
 def parse_vector_pdf(fl):
+    # logger.error(get_pdf_content_lines(fl))
     res = get_pdf_content_lines(fl).decode("utf-8")
     return parse_text(res)
 
@@ -166,6 +174,7 @@ def clean_results(results):
     clean_output['SurvivorsSpouseAtFull'] = results['sections'][0]['fields']['SurvivorsSpouseAtFull']
     clean_output['SurvivorsTotalFamilyBenefitsLimit'] = results['sections'][0]['fields']['SurvivorsTotalFamilyBenefitsLimit']
     clean_output['EstimatedTaxableEarnings'] = results['sections'][0]['fields']['EstimatedTaxableEarnings']
+    clean_output['date_of_estimate'] = results['sections'][0]['fields']['date_of_estimate']
     clean_output['LastYearSS'] = results['sections'][1]['fields']['LastYearSS']
     clean_output['LastYearMedicare'] = results['sections'][1]['fields']['LastYearMedicare']
     clean_output['PaidThisYearSocialSecurity'] = results['sections'][2]['fields']['PaidThisYearSocialSecurity']
