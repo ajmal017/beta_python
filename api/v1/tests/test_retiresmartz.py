@@ -43,6 +43,60 @@ class RetiresmartzTests(APITestCase):
             'max_employer_match_percent': 0.04,
         }
 
+        self.expected_tax_transcript_data = {
+            'name_spouse': 'MELISSA',
+            'SSN_spouse': '477-xx-xxxx',
+            'address': {
+                'address1': '200 SAMPLE RD',
+                'address2': '',
+                'city': 'HOT SPRINGS',
+                'post_code': '33XXX',
+                'state': 'AR'
+            },
+            'name': 'DAMON M MELISSA',
+            'SSN': '432-xx-xxxx',
+            'filing_status': 'Married Filing Joint',
+            'total_income': '67,681.00',
+            'total_payments': '7,009.00',
+            'earned_income_credit': '0.00',
+            'combat_credit': '0.00',
+            'add_child_tax_credit': '0.00',
+            'excess_ss_credit': '0.00',
+            'refundable_credit': '2,422.00',
+            'premium_tax_credit': '',
+            'adjusted_gross_income': '63,505.00',
+            'taxable_income': '40,705.00',
+            'blind': 'N',
+            'blind_spouse': 'N',
+            'exemptions': '4',
+            'exemption_amount': '12,800.00',
+            'tentative_tax': '5,379.00',
+            'std_deduction': '10,000.00',
+            'total_adjustments': '4,176.00',
+            'tax_period': 'Dec. 31, 2005',
+            'se_tax': '6,052.00',
+            'total_tax': '9,431.00',
+            'total_credits': '2,000.00',
+        }
+
+        self.expected_social_security_statement_data = {
+            'EmployerPaidThisYearMedicare': '1,177',
+            'EmployerPaidThisYearSocialSecurity': '5,033',
+            'EstimatedTaxableEarnings': '21,807',
+            'LastYearMedicare': '21,807',
+            'LastYearSS': '21,807',
+            'PaidThisYearMedicare': '1,177',
+            'PaidThisYearSocialSecurity': '4,416',
+            'RetirementAtAge62': '759',
+            'RetirementAtAge70': '1,337',
+            'RetirementAtFull': '1,078',
+            'SurvivorsChild': '808',
+            'SurvivorsSpouseAtFull': '1,077',
+            'SurvivorsSpouseWithChild': '808',
+            'SurvivorsTotalFamilyBenefitsLimit': '1,616',
+            'date_of_estimate': 'January 2, 2016',
+        }
+
     def tearDown(self):
         self.client.logout()
 
@@ -67,41 +121,6 @@ class RetiresmartzTests(APITestCase):
         invite = EmailInviteFactory.create(user=Fixture1.client1().user)  # user needs an associated invite
         url = '/api/v1/clients/{}/retirement-plans/upload'.format(invite.user.client.id)
         self.client.force_authenticate(user=invite.user)
-        expected_tax_transcript_data = {
-            'name_spouse': 'MELISSA',
-            'SSN_spouse': '477-xx-xxxx',
-            'address': {
-                'address1': '200 SAMPLE RD',
-                'address2': '',
-                'city': 'HOT SPRINGS',
-                'post_code': '33XXX',
-                'state': 'AR'
-            },
-            'name': 'DAMON M MELISSA',
-            'SSN': '432-xx-xxxx',
-            'filing_status': 'Married Filing Joint',
-            'total_income': '67,681.00',
-            'total_payments': '7,009.00',
-            'earned_income_credit': '0.00',
-            'combat_credit': '0.00',
-            'add_child_tax_credit': '0.00',
-            'excess_ss_credit': '0.00',
-            'refundable_credit': '2,422.00',
-            'premium_tax_credit': '',
-            'adjusted_gross_income': '63,505.00',
-            'taxable_income': '40,705.00',
-            'blind': 'N',
-            'blind_spouse': 'N',
-            'exemptions': '4',
-            'exemption_amount': '12,800.00',
-            'tentative_tax': '5,379.00',
-            'std_deduction': '10,000.00',
-            'total_adjustments': '4,176.00',
-            'tax_period': 'Dec. 31, 2005',
-            'se_tax': '6,052.00',
-            'total_tax': '9,431.00',
-            'total_credits': '2,000.00',
-        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
@@ -113,25 +132,9 @@ class RetiresmartzTests(APITestCase):
         #                     msg='tax_transcript is in the response and not None')
         self.assertNotEqual(response.data['tax_transcript_data'], None,
                             msg='tax_transcript_data is in the response and not None')
-        self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
+        self.assertEqual(response.data['tax_transcript_data'], self.expected_tax_transcript_data,
                          msg='Parsed tax_transcript_data matches expected')
 
-        expected_social_security_statement_data = {
-            'EmployerPaidThisYearMedicare': '1,177',
-            'EmployerPaidThisYearSocialSecurity': '5,033',
-            'EstimatedTaxableEarnings': '21,807',
-            'LastYearMedicare': '21,807',
-            'LastYearSS': '21,807',
-            'PaidThisYearMedicare': '1,177',
-            'PaidThisYearSocialSecurity': '4,416',
-            'RetirementAtAge62': '759',
-            'RetirementAtAge70': '1,337',
-            'RetirementAtFull': '1,078',
-            'SurvivorsChild': '808',
-            'SurvivorsSpouseAtFull': '1,077',
-            'SurvivorsSpouseWithChild': '808',
-            'SurvivorsTotalFamilyBenefitsLimit': '1,616'
-        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
             data = {
                 'social_security_statement': ss_statement
@@ -141,7 +144,7 @@ class RetiresmartzTests(APITestCase):
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['social_security_statement_data'], None,
                             msg='social_security_statement_data is in the response and not None')
-        self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
+        self.assertEqual(response.data['social_security_statement_data'], self.expected_social_security_statement_data,
                          msg='Parsed social_security_statement_data matches expected')
 
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
@@ -153,7 +156,7 @@ class RetiresmartzTests(APITestCase):
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['partner_social_security_statement_data'], None,
                             msg='partner_social_security_statement_data is in the response and not None')
-        self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
+        self.assertEqual(response.data['partner_social_security_statement_data'], self.expected_social_security_statement_data,
                          msg='Parsed partner_social_security_statement_data matches expected')
 
         self.assertEqual(response._headers['content-type'], ('Content-Type', 'application/json'),
@@ -164,41 +167,7 @@ class RetiresmartzTests(APITestCase):
         invite = EmailInviteFactory.create(user=plan.client.user)  # user needs an associated invite
         url = '/api/v1/clients/{}/retirement-plans/{}'.format(plan.client.id, plan.id)
         self.client.force_authenticate(user=Fixture1.client1().user)
-        expected_tax_transcript_data = {
-            'name_spouse': 'MELISSA',
-            'SSN_spouse': '477-xx-xxxx',
-            'address': {
-                'address1': '200 SAMPLE RD',
-                'address2': '',
-                'city': 'HOT SPRINGS',
-                'post_code': '33XXX',
-                'state': 'AR'
-            },
-            'name': 'DAMON M MELISSA',
-            'SSN': '432-xx-xxxx',
-            'filing_status': 'Married Filing Joint',
-            'total_income': '67,681.00',
-            'total_payments': '7,009.00',
-            'earned_income_credit': '0.00',
-            'combat_credit': '0.00',
-            'add_child_tax_credit': '0.00',
-            'excess_ss_credit': '0.00',
-            'refundable_credit': '2,422.00',
-            'premium_tax_credit': '',
-            'adjusted_gross_income': '63,505.00',
-            'taxable_income': '40,705.00',
-            'blind': 'N',
-            'blind_spouse': 'N',
-            'exemptions': '4',
-            'exemption_amount': '12,800.00',
-            'tentative_tax': '5,379.00',
-            'std_deduction': '10,000.00',
-            'total_adjustments': '4,176.00',
-            'tax_period': 'Dec. 31, 2005',
-            'se_tax': '6,052.00',
-            'total_tax': '9,431.00',
-            'total_credits': '2,000.00',
-        }
+
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
@@ -210,25 +179,9 @@ class RetiresmartzTests(APITestCase):
         #                     msg='tax_transcript is in the response and not None')
         self.assertNotEqual(response.data['tax_transcript_data'], None,
                             msg='tax_transcript_data is in the response and not None')
-        self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
+        self.assertEqual(response.data['tax_transcript_data'], self.expected_tax_transcript_data,
                          msg='Parsed tax_transcript_data matches expected')
 
-        expected_social_security_statement_data = {
-            'EmployerPaidThisYearMedicare': '1,177',
-            'EmployerPaidThisYearSocialSecurity': '5,033',
-            'EstimatedTaxableEarnings': '21,807',
-            'LastYearMedicare': '21,807',
-            'LastYearSS': '21,807',
-            'PaidThisYearMedicare': '1,177',
-            'PaidThisYearSocialSecurity': '4,416',
-            'RetirementAtAge62': '759',
-            'RetirementAtAge70': '1,337',
-            'RetirementAtFull': '1,078',
-            'SurvivorsChild': '808',
-            'SurvivorsSpouseAtFull': '1,077',
-            'SurvivorsSpouseWithChild': '808',
-            'SurvivorsTotalFamilyBenefitsLimit': '1,616'
-        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
             data = {
                 'social_security_statement': ss_statement
@@ -238,7 +191,7 @@ class RetiresmartzTests(APITestCase):
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['social_security_statement_data'], None,
                             msg='social_security_statement_data is in the response and not None')
-        self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
+        self.assertEqual(response.data['social_security_statement_data'], self.expected_social_security_statement_data,
                          msg='Parsed social_security_statement_data matches expected')
 
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
@@ -250,7 +203,7 @@ class RetiresmartzTests(APITestCase):
                          msg='Updating retirement plan with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['partner_social_security_statement_data'], None,
                             msg='partner_social_security_statement_data is in the response and not None')
-        self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
+        self.assertEqual(response.data['partner_social_security_statement_data'], self.expected_social_security_statement_data,
                          msg='Parsed partner_social_security_statement_data matches expected')
 
         self.assertEqual(response._headers['content-type'], ('Content-Type', 'application/json'),

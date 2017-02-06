@@ -32,6 +32,60 @@ class InviteTests(APITestCase):
         self.question_one = SecurityQuestionFactory.create()
         self.question_two = SecurityQuestionFactory.create()
 
+        self.expected_tax_transcript_data = {
+            'name_spouse': 'MELISSA',
+            'SSN_spouse': '477-xx-xxxx',
+            'address': {
+                'address1': '200 SAMPLE RD',
+                'address2': '',
+                'city': 'HOT SPRINGS',
+                'post_code': '33XXX',
+                'state': 'AR'
+            },
+            'name': 'DAMON M MELISSA',
+            'SSN': '432-xx-xxxx',
+            'filing_status': 'Married Filing Joint',
+            'total_income': '67,681.00',
+            'total_payments': '7,009.00',
+            'earned_income_credit': '0.00',
+            'combat_credit': '0.00',
+            'add_child_tax_credit': '0.00',
+            'excess_ss_credit': '0.00',
+            'refundable_credit': '2,422.00',
+            'premium_tax_credit': '',
+            'adjusted_gross_income': '63,505.00',
+            'taxable_income': '40,705.00',
+            'blind': 'N',
+            'blind_spouse': 'N',
+            'exemptions': '4',
+            'exemption_amount': '12,800.00',
+            'tentative_tax': '5,379.00',
+            'std_deduction': '10,000.00',
+            'total_adjustments': '4,176.00',
+            'tax_period': 'Dec. 31, 2005',
+            'se_tax': '6,052.00',
+            'total_tax': '9,431.00',
+            'total_credits': '2,000.00',
+        }
+
+        self.expected_social_security_statement_data = {
+            'EmployerPaidThisYearMedicare': '1,177',
+            'EmployerPaidThisYearSocialSecurity': '5,033',
+            'EstimatedTaxableEarnings': '21,807',
+            'LastYearMedicare': '21,807',
+            'LastYearSS': '21,807',
+            'PaidThisYearMedicare': '1,177',
+            'PaidThisYearSocialSecurity': '4,416',
+            'RetirementAtAge62': '759',
+            'RetirementAtAge70': '1,337',
+            'RetirementAtFull': '1,078',
+            'SurvivorsChild': '808',
+            'SurvivorsSpouseAtFull': '1,077',
+            'SurvivorsSpouseWithChild': '808',
+            'SurvivorsTotalFamilyBenefitsLimit': '1,616',
+            'date_of_estimate': 'January 2, 2016',
+        }
+
     def test_prevent_register_when_another_user_is_loggedin(self):
         user = UserFactory.create()
         user.groups_add(User.GROUP_CLIENT)
@@ -390,41 +444,6 @@ class InviteTests(APITestCase):
 
         # PUT: /api/v1/invites/:key
         # Tax transcript upload and parsing
-        expected_tax_transcript_data = {
-            'name_spouse': 'MELISSA',
-            'SSN_spouse': '477-xx-xxxx',
-            'address': {
-                'address1': '200 SAMPLE RD',
-                'address2': '',
-                'city': 'HOT SPRINGS',
-                'post_code': '33XXX',
-                'state': 'AR'
-            },
-            'name': 'DAMON M MELISSA',
-            'SSN': '432-xx-xxxx',
-            'filing_status': 'Married Filing Joint',
-            'total_income': '67,681.00',
-            'total_payments': '7,009.00',
-            'earned_income_credit': '0.00',
-            'combat_credit': '0.00',
-            'add_child_tax_credit': '0.00',
-            'excess_ss_credit': '0.00',
-            'refundable_credit': '2,422.00',
-            'premium_tax_credit': '',
-            'adjusted_gross_income': '63,505.00',
-            'taxable_income': '40,705.00',
-            'blind': 'N',
-            'blind_spouse': 'N',
-            'exemptions': '4',
-            'exemption_amount': '12,800.00',
-            'tentative_tax': '5,379.00',
-            'std_deduction': '10,000.00',
-            'total_adjustments': '4,176.00',
-            'tax_period': 'Dec. 31, 2005',
-            'se_tax': '6,052.00',
-            'total_tax': '9,431.00',
-            'total_credits': '2,000.00',
-        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
@@ -434,25 +453,9 @@ class InviteTests(APITestCase):
                          msg='Updating onboarding with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['tax_transcript_data'], None,
                             msg='tax_transcript_data is in the response and not None')
-        self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
+        self.assertEqual(response.data['tax_transcript_data'], self.expected_tax_transcript_data,
                          msg='Parsed tax_transcript_data matches expected')
 
-        expected_social_security_statement_data = {
-            'EmployerPaidThisYearMedicare': '1,177',
-            'EmployerPaidThisYearSocialSecurity': '5,033',
-            'EstimatedTaxableEarnings': '21,807',
-            'LastYearMedicare': '21,807',
-            'LastYearSS': '21,807',
-            'PaidThisYearMedicare': '1,177',
-            'PaidThisYearSocialSecurity': '4,416',
-            'RetirementAtAge62': '759',
-            'RetirementAtAge70': '1,337',
-            'RetirementAtFull': '1,078',
-            'SurvivorsChild': '808',
-            'SurvivorsSpouseAtFull': '1,077',
-            'SurvivorsSpouseWithChild': '808',
-            'SurvivorsTotalFamilyBenefitsLimit': '1,616'
-        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
             data = {
                 'social_security_statement': ss_statement
@@ -462,7 +465,7 @@ class InviteTests(APITestCase):
                          msg='Updating onboarding with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['social_security_statement'], None,
                             msg='social_security_statement_data is in the response and not None')
-        self.assertEqual(response.data['social_security_statement_data'], expected_social_security_statement_data,
+        self.assertEqual(response.data['social_security_statement_data'], self.expected_social_security_statement_data,
                          msg='Parsed social_security_statement_data matches expected')
 
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'ssa-7005-sm-si_wanda_worker_young.pdf'), mode="rb") as ss_statement:
@@ -474,7 +477,7 @@ class InviteTests(APITestCase):
                          msg='Updating onboarding with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['partner_social_security_statement'], None,
                             msg='partner_social_security_statement_data is in the response and not None')
-        self.assertEqual(response.data['partner_social_security_statement_data'], expected_social_security_statement_data,
+        self.assertEqual(response.data['partner_social_security_statement_data'], self.expected_social_security_statement_data,
                          msg='Parsed partner_social_security_statement_data matches expected')
 
         self.assertEqual(response._headers['content-type'], ('Content-Type', 'application/json'),
@@ -485,41 +488,6 @@ class InviteTests(APITestCase):
                          msg='invitation status ACCEPTED')
 
         # re-upload tax transcript
-        expected_tax_transcript_data = {
-            'name_spouse': 'MELISSA',
-            'SSN_spouse': '477-xx-xxxx',
-            'address': {
-                'address1': '200 SAMPLE RD',
-                'address2': '',
-                'city': 'HOT SPRINGS',
-                'post_code': '33XXX',
-                'state': 'AR'
-            },
-            'name': 'DAMON M MELISSA',
-            'SSN': '432-xx-xxxx',
-            'filing_status': 'Married Filing Joint',
-            'total_income': '67,681.00',
-            'total_payments': '7,009.00',
-            'earned_income_credit': '0.00',
-            'combat_credit': '0.00',
-            'add_child_tax_credit': '0.00',
-            'excess_ss_credit': '0.00',
-            'refundable_credit': '2,422.00',
-            'premium_tax_credit': '',
-            'adjusted_gross_income': '63,505.00',
-            'taxable_income': '40,705.00',
-            'blind': 'N',
-            'blind_spouse': 'N',
-            'exemptions': '4',
-            'exemption_amount': '12,800.00',
-            'tentative_tax': '5,379.00',
-            'std_deduction': '10,000.00',
-            'total_adjustments': '4,176.00',
-            'tax_period': 'Dec. 31, 2005',
-            'se_tax': '6,052.00',
-            'total_tax': '9,431.00',
-            'total_credits': '2,000.00',
-        }
         with open(os.path.join(settings.BASE_DIR, 'pdf_parsers', 'samples', 'sample_2006.pdf'), mode="rb") as tax_transcript:
             data = {
                 'tax_transcript': tax_transcript
@@ -529,7 +497,7 @@ class InviteTests(APITestCase):
                          msg='Updating onboarding with tax_transcript PDF returns OK')
         self.assertNotEqual(response.data['tax_transcript_data'], None,
                             msg='tax_transcript_data is in the response and not None')
-        self.assertEqual(response.data['tax_transcript_data'], expected_tax_transcript_data,
+        self.assertEqual(response.data['tax_transcript_data'], self.expected_tax_transcript_data,
                          msg='Parsed tax_transcript_data matches expected')
 
         # create client and make sure tax_transcript data is carried over properly
@@ -563,7 +531,7 @@ class InviteTests(APITestCase):
         regional_data_load = json.loads(response.data['regional_data'])
         self.assertNotEqual(regional_data_load['tax_transcript'], None)
         self.assertEqual(regional_data_load['tax_transcript_data']['filing_status'],
-                         expected_tax_transcript_data['filing_status'],
+                         self.expected_tax_transcript_data['filing_status'],
                          msg='Parsed tax_transcript_data filing_status parsed successfully')
 
     def test_complete_invitation(self):
