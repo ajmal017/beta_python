@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -35,10 +35,9 @@ from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
 import time
-import pdb
-from retiresmartz.models import RetirementPlanEinc
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
+
 
 class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
@@ -533,6 +532,21 @@ equired to generate the
             projection.append([d2ed(dt), assets, income])
         return Response({'portfolio': portfolio, 'projection': projection})
 
+    @list_route(methods=['put'], url_path='upload')
+    def upload(self, request, parent_lookup_client, format=None):
+        """
+        Endpoint for pdf uploads
+        accepts fields:
+            tax_transcript
+            social_security_statement
+            partner_social_security_statement
+        """
+        serializer = serializers.PDFUploadWritableSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.update(request.user.client, serializer.validated_data)
+        client = Client.objects.get(pk=parent_lookup_client)
+        return Response(serializers.PDFUploadSerializer(client).data)
+
     @detail_route(methods=['get'], url_path='calculate')
     def calculate(self, request, parent_lookup_client, pk, format=None):
         """
@@ -705,6 +719,7 @@ equired to generate the
             return residential_zip_code
         else:
             return retirement_zip_code        
+
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan

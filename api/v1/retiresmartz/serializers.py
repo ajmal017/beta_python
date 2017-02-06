@@ -17,7 +17,7 @@ from retiresmartz.models import RetirementAdvice, RetirementPlan, \
     RetirementPlanEinc
 from pdf_parsers.tax_return import parse_pdf as parse_tax_pdf
 from pdf_parsers.social_security import parse_pdf as parse_ss_pdf
-
+from client.models import Client
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 logger = logging.getLogger('api.v1.retiresmartz.serializers')
@@ -138,6 +138,135 @@ class InitialDepositsSerializer(serializers.Serializer):
     asset = serializers.IntegerField(required=False)
     goal = serializers.IntegerField(required=False)
     amt = serializers.IntegerField()
+
+
+class PDFUploadSerializer(ReadOnlyModelSerializer):
+    tax_transcript = serializers.FileField(source='user.invitation.tax_transcript', required=False)
+    tax_transcript_data = serializers.SerializerMethodField(required=False)
+    social_security_statement = serializers.SerializerMethodField(source='user.invitation.social_security_statement', required=False)
+    social_security_statement_data = serializers.SerializerMethodField(required=False)
+    partner_social_security_statement = serializers.SerializerMethodField(source='user.invitation.partner_social_security_statement', required=False)
+    partner_social_security_statement_data = serializers.SerializerMethodField(required=False)
+
+    class Meta:
+        model = Client
+
+    def get_tax_transcript(self, obj):
+        try:
+            return obj.user.invitation.tax_transcript.url
+        except:
+            return None
+
+    def get_tax_transcript_data(self, obj):
+        if 'tax_transcript_data' in obj.regional_data:
+            return obj.regional_data.get('tax_transcript_data', None)
+        return None
+
+    def get_social_security_statement(self, obj):
+        if 'social_security_statement' in obj.regional_data:
+            return obj.regional_data.get('social_security_statement', None)
+        return None
+
+    def get_social_security_statement_data(self, obj):
+        if 'social_security_statement_data' in obj.regional_data:
+            return obj.regional_data.get('social_security_statement_data', None)
+        return None
+
+    def get_partner_social_security_statement(self, obj):
+        if 'partner_social_security_statement' in obj.regional_data:
+            return obj.regional_data.get('partner_social_security_statement', None)
+        return None
+
+    def get_partner_social_security_statement_data(self, obj):
+        if 'partner_social_security_statement_data' in obj.regional_data:
+            return obj.regional_data.get('partner_social_security_statement_data', None)
+        return None
+
+
+class PDFUploadWritableSerializer(serializers.ModelSerializer):
+    tax_transcript = serializers.FileField(source='user.invitation.tax_transcript', required=False, use_url=True)
+    social_security_statement = serializers.FileField(source='user.invitation.social_security_statement', required=False)
+    partner_social_security_statement = serializers.FileField(source='user.invitation.partner_social_security_statement', required=False)
+
+    class Meta:
+        model = Client
+        fields = (
+            'tax_transcript',
+            'social_security_statement',
+            'partner_social_security_statement',
+        )
+
+    def get_tax_transcript_data(self, obj):
+        # parse_pdf
+        if obj.tax_transcript:
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in obj.tax_transcript.chunks():
+                    f.write(chunk)
+            obj.tax_transcript_data = parse_tax_pdf(tmp_filename)
+            logger.error(obj.tax_transcript_data)
+            return obj.tax_transcript_data
+        return None
+
+    def get_social_security_statement_data(self, obj):
+        if obj.social_security_statement:
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in obj.social_security_statement.chunks():
+                    f.write(chunk)
+            obj.regional_data['social_security_statement_data'] = parse_ss_pdf(tmp_filename)
+            obj.save()
+            return obj.social_security_statement_data
+        return None
+
+    def get_partner_social_security_statement_data(self, obj):
+        if obj.partner_social_security_statement:
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in obj.partner_social_security_statement.chunks():
+                    f.write(chunk)
+            obj.regional_data['partner_social_security_statement_data'] = parse_ss_pdf(tmp_filename)
+            obj.save()
+            return obj.regional_data['partner_social_security_statement_data']
+        return None
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        logger.error(validated_data)
+        if 'tax_transcript' in validated_data['user']['invitation']:
+            instance.user.invitation.tax_transcript = validated_data['user']['invitation']['tax_transcript']
+            instance.user.invitation.save()
+            logger.error(instance.user.invitation.tax_transcript)
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in validated_data['user']['invitation']['tax_transcript'].chunks():
+                    f.write(chunk)
+            instance.regional_data['tax_transcript'] = instance.user.invitation.tax_transcript.url
+            instance.regional_data['tax_transcript_data'] = parse_tax_pdf(tmp_filename)
+
+        if 'social_security_statement' in validated_data['user']['invitation']:
+            instance.user.invitation.social_security_statement = validated_data['user']['invitation']['social_security_statement']
+            instance.user.invitation.save()
+            logger.error(instance.user.invitation.social_security_statement)
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in validated_data['user']['invitation']['social_security_statement'].chunks():
+                    f.write(chunk)
+            instance.regional_data['social_security_statement'] = instance.user.invitation.social_security_statement.url
+            instance.regional_data['social_security_statement_data'] = parse_ss_pdf(tmp_filename)
+
+        if 'partner_social_security_statement' in validated_data['user']['invitation']:
+            instance.user.invitation.partner_social_security_statement = validated_data['user']['invitation']['partner_social_security_statement']
+            instance.user.invitation.save()
+            tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
+            with open(tmp_filename, 'wb+') as f:
+                for chunk in validated_data['user']['invitation']['partner_social_security_statement'].chunks():
+                    f.write(chunk)
+            instance.regional_data['partner_social_security_statement'] = instance.user.invitation.partner_social_security_statement.url
+            instance.regional_data['partner_social_security_statement_data'] = parse_ss_pdf(tmp_filename)
+        instance.save()
+
+        return validated_data
 
 
 class RetirementPlanSerializer(ReadOnlyModelSerializer):
