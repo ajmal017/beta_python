@@ -15,7 +15,12 @@ def get_inflation():
             break
 
     inflation_forecast = [inflation['Annual_Inflation'][j] for j in range(i, len(inflation))]
-    return inflation_forecast
+
+    #add tail so that have enough future inflation to deal with users born in 2016 who live 300 years, etc
+
+    inflation_forecast_tail = [inflation['Annual_Inflation'][len(inflation['Annual_Inflation']) - 1] for j in range(i, 300 * 12)]
+    
+    return inflation_forecast + inflation_forecast_tail
 
 def validate_input(inflation):
     if len(inflation) == 0:

@@ -576,11 +576,12 @@ equired to generate the
         # Get external_income plans
         plans = RetirementPlan.objects.all()
 
-        print("---EXPENSES-----")
-        print(str(plan.expenses))
+        # Get projection of future income and assets for US tax payer
+
+        print("---------")
+        print(str(plan.btc))
         print("--------")
 
-        # Get projection of future income and assets for US tax payer
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
                         plan.selected_life_expectancy,

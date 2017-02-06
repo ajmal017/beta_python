@@ -809,7 +809,7 @@ class TaxUser(object):
                 self.maindf[str(j) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
                 self.maindf[str(j) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
                 self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(j) + '_Balance']
-
+        
         # NONTAXABLE ACCOUNTS
         # FOLLOWING NEEDS RE-WRITE; VERY FRAGILE ... WHAT IF ORDER OF THE ACCOUNTS IN constants:US_RETIREMENT_ACCOUNT_TYPES IS CHANGED?
         self.maindf['Nontaxable_Accounts'] = 0

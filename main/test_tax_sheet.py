@@ -7,21 +7,21 @@ from datetime import date
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
 
-dob = pd.Timestamp('1991-04-05')
+dob = pd.Timestamp('1986-01-01')
 
-desired_retirement_age = 70.
+desired_retirement_age = 73.
 
-life_exp = 79.
+life_exp = 95.
 
-retirement_lifestyle = 3
+retirement_lifestyle = 1
 
-total_income = 160000.
+total_income = 100000.
 
 reverse_mort = False
 
-house_value = 1.0
+house_value = 200000.0
 
-risk_profile_group = 0.173913043478261
+risk_profile_group = 0.54
 
 filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
@@ -86,11 +86,12 @@ income_growth = 1.0
 
 employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 
-ss_fra_todays = 1078.
+ss_fra_todays = 2000.
 
 paid_days = 0
 
-retirement_accounts = [{'name': 'Walmart 401k', 'contrib_period': 'monthly', 'balance': 1500, 'cat': 3, 'acc_type': 5, 'balance_efdt': '2016-12-31', 'owner': 'self', 'employer_match_type': 'contributions', 'employer_match': 0.5, 'id': 1, 'contrib_amt': 150}]
+retirement_accounts = [{'name': '401k', 'balance': 25000, 'id': 1, 'owner': 'self', 'cat': 2, 'contrib_period': 'monthly', 'acc_type': 5, 'employer_match': 0.52, 'balance_efdt': '2017-02-03', 'employer_match_type': 'contributions', 'contrib_amt': 250}]
+
 
  
 '''
@@ -110,21 +111,11 @@ retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner'
 
 zip_code = 19104
 
-expenses = [{'id': 11, 'who': 'self', 'desc': 'Savings', 'amt': 203, 'cat': 11},
-            {'id': 13, 'who': 'self', 'desc': 'Tobacco', 'amt': 23, 'cat': 13},
-            {'id': 14, 'who': 'self', 'desc': 'Transportation', 'amt': 1347, 'cat': 14},
-            {'id': 15, 'who': 'self', 'desc': 'Miscellaneous', 'amt': 145, 'cat': 15},
-            {'id': 1, 'who': 'self', 'desc': 'Alcoholic Beverage', 'amt': 102, 'cat': 1},
-            {'id': 2, 'who': 'self', 'desc': 'Apparel & Services', 'amt': 329, 'cat': 2},
-            {'id': 3, 'who': 'self', 'desc': 'Education', 'amt': 160, 'cat': 3},
-            {'id': 4, 'who': 'self', 'desc': 'Entertainment', 'amt': 425, 'cat': 4},
-            {'id': 5, 'who': 'self', 'desc': 'Food', 'amt': 1039, 'cat': 5},
-            {'id': 6, 'who': 'self', 'desc': 'Healthcare', 'amt': 431, 'cat': 6},
-            {'id': 7, 'who': 'self', 'desc': 'Housing', 'amt': 2907, 'cat': 7},
-            {'id': 8, 'who': 'self', 'desc': 'Insuarance, Pensions & Social Security', 'amt': 1368, 'cat': 8},
-            {'id': 9, 'who': 'self', 'desc': 'Personal Care', 'amt': 102, 'cat': 9},
-            {'id': 10, 'who': 'self', 'desc': 'Reading', 'amt': 15, 'cat': 10},
-            {'id': 12, 'who': 'self', 'desc': 'Taxes', 'amt': 3406, 'cat': 12}]
+expenses = [{'id': 1, 'cat': 1, 'desc': 'Drinks', 'amt': 119, 'who': 'self'},
+            {'id': 1, 'cat': 2, 'desc': 'Apparel', 'amt': 59, 'who': 'self'},
+            {'id': 1, 'cat': 3, 'desc': 'School fees', 'amt': 2378, 'who': 'self'},
+            {'id': 1, 'cat': 4, 'desc': 'Entertainment', 'amt': 595, 'who': 'self'}]
+
 
 
 
