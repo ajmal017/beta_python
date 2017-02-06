@@ -576,9 +576,9 @@ equired to generate the
         # Get external_income plans
         plans = RetirementPlan.objects.all()
 
-        pint("---EXPENSES-----")
-        pint(strplan.expenses())
-        pint("--------")
+        print("---EXPENSES-----")
+        print(str(plan.expenses())
+        print("--------")
 
         # Get projection of future income and assets for US tax payer
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
