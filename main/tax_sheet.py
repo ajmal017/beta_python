@@ -636,6 +636,8 @@ class TaxUser(object):
         print(self.maindf['Desired_Inc'][520:560])
         print("--------------------------------------Soc_Sec_Benefit ---------------------------")
         print(self.maindf['Soc_Sec_Benefit'][520:560])
+        print("--------------------------------------Ret_Certain_Inc_Gap ---------------------------")
+        print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
         print("[Set self.debug=False to hide these]")
                 
     def create_maindf(self):
@@ -815,12 +817,6 @@ class TaxUser(object):
 
         self.maindf['Soc_Sec_Benefit'] = self.set_full_series(self.pre_inflator, self.post_inflator_continuous) * self.ss_fra_todays
         
-        #self.ss_fra_retirement = self.get_ss_fra_retirement()
-        #self.nominal_soc_sec_benefit_pre = [self.ss_fra_retirement for i in range(self.pre_retirement_end)]
-        #self.nominal_soc_sec_benefit_post = [(self.ss_fra_retirement * self.get_soc_sec_factor()) for i in range(self.total_rows - self.pre_retirement_end)]
-        
-        #self.maindf['Nominal_Soc_Sec_Benefit'] = self.set_full_series(self.nominal_soc_sec_benefit_pre, self.nominal_soc_sec_benefit_post)
-        #self.maindf['Soc_Sec_Benefit'] = self.maindf['Flator'] * self.maindf['Nominal_Soc_Sec_Benefit']
         self.maindf['Soc_Sec_Ret_Ear_Tax_Exempt'] = self.maindf['Soc_Sec_Benefit']
 
         self.maindf['Nominal_Ret_Working_Inc'] = np.where(self.maindf['Person_Age'] < 80, self.maindf['Retire_Work_Inc_Daily_Rate'] * 4 * self.paid_days, 0)
@@ -854,7 +850,8 @@ class TaxUser(object):
                                                                                         + self.maindf['Annuity_Payments']
                                                                                         + self.maindf['Reverse_Mortgage'])
                                       
-        self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Des_Ret_Inc_Pre_Tax']- self.maindf['Certain_Ret_Inc'])
+        self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(np.where(self.maindf['Des_Ret_Inc_Pre_Tax']- self.maindf['Certain_Ret_Inc'] > 0. ,
+                                                                                                     self.maindf['Des_Ret_Inc_Pre_Tax']- self.maindf['Certain_Ret_Inc'], 0. ))
         
         # DECCUMULATION
         '''
@@ -1023,3 +1020,4 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
+    
