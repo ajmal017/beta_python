@@ -344,6 +344,7 @@ class TaxUser(object):
         '''
         returns lists of initial balances and monthly employee and employer contribution percentages, indexed according to constants.US_RETIREMENT_ACCOUNT_TYPES
         '''
+        
         init_balance = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
@@ -1020,4 +1021,4 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
-    
+        pdb.set_trace()

@@ -89,6 +89,10 @@ employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 ss_fra_todays = 1078.
 
 paid_days = 0
+
+retirement_accounts = [{'name': 'Walmart 401k', 'contrib_period': 'monthly', 'balance': 1500, 'cat': 3, 'acc_type': 5, 'balance_efdt': '2016-12-31', 'owner': 'self', 'employer_match_type': 'contributions', 'employer_match': 0.5, 'id': 1, 'contrib_amt': 150}]
+
+ 
 '''
 retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
@@ -102,11 +106,11 @@ retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner'
                        {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Profit sharing', 'employer_match': 1, 'contrib_amt': 10, 'balance': 36, 'acc_type': 14, 'cat': 2, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'ESOP', 'employer_match': 0.27, 'contrib_amt': 10, 'balance': 50, 'acc_type': 17, 'cat': 7, 'contrib_period': 'monthly'}]
 '''
-retirement_accounts = []
+#retirement_accounts = []
 
 zip_code = 19104
 
-btc = 3168
+btc = 50000
 
 
 
