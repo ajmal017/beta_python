@@ -80,7 +80,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="object_pk" value={{object.pk}} />
                     <input type="hidden" name="pricing_plan_pk" value="{{account.primary_owner.my_pricing_plan.pk}}"/>
-                    <input type="number" name="pricing_plan_bps" style="width:80px" value="{{ account.primary_owner.my_pricing_plan.bps }}">bps</input> , 
+                    <input type="number" name="pricing_plan_bps" style="width:80px" value="{{ account.primary_owner.my_pricing_plan.bps }}">bps</input> ,
                     $<input type="number" name="pricing_plan_fixed" style="width:80px" value="{{ account.primary_owner.my_pricing_plan.fixed }}"/>
                     <button type="submit">Save</button>
                   </form>
@@ -103,7 +103,7 @@
                     <th>Portfolio Strategy</th>
                     <th>Auto Frequency</th>
                     <th>Auto Amount</th>
-                    <th>Term</th>
+                    <th>Term (yrs)</th>
                     <th>Target</th>
                   </tr>
                   </thead>
