@@ -109,6 +109,25 @@
                 </td>
               </tr>
             {% endfor %}
+
+            {% for client in clients %}
+              <tr>
+                <td>
+                    <div>{{ client.pk }}</div>
+                </td>
+                <td>
+                  <div>
+                    <a href="{% url 'advisor:clients:detail' client.id %}">{{ client.name }}</a>
+                  </div>
+                </td>
+                <td>{% if client.on_track %}<span style='color:green;'>On Track</span>{% else %}<span style='color:red;'>Off Track</span>{% endif %}</td>
+                <td>{{ client.total_balance|currency }}</td>
+                <td>
+                  <div>{{ client.total_returns|percentage }}</div>
+                  <div class="text-muted"><small><span>since</span> {{ client.since|date:'M j, Y' }}</small></div>
+                </td>
+              </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>
