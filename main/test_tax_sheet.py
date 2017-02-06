@@ -7,26 +7,26 @@ from datetime import date
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
 
-dob = pd.Timestamp('2016-09-28')
+dob = pd.Timestamp('1991-04-05')
 
-desired_retirement_age = 37.
+desired_retirement_age = 70.
 
-life_exp = 80.
+life_exp = 79.
 
-retirement_lifestyle = 2
+retirement_lifestyle = 3
 
-total_income = 100000.
+total_income = 21908.
 
-reverse_mort = True
+reverse_mort = False
 
-house_value = 200000.
+house_value = 1.0
 
-risk_profile_group = 0.005
+risk_profile_group = 0.173913043478261
 
 filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
-# regional_data = {"tax_transcript_data":None}
-
+regional_data = {"tax_transcript_data":None}
+'''
 regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
                   "ssn":"123-12-3412",
                   "tax_transcript_data_ex":{   "selfEmploymentTax":0,
@@ -76,20 +76,20 @@ regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
                                             "tentative_tax":0,
                                             "name_spouse":"TAMARA B TAXPAYER" }
                   }
+'''
 
+#external_income = {'amount':0, 'begin_date': date(2020, 1, 1)}
 
-external_income = {'amount':0, 'begin_date': date(2020, 1, 1)}
+external_income = {None}
 
-income_growth = 1
+income_growth = 1.0
 
 employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 
-ss_fra_todays = 2000.
-
-ss_fra_retirement = 5000.
+ss_fra_todays = 1078.
 
 paid_days = 0
-
+'''
 retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Roth', 'employer_match': 0.07, 'contrib_amt': 100, 'balance': 3000, 'acc_type': 6, 'cat': 1, 'contrib_period': 'yearly'},
@@ -101,12 +101,12 @@ retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner'
                        {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'MPA', 'employer_match': 0.57, 'contrib_amt': 10, 'balance': 300, 'acc_type': 16, 'cat': 6, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Profit sharing', 'employer_match': 1, 'contrib_amt': 10, 'balance': 36, 'acc_type': 14, 'cat': 2, 'contrib_period': 'monthly'},
                        {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'ESOP', 'employer_match': 0.27, 'contrib_amt': 10, 'balance': 50, 'acc_type': 17, 'cat': 7, 'contrib_period': 'monthly'}]
+'''
+retirement_accounts = []
 
-#retirement_accounts = []
+zip_code = 19104
 
-zip_code = 94213
-
-btc = 10000.0
+btc = 1248
 
 
 

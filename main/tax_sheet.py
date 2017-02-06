@@ -629,11 +629,13 @@ class TaxUser(object):
     def show_outputs(self):
         print("--------------------------------------Retirement model OUTPUTS -------------------")
         print("--------------------------------------Taxable_Accounts ---------------------------")
-        print(self.maindf['Taxable_Accounts'])
+        print(self.maindf['Taxable_Accounts'][520:560])
         print("--------------------------------------Actual_Inc ---------------------------")
-        print(self.maindf['Actual_Inc'])
+        print(self.maindf['Actual_Inc'][520:560])
         print("--------------------------------------Desired_Inc ---------------------------")
-        print(self.maindf['Desired_Inc'])
+        print(self.maindf['Desired_Inc'][520:560])
+        print("--------------------------------------Soc_Sec_Benefit ---------------------------")
+        print(self.maindf['Soc_Sec_Benefit'][520:560])
         print("[Set self.debug=False to hide these]")
                 
     def create_maindf(self):
@@ -676,6 +678,11 @@ class TaxUser(object):
         self.post_inflator[0] = 1. * (1 + self.post_proj_inflation_rate[0])
         for i in range (1, self.total_rows - self.pre_retirement_end):
             self.post_inflator[i] = self.post_inflator[i - 1] * (1 + self.post_proj_inflation_rate[i])
+
+        self.post_inflator_continuous = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_inflator_continuous[0] = self.pre_inflator[len(self.pre_inflator) -1] * (1 + self.post_proj_inflation_rate[0])
+        for i in range (1, self.total_rows - self.pre_retirement_end):
+            self.post_inflator_continuous[i] = self.post_inflator_continuous[i - 1] * (1 + self.post_proj_inflation_rate[i])
         
         self.maindf['Deflator'] = self.set_full_series(self.pre_deflator, [1. for i in range(self.total_rows - self.pre_retirement_end)])     # for pre-retirement
         self.maindf['Inflator'] = self.set_full_series([1. for i in range(self.pre_retirement_end)], self.post_inflator)                      # for post-retirement
@@ -801,13 +808,19 @@ class TaxUser(object):
         '''
         use the 'flators'
         '''
-        self.inflated_ss_fra_todays = self.ss_fra_todays * self.pre_inflator[self.pre_retirement_end - 1]
-        self.nominal_soc_sec_benefit_pre = [self.inflated_ss_fra_todays for i in range(self.pre_retirement_end)]
-        self.ss_fra_retirement = self.get_ss_fra_retirement()
-        self.nominal_soc_sec_benefit_post = [(self.ss_fra_retirement * self.get_soc_sec_factor()) for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_inflator_continuous = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_inflator_continuous[0] = self.pre_inflator[len(self.pre_inflator) -1] * (1 + self.post_proj_inflation_rate[0]) * self.get_soc_sec_factor()
+        for i in range (1, self.total_rows - self.pre_retirement_end):
+            self.post_inflator_continuous[i] = self.post_inflator_continuous[i - 1] * (1 + self.post_proj_inflation_rate[i])
+
+        self.maindf['Soc_Sec_Benefit'] = self.set_full_series(self.pre_inflator, self.post_inflator_continuous) * self.ss_fra_todays
         
-        self.maindf['Nominal_Soc_Sec_Benefit'] = self.set_full_series(self.nominal_soc_sec_benefit_pre, self.nominal_soc_sec_benefit_post)
-        self.maindf['Soc_Sec_Benefit'] = self.maindf['Flator'] * self.maindf['Nominal_Soc_Sec_Benefit']
+        #self.ss_fra_retirement = self.get_ss_fra_retirement()
+        #self.nominal_soc_sec_benefit_pre = [self.ss_fra_retirement for i in range(self.pre_retirement_end)]
+        #self.nominal_soc_sec_benefit_post = [(self.ss_fra_retirement * self.get_soc_sec_factor()) for i in range(self.total_rows - self.pre_retirement_end)]
+        
+        #self.maindf['Nominal_Soc_Sec_Benefit'] = self.set_full_series(self.nominal_soc_sec_benefit_pre, self.nominal_soc_sec_benefit_post)
+        #self.maindf['Soc_Sec_Benefit'] = self.maindf['Flator'] * self.maindf['Nominal_Soc_Sec_Benefit']
         self.maindf['Soc_Sec_Ret_Ear_Tax_Exempt'] = self.maindf['Soc_Sec_Benefit']
 
         self.maindf['Nominal_Ret_Working_Inc'] = np.where(self.maindf['Person_Age'] < 80, self.maindf['Retire_Work_Inc_Daily_Rate'] * 4 * self.paid_days, 0)
