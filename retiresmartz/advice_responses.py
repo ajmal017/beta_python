@@ -31,7 +31,7 @@ to 62. This will reduce your monthly benefit by 25% compared \
 to if you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to retire \
 at 66. Social security benefits increase by up to 132% the longer \
-you work.".format(advice.plan.spendable_income - (advice.plan.spendable_income * .25), advice.plan.spendable_income)
+you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .25), advice.plan.client.ss_fra_todays)
 
 
 def get_decrease_retirement_age_to_63(advice):
@@ -44,7 +44,7 @@ This will reduce your monthly benefit by 20% compared to if \
 you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
 retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.spendable_income - (advice.plan.spendable_income * .2), advice.plan.spendable_income)
+the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .2), advice.plan.client.ss_fra_todays)
 
 
 def get_decrease_retirement_age_to_64(advice):
@@ -57,7 +57,7 @@ This will reduce your monthly benefit by 13% compared to \
 if you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
 retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.spendable_income - (advice.plan.spendable_income * .13), advice.plan.spendable_income)
+the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .13), advice.plan.client.ss_fra_todays)
 
 
 def get_decrease_retirement_age_to_65(advice):
@@ -70,7 +70,7 @@ This will reduce your monthly benefit by 7% compared to if \
 you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
 retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.spendable_income - (advice.plan.spendable_income * .07), advice.plan.spendable_income)
+the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .07), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_67(advice):
@@ -80,7 +80,7 @@ This will increase your monthly benefit by 8% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.spendable_income + (advice.plan.spendable_income * .08), advice.plan.spendable_income)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .08), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_68(advice):
@@ -90,7 +90,7 @@ This will increase your monthly benefit by 16% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.spendable_income + (advice.plan.spendable_income * .16), advice.plan.spendable_income)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .16), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_69(advice):
@@ -100,7 +100,7 @@ This will increase your monthly benefit by 24% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.spendable_income + (advice.plan.spendable_income * .24), advice.plan.spendable_income)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .24), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_70(advice):
@@ -110,7 +110,7 @@ This will increase your monthly benefit by 32% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.spendable_income + (advice.plan.spendable_income * .32), advice.plan.spendable_income)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .32), advice.plan.client.ss_fra_todays)
 
 
 # Life Expectancy
@@ -275,14 +275,14 @@ retirement income by ${:,.2f} a month.".format(diff_now / 12, diff_later / 12)
 
 def get_increase_contribution_decrease_spending(advice, contrib, income):
     return "Well done, by increasing your retirement contributions to ${:,.2f} \
-a month, you have increased your retirement income by ${:,.2f} a month.".format(contrib / 12, income / 12)
+a month, you have increased your retirement income by ${:,.2f} a month.".format(contrib / 12., income / 12.)
 
 
 def get_increase_spending_decrease_contribution_again(advice, contrib, income):
     # TODO: Need to add $X and $Y calculations
     return "Are you sure you need to increase your spending again and reduce your \
 retirement contributions? Just think, if your contributions stayed \
-at ${:,.2f} a month, you would be ${:,.2f} a month better off in retirement.".format(contrib / 12, income / 12)
+at ${:,.2f} a month, you would be ${:,.2f} a month better off in retirement.".format(contrib / 12., income / 12.)
 
 
 def get_off_track_item_adjusted_to_on_track(advice):
