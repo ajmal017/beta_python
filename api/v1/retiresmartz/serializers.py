@@ -232,11 +232,9 @@ class PDFUploadWritableSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        logger.error(validated_data)
         if 'tax_transcript' in validated_data['user']['invitation']:
             instance.user.invitation.tax_transcript = validated_data['user']['invitation']['tax_transcript']
             instance.user.invitation.save()
-            logger.error(instance.user.invitation.tax_transcript)
             tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
             with open(tmp_filename, 'wb+') as f:
                 for chunk in validated_data['user']['invitation']['tax_transcript'].chunks():
@@ -247,7 +245,6 @@ class PDFUploadWritableSerializer(serializers.ModelSerializer):
         if 'social_security_statement' in validated_data['user']['invitation']:
             instance.user.invitation.social_security_statement = validated_data['user']['invitation']['social_security_statement']
             instance.user.invitation.save()
-            logger.error(instance.user.invitation.social_security_statement)
             tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
             with open(tmp_filename, 'wb+') as f:
                 for chunk in validated_data['user']['invitation']['social_security_statement'].chunks():
@@ -638,7 +635,6 @@ class RetirementPlanWritableSerializer(serializers.ModelSerializer):
                 if 'social_security_statement' in validated_data['client']['user']['invitation']:
                     instance.client.user.invitation.social_security_statement = validated_data['client']['user']['invitation']['social_security_statement']
                     instance.client.user.invitation.save()
-                    logger.error(instance.client.user.invitation.social_security_statement)
                     tmp_filename = '/tmp/' + str(uuid.uuid4()) + '.pdf'
                     with open(tmp_filename, 'wb+') as f:
                         for chunk in validated_data['client']['user']['invitation']['social_security_statement'].chunks():
