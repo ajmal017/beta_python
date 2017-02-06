@@ -577,7 +577,7 @@ equired to generate the
         plans = RetirementPlan.objects.all()
 
         print("---EXPENSES-----")
-        print(str(plan.expenses())
+        print(str(plan.expenses))
         print("--------")
 
         # Get projection of future income and assets for US tax payer
