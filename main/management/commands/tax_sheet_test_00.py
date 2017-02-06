@@ -5,7 +5,6 @@ class Command(NoArgsCommand):
 
         from main import tax_sheet as tax
         from main import test_tax_sheet as tst_tx
-
         tst_cls = tax.TaxUser(tst_tx.dob,
                               tst_tx.desired_retirement_age,
                               tst_tx.life_exp,
@@ -23,7 +22,8 @@ class Command(NoArgsCommand):
                               tst_tx.paid_days,
                               tst_tx.retirement_accounts,
                               tst_tx.zip_code,
-                              tst_tx.btc)
+                              tst_tx.btc,
+                              tst_tx.expenses)
     
         tst_cls.create_maindf()
         

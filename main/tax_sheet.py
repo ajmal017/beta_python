@@ -19,6 +19,7 @@ inflation_level = inflation.inflation_level
 
 NUM_US_RETIREMENT_ACCOUNT_TYPES = len(constants.US_RETIREMENT_ACCOUNT_TYPES)
 
+
 class TaxUser(object):
     '''
     Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v4.xlsx).
@@ -42,8 +43,8 @@ class TaxUser(object):
                  paid_days,
                  retirement_accounts,
                  zip_code,
-                 btc):
-
+                 btc,
+                 expenses):
         '''
         checks
         '''
@@ -68,7 +69,8 @@ class TaxUser(object):
                              retirement_accounts,
                              inflation_level,
                              zip_code,
-                             btc)
+                             btc,
+                             expenses)
 
         try:
             adj_gross_income = tax_transcript_data['adjusted_gross_income']
@@ -111,8 +113,8 @@ class TaxUser(object):
                              retirement_accounts,
                              inflation_level,
                              zip_code,
-                             btc)
-        
+                             btc,
+                             expenses)
         '''
         set variables
         '''
@@ -140,6 +142,7 @@ class TaxUser(object):
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
         self.btc = btc
+        self.sum_expenses = self.get_sum_expenses(expenses)
 
         '''
         age
@@ -197,8 +200,8 @@ class TaxUser(object):
         '''
         retirement_accounts
         '''
-        self.ret_account_init_balance_401k = 0
-        self.init_balance, self.monthly_contrib_employee, self.monthly_contrib_employer = self.get_retirement_accounts()
+        self.init_balance, self.monthly_contrib_employee_base, self.monthly_contrib_employer_base = self.get_retirement_accounts()
+        self.btc_factor = self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)
 
         '''
         data frame indices
@@ -213,6 +216,7 @@ class TaxUser(object):
         data frame
         '''
         self.maindf = pd.DataFrame(index=self.dateind)
+
 
     def get_ss_fra_retirement(self):
         '''
@@ -231,6 +235,7 @@ class TaxUser(object):
             raise Exception("Failed to scrape ss_fra_retirement from https://www.ssa.gov/oact/quickcalc")
         return ss_fra_retirement
     
+
     def set_full_series(self, series_pre, series_post):
         '''
         returns full series by appending pre-retirement and post-retirement series
@@ -240,6 +245,7 @@ class TaxUser(object):
         result = full_pre.append(full_post)
         return result
     
+
     def set_full_series_with_indices(self, series_pre, series_post, index_pre, index_post):
         '''
         returns full series by appending pre-retirement series (with index2) and post-retirement
@@ -249,6 +255,7 @@ class TaxUser(object):
         full_post = pd.Series(series_post, index_post)
         result = full_pre.append(full_post)
         return result
+
 
     def get_full_post_retirement_and_pre_deflated(self, temp_df_column):
         '''
@@ -260,6 +267,7 @@ class TaxUser(object):
         result = self.maindf['Deflator'] * self.set_full_series(nominal_pre, real_post)
         return result
     
+
     def get_full_post_retirement_and_pre_set_zero(self, temp_df_column):
         '''
         returns data frame column having 'real' (c.f. 'nominal') values, where post retirement is calculated
@@ -270,6 +278,7 @@ class TaxUser(object):
         result = self.set_full_series(nominal_pre, real_post)
         return result
     
+
     def get_full_pre_retirement_and_post_set_zero(self, temp_df_column):
         '''
         returns data frame column having 'real' (c.f. 'nominal') values, where pre retirement is calculated
@@ -279,6 +288,7 @@ class TaxUser(object):
         real_post = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         result = self.set_full_series(nominal_pre, real_post)
         return result
+
 
     def get_capital_growth_and_balance_series(self, period, account_type, starting_balance):
         '''
@@ -294,6 +304,7 @@ class TaxUser(object):
             balance[i] = self.maindf[account_type + '_Employee'][i] + self.maindf[account_type + '_Employer'][i] + capital_growth[i] + balance[i - 1]
         return capital_growth, balance
 
+
     def get_projected_fed_tax(self):
         '''
         returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
@@ -302,6 +313,7 @@ class TaxUser(object):
         taxFed.create_tax_engine()
         taxFed.create_tax_projected()
         self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
+
 
     def get_soc_sec_factor(self):
         '''
@@ -337,8 +349,25 @@ class TaxUser(object):
 
         return factor
 
+
     def get_portfolio_return_above_cpi(self):
         return self.desired_risk * 10.0 * 0.005
+    
+
+    def get_sum_expenses(self, expenses):
+        '''
+        returns sum of expenses
+        '''
+        sum_expenses = 0
+        if expenses is not None:
+            for exp in expenses:
+                if exp['amt'] < 0:
+                    raise Exception("exp['amt'] < 0")
+                else:
+                    sum_expenses = sum_expenses + exp['amt']
+                                    
+        return sum_expenses
+            
     
     def get_retirement_accounts(self):
         '''
@@ -366,16 +395,41 @@ class TaxUser(object):
                 else:
                     employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
                     
-        monthly_contrib_employee = [(self.get_btc_factor() * (monthly_contrib_amt_employee[i]/(self.total_income/12.))) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
-        monthly_contrib_employer = [(self.get_btc_factor() * ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee[i]))/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
+        monthly_contrib_employee_base = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
+        monthly_contrib_employer_base = [
+            ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
 
-        return init_balance, monthly_contrib_employee, monthly_contrib_employer
+        return init_balance, monthly_contrib_employee_base, monthly_contrib_employer_base
             
+
     def get_retirement_account_index(self, acnt_type):
         for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
             if acnt_type['acc_type'] == constants.US_RETIREMENT_ACCOUNT_TYPES[i]:
                 return i
         raise Exception('unrecognized account type')
+
+
+    def get_employee_monthly_contrib_monthly_view(self):
+        '''
+        returns monthly contriburion for employee based on monthly view pie chart
+        '''
+        return (self.total_income/12. - self.sum_expenses)/self.total_income/12.
+
+
+    def get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):
+        '''
+        'btc factor' is multiplied by all retirement account contributions to incorporate effect of varying proportions in Monthly View pie chart. 
+        '''
+        btc_factor = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        if self.retirement_accounts is not None:
+            for acnt in self.retirement_accounts:
+                j = self.get_retirement_account_index(acnt)
+                if monthly_contrib_employee_base[j] == 0:
+                    btc_factor[j] = 0.
+                else:
+                    btc_factor[j] = (employee_monthly_contrib_monthly_view/monthly_contrib_employee_base[j])
+        return btc_factor
+        
 
     def get_retirement_income_details_from_plans(self):
         '''
@@ -395,6 +449,7 @@ class TaxUser(object):
                     print(str(plan) + " not of expected form")
         return external_income 
 
+
     def get_a_retirement_income(self, begin_date, amount):
         '''
         returns self.maindf['This_Annuity_Payments'] determined from retirement income.
@@ -412,6 +467,7 @@ class TaxUser(object):
         except:
             return 0
 
+
     def get_all_retirement_income(self):
         '''
         returns self.maindf['Annuity_Payments'], the sum of all retirment incomes.
@@ -423,18 +479,6 @@ class TaxUser(object):
             self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0], detail[1])
         return self.maindf['All_Annuity_Payments']
 
-    def get_btc_factor(self):
-        '''
-        'btc factor' is multiplied by all retirement account contributions. btc varies 0 -> 100000 (0 = high spending, 100000 = high saving)
-
-        The BTC/expenses pie chart ("Monthly View") has been hooked up to the graph, too. I applied a simple algorithm as follows; as you move
-        BTC around the pie chart, its value varies from 0% (all spending) to 100% (all saving). I have set up a link to the retirement account
-        contributions (for both employee and employer). If BTC is at 50% i.e. half way between full saving and full spending, the retirement
-        plans contribute normally. If however, BTC goes up to 100% (i.e. all saving), then the contributions double. If BTC goes to 0% (i.e.
-        all spending), then retirement plan contributions go to zero.  Please note, you need to set up at least one retirement account to see
-        the effect. 
-        '''
-        return (self.btc/100000.)*2.0
 
     def validate_inputs(self,
                          dob,
@@ -457,7 +501,8 @@ class TaxUser(object):
                          retirement_accounts,
                          inflation_level,
                          zip_code,
-                         btc):
+                         btc,
+                         expenses):
 
         # adj_gross_income cannot be less than total_income
         adj_gross_income = self.validate_adj_gross_income(adj_gross_income, total_income)
@@ -531,6 +576,7 @@ class TaxUser(object):
         if btc < 0:
             raise Exception('btc less than 0')
 
+
     def validate_age(self):
         if self.age >= self.desired_retirement_age:
             raise Exception("age greater than or equal to desired retirement age")
@@ -538,7 +584,6 @@ class TaxUser(object):
         if self.age <= 0:
             raise Exception("age less than or equal to 0")
 
-        
         if (self.debug):
             print("---before")
             print('self.dob:                         ' + str(self.dob))
@@ -572,12 +617,14 @@ class TaxUser(object):
             print('self.life_exp:                    ' + str(self.life_exp))
             print("[Set self.debug=False to hide these]")
 
+
     def validate_life_exp_and_des_retire_age(self):
         '''
         model requires at least one period (i.e. one month) between retirement_age and life_expectancy
         '''
         if self.life_exp == self.desired_retirement_age:
             self.life_exp = self.life_exp + 1
+
 
     def validate_adj_gross_income(self, tot_inc, adj_gr_inc):
         '''
@@ -586,6 +633,7 @@ class TaxUser(object):
         '''
         return max(adj_gr_inc, tot_inc)
     
+
     def show_inputs(self,
                      dob,
                      desired_retirement_age,
@@ -605,7 +653,8 @@ class TaxUser(object):
                      retirement_accounts,
                      inflation_level,
                      zip_code,
-                     btc):
+                     btc,
+                     expenses):
         print("-----------------------------Retirement model INPUTS -------------------")
         print('dob:                         ' + str(dob))
         print('desired_retirement_age:      ' + str(desired_retirement_age))
@@ -625,8 +674,10 @@ class TaxUser(object):
         print('zip_code:                    ' + str(zip_code))
         print('retirement_accounts:         ' + str(retirement_accounts))
         print('btc:                         ' + str(btc))
+        print('expenses:                    ' + str(expenses))
         print("[Set self.debug=False to hide these]")
         
+
     def show_outputs(self):
         print("--------------------------------------Retirement model OUTPUTS -------------------")
         print("--------------------------------------Taxable_Accounts ---------------------------")
@@ -641,12 +692,12 @@ class TaxUser(object):
         print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
         print("[Set self.debug=False to hide these]")
                 
+
     def create_maindf(self):
         '''
         create the main data frame
         '''
         self.maindf['Person_Age'] = [self.age + (1./12.)*(i+1) for i in range(self.total_rows)]
-
 
         # MONTHLY GROWTH RATE ASSUMPTIONS
         self.pre_proj_inc_growth_monthly = [self.income_growth/12. for i in range(self.pre_retirement_end)]
@@ -690,7 +741,6 @@ class TaxUser(object):
         self.maindf['Deflator'] = self.set_full_series(self.pre_deflator, [1. for i in range(self.total_rows - self.pre_retirement_end)])     # for pre-retirement
         self.maindf['Inflator'] = self.set_full_series([1. for i in range(self.pre_retirement_end)], self.post_inflator)                      # for post-retirement
         self.maindf['Flator'] = self.maindf['Deflator'] * self.maindf['Inflator']                                                             # deserves a pat on the back
-
 
         # INCOME RELATED - WORKING PERIOD
         '''
@@ -745,25 +795,23 @@ class TaxUser(object):
 
         self.maindf['Home_Value'] = self.house_value * (1+self.maindf['Proj_Inflation_Rate']).cumprod()
 
-
         # INCOME RELATED - ACCOUNTS
-
         self.maindf['All_Accounts'] = 0
         
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
                 j = self.get_retirement_account_index(acnt)
-                self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee[j]
-                self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer[j]
+                self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[j] * self.btc_factor[j]
+                self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[j] * self.btc_factor[j]
 
                 pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(j), self.init_balance[j] )       
                 post_balance = [pre_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
                 post_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
                         
                 for i in range(1, self.total_rows - self.pre_retirement_end): 
-                    post_capital_growth[i] = ((self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i]) + (self.post_portfolio_return[i] * post_balance[i - 1]) 
+                    post_capital_growth[i] = (self.btc_factor[j] * (self.monthly_contrib_employee_base[j] + self.monthly_contrib_employer_base[j]) * self.post_total_income[i]) + (self.post_portfolio_return[i] * post_balance[i - 1]) 
 
-                    if (self.monthly_contrib_employee[j] + self.monthly_contrib_employer[j]) * self.post_total_income[i] + post_capital_growth[i] + post_balance[i - 1] > 0:
+                    if (self.btc_factor[j] * (self.monthly_contrib_employee_base[j] + self.monthly_contrib_employer_base[j])) * self.post_total_income[i] + post_capital_growth[i] + post_balance[i - 1] > 0:
                         post_balance[i] = post_capital_growth[i] + post_balance[i - 1]
                     else:
                         post_balance[i] = 0.
@@ -785,10 +833,8 @@ class TaxUser(object):
         if '18_Balance' in self.maindf:
             self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['18_Balance'] # Roth 401k
 
-
         # TAXABLE ACCOUNTS PRE DECCUMULATION
         self.maindf['Taxable_Accounts_Pre_Deccumulation'] = self.maindf['All_Accounts'] - self.maindf['Nontaxable_Accounts']
-        
 
         # CERTAIN INCOME
         if self.retirement_lifestyle == 1:
@@ -1021,4 +1067,4 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
-        pdb.set_trace()
+

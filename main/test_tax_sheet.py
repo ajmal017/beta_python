@@ -112,5 +112,8 @@ zip_code = 19104
 
 btc = 50000
 
+expenses = [{'id':'1', 'desc':'daily', 'cat':1, 'who':'Jo', 'amt':100},
+            {'id':'2', 'desc':'other', 'cat':2, 'who':'Ma', 'amt':250}]
+
 
 
