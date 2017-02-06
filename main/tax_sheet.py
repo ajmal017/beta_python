@@ -43,7 +43,6 @@ class TaxUser(object):
                  paid_days,
                  retirement_accounts,
                  zip_code,
-                 btc,
                  expenses):
         '''
         checks
@@ -69,7 +68,6 @@ class TaxUser(object):
                              retirement_accounts,
                              inflation_level,
                              zip_code,
-                             btc,
                              expenses)
 
         try:
@@ -113,7 +111,6 @@ class TaxUser(object):
                              retirement_accounts,
                              inflation_level,
                              zip_code,
-                             btc,
                              expenses)
         '''
         set variables
@@ -141,7 +138,6 @@ class TaxUser(object):
         self.initial_401k_balance = 0
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
-        self.btc = btc
         self.sum_expenses = self.get_sum_expenses(expenses)
 
         '''
@@ -150,7 +146,7 @@ class TaxUser(object):
         self.age = ((pd.Timestamp('today')-self.dob).days)/365.25
         self.validate_age()
         if (self.debug):
-            print("---and then")
+            print("---ages")
             print('self.dob:                         ' + str(self.dob))
             print('self.age:                         ' + str(self.age))
             print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
@@ -218,22 +214,22 @@ class TaxUser(object):
         self.maindf = pd.DataFrame(index=self.dateind)
 
 
-    def get_ss_fra_retirement(self):
-        '''
-        returns ss_fra_retirement scraped from https://www.ssa.gov/oact/quickcalc
-        '''  
-        try:
-            ss_fra_retirement = ssa.get_social_security_benefit(self.total_income,
-                                                                0,
-                                                                0,
-                                                                self.dateind_post[0].month,
-                                                                self.dateind_post[0].year,
-                                                                self.dob.month,
-                                                                self.dob.day,
-                                                                self.dob.year)[2]
-        except:
-            raise Exception("Failed to scrape ss_fra_retirement from https://www.ssa.gov/oact/quickcalc")
-        return ss_fra_retirement
+    #def get_ss_fra_retirement(self):
+    #    '''
+    #    returns ss_fra_retirement scraped from https://www.ssa.gov/oact/quickcalc
+    #    '''  
+    #    try:
+    #        ss_fra_retirement = ssa.get_social_security_benefit(self.total_income,
+    #                                                            0,
+    #                                                            0,
+    #                                                            self.dateind_post[0].month,
+    #                                                            self.dateind_post[0].year,
+    #                                                            self.dob.month,
+    #                                                            self.dob.day,
+    #                                                            self.dob.year)[2]
+    #    except:
+    #        raise Exception("Failed to scrape ss_fra_retirement from https://www.ssa.gov/oact/quickcalc")
+    #    return ss_fra_retirement
     
 
     def set_full_series(self, series_pre, series_post):
@@ -398,7 +394,7 @@ class TaxUser(object):
         monthly_contrib_employee_base = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
         monthly_contrib_employer_base = [
             ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
-
+        
         return init_balance, monthly_contrib_employee_base, monthly_contrib_employer_base
             
 
@@ -413,7 +409,7 @@ class TaxUser(object):
         '''
         returns monthly contriburion for employee based on monthly view pie chart
         '''
-        return (self.total_income/12. - self.sum_expenses)/self.total_income/12.
+        return max(0, (self.total_income/12. - self.sum_expenses)/(self.total_income/12.))
 
 
     def get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):
@@ -501,7 +497,6 @@ class TaxUser(object):
                          retirement_accounts,
                          inflation_level,
                          zip_code,
-                         btc,
                          expenses):
 
         # adj_gross_income cannot be less than total_income
@@ -573,9 +568,6 @@ class TaxUser(object):
             raise Exception("zip_code not of correct form")
         ''' 
 
-        if btc < 0:
-            raise Exception('btc less than 0')
-
 
     def validate_age(self):
         if self.age >= self.desired_retirement_age:
@@ -584,38 +576,38 @@ class TaxUser(object):
         if self.age <= 0:
             raise Exception("age less than or equal to 0")
 
-        if (self.debug):
-            print("---before")
-            print('self.dob:                         ' + str(self.dob))
-            print('self.age:                         ' + str(self.age))
-            print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-            print('self.life_exp:                    ' + str(self.life_exp))
+        #if (self.debug):
+        #    print("---before")
+        #    print('self.dob:                         ' + str(self.dob))
+        #    print('self.age:                         ' + str(self.age))
+        #    print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+        #    print('self.life_exp:                    ' + str(self.life_exp))
 
         # need the following for https://www.ssa.gov/oact/quickcalc to accept inputs
         # only accepts ages greater than 21
-        if self.age < 22.:
-            years_below_22 = 22. - self.age
-            self.age = 22.
-            self.dob = pd.Timestamp('today').date() - relativedelta(years=22)
-            self.desired_retirement_age = min(self.desired_retirement_age + years_below_22, self.age + 59.)
-            self.life_exp = self.life_exp + years_below_22
+        #if self.age < 22.:
+        #    years_below_22 = 22. - self.age
+        #    self.age = 22.
+        #    self.dob = pd.Timestamp('today').date() - relativedelta(years=22)
+        #    self.desired_retirement_age = min(self.desired_retirement_age + years_below_22, self.age + 59.)
+        #    self.life_exp = self.life_exp + years_below_22
 
         # need the following for https://www.ssa.gov/oact/quickcalc to accept inputs
         # only accepts ages less than 92
-        if self.age > 92.:
-            years_above_92 = self.age - 92.
-            self.age = 92.
-            self.dob = pd.Timestamp('today').date() - relativedelta(years=92)
-            self.desired_retirement_age = max(self.desired_retirement_age - years_above_92, 23.)
-            self.life_exp = self.life_exp - years_above_92
+        #if self.age > 92.:
+        #    years_above_92 = self.age - 92.
+        #    self.age = 92.
+        #    self.dob = pd.Timestamp('today').date() - relativedelta(years=92)
+        #    self.desired_retirement_age = max(self.desired_retirement_age - years_above_92, 23.)
+        #    self.life_exp = self.life_exp - years_above_92
 
-        if (self.debug):
-            print("---after")
-            print('self.dob:                         ' + str(self.dob))
-            print('self.age:                         ' + str(self.age))
-            print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-            print('self.life_exp:                    ' + str(self.life_exp))
-            print("[Set self.debug=False to hide these]")
+        #if (self.debug):
+        #    print("---after")
+        #    print('self.dob:                         ' + str(self.dob))
+        #    print('self.age:                         ' + str(self.age))
+        #    print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
+        #    print('self.life_exp:                    ' + str(self.life_exp))
+        #    print("[Set self.debug=False to hide these]")
 
 
     def validate_life_exp_and_des_retire_age(self):
@@ -653,7 +645,6 @@ class TaxUser(object):
                      retirement_accounts,
                      inflation_level,
                      zip_code,
-                     btc,
                      expenses):
         print("-----------------------------Retirement model INPUTS -------------------")
         print('dob:                         ' + str(dob))
@@ -673,7 +664,6 @@ class TaxUser(object):
         print('paid_days:                   ' + str(paid_days))
         print('zip_code:                    ' + str(zip_code))
         print('retirement_accounts:         ' + str(retirement_accounts))
-        print('btc:                         ' + str(btc))
         print('expenses:                    ' + str(expenses))
         print("[Set self.debug=False to hide these]")
         

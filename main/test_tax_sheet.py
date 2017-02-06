@@ -15,7 +15,7 @@ life_exp = 79.
 
 retirement_lifestyle = 3
 
-total_income = 21908.
+total_income = 160000.
 
 reverse_mort = False
 
@@ -110,10 +110,22 @@ retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner'
 
 zip_code = 19104
 
-btc = 50000
+expenses = [{'id': 11, 'who': 'self', 'desc': 'Savings', 'amt': 203, 'cat': 11},
+            {'id': 13, 'who': 'self', 'desc': 'Tobacco', 'amt': 23, 'cat': 13},
+            {'id': 14, 'who': 'self', 'desc': 'Transportation', 'amt': 1347, 'cat': 14},
+            {'id': 15, 'who': 'self', 'desc': 'Miscellaneous', 'amt': 145, 'cat': 15},
+            {'id': 1, 'who': 'self', 'desc': 'Alcoholic Beverage', 'amt': 102, 'cat': 1},
+            {'id': 2, 'who': 'self', 'desc': 'Apparel & Services', 'amt': 329, 'cat': 2},
+            {'id': 3, 'who': 'self', 'desc': 'Education', 'amt': 160, 'cat': 3},
+            {'id': 4, 'who': 'self', 'desc': 'Entertainment', 'amt': 425, 'cat': 4},
+            {'id': 5, 'who': 'self', 'desc': 'Food', 'amt': 1039, 'cat': 5},
+            {'id': 6, 'who': 'self', 'desc': 'Healthcare', 'amt': 431, 'cat': 6},
+            {'id': 7, 'who': 'self', 'desc': 'Housing', 'amt': 2907, 'cat': 7},
+            {'id': 8, 'who': 'self', 'desc': 'Insuarance, Pensions & Social Security', 'amt': 1368, 'cat': 8},
+            {'id': 9, 'who': 'self', 'desc': 'Personal Care', 'amt': 102, 'cat': 9},
+            {'id': 10, 'who': 'self', 'desc': 'Reading', 'amt': 15, 'cat': 10},
+            {'id': 12, 'who': 'self', 'desc': 'Taxes', 'amt': 3406, 'cat': 12}]
 
-expenses = [{'id':'1', 'desc':'daily', 'cat':1, 'who':'Jo', 'amt':100},
-            {'id':'2', 'desc':'other', 'cat':2, 'who':'Ma', 'amt':250}]
 
 
 

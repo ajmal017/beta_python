@@ -599,7 +599,6 @@ equired to generate the
                         plan.retirement_accounts,
                         int(self.get_zip_code(plan.retirement_postal_code,
                                               plan.client.residential_address.post_code)),
-                        plan.btc,
                         plan.expenses)
         user.create_maindf()
 
@@ -622,7 +621,6 @@ equired to generate the
                         plan.retirement_accounts,
                         int(self.get_zip_code(plan.retirement_postal_code,
                                               plan.client.residential_address.post_code)),
-                        plan.btc,
                         plan.expenses)
             partner.create_maindf()
 
