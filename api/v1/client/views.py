@@ -234,7 +234,7 @@ class ClientViewSet(ApiViewMixin,
         if (user.is_advisor and client.advisor != user.advisor) or (user.is_client and client != user.client):
             raise exceptions.PermissionDenied("You do not have permission to get peer group data")
 
-        monthly_income = client.income / 12
+        yearly_income = float(request.GET.get('income', client.income))
         age_group = ce_utils.get_age_group(client.age)
         state = USState.objects.get(code=client.residential_address.region.code)
         region_no = state.region
@@ -242,14 +242,12 @@ class ClientViewSet(ApiViewMixin,
         # zipcodes = USZipcode.objects.filter(zip_code=client.residential_address.post_code)
         # rucc = zipcodes[0].fips.rucc
         # loc_col = ce_utils.get_location_column_name(rucc)
-        pc_col = ce_utils.get_pc_column_name(client.income)
+        pc_col = ce_utils.get_pc_column_name(yearly_income)
         tax_cat = expense_cat=RetirementPlan.ExpenseCategory.TAXES.value
         tax_item = PeerGroupData.objects.get(age_group=age_group, expense_cat=tax_cat)
         ep_pgd = getattr(tax_item, pc_col) # Expenditure from peer group data
         region_quot = getattr(tax_item, region_col) # Location quotient region
-        tax = monthly_income * (region_quot * ep_pgd)
-
-        post_tax_income = monthly_income - tax
+        tax_rate = region_quot * ep_pgd
 
         peer_group_data = PeerGroupData.objects.filter(
             age_group=age_group
@@ -274,7 +272,7 @@ class ClientViewSet(ApiViewMixin,
                 'cat': item['cat'],
                 'who': 'self',
                 'desc': descriptions[item['cat']],
-                'amt': int(item['adj_ep_based_100'] / ep_sum * post_tax_income),
+                'rate': item['adj_ep_based_100'] / ep_sum,
             }
 
         results = list(map(build_response_item, results))
@@ -283,7 +281,7 @@ class ClientViewSet(ApiViewMixin,
             'cat': tax_cat,
             'who': 'self',
             'desc': descriptions[tax_cat],
-            'amt': int(tax)
+            'rate': tax_rate,
         }]
 
         return Response(results)
