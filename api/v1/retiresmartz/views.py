@@ -614,7 +614,8 @@ equired to generate the
                         plan.retirement_accounts,
                         int(self.get_zip_code(plan.retirement_postal_code,
                                               plan.client.residential_address.post_code)),
-                        plan.expenses)
+                        plan.expenses,
+                        plan.btc)
         user.create_maindf()
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
@@ -636,7 +637,8 @@ equired to generate the
                         plan.retirement_accounts,
                         int(self.get_zip_code(plan.retirement_postal_code,
                                               plan.client.residential_address.post_code)),
-                        plan.expenses)
+                        plan.expenses,
+                        plan.btc)
             partner.create_maindf()
 
         # Convert these returned values to a format for the API        

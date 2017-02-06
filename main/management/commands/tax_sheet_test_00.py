@@ -22,7 +22,8 @@ class Command(NoArgsCommand):
                               tst_tx.paid_days,
                               tst_tx.retirement_accounts,
                               tst_tx.zip_code,
-                              tst_tx.expenses)
+                              tst_tx.expenses,
+                              tst_tx.btc)
     
         tst_cls.create_maindf()
         

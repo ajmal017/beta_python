@@ -43,7 +43,8 @@ class TaxUser(object):
                  paid_days,
                  retirement_accounts,
                  zip_code,
-                 expenses):
+                 expenses,
+                 btc):
         '''
         checks
         '''
@@ -68,7 +69,8 @@ class TaxUser(object):
                              retirement_accounts,
                              inflation_level,
                              zip_code,
-                             expenses)
+                             expenses,
+                             btc)
 
         try:
             adj_gross_income = tax_transcript_data['adjusted_gross_income']
@@ -111,7 +113,8 @@ class TaxUser(object):
                              retirement_accounts,
                              inflation_level,
                              zip_code,
-                             expenses)
+                             expenses,
+                             btc)
         '''
         set variables
         '''
@@ -139,6 +142,7 @@ class TaxUser(object):
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
         self.sum_expenses = self.get_sum_expenses(expenses)
+        self.btc = btc
 
         '''
         age
@@ -410,6 +414,8 @@ class TaxUser(object):
         returns monthly contriburion for employee based on monthly view pie chart
         '''
         return max(0, (self.total_income/12. - self.sum_expenses)/(self.total_income/12.))
+        # NB - both following quantities are annual
+        # return (self.btc/self.total_income) 
 
 
     def get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):
@@ -497,7 +503,8 @@ class TaxUser(object):
                          retirement_accounts,
                          inflation_level,
                          zip_code,
-                         expenses):
+                         expenses,
+                         btc):
 
         # adj_gross_income cannot be less than total_income
         adj_gross_income = self.validate_adj_gross_income(adj_gross_income, total_income)
@@ -645,7 +652,8 @@ class TaxUser(object):
                      retirement_accounts,
                      inflation_level,
                      zip_code,
-                     expenses):
+                     expenses,
+                    btc):
         print("-----------------------------Retirement model INPUTS -------------------")
         print('dob:                         ' + str(dob))
         print('desired_retirement_age:      ' + str(desired_retirement_age))
@@ -665,6 +673,7 @@ class TaxUser(object):
         print('zip_code:                    ' + str(zip_code))
         print('retirement_accounts:         ' + str(retirement_accounts))
         print('expenses:                    ' + str(expenses))
+        print('btc:                         ' + str(btc))
         print("[Set self.debug=False to hide these]")
         
 
