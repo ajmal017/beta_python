@@ -39,6 +39,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 63
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # decrease to 62
         data = {
             'retirement_age': 62,
@@ -58,6 +60,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 64
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # decrease to 63
         data = {
             'retirement_age': 63,
@@ -77,6 +81,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 65
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # decrease to 64
         data = {
             'retirement_age': 64,
@@ -96,6 +102,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 66
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # decrease to 65
         data = {
             'retirement_age': 65,
@@ -115,6 +123,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 66
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # increase to 67
         data = {
             'retirement_age': 67,
@@ -134,6 +144,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 66
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # increase to 68
         data = {
             'retirement_age': 68,
@@ -153,6 +165,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 66
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # increase to 69
         data = {
             'retirement_age': 69,
@@ -172,6 +186,8 @@ class RetiresmartzAdviceTests(APITestCase):
         """
         self.plan.retirement_age = 66
         self.plan.save()
+        self.plan.client.ss_fra_todays = 2000.
+        self.plan.client.save()
         # increase to 70
         data = {
             'retirement_age': 70,

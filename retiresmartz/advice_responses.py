@@ -31,7 +31,7 @@ to 62. This will reduce your monthly benefit by 25% compared \
 to if you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to retire \
 at 66. Social security benefits increase by up to 132% the longer \
-you work.".format(advice.plan.ss_fra_todays - (advice.plan.ss_fra_todays * .25), advice.plan.ss_fra_todays)
+you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .25), advice.plan.client.ss_fra_todays)
 
 
 def get_decrease_retirement_age_to_63(advice):
@@ -44,7 +44,7 @@ This will reduce your monthly benefit by 20% compared to if \
 you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
 retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.ss_fra_todays - (advice.plan.ss_fra_todays * .2), advice.plan.ss_fra_todays)
+the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .2), advice.plan.client.ss_fra_todays)
 
 
 def get_decrease_retirement_age_to_64(advice):
@@ -57,7 +57,7 @@ This will reduce your monthly benefit by 13% compared to \
 if you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
 retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.ss_fra_todays - (advice.plan.ss_fra_todays * .13), advice.plan.ss_fra_todays)
+the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .13), advice.plan.client.ss_fra_todays)
 
 
 def get_decrease_retirement_age_to_65(advice):
@@ -70,7 +70,7 @@ This will reduce your monthly benefit by 7% compared to if \
 you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
 retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.ss_fra_todays - (advice.plan.ss_fra_todays * .07), advice.plan.ss_fra_todays)
+the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .07), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_67(advice):
@@ -80,7 +80,7 @@ This will increase your monthly benefit by 8% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.ss_fra_todays + (advice.plan.ss_fra_todays * .08), advice.plan.ss_fra_todays)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .08), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_68(advice):
@@ -90,7 +90,7 @@ This will increase your monthly benefit by 16% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.ss_fra_todays + (advice.plan.ss_fra_todays * .16), advice.plan.ss_fra_todays)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .16), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_69(advice):
@@ -100,7 +100,7 @@ This will increase your monthly benefit by 24% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.ss_fra_todays + (advice.plan.ss_fra_todays * .24), advice.plan.ss_fra_todays)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .24), advice.plan.client.ss_fra_todays)
 
 
 def get_increase_retirement_age_to_70(advice):
@@ -110,7 +110,7 @@ This will increase your monthly benefit by 32% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.ss_fra_todays + (advice.plan.ss_fra_todays * .32), advice.plan.ss_fra_todays)
+increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .32), advice.plan.client.ss_fra_todays)
 
 
 # Life Expectancy
