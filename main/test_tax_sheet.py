@@ -116,7 +116,7 @@ expenses = [{'id': 1, 'cat': 1, 'desc': 'Drinks', 'amt': 119, 'who': 'self'},
             {'id': 1, 'cat': 3, 'desc': 'School fees', 'amt': 2378, 'who': 'self'},
             {'id': 1, 'cat': 4, 'desc': 'Entertainment', 'amt': 595, 'who': 'self'}]
 
-
+btc = 50000.
 
 
 
