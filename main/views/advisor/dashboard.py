@@ -266,12 +266,12 @@ class AdvisorAccountGroupDetails(DetailView, AdvisorView):
             reverse('advisor:composites-detail',kwargs={'pk': object_pk})
         )
         # FIXME: hack, emulates ApiRenderer output
-        # return JsonResponse({
-        #     'meta': {
-        #         'session_expires_on': SessionExpire(request).expire_time(),
-        #     },
-        #     'error': []
-        # })
+        return JsonResponse({
+            'meta': {
+                'session_expires_on': SessionExpire(request).expire_time(),
+            },
+            'error': []
+        })
 
 
 class AdvisorAccountGroupClients(DetailView, AdvisorView):
