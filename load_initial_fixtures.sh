@@ -16,3 +16,5 @@
 ./manage.py loaddata user/fixtures/securityquestion.json
 
 ./manage.py loaddata client/fixtures/accounttyperiskprofilegroup.json
+
+./manage.py loaddata documents/fixtures/documentupload.json
