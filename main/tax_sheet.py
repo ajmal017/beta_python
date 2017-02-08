@@ -373,7 +373,6 @@ class TaxUser(object):
         '''
         returns lists of initial balances and monthly employee and employer contribution percentages, indexed according to constants.US_RETIREMENT_ACCOUNT_TYPES
         '''
-        
         init_balance = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
@@ -509,6 +508,37 @@ class TaxUser(object):
             raise Exception('age < self.desired_retirement_age')
         return age
 
+
+    def get_soa_dollar_bill_percentages(self):
+        '''
+        returns current day social security payment, medicare payment, federal income
+        tax payment, and state income tax payment all as a percentrage of current income
+        '''
+        if not self.total_income:
+            raise Exception('self.total_income is None')
+
+        if self.total_income == 0:
+            return 0, 0, 0, 0
+            
+        if not self.fica_ss:
+            raise Exception('self.fica_ss is None')
+        soc_sec_percent = self.fica_ss/self.total_income
+        
+        if not self.fica_medicare:
+            raise Exception('self.fica_medicare is None')
+        medicare_percent = self.fica_medicare/self.total_income
+        
+        fed_tax_percent = self.annual_projected_tax.iloc[0]/self.total_income
+
+        # self.pre_state_tax_after_credits is a monthly figure
+        state_tax_percent = (12 * self.pre_state_tax_after_credits.iloc[0])/self.total_income
+
+        if soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent <= 1:
+            return soc_sec_percent, medicare_percent, fed_tax_percent, state_tax_percent
+
+        else:
+            raise Exception('soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent > 1')
+            
 
     def validate_inputs(self,
                          dob,
@@ -719,6 +749,10 @@ class TaxUser(object):
         print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
         print("--------------------------------------Various ---------------------------")
         print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
+        print('self.soc_sec_percent:        ' + str(self.soc_sec_percent))
+        print('self.medicare_percent:       ' + str(self.medicare_percent))
+        print('self.fed_tax_percent:        ' + str(self.fed_tax_percent))
+        print('self.state_tax_percent:      ' + str(self.state_tax_percent))
         print("[Set self.debug=False to hide these]")
                 
 
@@ -784,9 +818,6 @@ class TaxUser(object):
         '''
         self.pre_df['Proj_Inflation_Rate_Pre'] = self.maindf['Proj_Inflation_Rate'][0:self.pre_retirement_end]
         self.pre_df['Inf_Inflator_Pre'] = (1 + self.pre_df['Proj_Inflation_Rate_Pre']).cumprod()
-        '''45
-        ---
-        '''
 
         self.pre_total_income = self.total_income/12. * self.pre_df['Inc_Inflator_Pre']
         self.post_total_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
@@ -816,7 +847,9 @@ class TaxUser(object):
         self.maindf['After_Tax_Income_Est'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax_Est'] - self.maindf['State_Tax_After_Credits']
     
         fica_tx = us_tax.Fica(self.employment_status, self.total_income)
-        self.fica = fica_tx.get_fica()
+        self.fica_ss = fica_tx.get_for_ss()
+        self.fica_medicare = fica_tx.get_for_medicare()
+        self.fica = self.fica_ss + self.fica_medicare
         
         self.pre_fica = self.fica/12. * self.pre_df['Inf_Inflator_Pre']       
         self.post_fica = [0. for i in range(self.total_rows - self.pre_retirement_end)] 
@@ -1099,6 +1132,10 @@ class TaxUser(object):
 
         # SAVINGS END DATE AS AGE 
         self.savings_end_date_as_age = self.get_savings_end_date_as_age()
+
+        # SOA DOLLAR BILL PERCENTAGES
+        self.soc_sec_percent, self.medicare_percent, self.fed_tax_percent, self.state_tax_percent = self.get_soa_dollar_bill_percentages()
         
         if(self.debug):
             self.show_outputs()
+

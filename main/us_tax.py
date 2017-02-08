@@ -302,17 +302,6 @@ class Fica(object):
     def get_fica(self):
         '''
         FICA = Social Security contribution + Medicare con
-    if income < 0:
-        raise Exception('income < 0')
-
-    if not filing_status:
-        raise Exception('filing_status not provided')
-
-    if not state:
-        raise Exception('state not provided')
-
-    if len(state) != 2:
-        raise Exception('state does not have two characters, so not of correct format for US states')tribution
         '''
 
         result = self.get_for_ss() + self.get_for_medicare()
