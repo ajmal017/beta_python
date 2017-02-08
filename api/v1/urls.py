@@ -11,6 +11,7 @@ from .firm import views as firm_views
 from .address import views as address_views
 from .support import views as support_views
 from .errorlog import views as errorlog_views
+from .documents import views as documents_views
 
 from api.v1.user.views import PasswordResetView
 
@@ -58,6 +59,8 @@ account_goals_router = account_router.register(r'goals',
                                                goals_views.GoalViewSet,
                                                base_name='accounts-goal',
                                                parents_query_lookups=['account'])
+documents_router = router.register(r'documents', documents_views.DocumentsViewSet)
+
 urlpatterns = patterns(
     '',
     url(r'^me/?$', user_views.MeView.as_view(), name='user-me'),

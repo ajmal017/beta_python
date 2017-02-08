@@ -24,6 +24,7 @@ from main.models import AccountGroup, Advisor, Goal, PricingPlan, Platform, Port
 from main.views.base import AdvisorView, ClientView
 from notifications.models import Notify
 from user.autologout import SessionExpire
+from documents.models import DocumentUpload
 
 
 logger = logging.getLogger(__name__)
@@ -482,6 +483,11 @@ class AdvisorClientAccountChangeFee(UpdateView, AdvisorView):
 
 class AdvisorSupportGettingStarted(AdvisorView, TemplateView):
     template_name = 'advisor/support-getting-started.html'
+
+    def acats(self):
+        acats = DocumentUpload.objects.get(name='ACATS Transfer Form')
+        logger.error(acats)
+        return acats
 
 
 USER_DETAILS = ('first_name', 'middle_name', 'last_name', 'email')
