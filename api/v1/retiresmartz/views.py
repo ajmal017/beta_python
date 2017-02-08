@@ -571,6 +571,13 @@ equired to generate the
         if not plan.client.date_of_birth:
             raise ValidationError("Client must have a date of birth entered to calculate retirement plans.")
 
+        # Selected_life_expectancy must be between 65 - 100
+        if plan.selected_life_expectancy > 100:
+            raise ValidationError("Life expectancy value above valid range (>100)")
+
+        if plan.selected_life_expectancy < 65:
+            raise ValidationError("Life expectancy value below valid range (<65)")
+
         # TODO: We can cache the portfolio on the plan and only update it every 24hrs, or if the risk changes.
         try:
             settings = create_settings(plan)
@@ -591,11 +598,6 @@ equired to generate the
         plans = RetirementPlan.objects.all()
 
         # Get projection of future income and assets for US tax payer
-
-        print("---------")
-        print(str(plan.btc))
-        print("--------")
-
         user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
                         plan.retirement_age,
                         plan.selected_life_expectancy,

@@ -305,14 +305,14 @@ class TaxUser(object):
         return capital_growth, balance
 
 
-    def get_projected_fed_tax(self):
-        '''
-        returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
-        '''
-        taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
-        taxFed.create_tax_engine()
-        taxFed.create_tax_projected()
-        self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
+    #def get_projected_fed_tax(self):
+    #    '''
+    #    returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
+    #    '''
+    #    taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
+    #    taxFed.create_tax_engine()
+    #    taxFed.create_tax_projected()
+    #    self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
 
 
     def get_soc_sec_factor(self):
@@ -373,7 +373,6 @@ class TaxUser(object):
         '''
         returns lists of initial balances and monthly employee and employer contribution percentages, indexed according to constants.US_RETIREMENT_ACCOUNT_TYPES
         '''
-        
         init_balance = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
@@ -396,8 +395,7 @@ class TaxUser(object):
                     employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
                     
         monthly_contrib_employee_base = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
-        monthly_contrib_employer_base = [
-            ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
+        monthly_contrib_employer_base = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
         
         return init_balance, monthly_contrib_employee_base, monthly_contrib_employer_base
             
@@ -482,6 +480,66 @@ class TaxUser(object):
         return self.maindf['All_Annuity_Payments']
 
 
+    def get_period_as_age(self, period):
+        '''
+        returns age corresponding to period
+        '''
+        if period < 0:
+            raise Exception('period < 0')
+        return self.age + (period/12.)
+
+
+    def get_savings_end_date_as_period(self):
+        '''
+        returns period post retirement when taxable assets first deplete to zero
+        '''
+        for i in range(self.retirement_start, self.total_rows):
+            if self.maindf['Taxable_Accounts'][i] == 0:
+                return i
+        return self.total_rows
+                
+
+    def get_savings_end_date_as_age(self):
+        '''
+        returns age post retirement when taxable assets first deplete to zero
+        '''
+        age = self.get_period_as_age(self.get_savings_end_date_as_period())
+        if age < self.desired_retirement_age:
+            raise Exception('age < self.desired_retirement_age')
+        return age
+
+
+    def get_soa_dollar_bill_percentages(self):
+        '''
+        returns current day social security payment, medicare payment, federal income
+        tax payment, and state income tax payment all as a percentrage of current income
+        '''
+        if not self.total_income:
+            raise Exception('self.total_income is None')
+
+        if self.total_income == 0:
+            return 0, 0, 0, 0
+            
+        if not self.fica_ss:
+            raise Exception('self.fica_ss is None')
+        soc_sec_percent = self.fica_ss/self.total_income
+        
+        if not self.fica_medicare:
+            raise Exception('self.fica_medicare is None')
+        medicare_percent = self.fica_medicare/self.total_income
+        
+        fed_tax_percent = self.annual_projected_tax.iloc[0]/self.total_income
+
+        # self.pre_state_tax_after_credits is a monthly figure
+        state_tax_percent = (12 * self.pre_state_tax_after_credits.iloc[0])/self.total_income
+
+        if soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent <= 1:
+            return soc_sec_percent, medicare_percent, fed_tax_percent, state_tax_percent
+
+        else:
+            raise Exception('soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent > 1')
+            
+
     def validate_inputs(self,
                          dob,
                          desired_retirement_age,
@@ -529,12 +587,6 @@ class TaxUser(object):
             raise Exception('state not provided')
 
         # other checks
-        if desired_retirement_age < 0:
-            raise Exception('desired_retirement_age less than 0')
-
-        if life_exp < 0:
-            raise Exception('life_exp less than 0')
-
         if life_exp < desired_retirement_age:
             raise Exception('life_exp less than desired_retirement_age')
 
@@ -618,6 +670,11 @@ class TaxUser(object):
 
 
     def validate_life_exp_and_des_retire_age(self):
+        if self.life_exp > 100:
+            raise Exception("self.life_exp > 100")
+            
+        if self.life_exp < 65:
+            raise Exception("self.life_exp < 65")
         '''
         model requires at least one period (i.e. one month) between retirement_age and life_expectancy
         '''
@@ -689,6 +746,12 @@ class TaxUser(object):
         print(self.maindf['Soc_Sec_Benefit'][520:560])
         print("--------------------------------------Ret_Certain_Inc_Gap ---------------------------")
         print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
+        print("--------------------------------------Various ---------------------------")
+        print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
+        print('self.soc_sec_percent:        ' + str(self.soc_sec_percent))
+        print('self.medicare_percent:       ' + str(self.medicare_percent))
+        print('self.fed_tax_percent:        ' + str(self.fed_tax_percent))
+        print('self.state_tax_percent:      ' + str(self.state_tax_percent))
         print("[Set self.debug=False to hide these]")
                 
 
@@ -754,9 +817,6 @@ class TaxUser(object):
         '''
         self.pre_df['Proj_Inflation_Rate_Pre'] = self.maindf['Proj_Inflation_Rate'][0:self.pre_retirement_end]
         self.pre_df['Inf_Inflator_Pre'] = (1 + self.pre_df['Proj_Inflation_Rate_Pre']).cumprod()
-        '''
-        ---
-        '''
 
         self.pre_total_income = self.total_income/12. * self.pre_df['Inc_Inflator_Pre']
         self.post_total_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
@@ -786,7 +846,9 @@ class TaxUser(object):
         self.maindf['After_Tax_Income_Est'] = self.maindf['Adj_Gross_Income'] - self.maindf['Fed_Regular_Tax_Est'] - self.maindf['State_Tax_After_Credits']
     
         fica_tx = us_tax.Fica(self.employment_status, self.total_income)
-        self.fica = fica_tx.get_fica()
+        self.fica_ss = fica_tx.get_for_ss()
+        self.fica_medicare = fica_tx.get_for_medicare()
+        self.fica = self.fica_ss + self.fica_medicare
         
         self.pre_fica = self.fica/12. * self.pre_df['Inf_Inflator_Pre']       
         self.post_fica = [0. for i in range(self.total_rows - self.pre_retirement_end)] 
@@ -1057,12 +1119,21 @@ class TaxUser(object):
 
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
 
-        # Actual income
+
+        # ACTUAL INCOME
         self.maindf['Actual_Inc'] = self.maindf['Total_Income'] + self.maindf['Tot_Inc']
 
-        # Desired income
+
+        # DESIRED INCOME
         self.pre_0 = [0 for i in range(self.pre_retirement_end)]
         self.maindf['Desired_Inc'] = self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) * self.maindf['Inflator']
+
+
+        # SAVINGS END DATE AS AGE 
+        self.savings_end_date_as_age = self.get_savings_end_date_as_age()
+
+        # SOA DOLLAR BILL PERCENTAGES
+        self.soc_sec_percent, self.medicare_percent, self.fed_tax_percent, self.state_tax_percent = self.get_soa_dollar_bill_percentages()
         
         if(self.debug):
             self.show_outputs()
