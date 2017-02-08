@@ -89,7 +89,7 @@
               <tr>
                 <td>{{ item.primary_owner.pk }}</td>
                 <td>
-                  <a href="{% url "firm:overview-advisor-clients-detail" pk=item.primary_owner.advisor.id client_id=item.primary_owner.id %}">
+                  <a href="{% url "client:page" item.primary_owner.id %}" target="_blank">
                     {{ item.primary_owner.user.get_full_name }}
                   </a>
                 </td>

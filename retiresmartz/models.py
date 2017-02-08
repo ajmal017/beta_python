@@ -36,7 +36,7 @@ class RetirementPlan(TimestampedModel):
         AFTER_TAX_CONTRIB = 5, 'After Tax Contributions'
         SELF_EMPLOYED_PRE_TAX_CONTRIB = 6, 'Self Employed Pre-Tax Contributions'
         SELF_EMPLOYED_AFTER_TAX_CONTRIB = 7, 'Self Employed After Tax Contributions'
-        DORMANT_ACCOUNT_NO_CONTRIB = 8, 'Dormant account, no contributions'
+        DORMANT_ACCOUNT_NO_CONTRIB = 8, 'Dormant / Inactive'
 
     class LifestyleCategory(ChoiceEnum):
         OK = 1, 'Doing OK'
