@@ -486,7 +486,6 @@ class AdvisorSupportGettingStarted(AdvisorView, TemplateView):
 
     def acats(self):
         acats = DocumentUpload.objects.get(name='ACATS Transfer Form')
-        logger.error(acats)
         return acats
 
 
