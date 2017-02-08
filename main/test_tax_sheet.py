@@ -7,21 +7,21 @@ from datetime import date
 test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py)
 '''
 
-dob = pd.Timestamp('1986-01-01')
+dob = pd.Timestamp('1991-04-05')
 
-desired_retirement_age = 73.
+desired_retirement_age = 66.
 
-life_exp = 95.
+life_exp = 79.
 
-retirement_lifestyle = 1
+retirement_lifestyle = 3
 
-total_income = 100000.
+total_income = 121908.
 
 reverse_mort = False
 
-house_value = 200000.0
+house_value = 1.0
 
-risk_profile_group = 0.54
+risk_profile_group = 0.17391
 
 filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
@@ -86,13 +86,11 @@ income_growth = 1.0
 
 employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 
-ss_fra_todays = 2000.
+ss_fra_todays = 1078.
 
 paid_days = 0
 
-retirement_accounts = [{'name': '401k', 'balance': 25000, 'id': 1, 'owner': 'self', 'cat': 2, 'contrib_period': 'monthly', 'acc_type': 5, 'employer_match': 0.52, 'balance_efdt': '2017-02-03', 'employer_match_type': 'contributions', 'contrib_amt': 250}]
-
-
+retirement_accounts = [{'owner': 'self', 'contrib_period': 'monthly', 'balance': 1500, 'balance_efdt': '2016-12-31', 'acc_type': 5, 'employer_match_type': 'contributions', 'contrib_amt': 150, 'name': 'Walmart 401k', 'employer_match': 0.5, 'id': 1, 'cat': 3}]
  
 '''
 retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
@@ -111,12 +109,9 @@ retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner'
 
 zip_code = 19104
 
-expenses = [{'id': 1, 'cat': 1, 'desc': 'Drinks', 'amt': 119, 'who': 'self'},
-            {'id': 1, 'cat': 2, 'desc': 'Apparel', 'amt': 59, 'who': 'self'},
-            {'id': 1, 'cat': 3, 'desc': 'School fees', 'amt': 2378, 'who': 'self'},
-            {'id': 1, 'cat': 4, 'desc': 'Entertainment', 'amt': 595, 'who': 'self'}]
+expenses = [{'who': 'self', 'amt': 24, 'desc': 'Savings', 'id': 11, 'cat': 11}, {'who': 'self', 'amt': 66, 'desc': 'Tobacco', 'id': 13, 'cat': 13}, {'who': 'self', 'amt': 1150, 'desc': 'Transportation', 'id': 14, 'cat': 14}, {'who': 'self', 'amt': 53, 'desc': 'Miscellaneous', 'id': 15, 'cat': 15}, {'who': 'self', 'amt': 66, 'desc': 'Alcoholic Beverage', 'id': 1, 'cat': 1}, {'who': 'self', 'amt': 257, 'desc': 'Apparel & Services', 'id': 2, 'cat': 2}, {'who': 'self', 'amt': 205, 'desc': 'Education', 'id': 3, 'cat': 3}, {'who': 'self', 'amt': 240, 'desc': 'Entertainment', 'id': 4, 'cat': 4}, {'who': 'self', 'amt': 984, 'desc': 'Food', 'id': 5, 'cat': 5}, {'who': 'self', 'amt': 249, 'desc': 'Healthcare', 'id': 6, 'cat': 6}, {'who': 'self', 'amt': 2757, 'desc': 'Housing', 'id': 7, 'cat': 7}, {'who': 'self', 'amt': 93, 'desc': 'Insuarance, Pensions & Social Security', 'id': 8, 'cat': 8}, {'who': 'self', 'amt': 105, 'desc': 'Personal Care', 'id': 9, 'cat': 9}, {'who': 'self', 'amt': 9, 'desc': 'Reading', 'id': 10, 'cat': 10}, {'who': 'self', 'amt': 151, 'desc': 'Taxes', 'id': 12, 'cat': 12}]
 
-btc = 50000.
+btc = 45000.
 
 
 

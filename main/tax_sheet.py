@@ -396,8 +396,7 @@ class TaxUser(object):
                     employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
                     
         monthly_contrib_employee_base = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
-        monthly_contrib_employer_base = [
-            ((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
+        monthly_contrib_employer_base = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
         
         return init_balance, monthly_contrib_employee_base, monthly_contrib_employer_base
             
@@ -480,6 +479,35 @@ class TaxUser(object):
         for detail in retirement_income_details:
             self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0], detail[1])
         return self.maindf['All_Annuity_Payments']
+
+
+    def get_period_as_age(self, period):
+        '''
+        returns age corresponding to period
+        '''
+        if period < 0:
+            raise Exception('period < 0')
+        return self.age + (period/12.)
+
+
+    def get_savings_end_date_as_period(self):
+        '''
+        returns period post retirement when taxable assets first deplete to zero
+        '''
+        for i in range(self.retirement_start, self.total_rows):
+            if self.maindf['Taxable_Accounts'][i] == 0:
+                return i
+        return self.total_rows
+                
+
+    def get_savings_end_date_as_age(self):
+        '''
+        returns age post retirement when taxable assets first deplete to zero
+        '''
+        age = self.get_period_as_age(self.get_savings_end_date_as_period())
+        if age < self.desired_retirement_age:
+            raise Exception('age < self.desired_retirement_age')
+        return age
 
 
     def validate_inputs(self,
@@ -689,6 +717,8 @@ class TaxUser(object):
         print(self.maindf['Soc_Sec_Benefit'][520:560])
         print("--------------------------------------Ret_Certain_Inc_Gap ---------------------------")
         print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
+        print("--------------------------------------Various ---------------------------")
+        print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
         print("[Set self.debug=False to hide these]")
                 
 
@@ -754,7 +784,7 @@ class TaxUser(object):
         '''
         self.pre_df['Proj_Inflation_Rate_Pre'] = self.maindf['Proj_Inflation_Rate'][0:self.pre_retirement_end]
         self.pre_df['Inf_Inflator_Pre'] = (1 + self.pre_df['Proj_Inflation_Rate_Pre']).cumprod()
-        '''
+        '''45
         ---
         '''
 
@@ -1057,13 +1087,18 @@ class TaxUser(object):
 
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
 
-        # Actual income
+
+        # ACTUAL INCOME
         self.maindf['Actual_Inc'] = self.maindf['Total_Income'] + self.maindf['Tot_Inc']
 
-        # Desired income
+
+        # DESIRED INCOME
         self.pre_0 = [0 for i in range(self.pre_retirement_end)]
         self.maindf['Desired_Inc'] = self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) * self.maindf['Inflator']
+
+
+        # SAVINGS END DATE AS AGE 
+        self.savings_end_date_as_age = self.get_savings_end_date_as_age()
         
         if(self.debug):
             self.show_outputs()
-
