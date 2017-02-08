@@ -305,14 +305,14 @@ class TaxUser(object):
         return capital_growth, balance
 
 
-    def get_projected_fed_tax(self):
-        '''
-        returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
-        '''
-        taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
-        taxFed.create_tax_engine()
-        taxFed.create_tax_projected()
-        self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
+    #def get_projected_fed_tax(self):
+    #    '''
+    #    returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
+    #    '''
+    #    taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
+    #    taxFed.create_tax_engine()
+    #    taxFed.create_tax_projected()
+    #    self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
 
 
     def get_soc_sec_factor(self):
@@ -587,12 +587,6 @@ class TaxUser(object):
             raise Exception('state not provided')
 
         # other checks
-        if desired_retirement_age < 0:
-            raise Exception('desired_retirement_age less than 0')
-
-        if life_exp < 0:
-            raise Exception('life_exp less than 0')
-
         if life_exp < desired_retirement_age:
             raise Exception('life_exp less than desired_retirement_age')
 
@@ -676,6 +670,11 @@ class TaxUser(object):
 
 
     def validate_life_exp_and_des_retire_age(self):
+        if self.life_exp > 100:
+            raise Exception("self.life_exp > 100")
+            
+        if self.life_exp < 65:
+            raise Exception("self.life_exp < 65")
         '''
         model requires at least one period (i.e. one month) between retirement_age and life_expectancy
         '''

@@ -788,6 +788,24 @@ class RetiresmartzTests(APITestCase):
         # Now set the date of birth
         plan.client.date_of_birth = old_dob
         plan.client.save()
+
+        # Try life_expectancy below valid range
+        old_life_expectancy = plan.selected_life_expectancy
+        plan.selected_life_expectancy = 60
+        plan.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Try life_expectancy above valid range
+        plan.selected_life_expectancy = 101
+        plan.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Now set valid life expectancy
+        plan.selected_life_expectancy = old_life_expectancy
+        plan.save()
+        
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
