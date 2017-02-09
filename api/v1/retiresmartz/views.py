@@ -154,7 +154,16 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                                          updated_client.height != orig_height or
                                          updated_client.smoker != orig_smoker or
                                          updated_client.drinks != orig_drinks)
-
+        updated_life_expectancy_fields_all_filled = (updated_client.daily_exercise and
+                                                     updated_client.weight and
+                                                     updated_client.height and
+                                                     updated_client.smoker is not None and
+                                                     updated_client.drinks)
+        org_life_expectancy_fields_not_all_filled = (not orig_client.daily_exercise or
+                                                     not orig_client.weight or
+                                                     not orig_client.height or
+                                                     orig_client.smoker is None or
+                                                     not orig_client.drinks)
         # Advice feed for toggling smoker
         if updated_client.smoker != orig_smoker:
             if updated_client.smoker:
@@ -209,9 +218,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             advice.text = advice_responses.get_weight_and_height_only(advice)
             advice.save()
 
-        if life_expectancy_field_updated and (updated_client.daily_exercise and
-           updated_client.weight and updated_client.height and updated_client.smoker is not None and
-           updated_client.drinks is not None):
+        if life_expectancy_field_updated and updated_life_expectancy_fields_all_filled and org_life_expectancy_fields_not_all_filled:
             # every wellbeing field
             e = Event.RETIRESMARTZ_ALL_WELLBEING_ENTRIES.log(None,
                                                              user=updated_client.user,
@@ -643,7 +650,7 @@ equired to generate the
                         plan.btc)
             partner.create_maindf()
 
-        # Convert these returned values to a format for the API        
+        # Convert these returned values to a format for the API
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             user.maindf['Joint_Taxable_Accounts'] = user.maindf['Taxable_Accounts'] + partner.maindf['Taxable_Accounts']
             user.maindf['Joint_Actual_Inc'] = user.maindf['Actual_Inc'] + partner.maindf['Actual_Inc']
@@ -722,7 +729,7 @@ equired to generate the
         if not retirement_zip_code:
             return residential_zip_code
         else:
-            return retirement_zip_code        
+            return retirement_zip_code
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
