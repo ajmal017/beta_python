@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.utils import timezone
+from django.conf import settings
 
 __all__ = ['SessionExpire']
 
@@ -30,8 +31,8 @@ class SessionExpire:
         user = self.request.user
         if user.is_authenticated():
             if user.is_client:
-                return 600  # 10 min
-            return 1800  # 30 min
+                return settings.CLIENT_SESSION_TIMEOUT
+            return settings.AUTHENTICATED_SESSION_TIMEOUT
         return 300  # 5 min
 
     def check(self):

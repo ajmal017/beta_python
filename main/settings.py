@@ -309,4 +309,7 @@ JIRA_PASSWORD = '#$MKVzWj&fg6q'
 JIRA_ERROR_PROJECT_ID = 10400
 JIRA_ISSUE_TYPE = {'name': 'Bug'}
 
+CLIENT_SESSION_TIMEOUT = 600  # 10 min
+AUTHENTICATED_SESSION_TIMEOUT = 1800  # 30 min - advisor/firm accounts
+
 from local_settings import *
