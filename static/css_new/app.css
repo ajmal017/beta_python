@@ -248,3 +248,11 @@ table thead .active .icon-sort {
 .table-responsive {
   overflow-x: visible;
 }
+
+.nav > li > a {
+  text-transform: capitalize; 
+}
+
+.container {
+  padding: 0;
+}
