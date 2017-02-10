@@ -595,7 +595,7 @@ equired to generate the
             return Response({'error': rdata}, status=status.HTTP_400_BAD_REQUEST)
 
         plan.set_settings(settings)
-        plan.save()
+        plan.save() 
 
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
