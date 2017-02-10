@@ -1560,7 +1560,7 @@ class Goal(models.Model):
         help_text='The set of assets that may be used to create a portfolio for this goal.')
     # The cash_balance field should NEVER be updated by an API. only our internal processes.
     cash_balance = models.FloatField(default=0.0, validators=[MinValueValidator(0.0)])
-    portfolio_provider = models.ForeignKey('PortfolioProvider', related_name='goal', default=get_default_provider_id)
+    #portfolio_provider = models.ForeignKey('PortfolioProvider', related_name='goal', default=get_default_provider_id)
     active_settings = models.OneToOneField(
         GoalSetting,
         related_name='goal_active',

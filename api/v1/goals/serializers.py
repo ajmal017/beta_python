@@ -498,7 +498,7 @@ class GoalSerializer(ReadOnlyModelSerializer):
     invested = InvestedSerializer(source='investments')
     earned = EarnedSerializer(source='earnings')
     selected_settings = GoalSettingSerializer()
-    portfolio_provider = PortfolioProviderSerializer()
+    #portfolio_provider = PortfolioProviderSerializer()
 
     class Meta:
         model = Goal
