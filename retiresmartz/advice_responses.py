@@ -130,7 +130,7 @@ def get_increase_retirement_age_to_70(advice):
     # TODO: Need to insert social security benefit in data
     try:
         return "I see you have increased your retirement age to 70. \
-This will increase your monthly benefit by 32% of ${:,.2f} per \
+This will increase your monthly benefit by 32% to ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
