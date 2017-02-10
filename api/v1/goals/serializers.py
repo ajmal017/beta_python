@@ -12,7 +12,7 @@ from api.v1.serializers import EventMemoMixin, NoCreateModelSerializer, \
     NoUpdateModelSerializer, ReadOnlyModelSerializer
 from main.event import Event
 from main.models import AssetFeatureValue, Goal, GoalMetric, GoalMetricGroup, GoalSetting, GoalType, Portfolio, \
-    PortfolioItem, RecurringTransaction, Ticker, Transaction
+    PortfolioItem, RecurringTransaction, Ticker, Transaction, PortfolioProvider
 from main.risk_profiler import recommend_risk, validate_risk_score
 from portfolios.calculation import Unsatisfiable, calculate_portfolio, current_stats_from_weights, get_instruments
 from portfolios.providers.data.django import DataProviderDjango
@@ -169,6 +169,10 @@ class GoalSettingSerializer(ReadOnlyModelSerializer):
     class Meta:
         model = GoalSetting
 
+class PortfolioProviderSerializer(ReadOnlyModelSerializer):
+    class Meta:
+        model = PortfolioProvider
+        fields = ('id','name', 'TLH', 'portfolio_optimization')
 
 class GoalSettingWritableSerializer(EventMemoMixin, serializers.ModelSerializer):
     metric_group = GoalMetricGroupCreateSerializer(required=True)
@@ -494,6 +498,7 @@ class GoalSerializer(ReadOnlyModelSerializer):
     invested = InvestedSerializer(source='investments')
     earned = EarnedSerializer(source='earnings')
     selected_settings = GoalSettingSerializer()
+    portfolio_provider = PortfolioProviderSerializer()
 
     class Meta:
         model = Goal
