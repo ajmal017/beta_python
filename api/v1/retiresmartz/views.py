@@ -605,7 +605,7 @@ equired to generate the
         plans = RetirementPlan.objects.all()
 
         # Get projection of future income and assets for US tax payer
-        user = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
+        user = tax.TaxUser(plan.client.date_of_birth,
                         plan.retirement_age,
                         plan.selected_life_expectancy,
                         plan.lifestyle,
@@ -628,7 +628,7 @@ equired to generate the
         user.create_maindf()
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
-            partner = tax.TaxUser(pd.Timestamp(plan.client.date_of_birth),
+            partner = tax.TaxUser(plan.client.date_of_birth,
                         plan.retirement_age,
                         plan.selected_life_expectancy,
                         plan.lifestyle,

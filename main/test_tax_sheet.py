@@ -86,7 +86,7 @@ income_growth = 1.0
 
 employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 
-ss_fra_todays = 1078.
+ss_fra_todays = 1000.
 
 paid_days = 0
 

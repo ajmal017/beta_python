@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from main import constants
 from datetime import datetime
+from main import tax_sheet as tax
+from rest_framework.exceptions import ValidationError
 import logging
 logger = logging.getLogger('api.v1.retiresmartz.advice_responses')
 
@@ -26,92 +28,116 @@ def get_decrease_retirement_age_to_62(advice):
     # By increasing your retirement age to 70 your social \
     # security benefit would be estimated to be <estimated SS benefit \
     # multiplied by inflator>
-    return "I see you have decreased your retirement age \
+    try:
+        return "I see you have decreased your retirement age \
 to 62. This will reduce your monthly benefit by 25% compared \
 to if you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to retire \
-at 66. Social security benefits increase by up to 132% the longer \
-you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .25), advice.plan.client.ss_fra_todays)
-
+at 66. Social security benefits increase by up to 32% the longer \
+you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+                  tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""
 
 def get_decrease_retirement_age_to_63(advice):
     # TODO: Need to insert social security benefit in data
     #     By increasing your retirement age to 70 \
     # your social security benefit would be estimated to be \
     # <estimated SS benefit multiplied by inflator>
-    return "I see you have decreased your retirement age to 63. \
+    try:
+        return "I see you have decreased your retirement age to 63. \
 This will reduce your monthly benefit by 20% compared to if \
 you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
-retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .2), advice.plan.client.ss_fra_todays)
-
+retire at 66. Social security benefits increase by up to 32% \
+the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 63),
+                             tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""
 
 def get_decrease_retirement_age_to_64(advice):
     # TODO: Need to insert social security benefit in data\
     #     By increasing your retirement age to 70 \
     # your social security benefit would be estimated to be \
     # <estimated SS benefit multiplied by inflator>
-    return "I see you have decreased your retirement age to 64. \
+    try:
+        return "I see you have decreased your retirement age to 64. \
 This will reduce your monthly benefit by 13% compared to \
 if you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
-retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .13), advice.plan.client.ss_fra_todays)
-
+retire at 66. Social security benefits increase by up to 32% \
+the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 64),
+                             tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""
 
 def get_decrease_retirement_age_to_65(advice):
     # TODO: Need to insert social security benefit in data
     #     By increasing your retirement age to 70 \
     # your social security benefit would be estimated
     # to be <estimated SS benefit multiplied by inflator>
-    return "I see you have decreased your retirement age to 65. \
+    try:
+        return "I see you have decreased your retirement age to 65. \
 This will reduce your monthly benefit by 7% compared to if \
 you retired at 66 giving you an estimated social security \
 benefit of ${:,.2f} per month instead of ${:,.2f} if you chose to \
-retire at 66. Social security benefits increase by up to 132% \
-the longer you work.".format(advice.plan.client.ss_fra_todays - (advice.plan.client.ss_fra_todays * .07), advice.plan.client.ss_fra_todays)
-
+retire at 66. Social security benefits increase by up to 32% \
+the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 65),
+                             tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""
 
 def get_increase_retirement_age_to_67(advice):
     # TODO: Need to insert social security benefit in data
-    return "I see you have increased your retirement age to 67. \
+    try:
+        return "I see you have increased your retirement age to 67. \
 This will increase your monthly benefit by 8% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .08), advice.plan.client.ss_fra_todays)
-
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+                                                   tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 67))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""   
 
 def get_increase_retirement_age_to_68(advice):
     # TODO: Need to insert social security benefit in data
-    return "I see you have increased your retirement age to 68. \
+    try:
+        return "I see you have increased your retirement age to 68. \
 This will increase your monthly benefit by 16% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .16), advice.plan.client.ss_fra_todays)
-
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+                                                   tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 68))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""
 
 def get_increase_retirement_age_to_69(advice):
     # TODO: Need to insert social security benefit in data
-    return "I see you have increased your retirement age to 69. \
+    try:
+        return "I see you have increased your retirement age to 69. \
 This will increase your monthly benefit by 24% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .24), advice.plan.client.ss_fra_todays)
-
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+                                                   tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 69))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""
 
 def get_increase_retirement_age_to_70(advice):
     # TODO: Need to insert social security benefit in data
-    return "I see you have increased your retirement age to 70. \
+    try:
+        return "I see you have increased your retirement age to 70. \
 This will increase your monthly benefit by 32% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 132% the longer you work.".format(advice.plan.client.ss_fra_todays + (advice.plan.client.ss_fra_todays * .32), advice.plan.client.ss_fra_todays)
-
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+                                                   tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 70))
+    except ValidationError: # to handle ValidationError("age_now > future_age")   
+        return ""
 
 # Life Expectancy
 def get_manually_adjusted_age(advice):
