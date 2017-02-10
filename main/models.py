@@ -1534,7 +1534,7 @@ def get_default_provider_id():
         default = defaults.latest('changed')
     else:
         default = DefaultPortfolioProvider.objects.get_or_create(default_provider=betasmartz)[0]
-    return default.default_provider_id
+    return default.default_provider.id
 
 
 class Goal(models.Model):
