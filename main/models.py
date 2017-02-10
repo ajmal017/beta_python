@@ -1518,6 +1518,24 @@ class InvalidStateError(Exception):
     def __str__(self):
         return "Invalid state: {}. Should have been one of: {}".format(self.current, self.required)
 
+class PortfolioProvider(models.Model):
+    name = models.CharField(max_length=100)
+    TLH = models.BooleanField(default=False)
+    portfolio_optimization = models.BooleanField(default=False)
+
+class DefaultPortfolioProvider(models.Model):
+    default_provider = models.OneToOneField('PortfolioProvider', null=True)
+    changed = models.DateTimeField(auto_now_add=True)
+
+def get_default_provider_id():
+    betasmartz = PortfolioProvider.objects.get_or_create(name='BetaSmartz', TLH=True, portfolio_optimization=True)[0]
+    defaults = DefaultPortfolioProvider.objects.all()
+    if defaults.count() > 0:
+        default = defaults.latest('changed')
+    else:
+        default = DefaultPortfolioProvider.objects.get_or_create(default_provider=betasmartz)[0]
+    return default.default_provider_id
+
 
 class Goal(models.Model):
     class State(ChoiceEnum):
@@ -1542,7 +1560,7 @@ class Goal(models.Model):
         help_text='The set of assets that may be used to create a portfolio for this goal.')
     # The cash_balance field should NEVER be updated by an API. only our internal processes.
     cash_balance = models.FloatField(default=0.0, validators=[MinValueValidator(0.0)])
-
+    portfolio_provider = models.ForeignKey('PortfolioProvider', related_name='goal', default=get_default_provider_id)
     active_settings = models.OneToOneField(
         GoalSetting,
         related_name='goal_active',

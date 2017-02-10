@@ -12,11 +12,11 @@ from advisors import models as advisor_models
 from genericadmin.admin import BaseGenericModelAdmin, GenericAdminModelAdmin
 from main.models import AccountGroup, ActivityLog, ActivityLogEvent, Advisor, \
     AssetFeature, AssetFeePlan, AuthorisedRepresentative, Dividend, \
-    EventMemo, Firm, FirmData, FiscalYear, Goal, GoalMetric, GoalMetricGroup, \
+    EventMemo, Firm, FirmData, FiscalYear, PortfolioProvider, Goal, GoalMetric, GoalMetricGroup, \
     GoalSetting, GoalType, Inflation, InvestmentType, MarketIndex, Performer, \
     Portfolio, PortfolioItem, PortfolioSet, PositionLot, PricingPlan, \
     ProxyAssetClass, ProxyTicker, Ticker, Transaction, User, View, \
-    ManagerBenchmarks
+    ManagerBenchmarks, DefaultPortfolioProvider
 
 
 class AssetResource(resources.ModelResource):
@@ -238,6 +238,11 @@ class GoalTypeAdmin(admin.ModelAdmin):
     list_display = ('name', 'group', 'default_term', 'risk_sensitivity', 'order')
     list_editable = ('group', 'default_term', 'risk_sensitivity', 'order')
 
+class DefaultDefaultPortfolioProviderAdmin(admin.ModelAdmin):
+    list_display = ('default_provider', )
+
+class PortfolioProviderAdmin(admin.ModelAdmin):
+    list_display = ('name', 'TLH', 'portfolio_optimization')
 
 class GoalAdmin(admin.ModelAdmin):
     list_display = ('account', 'name', 'type')
@@ -361,6 +366,8 @@ admin.site.register(advisor_models.ChangeDealerGroup, AdvisorChangeDealerGroupAd
 admin.site.register(advisor_models.SingleInvestorTransfer, AdvisorSingleInvestorTransferAdmin)
 admin.site.register(advisor_models.BulkInvestorTransfer, AdvisorBulkInvestorTransferAdmin)
 admin.site.register(Performer, PerformerAdmin)
+admin.site.register(PortfolioProvider, PortfolioProviderAdmin)
+admin.site.register(DefaultPortfolioProvider, DefaultDefaultPortfolioProviderAdmin)
 admin.site.register(Goal, GoalAdmin)
 admin.site.register(GoalType, GoalTypeAdmin)
 admin.site.register(MarketIndex)
