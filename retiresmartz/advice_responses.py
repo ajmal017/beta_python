@@ -95,7 +95,7 @@ This will increase your monthly benefit by 8% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66),
                                                    tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 67))
     except ValidationError: # to handle ValidationError("age_now > future_age")   
         return ""   
@@ -108,7 +108,7 @@ This will increase your monthly benefit by 16% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66),
                                                    tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 68))
     except ValidationError: # to handle ValidationError("age_now > future_age")   
         return ""
@@ -121,7 +121,7 @@ This will increase your monthly benefit by 24% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66),
                                                    tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 69))
     except ValidationError: # to handle ValidationError("age_now > future_age")   
         return ""
@@ -134,7 +134,7 @@ This will increase your monthly benefit by 32% of ${:,.2f} per \
 month instead of ${:,.2f} if you chose to retire at 66. Increasing \
 your retirement age will adjust the amount of social security \
 benefits that you are able to obtain. Social security benefits \
-increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 62),
+increase by up to 32% the longer you work.".format(tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 66),
                                                    tax.get_ss_benefit_future_dollars(advice.plan.client.ss_fra_todays, advice.plan.client.date_of_birth, 70))
     except ValidationError: # to handle ValidationError("age_now > future_age")   
         return ""
