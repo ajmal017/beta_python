@@ -12,12 +12,99 @@ from dateutil.relativedelta import relativedelta
 from main import inflation
 from main import zip2state
 from ssa import ssa as ssa
+from rest_framework.exceptions import ValidationError
 import pdb
 
 logger = logging.getLogger('taxsheet')
 inflation_level = inflation.inflation_level
 
 NUM_US_RETIREMENT_ACCOUNT_TYPES = len(constants.US_RETIREMENT_ACCOUNT_TYPES)
+
+
+def get_ss_benefit_future_dollars(ss_fra_todays, dob, future_age):
+    '''
+    returns soc sec benefit payment for the first period in which user is over a given future age
+    in inflated future dollars, for a given date of birth and given ss_fra_todays
+    '''
+    period_of_age = get_period_of_age(get_age(dob), future_age)
+    return get_ss_fra_future_dollars(ss_fra_todays, (period_of_age + 1))[period_of_age] * get_soc_sec_factor(future_age)
+
+
+def get_ss_fra_future_dollars(ss_fra_todays, period):
+    '''
+    returns ss_fra_future_dollars series, i.e. the value of soc sec benefit for given
+    period, in inflated, future dollars, for a given ss_fra_todays
+    '''
+    return ss_fra_todays * get_inflator_to_period(period)['Inflator']
+
+
+def get_age(dob):
+    '''
+    returns current age today based on dob
+    '''
+    return ((pd.Timestamp('today') - pd.Timestamp(dob)).days)/365.25
+
+
+def get_period_of_age(age_now, future_age):
+    '''
+    given age now, returns retirement model period last period in which TaxUser is younger than age
+    '''
+    if age_now > future_age:
+        raise ValidationError("age_now > future_age")      
+        
+    return math.ceil((future_age - age_now) * 12)
+
+
+def get_soc_sec_factor(desired_retirement_age):
+    '''
+    returns factor by which to multiply ss_fra_retirement based on desired retirement age
+    '''
+
+    if desired_retirement_age <= 62:
+        factor = 0.75
+
+    elif desired_retirement_age > 62 and desired_retirement_age <= 63:
+        factor = 0.80
+
+    elif desired_retirement_age > 63 and desired_retirement_age <= 64:
+        factor = 0.867
+
+    elif desired_retirement_age > 64 and desired_retirement_age <= 65:
+        factor = 0.933
+
+    elif desired_retirement_age > 65 and desired_retirement_age <= 66:
+        factor = 1.0
+
+    elif desired_retirement_age > 66 and desired_retirement_age <= 67:
+        factor = 1.08
+
+    elif desired_retirement_age > 67 and desired_retirement_age <= 68:
+        factor = 1.16
+
+    elif desired_retirement_age > 68 and desired_retirement_age <= 69:
+        factor = 1.24
+
+    elif desired_retirement_age > 69:
+        factor = 1.32
+
+    return factor
+
+
+def get_inflator_to_period(period):
+    '''
+    returns dataframe of inflation rates and 'now-based' inflation factors for each period out to period
+    '''
+    inflation_df = pd.DataFrame(index=get_retirement_model_projection_index(pd.Timestamp('today').date(), period))
+    inflation_df['Inflation_Rate'] = [inflation_level[i]/12. for i in range(period)]
+    inflation_df['Inflator'] = (1 + inflation_df['Inflation_Rate']).cumprod()
+    return inflation_df
+    
+
+def get_retirement_model_projection_index(start_date, period):
+    '''
+    returns retirement model dataframe index from given start date and for given period
+    '''
+    return [start_date + relativedelta(months=1) + relativedelta(months=+i) for i in range(period)]
 
 
 class TaxUser(object):
@@ -147,20 +234,17 @@ class TaxUser(object):
         '''
         age
         '''
-        self.age = ((pd.Timestamp('today')-self.dob).days)/365.25
+        self.age = get_age(self.dob)
         self.validate_age()
         if (self.debug):
-            print("---ages")
-            print('self.dob:                         ' + str(self.dob))
+            print("---age-----")
             print('self.age:                         ' + str(self.age))
-            print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-            print('self.life_exp:                    ' + str(self.life_exp))
+            print("-----------")
         '''
         retirememt period
         '''
         self.validate_life_exp_and_des_retire_age()
-        self.pre_retirement_end = math.ceil((self.desired_retirement_age - self.age) * 12)  # i.e. last period in which TaxUser is younger than desired retirement age                                                                                  # NB this period has index self.pre_retirement_end - 1
-                                                                                            
+        self.pre_retirement_end = get_period_of_age(self.age, self.desired_retirement_age)  # i.e. last period in which TaxUser is younger than desired retirement age                                                                                  # NB this period has index self.pre_retirement_end - 1
         self.retirement_start = self.pre_retirement_end + 1                                 # i.e. first period in which TaxUser is older than desired retirement age                                                                                   # NB this period has index self.retirement_start - 1
 
         '''
@@ -189,13 +273,13 @@ class TaxUser(object):
         self.total_rows = self.pre_retirement_end + (self.retirement_years * 12)
         
         '''
-        inflation
+        annual inflation
         '''
         self.indices_for_inflation = [(11 + (i * 12)) for i in range(self.years_to_project)]
-        if len(inflation_level) < len(self.indices_for_inflation):
-            raise Exception("supplied inflation data does not cover the full period required")
-        
+        if len(inflation_level) < self.indices_for_inflation[len(self.indices_for_inflation) - 1]:
+            raise Exception("supplied inflation data does not cover the full period required")        
         self.annual_inflation = [sum(inflation_level[j*12:(j*12)+12])/12. for j in range(len(self.indices_for_inflation))]
+
 
         '''
         retirement_accounts
@@ -204,13 +288,11 @@ class TaxUser(object):
         self.btc_factor = self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)
 
         '''
-        data frame indices
+        dataframe indices
         '''
-        self.dateind = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows)]
-        self.dateind_pre = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.pre_retirement_end)]
-        self.dateind_post = [self.dateind_pre[len(self.dateind_pre)-1]
-                             + relativedelta(months=1)
-                             + relativedelta(months=+i) for i in range(self.total_rows - len(self.dateind_pre))]
+        self.dateind = get_retirement_model_projection_index(pd.Timestamp('today').date(), self.total_rows)
+        self.dateind_pre = get_retirement_model_projection_index(pd.Timestamp('today').date(), self.pre_retirement_end)
+        self.dateind_post = get_retirement_model_projection_index(self.dateind_pre[len(self.dateind_pre)-1], (self.total_rows - len(self.dateind_pre)))
         
         '''
         data frame
@@ -313,41 +395,6 @@ class TaxUser(object):
     #    taxFed.create_tax_engine()
     #    taxFed.create_tax_projected()
     #    self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
-
-
-    def get_soc_sec_factor(self):
-        '''
-        returns factor by which to multiply ss_fra_retirement based on desired retirement age
-        '''
-
-        if self.desired_retirement_age <= 62:
-            factor = 0.75
-
-        elif self.desired_retirement_age > 62 and self.desired_retirement_age <= 63:
-            factor = 0.80
-
-        elif self.desired_retirement_age > 63 and self.desired_retirement_age <= 64:
-            factor = 0.867
-
-        elif self.desired_retirement_age > 64 and self.desired_retirement_age <= 65:
-            factor = 0.933
-
-        elif self.desired_retirement_age > 65 and self.desired_retirement_age <= 66:
-            factor = 1.0
-
-        elif self.desired_retirement_age > 66 and self.desired_retirement_age <= 67:
-            factor = 1.08
-
-        elif self.desired_retirement_age > 67 and self.desired_retirement_age <= 68:
-            factor = 1.16
-
-        elif self.desired_retirement_age > 68 and self.desired_retirement_age <= 69:
-            factor = 1.24
-
-        elif self.desired_retirement_age > 69:
-            factor = 1.32
-
-        return factor
 
 
     def get_portfolio_return_above_cpi(self):
@@ -752,6 +799,7 @@ class TaxUser(object):
         print('self.medicare_percent:       ' + str(self.medicare_percent))
         print('self.fed_tax_percent:        ' + str(self.fed_tax_percent))
         print('self.state_tax_percent:      ' + str(self.state_tax_percent))
+        print('ss_fra_retirement:           ' + str(get_ss_benefit_future_dollars(self.ss_fra_todays, self.dob, self.desired_retirement_age)))
         print("[Set self.debug=False to hide these]")
                 
 
@@ -766,7 +814,7 @@ class TaxUser(object):
         self.post_proj_inc_growth_monthly = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Proj_Inc_Growth_Monthly'] = self.set_full_series(self.pre_proj_inc_growth_monthly, self.post_proj_inc_growth_monthly)
 
-        self.maindf['Proj_Inflation_Rate'] = [inflation_level[i]/12. for i in range(self.total_rows)]
+        self.maindf['Proj_Inflation_Rate'] = get_inflator_to_period(self.total_rows)['Inflation_Rate']
         self.pre_proj_inflation_rate = [inflation_level[i]/12. for i in range(self.pre_retirement_end)] 
         self.post_proj_inflation_rate = [inflation_level[self.retirement_start + i]/12. for i in range(self.total_rows - self.pre_retirement_end)] 
 
@@ -815,8 +863,7 @@ class TaxUser(object):
         '''
         get pre-retirement inflation flator
         '''
-        self.pre_df['Proj_Inflation_Rate_Pre'] = self.maindf['Proj_Inflation_Rate'][0:self.pre_retirement_end]
-        self.pre_df['Inf_Inflator_Pre'] = (1 + self.pre_df['Proj_Inflation_Rate_Pre']).cumprod()
+        self.pre_df['Inf_Inflator_Pre'] = get_inflator_to_period(self.pre_retirement_end)['Inflator']
 
         self.pre_total_income = self.total_income/12. * self.pre_df['Inc_Inflator_Pre']
         self.post_total_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
@@ -918,12 +965,7 @@ class TaxUser(object):
         '''
         use the 'flators'
         '''
-        self.post_inflator_continuous = [0. for i in range(self.total_rows - self.pre_retirement_end)]
-        self.post_inflator_continuous[0] = self.pre_inflator[len(self.pre_inflator) -1] * (1 + self.post_proj_inflation_rate[0]) * self.get_soc_sec_factor()
-        for i in range (1, self.total_rows - self.pre_retirement_end):
-            self.post_inflator_continuous[i] = self.post_inflator_continuous[i - 1] * (1 + self.post_proj_inflation_rate[i])
-
-        self.maindf['Soc_Sec_Benefit'] = self.set_full_series(self.pre_inflator, self.post_inflator_continuous) * self.ss_fra_todays
+        self.maindf['Soc_Sec_Benefit'] = get_ss_fra_future_dollars(self.ss_fra_todays, self.total_rows) * get_soc_sec_factor(self.desired_retirement_age)
         
         self.maindf['Soc_Sec_Ret_Ear_Tax_Exempt'] = self.maindf['Soc_Sec_Benefit']
 
@@ -1137,4 +1179,3 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
-
