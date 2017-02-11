@@ -15,32 +15,27 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='DefaultPortfolioProvider',
             fields=[
-                ('id', models.AutoField(serialize=False, verbose_name='ID', primary_key=True, auto_created=True)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('changed', models.DateTimeField(auto_now_add=True)),
             ],
         ),
         migrations.CreateModel(
             name='PortfolioProvider',
             fields=[
-                ('id', models.AutoField(serialize=False, verbose_name='ID', primary_key=True, auto_created=True)),
+                ('id', models.AutoField(auto_created=True, serialize=False, verbose_name='ID', primary_key=True)),
                 ('name', models.CharField(max_length=100)),
-                ('TLH', models.BooleanField(default=False)),
-                ('portfolio_optimization', models.BooleanField(default=False)),
+                ('TLH', models.BooleanField(default=True)),
+                ('portfolio_optimization', models.BooleanField(default=True)),
             ],
-        ),
-        migrations.AddField(
-            model_name='portfolio',
-            name='rebalance',
-            field=models.BooleanField(default=True),
         ),
         migrations.AddField(
             model_name='defaultportfolioprovider',
             name='default_provider',
-            field=models.OneToOneField(null=True, to='main.PortfolioProvider'),
+            field=models.OneToOneField(blank=True, to='main.PortfolioProvider', null=True),
         ),
         migrations.AddField(
             model_name='goal',
             name='portfolio_provider',
-            field=models.ForeignKey(default=main.models.get_default_provider_id, to='main.PortfolioProvider', related_name='goal'),
+            field=models.ForeignKey(to='main.PortfolioProvider', default=main.models.get_default_provider_id, related_name='goal'),
         ),
     ]
