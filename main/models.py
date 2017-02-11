@@ -1523,6 +1523,9 @@ class PortfolioProvider(models.Model):
     TLH = models.BooleanField(default=True)
     portfolio_optimization = models.BooleanField(default=True)
 
+    def __str__(self):
+        return self.name
+
 class DefaultPortfolioProvider(models.Model):
     default_provider = models.OneToOneField('PortfolioProvider', null=True, blank=True)
     changed = models.DateTimeField(auto_now_add=True)
