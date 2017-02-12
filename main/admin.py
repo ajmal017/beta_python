@@ -239,7 +239,7 @@ class GoalTypeAdmin(admin.ModelAdmin):
     list_editable = ('group', 'default_term', 'risk_sensitivity', 'order')
 
 class DefaultDefaultPortfolioProviderAdmin(admin.ModelAdmin):
-    list_display = ('default_provider', )
+    list_display = ('default_provider', 'changed')
 
 class PortfolioProviderAdmin(admin.ModelAdmin):
     list_display = ('name', 'TLH', 'portfolio_optimization')
