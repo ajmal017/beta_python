@@ -1522,6 +1522,7 @@ class PortfolioProvider(models.Model):
     name = models.CharField(max_length=100)
     TLH = models.BooleanField(default=True)
     portfolio_optimization = models.BooleanField(default=True)
+    constants = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
