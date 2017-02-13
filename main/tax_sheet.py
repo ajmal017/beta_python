@@ -1,15 +1,15 @@
 import logging
-import math
 import pandas as pd
 import numpy as np
 import json
+import math
 from main import inflation
 from main import us_tax
+from main import tax_helpers as helpers
 from main import test_tax_sheet as tst_tx
 from main import abstract
 from main import constants
 from dateutil.relativedelta import relativedelta
-from main import inflation
 from main import zip2state
 from ssa import ssa as ssa
 from rest_framework.exceptions import ValidationError
@@ -21,97 +21,10 @@ inflation_level = inflation.inflation_level
 NUM_US_RETIREMENT_ACCOUNT_TYPES = len(constants.US_RETIREMENT_ACCOUNT_TYPES)
 
 
-def get_ss_benefit_future_dollars(ss_fra_todays, dob, future_age):
-    '''
-    returns soc sec benefit payment for the first period in which user is over a given future age
-    in inflated future dollars, for a given date of birth and given ss_fra_todays
-    '''
-    period_of_age = get_period_of_age(get_age(dob), future_age)
-    return get_ss_fra_future_dollars(ss_fra_todays, (period_of_age + 1))[period_of_age] * get_soc_sec_factor(future_age)
-
-
-def get_ss_fra_future_dollars(ss_fra_todays, period):
-    '''
-    returns ss_fra_future_dollars series, i.e. the value of soc sec benefit for given
-    period, in inflated, future dollars, for a given ss_fra_todays
-    '''
-    return ss_fra_todays * get_inflator_to_period(period)['Inflator']
-
-
-def get_age(dob):
-    '''
-    returns current age today based on dob
-    '''
-    return ((pd.Timestamp('today') - pd.Timestamp(dob)).days)/365.25
-
-
-def get_period_of_age(age_now, future_age):
-    '''
-    given age now, returns retirement model period last period in which TaxUser is younger than age
-    '''
-    if age_now > future_age:
-        raise ValidationError("age_now > future_age")      
-        
-    return math.ceil((future_age - age_now) * 12)
-
-
-def get_soc_sec_factor(desired_retirement_age):
-    '''
-    returns factor by which to multiply ss_fra_retirement based on desired retirement age
-    '''
-
-    if desired_retirement_age <= 62:
-        factor = 0.75
-
-    elif desired_retirement_age > 62 and desired_retirement_age <= 63:
-        factor = 0.80
-
-    elif desired_retirement_age > 63 and desired_retirement_age <= 64:
-        factor = 0.867
-
-    elif desired_retirement_age > 64 and desired_retirement_age <= 65:
-        factor = 0.933
-
-    elif desired_retirement_age > 65 and desired_retirement_age <= 66:
-        factor = 1.0
-
-    elif desired_retirement_age > 66 and desired_retirement_age <= 67:
-        factor = 1.08
-
-    elif desired_retirement_age > 67 and desired_retirement_age <= 68:
-        factor = 1.16
-
-    elif desired_retirement_age > 68 and desired_retirement_age <= 69:
-        factor = 1.24
-
-    elif desired_retirement_age > 69:
-        factor = 1.32
-
-    return factor
-
-
-def get_inflator_to_period(period):
-    '''
-    returns dataframe of inflation rates and 'now-based' inflation factors for each period out to period
-    '''
-    inflation_df = pd.DataFrame(index=get_retirement_model_projection_index(pd.Timestamp('today').date(), period))
-    inflation_df['Inflation_Rate'] = [inflation_level[i]/12. for i in range(period)]
-    inflation_df['Inflator'] = (1 + inflation_df['Inflation_Rate']).cumprod()
-    return inflation_df
-    
-
-def get_retirement_model_projection_index(start_date, period):
-    '''
-    returns retirement model dataframe index from given start date and for given period
-    '''
-    return [start_date + relativedelta(months=1) + relativedelta(months=+i) for i in range(period)]
-
-
 class TaxUser(object):
     '''
     Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v4.xlsx).
     '''
-
     def __init__(self,
                  dob,
                  desired_retirement_age,
@@ -132,13 +45,10 @@ class TaxUser(object):
                  zip_code,
                  expenses,
                  btc):
-        '''
-        checks
-        '''
+
         self.debug = True
-        
         if (self.debug):
-            self.show_inputs(dob,
+            helpers.show_inputs(dob,
                              desired_retirement_age,
                              life_exp,
                              retirement_lifestyle,
@@ -159,49 +69,38 @@ class TaxUser(object):
                              expenses,
                              btc)
 
-        try:
-            adj_gross_income = tax_transcript_data['adjusted_gross_income']
-        except:
-            adj_gross_income = 0
-
-        try:
-            total_payments = tax_transcript_data['total_payments']
-        except:
-            total_payments = 0
-
-        try:
-            taxable_income = tax_transcript_data['taxable_income']
-        except:
-            taxable_income = 0
-            
+        adj_gross_income, total_payments, taxable_income = self.get_tax_transcript_data(tax_transcript_data)
+        # adj_gross_income cannot be less than total_income
+        adj_gross_income = helpers.validate_adj_gross_income(adj_gross_income, total_income)
+  
         if not house_value:
             house_value = 0.
             
         if not ss_fra_todays:
             ss_fra_todays = 0.
-        
-        self.validate_inputs(dob,
-                             desired_retirement_age,
-                             life_exp,
-                             retirement_lifestyle,
-                             total_income,
-                             reverse_mort,
-                             house_value,
-                             desired_risk,
-                             filing_status,
-                             adj_gross_income,
-                             total_payments,
-                             taxable_income,
-                             plans,
-                             income_growth,
-                             employment_status,
-                             ss_fra_todays,
-                             paid_days,
-                             retirement_accounts,
-                             inflation_level,
-                             zip_code,
-                             expenses,
-                             btc)
+
+        helpers.validate_inputs(dob,
+                                 desired_retirement_age,
+                                 life_exp,
+                                 retirement_lifestyle,
+                                 total_income,
+                                 reverse_mort,
+                                 house_value,
+                                 desired_risk,
+                                 filing_status,
+                                 adj_gross_income,
+                                 total_payments,
+                                 taxable_income,
+                                 plans,
+                                 income_growth,
+                                 employment_status,
+                                 ss_fra_todays,
+                                 paid_days,
+                                 retirement_accounts,
+                                 inflation_level,
+                                 zip_code,
+                                 expenses,
+                                 btc)
         '''
         set variables
         '''
@@ -228,23 +127,19 @@ class TaxUser(object):
         self.initial_401k_balance = 0
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
-        self.sum_expenses = self.get_sum_expenses(expenses)
+        self.sum_expenses = helpers.get_sum_expenses(expenses)
         self.btc = btc
 
         '''
         age
         '''
-        self.age = get_age(self.dob)
+        self.age = helpers.get_age(self.dob)
         self.validate_age()
-        if (self.debug):
-            print("---age-----")
-            print('self.age:                         ' + str(self.age))
-            print("-----------")
         '''
         retirememt period
         '''
         self.validate_life_exp_and_des_retire_age()
-        self.pre_retirement_end = get_period_of_age(self.age, self.desired_retirement_age)  # i.e. last period in which TaxUser is younger than desired retirement age                                                                                  # NB this period has index self.pre_retirement_end - 1
+        self.pre_retirement_end = helpers.get_period_of_age(self.age, self.desired_retirement_age)  # i.e. last period in which TaxUser is younger than desired retirement age                                                                                  # NB this period has index self.pre_retirement_end - 1
         self.retirement_start = self.pre_retirement_end + 1                                 # i.e. first period in which TaxUser is older than desired retirement age                                                                                   # NB this period has index self.retirement_start - 1
 
         '''
@@ -280,7 +175,6 @@ class TaxUser(object):
             raise Exception("supplied inflation data does not cover the full period required")        
         self.annual_inflation = [sum(inflation_level[j*12:(j*12)+12])/12. for j in range(len(self.indices_for_inflation))]
 
-
         '''
         retirement_accounts
         '''
@@ -290,519 +184,16 @@ class TaxUser(object):
         '''
         dataframe indices
         '''
-        self.dateind = get_retirement_model_projection_index(pd.Timestamp('today').date(), self.total_rows)
-        self.dateind_pre = get_retirement_model_projection_index(pd.Timestamp('today').date(), self.pre_retirement_end)
-        self.dateind_post = get_retirement_model_projection_index(self.dateind_pre[len(self.dateind_pre)-1], (self.total_rows - len(self.dateind_pre)))
+        self.dateind = helpers.get_retirement_model_projection_index(pd.Timestamp('today').date(), self.total_rows)
+        self.dateind_pre = helpers.get_retirement_model_projection_index(pd.Timestamp('today').date(), self.pre_retirement_end)
+        self.dateind_post = helpers.get_retirement_model_projection_index(self.dateind_pre[len(self.dateind_pre)-1], (self.total_rows - len(self.dateind_pre)))
         
         '''
         data frame
         '''
         self.maindf = pd.DataFrame(index=self.dateind)
 
-
-    #def get_ss_fra_retirement(self):
-    #    '''
-    #    returns ss_fra_retirement scraped from https://www.ssa.gov/oact/quickcalc
-    #    '''  
-    #    try:
-    #        ss_fra_retirement = ssa.get_social_security_benefit(self.total_income,
-    #                                                            0,
-    #                                                            0,
-    #                                                            self.dateind_post[0].month,
-    #                                                            self.dateind_post[0].year,
-    #                                                            self.dob.month,
-    #                                                            self.dob.day,
-    #                                                            self.dob.year)[2]
-    #    except:
-    #        raise Exception("Failed to scrape ss_fra_retirement from https://www.ssa.gov/oact/quickcalc")
-    #    return ss_fra_retirement
-    
-
-    def set_full_series(self, series_pre, series_post):
-        '''
-        returns full series by appending pre-retirement and post-retirement series
-        '''
-        full_pre = pd.Series(series_pre, index=self.dateind_pre)
-        full_post = pd.Series(series_post, index=self.dateind_post)
-        result = full_pre.append(full_post)
-        return result
-    
-
-    def set_full_series_with_indices(self, series_pre, series_post, index_pre, index_post):
-        '''
-        returns full series by appending pre-retirement series (with index2) and post-retirement
-        series (with index2) 
-        '''       
-        full_pre = pd.Series(series_pre, index_pre)
-        full_post = pd.Series(series_post, index_post)
-        result = full_pre.append(full_post)
-        return result
-
-
-    def get_full_post_retirement_and_pre_deflated(self, temp_df_column):
-        '''
-        returns data frame column having 'real' (c.f. 'nominal') vales, where post retirement is calculated
-        from other columns, and pre-retirement is the deflated retirement value
-        '''
-        nominal_pre = [temp_df_column[self.pre_retirement_end - 1] for i in range(self.pre_retirement_end)]
-        real_post = [temp_df_column[self.retirement_start - 1 + i] for i in range(self.total_rows - self.pre_retirement_end)]
-        result = self.maindf['Deflator'] * self.set_full_series(nominal_pre, real_post)
-        return result
-    
-
-    def get_full_post_retirement_and_pre_set_zero(self, temp_df_column):
-        '''
-        returns data frame column having 'real' (c.f. 'nominal') values, where post retirement is calculated
-        from other columns, and pre-retirement is set to zero
-        '''
-        nominal_pre = [0. for i in range(self.pre_retirement_end)]
-        real_post = [temp_df_column[self.retirement_start - 1 + i] for i in range(self.total_rows - self.pre_retirement_end)]
-        result = self.set_full_series(nominal_pre, real_post)
-        return result
-    
-
-    def get_full_pre_retirement_and_post_set_zero(self, temp_df_column):
-        '''
-        returns data frame column having 'real' (c.f. 'nominal') values, where pre retirement is calculated
-        from other columns, and post-retirement is set to zero
-        '''
-        nominal_pre = [temp_df_column[self.pre_retirement_end - 1] for i in range(self.pre_retirement_end)]
-        real_post = [0. for i in range(self.total_rows - self.pre_retirement_end)]
-        result = self.set_full_series(nominal_pre, real_post)
-        return result
-
-
-    def get_capital_growth_and_balance_series(self, period, account_type, starting_balance):
-        '''
-        returns capital growth and balance series over period for account_tyconstants.US_RETIREMENT_ACCOUNT_TYPEpe
-        '''
-        '''
-        for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
-        '''
-        balance = [starting_balance for i in range(period)]
-        capital_growth = [0. for i in range(period)]
-        for i in range(1, period):
-            capital_growth[i] = self.maindf['Portfolio_Return'][i] * balance[i - 1]
-            balance[i] = self.maindf[account_type + '_Employee'][i] + self.maindf[account_type + '_Employer'][i] + capital_growth[i] + balance[i - 1]
-        return capital_growth, balance
-
-
-    #def get_projected_fed_tax(self):
-    #    '''
-    #    returns projected federal tax for given filing status, years, annual inflation, and annual taxable income 
-    #    '''
-    #    taxFed = us_tax.FederalTax(self.years, self.annual_inflation, self.annual_taxable_income)
-    #    taxFed.create_tax_engine()
-    #    taxFed.create_tax_projected()
-    #    self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
-
-
-    def get_portfolio_return_above_cpi(self):
-        return self.desired_risk * 10.0 * 0.005
-    
-
-    def get_sum_expenses(self, expenses):
-        '''
-        returns sum of expenses
-        '''
-        sum_expenses = 0
-        if expenses is not None:
-            for exp in expenses:
-                if exp['amt'] < 0:
-                    raise Exception("exp['amt'] < 0")
-                else:
-                    sum_expenses = sum_expenses + exp['amt']
-                                    
-        return sum_expenses
-            
-    
-    def get_retirement_accounts(self):
-        '''
-        returns lists of initial balances and monthly employee and employer contribution percentages, indexed according to constants.US_RETIREMENT_ACCOUNT_TYPES
-        '''
-        init_balance = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
-        monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
-        employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
-        employer_match_income = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
-        
-        if self.retirement_accounts is not None:
-            for acnt in self.retirement_accounts:
-                i = self.get_retirement_account_index(acnt)
-                init_balance[i] = init_balance[i] + acnt['balance']
-
-                if acnt['contrib_amt'] > 0:
-                    if acnt['contrib_period'] == 'monthly':
-                        monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']
-                    else:
-                        monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']/12.
-
-                if acnt['employer_match_type'] == 'contributions':
-                    employer_match_contributions[i] = employer_match_contributions[i] + acnt['employer_match']
-                else:
-                    employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
-                    
-        monthly_contrib_employee_base = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
-        monthly_contrib_employer_base = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
-        
-        return init_balance, monthly_contrib_employee_base, monthly_contrib_employer_base
-            
-
-    def get_retirement_account_index(self, acnt_type):
-        for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
-            if acnt_type['acc_type'] == constants.US_RETIREMENT_ACCOUNT_TYPES[i]:
-                return i
-        raise Exception('unrecognized account type')
-
-
-    def get_employee_monthly_contrib_monthly_view(self):
-        '''
-        returns monthly contriburion for employee based on monthly view pie chart
-        '''
-        return max(0, (self.total_income/12. - self.sum_expenses)/(self.total_income/12.))
-        # NB - both following quantities are annual
-        # return (self.btc/self.total_income) 
-
-
-    def get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):
-        '''
-        'btc factor' is multiplied by all retirement account contributions to incorporate effect of varying proportions in Monthly View pie chart. 
-        '''
-        btc_factor = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
-        if self.retirement_accounts is not None:
-            for acnt in self.retirement_accounts:
-                j = self.get_retirement_account_index(acnt)
-                if monthly_contrib_employee_base[j] == 0:
-                    btc_factor[j] = 0.
-                else:
-                    btc_factor[j] = (employee_monthly_contrib_monthly_view/monthly_contrib_employee_base[j])
-        return btc_factor
-        
-
-    def get_retirement_income_details_from_plans(self):
-        '''
-        returns a list of tuples (begin_date, monthly amount) for each source of external_income in plans  
-        '''
-        external_income = []
-
-        for plan in self.plans:
-            try:
-                if plan.external_income.all() != []:
-                    begin_date = plan.external_income.all()[0].begin_date
-                    amount = plan.external_income.all()[0].amount
-                    detail = (begin_date, amount)
-                    external_income.append(detail)
-            except:
-                if (self.debug):
-                    print(str(plan) + " not of expected form")
-        return external_income 
-
-
-    def get_a_retirement_income(self, begin_date, amount):
-        '''
-        returns self.maindf['This_Annuity_Payments'] determined from retirement income.
-        '''
-        self.maindf['This_Annuity_Payments_Nominal'] = 0
-        try:
-            months_to_annuity_start = math.ceil(((pd.Timestamp(begin_date) - pd.Timestamp('today')).days) * (12./365.25))
-            if months_to_annuity_start > 0 and months_to_annuity_start < self.total_rows:
-                pre_ret_inc = [0. for i in range(months_to_annuity_start)]
-                post_ret_inc_nominal = [amount for i in range(self.total_rows - months_to_annuity_start)]
-                dateind_pre_annuity = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(months_to_annuity_start)]
-                dateind_post_annuity = [dateind_pre_annuity[len(dateind_pre_annuity)-1] + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows - months_to_annuity_start)]
-                self.maindf['This_Annuity_Payments_Nominal'] = self.maindf['This_Annuity_Payments_Nominal'] + self.set_full_series_with_indices(pre_ret_inc, post_ret_inc_nominal, dateind_pre_annuity, dateind_post_annuity)
-            return self.maindf['This_Annuity_Payments_Nominal'] * (1 + self.maindf['Proj_Inflation_Rate']).cumprod()
-        except:
-            return 0
-
-
-    def get_all_retirement_income(self):
-        '''
-        returns self.maindf['Annuity_Payments'], the sum of all retirment incomes.
-        '''
-        self.maindf['All_Annuity_Payments'] = 0
-        retirement_income_details = []
-        retirement_income_details = self.get_retirement_income_details_from_plans()
-        for detail in retirement_income_details:
-            self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0], detail[1])
-        return self.maindf['All_Annuity_Payments']
-
-
-    def get_period_as_age(self, period):
-        '''
-        returns age corresponding to period
-        '''
-        if period < 0:
-            raise Exception('period < 0')
-        return self.age + (period/12.)
-
-
-    def get_savings_end_date_as_period(self):
-        '''
-        returns period post retirement when taxable assets first deplete to zero
-        '''
-        for i in range(self.retirement_start, self.total_rows):
-            if self.maindf['Taxable_Accounts'][i] == 0:
-                return i
-        return self.total_rows
                 
-
-    def get_savings_end_date_as_age(self):
-        '''
-        returns age post retirement when taxable assets first deplete to zero
-        '''
-        age = self.get_period_as_age(self.get_savings_end_date_as_period())
-        if age < self.desired_retirement_age:
-            raise Exception('age < self.desired_retirement_age')
-        return age
-
-
-    def get_soa_dollar_bill_percentages(self):
-        '''
-        returns current day social security payment, medicare payment, federal income
-        tax payment, and state income tax payment all as a percentrage of current income
-        '''
-        if not self.total_income:
-            raise Exception('self.total_income is None')
-
-        if self.total_income == 0:
-            return 0, 0, 0, 0
-            
-        if not self.fica_ss:
-            raise Exception('self.fica_ss is None')
-        soc_sec_percent = self.fica_ss/self.total_income
-        
-        if not self.fica_medicare:
-            raise Exception('self.fica_medicare is None')
-        medicare_percent = self.fica_medicare/self.total_income
-        
-        fed_tax_percent = self.annual_projected_tax.iloc[0]/self.total_income
-
-        # self.pre_state_tax_after_credits is a monthly figure
-        state_tax_percent = (12 * self.pre_state_tax_after_credits.iloc[0])/self.total_income
-
-        if soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent <= 1:
-            return soc_sec_percent, medicare_percent, fed_tax_percent, state_tax_percent
-
-        else:
-            raise Exception('soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent > 1')
-            
-
-    def validate_inputs(self,
-                         dob,
-                         desired_retirement_age,
-                         life_exp,
-                         retirement_lifestyle,
-                         total_income,
-                         reverse_mort,
-                         house_value,
-                         desired_risk,
-                         filing_status,
-                         adj_gross_income,
-                         total_payments,
-                         taxable_income,
-                         plans,
-                         income_growth,
-                         employment_status,
-                         ss_fra_todays,
-                         paid_days,
-                         retirement_accounts,
-                         inflation_level,
-                         zip_code,
-                         expenses,
-                         btc):
-
-        # adj_gross_income cannot be less than total_income
-        adj_gross_income = self.validate_adj_gross_income(adj_gross_income, total_income)
-        
-        # Null checks
-        if not dob:
-            raise Exception('dob not provided')
-
-        if not desired_retirement_age:
-            raise Exception('desired_retirement_age not provided')
-
-        if not life_exp:
-            raise Exception('life_exp no provided')
-
-        if not retirement_lifestyle:
-            raise Exception('retirement_lifestyle not provided')
-
-        if not inflation_level:
-            raise Exception('inflation_level not provided')
-
-        if not zip_code:
-            raise Exception('state not provided')
-
-        # other checks
-        if life_exp < desired_retirement_age:
-            raise Exception('life_exp less than desired_retirement_age')
-
-        if retirement_lifestyle != 1 and retirement_lifestyle != 2 and retirement_lifestyle != 3 and retirement_lifestyle != 4:
-            raise Exception('unhandled value of retirement_lifestyle')
-
-        if desired_risk < 0 or desired_risk > 1:
-            raise Exception('desired_risk outside 0 <= desired_risk <= 1')
-
-        if house_value < 0:
-            raise Exception('house_value less than 0')
-
-        if ss_fra_todays < 0:
-            raise Exception('ss_fra_todays less than 0')
-
-        if total_income < 0:
-            raise Exception('total_income less than 0')
-
-        if adj_gross_income < 0:
-            raise Exception('adj_gross_income less than 0')
-
-        if taxable_income < 0:
-            raise Exception('taxable_income less than 0')
-
-        if total_payments < 0:
-            raise Exception('total_payments less than 0')
-
-        if paid_days < 0:
-            raise Exception('paid_days less than 0')
-
-        if paid_days > 30:
-            raise Exception('paid_days greater than 30 per month')
-
-        if type(zip_code) != int:
-            raise Exception("zip_code must be integer")
-        '''
-        if zip_code < 10000 or zip_code > 99999:
-            raise Exception("zip_code not of correct form")
-        ''' 
-
-
-    def validate_age(self):
-        if self.age >= self.desired_retirement_age:
-            raise Exception("age greater than or equal to desired retirement age")
-
-        if self.age <= 0:
-            raise Exception("age less than or equal to 0")
-
-        #if (self.debug):
-        #    print("---before")
-        #    print('self.dob:                         ' + str(self.dob))
-        #    print('self.age:                         ' + str(self.age))
-        #    print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-        #    print('self.life_exp:                    ' + str(self.life_exp))
-
-        # need the following for https://www.ssa.gov/oact/quickcalc to accept inputs
-        # only accepts ages greater than 21
-        #if self.age < 22.:
-        #    years_below_22 = 22. - self.age
-        #    self.age = 22.
-        #    self.dob = pd.Timestamp('today').date() - relativedelta(years=22)
-        #    self.desired_retirement_age = min(self.desired_retirement_age + years_below_22, self.age + 59.)
-        #    self.life_exp = self.life_exp + years_below_22
-
-        # need the following for https://www.ssa.gov/oact/quickcalc to accept inputs
-        # only accepts ages less than 92
-        #if self.age > 92.:
-        #    years_above_92 = self.age - 92.
-        #    self.age = 92.
-        #    self.dob = pd.Timestamp('today').date() - relativedelta(years=92)
-        #    self.desired_retirement_age = max(self.desired_retirement_age - years_above_92, 23.)
-        #    self.life_exp = self.life_exp - years_above_92
-
-        #if (self.debug):
-        #    print("---after")
-        #    print('self.dob:                         ' + str(self.dob))
-        #    print('self.age:                         ' + str(self.age))
-        #    print('self.desired_retirement_age:      ' + str(self.desired_retirement_age))
-        #    print('self.life_exp:                    ' + str(self.life_exp))
-        #    print("[Set self.debug=False to hide these]")
-
-
-    def validate_life_exp_and_des_retire_age(self):
-        if self.life_exp > 100:
-            raise Exception("self.life_exp > 100")
-            
-        if self.life_exp < 65:
-            raise Exception("self.life_exp < 65")
-        '''
-        model requires at least one period (i.e. one month) between retirement_age and life_expectancy
-        '''
-        if self.life_exp == self.desired_retirement_age:
-            self.life_exp = self.life_exp + 1
-
-
-    def validate_adj_gross_income(self, tot_inc, adj_gr_inc):
-        '''
-        adjusted_gross_income must be at least as large as total_income.
-        returns adjusted_total_income at least as large as total income.
-        '''
-        return max(adj_gr_inc, tot_inc)
-    
-
-    def show_inputs(self,
-                     dob,
-                     desired_retirement_age,
-                     life_exp,
-                     retirement_lifestyle,
-                     total_income,
-                     reverse_mort,
-                     house_value,
-                     desired_risk,
-                     filing_status,
-                     tax_transcript_data,
-                     plans,
-                     income_growth,
-                     employment_status,
-                     ss_fra_todays,
-                     paid_days,
-                     retirement_accounts,
-                     inflation_level,
-                     zip_code,
-                     expenses,
-                    btc):
-        print("-----------------------------Retirement model INPUTS -------------------")
-        print('dob:                         ' + str(dob))
-        print('desired_retirement_age:      ' + str(desired_retirement_age))
-        print('life_exp:                    ' + str(life_exp))
-        print('retirement_lifestyle:        ' + str(retirement_lifestyle))
-        print('total_income:                ' + str(total_income))
-        print('reverse_mort:                ' + str(reverse_mort))
-        print('house_value:                 ' + str(house_value))
-        print('desired_risk:                ' + str(desired_risk))
-        print('filing_status:               ' + str(filing_status))
-        print('tax_transcript_data          ' + str(tax_transcript_data))
-        print('plans:                       ' + str(plans))
-        print('income_growth:               ' + str(income_growth))
-        print('employment_status:           ' + str(employment_status))
-        print('ss_fra_todays:               ' + str(ss_fra_todays))
-        print('paid_days:                   ' + str(paid_days))
-        print('zip_code:                    ' + str(zip_code))
-        print('retirement_accounts:         ' + str(retirement_accounts))
-        print('expenses:                    ' + str(expenses))
-        print('btc:                         ' + str(btc))
-        print("[Set self.debug=False to hide these]")
-        
-
-    def show_outputs(self):
-        print("--------------------------------------Retirement model OUTPUTS -------------------")
-        print("--------------------------------------Taxable_Accounts ---------------------------")
-        print(self.maindf['Taxable_Accounts'][520:560])
-        print("--------------------------------------Actual_Inc ---------------------------")
-        print(self.maindf['Actual_Inc'][520:560])
-        print("--------------------------------------Desired_Inc ---------------------------")
-        print(self.maindf['Desired_Inc'][520:560])
-        print("--------------------------------------Soc_Sec_Benefit ---------------------------")
-        print(self.maindf['Soc_Sec_Benefit'][520:560])
-        print("--------------------------------------Ret_Certain_Inc_Gap ---------------------------")
-        print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
-        print("--------------------------------------Various ---------------------------")
-        print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
-        print('self.soc_sec_percent:        ' + str(self.soc_sec_percent))
-        print('self.medicare_percent:       ' + str(self.medicare_percent))
-        print('self.fed_tax_percent:        ' + str(self.fed_tax_percent))
-        print('self.state_tax_percent:      ' + str(self.state_tax_percent))
-        print('ss_fra_retirement:           ' + str(get_ss_benefit_future_dollars(self.ss_fra_todays, self.dob, self.desired_retirement_age)))
-        print("[Set self.debug=False to hide these]")
-                
-
     def create_maindf(self):
         '''
         create the main data frame
@@ -814,13 +205,13 @@ class TaxUser(object):
         self.post_proj_inc_growth_monthly = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.maindf['Proj_Inc_Growth_Monthly'] = self.set_full_series(self.pre_proj_inc_growth_monthly, self.post_proj_inc_growth_monthly)
 
-        self.maindf['Proj_Inflation_Rate'] = get_inflator_to_period(self.total_rows)['Inflation_Rate']
+        self.maindf['Proj_Inflation_Rate'] = helpers.get_inflator_to_period(self.total_rows)['Inflation_Rate']
         self.pre_proj_inflation_rate = [inflation_level[i]/12. for i in range(self.pre_retirement_end)] 
         self.post_proj_inflation_rate = [inflation_level[self.retirement_start + i]/12. for i in range(self.total_rows - self.pre_retirement_end)] 
 
-        self.maindf['Portfolio_Return'] = self.maindf['Proj_Inflation_Rate'] + self.get_portfolio_return_above_cpi()/12.
-        self.pre_portfolio_return = [inflation_level[i]/12. + self.get_portfolio_return_above_cpi()/12. for i in range(self.pre_retirement_end)]
-        self.post_portfolio_return = [inflation_level[self.retirement_start + i]/12. + self.get_portfolio_return_above_cpi()/12.
+        self.maindf['Portfolio_Return'] = self.maindf['Proj_Inflation_Rate'] + helpers.get_portfolio_return_above_cpi(self.desired_risk)/12.
+        self.pre_portfolio_return = [inflation_level[i]/12. + helpers.get_portfolio_return_above_cpi(self.desired_risk)/12. for i in range(self.pre_retirement_end)]
+        self.post_portfolio_return = [inflation_level[self.retirement_start + i]/12. + helpers.get_portfolio_return_above_cpi(self.desired_risk)/12.
                                       for i in range(self.total_rows - self.pre_retirement_end)]
 
         self.maindf['Retire_Work_Inc_Daily_Rate'] = [116*(1+self.income_growth/12.)**i for i in range(self.total_rows)]
@@ -863,7 +254,7 @@ class TaxUser(object):
         '''
         get pre-retirement inflation flator
         '''
-        self.pre_df['Inf_Inflator_Pre'] = get_inflator_to_period(self.pre_retirement_end)['Inflator']
+        self.pre_df['Inf_Inflator_Pre'] = helpers.get_inflator_to_period(self.pre_retirement_end)['Inflator']
 
         self.pre_total_income = self.total_income/12. * self.pre_df['Inc_Inflator_Pre']
         self.post_total_income  = [0. for i in range(self.total_rows - self.pre_retirement_end)]
@@ -908,7 +299,7 @@ class TaxUser(object):
         
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
-                j = self.get_retirement_account_index(acnt)
+                j = helpers.get_retirement_account_index(acnt)
                 self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[j] * self.btc_factor[j]
                 self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[j] * self.btc_factor[j]
 
@@ -965,7 +356,7 @@ class TaxUser(object):
         '''
         use the 'flators'
         '''
-        self.maindf['Soc_Sec_Benefit'] = get_ss_fra_future_dollars(self.ss_fra_todays, self.total_rows) * get_soc_sec_factor(self.desired_retirement_age)
+        self.maindf['Soc_Sec_Benefit'] = helpers.get_ss_fra_future_dollars(self.ss_fra_todays, self.total_rows) * helpers.get_soc_sec_factor(self.desired_retirement_age)
         
         self.maindf['Soc_Sec_Ret_Ear_Tax_Exempt'] = self.maindf['Soc_Sec_Benefit']
 
@@ -1171,11 +562,337 @@ class TaxUser(object):
         self.maindf['Desired_Inc'] = self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) * self.maindf['Inflator']
 
 
+        # DEFLATION FACTOR AT RETIREMENT IN TODAYS
+        self.deflation_factor_retirement_in_todays = helpers.get_inflator_to_period(self.retirement_start)['Inflator'][self.retirement_start - 1]
+
+
+        # PROJECTED BALANCE AT RETIREMENT IN TODAYS
+        self.projected_balance_at_retirement_in_todays = self.maindf['Taxable_Accounts'][self.retirement_start]/self.deflation_factor_retirement_in_todays
+
+
+        # PROJECTED INCOME ACTUAL AT RETIREMENT IN TODAYS
+        self.projected_income_actual_at_retirement_in_todays = self.maindf['Tot_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
+
+
+        # PROJECTED INCOME DESIRED AT RETIREMENT IN TODAYS
+        self.projected_income_desired_at_retirement_in_todays = self.maindf['Desired_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
+
+
         # SAVINGS END DATE AS AGE 
         self.savings_end_date_as_age = self.get_savings_end_date_as_age()
 
-        # SOA DOLLAR BILL PERCENTAGES
-        self.soc_sec_percent, self.medicare_percent, self.fed_tax_percent, self.state_tax_percent = self.get_soa_dollar_bill_percentages()
+
+        # SOA DOLLAR BILL PERCENTAGES CURRENT
+        self.soc_sec_percent_current, self.medicare_percent_current, self.fed_tax_percent_current, self.state_tax_percent_current = self.get_soa_dollar_bill_percentages()
+
+
+        # COMPONENTS OF TAXABLE INCOME
+        self.non_taxable_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Non_Taxable_Inc'])
+        self.tot_taxable_dist = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Tot_Taxable_Dist'])
+        self.annuity_payments = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Annuity_Payments'])
+        self.pension_payments = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Pension_Payments'])
+        self.ret_working_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Working_Inc'])
+        self.soc_sec_benefit = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit'])
+        
         
         if(self.debug):
             self.show_outputs()
+
+
+    def get_a_retirement_income(self, begin_date, amount):
+        '''
+        returns self.maindf['This_Annuity_Payments'] determined from retirement income.
+        '''
+        self.maindf['This_Annuity_Payments_Nominal'] = 0
+        try:
+            months_to_annuity_start = math.ceil(((pd.Timestamp(begin_date) - pd.Timestamp('today')).days) * (12./365.25))
+            if months_to_annuity_start > 0 and months_to_annuity_start < self.total_rows:
+                pre_ret_inc = [0. for i in range(months_to_annuity_start)]
+                post_ret_inc_nominal = [amount for i in range(self.total_rows - months_to_annuity_start)]
+                dateind_pre_annuity = [pd.Timestamp('today').date() + relativedelta(months=1) + relativedelta(months=+i) for i in range(months_to_annuity_start)]
+                dateind_post_annuity = [dateind_pre_annuity[len(dateind_pre_annuity)-1] + relativedelta(months=1) + relativedelta(months=+i) for i in range(self.total_rows - months_to_annuity_start)]
+                self.maindf['This_Annuity_Payments_Nominal'] = self.maindf['This_Annuity_Payments_Nominal'] + self.set_full_series_with_indices(pre_ret_inc, post_ret_inc_nominal, dateind_pre_annuity, dateind_post_annuity)
+            return self.maindf['This_Annuity_Payments_Nominal'] * (1 + self.maindf['Proj_Inflation_Rate']).cumprod()
+        except:
+            return 0
+
+
+    def get_all_retirement_income(self):
+        '''
+        returns self.maindf['Annuity_Payments'], the sum of all retirment incomes.
+        '''
+        self.maindf['All_Annuity_Payments'] = 0
+        retirement_income_details = []
+        retirement_income_details = self.get_retirement_income_details_from_plans()
+        for detail in retirement_income_details:
+            self.maindf['All_Annuity_Payments'] = self.get_a_retirement_income(detail[0], detail[1])
+        return self.maindf['All_Annuity_Payments']
+
+
+    def get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):
+        '''
+        'btc factor' is multiplied by all retirement account contributions to incorporate effect of varying proportions in Monthly View pie chart. 
+        '''
+        btc_factor = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        if self.retirement_accounts is not None:
+            for acnt in self.retirement_accounts:
+                j = helpers.get_retirement_account_index(acnt)
+                if monthly_contrib_employee_base[j] == 0:
+                    btc_factor[j] = 0.
+                else:
+                    btc_factor[j] = (employee_monthly_contrib_monthly_view/monthly_contrib_employee_base[j])
+        return btc_factor
+
+
+    def get_capital_growth_and_balance_series(self, period, account_type, starting_balance):
+        '''
+        returns capital growth and balance series over period for account_tyconstants.US_RETIREMENT_ACCOUNT_TYPEpe
+        '''
+        '''
+        for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
+        '''
+        balance = [starting_balance for i in range(period)]
+        capital_growth = [0. for i in range(period)]
+        for i in range(1, period):
+            capital_growth[i] = self.maindf['Portfolio_Return'][i] * balance[i - 1]
+            balance[i] = self.maindf[account_type + '_Employee'][i] + self.maindf[account_type + '_Employer'][i] + capital_growth[i] + balance[i - 1]
+        return capital_growth, balance
+
+
+    def get_employee_monthly_contrib_monthly_view(self):
+        '''
+        returns monthly contriburion for employee based on monthly view pie chart
+        '''
+        return max(0, (self.total_income/12. - self.sum_expenses)/(self.total_income/12.))
+        # NB - both following quantities are annual
+        # return (self.btc/self.total_income) 
+    
+
+    def get_full_post_retirement_and_pre_deflated(self, temp_df_column):
+        '''
+        returns data frame column having 'real' (c.f. 'nominal') vales, where post retirement is calculated
+        from other columns, and pre-retirement is the deflated retirement value
+        '''
+        nominal_pre = [temp_df_column[self.pre_retirement_end - 1] for i in range(self.pre_retirement_end)]
+        real_post = [temp_df_column[self.retirement_start - 1 + i] for i in range(self.total_rows - self.pre_retirement_end)]
+        result = self.maindf['Deflator'] * self.set_full_series(nominal_pre, real_post)
+        return result
+    
+
+    def get_full_post_retirement_and_pre_set_zero(self, temp_df_column):
+        '''
+        returns data frame column having 'real' (c.f. 'nominal') values, where post retirement is calculated
+        from other columns, and pre-retirement is set to zero
+        '''
+        nominal_pre = [0. for i in range(self.pre_retirement_end)]
+        real_post = [temp_df_column[self.retirement_start - 1 + i] for i in range(self.total_rows - self.pre_retirement_end)]
+        result = self.set_full_series(nominal_pre, real_post)
+        return result
+    
+
+    def get_full_pre_retirement_and_post_set_zero(self, temp_df_column):
+        '''
+        returns data frame column having 'real' (c.f. 'nominal') values, where pre retirement is calculated
+        from other columns, and post-retirement is set to zero
+        '''
+        nominal_pre = [temp_df_column[self.pre_retirement_end - 1] for i in range(self.pre_retirement_end)]
+        real_post = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        result = self.set_full_series(nominal_pre, real_post)
+        return result
+    
+
+    def set_full_series(self, series_pre, series_post):
+        '''
+        returns full series by appending pre-retirement and post-retirement series
+        '''
+        full_pre = pd.Series(series_pre, index=self.dateind_pre)
+        full_post = pd.Series(series_post, index=self.dateind_post)
+        result = full_pre.append(full_post)
+        return result
+
+
+    def get_period_as_age(self, period):
+        '''
+        returns age corresponding to period
+        '''
+        if period < 0:
+            raise Exception('period < 0')
+        return self.age + (period/12.)
+            
+    
+    def get_retirement_accounts(self):
+        '''
+        returns lists of initial balances and monthly employee and employer contribution percentages, indexed according to constants.US_RETIREMENT_ACCOUNT_TYPES
+        '''
+        init_balance = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        monthly_contrib_amt_employee = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        employer_match_contributions = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        employer_match_income = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
+        
+        if self.retirement_accounts is not None:
+            for acnt in self.retirement_accounts:
+                i = helpers.get_retirement_account_index(acnt)
+                init_balance[i] = init_balance[i] + acnt['balance']
+
+                if acnt['contrib_amt'] > 0:
+                    if acnt['contrib_period'] == 'monthly':
+                        monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']
+                    else:
+                        monthly_contrib_amt_employee[i] = monthly_contrib_amt_employee[i] + acnt['contrib_amt']/12.
+
+                if acnt['employer_match_type'] == 'contributions':
+                    employer_match_contributions[i] = employer_match_contributions[i] + acnt['employer_match']
+                else:
+                    employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
+                    
+        monthly_contrib_employee_base = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
+        monthly_contrib_employer_base = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
+        
+        return init_balance, monthly_contrib_employee_base, monthly_contrib_employer_base
+        
+
+    def get_retirement_income_details_from_plans(self):
+        '''
+        returns a list of tuples (begin_date, monthly amount) for each source of external_income in plans  
+        '''
+        external_income = []
+
+        for plan in self.plans:
+            try:
+                if plan.external_income.all() != []:
+                    begin_date = plan.external_income.all()[0].begin_date
+                    amount = plan.external_income.all()[0].amount
+                    detail = (begin_date, amount)
+                    external_income.append(detail)
+            except:
+                if (self.debug):
+                    print(str(plan) + " not of expected form")
+        return external_income 
+
+
+    def get_savings_end_date_as_period(self):
+        '''
+        returns period post retirement when taxable assets first deplete to zero
+        '''
+        for i in range(self.retirement_start, self.total_rows):
+            if self.maindf['Taxable_Accounts'][i] == 0:
+                return i
+        return self.total_rows
+                
+
+    def get_savings_end_date_as_age(self):
+        '''
+        returns age post retirement when taxable assets first deplete to zero
+        '''
+        age = self.get_period_as_age(self.get_savings_end_date_as_period())
+        if age < self.desired_retirement_age:
+            raise Exception('age < self.desired_retirement_age')
+
+
+    def get_soa_dollar_bill_percentages(self):
+        '''
+        returns current day social security payment, medicare payment, federal income
+        tax payment, and state income tax payment all as a percentrage of current income
+        '''
+        if not self.total_income:
+            raise Exception('self.total_income is None')
+
+        if self.total_income == 0:
+            return 0, 0, 0, 0
+            
+        if not self.fica_ss:
+            raise Exception('self.fica_ss is None')
+        soc_sec_percent = self.fica_ss/self.total_income
+        
+        if not self.fica_medicare:
+            raise Exception('self.fica_medicare is None')
+        medicare_percent = self.fica_medicare/self.total_income
+        
+        fed_tax_percent = self.annual_projected_tax.iloc[0]/self.total_income
+
+        # self.pre_state_tax_after_credits is a monthly figure
+        state_tax_percent = (12 * self.pre_state_tax_after_credits.iloc[0])/self.total_income
+
+        if soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent <= 1:
+            return soc_sec_percent, medicare_percent, fed_tax_percent, state_tax_percent
+
+        else:
+            raise Exception('soc_sec_percent + medicare_percent + fed_tax_percent + state_tax_percent > 1')
+        return age
+    
+
+    def get_tax_transcript_data(self, tax_transcript_data):
+        '''
+        returns adj_gross_income, total_payments, taxable_income
+        '''
+        try:
+            adj_gross_income = tax_transcript_data['adjusted_gross_income']
+        except:
+            adj_gross_income = 0
+
+        try:
+            total_payments = tax_transcript_data['total_payments']
+        except:
+            total_payments = 0
+
+        try:
+            taxable_income = tax_transcript_data['taxable_income']
+        except:
+            taxable_income = 0
+
+        return adj_gross_income, total_payments, taxable_income
+
+
+    def set_full_series_with_indices(self, series_pre, series_post, index_pre, index_post):
+        '''
+        returns full series by appending pre-retirement series (with index2) and post-retirement
+        series (with index2) 
+        '''       
+        full_pre = pd.Series(series_pre, index_pre)
+        full_post = pd.Series(series_post, index_post)
+        result = full_pre.append(full_post)
+        return result
+
+    
+    def show_outputs(self):
+        print("--------------------------------------Retirement model OUTPUTS -------------------")
+        print("--------------------------------------Taxable_Accounts ---------------------------")
+        print(self.maindf['Taxable_Accounts'][520:560])
+        print("--------------------------------------Actual_Inc ---------------------------")
+        print(self.maindf['Actual_Inc'][520:560])
+        print("--------------------------------------Desired_Inc ---------------------------")
+        print(self.maindf['Desired_Inc'][520:560])
+        print("--------------------------------------Soc_Sec_Benefit ---------------------------")
+        print(self.maindf['Soc_Sec_Benefit'][520:560])
+        print("--------------------------------------Ret_Certain_Inc_Gap ---------------------------")
+        print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
+        print("--------------------------------------Various ---------------------------")
+        print('self.age:                    ' + str(self.age))
+        print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
+        print('self.soc_sec_percent_current ' + str(self.soc_sec_percent_current))
+        print('self.medicare_percent_current' + str(self.medicare_percent_current))
+        print('self.fed_tax_percent_current ' + str(self.fed_tax_percent_current))
+        print('self.state_tax_percent_current:' + str(self.state_tax_percent_current))
+        print('ss_fra_retirement:           ' + str(helpers.get_ss_benefit_future_dollars(self.ss_fra_todays, self.dob, self.desired_retirement_age)))
+        print("[Set self.debug=False to hide these]")
+            
+
+    def validate_age(self):
+        if self.age >= self.desired_retirement_age:
+            raise Exception("age greater than or equal to desired retirement age")
+
+        if self.age <= 0:
+            raise Exception("age less than or equal to 0")
+
+
+    def validate_life_exp_and_des_retire_age(self):
+        if self.life_exp > 100:
+            raise Exception("self.life_exp > 100")
+            
+        if self.life_exp < 65:
+            raise Exception("self.life_exp < 65")
+        '''
+        model requires at least one period (i.e. one month) between retirement_age and life_expectancy
+        '''
+        if self.life_exp == self.desired_retirement_age:
+            self.life_exp = self.life_exp + 1

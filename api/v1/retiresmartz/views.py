@@ -506,6 +506,7 @@ equired to generate the
             [143456, 119000, 2004],
             ...
           ]
+        plans = RetirementPlan.objects.all()
         }
         "portfolio": 10% each for the first 10 tickers in the systems
         that aren't Closed.

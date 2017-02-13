@@ -1,4 +1,5 @@
 from django.core.management.base import NoArgsCommand
+from main import tax_helpers as helpers
 import pdb
 
 class Command(NoArgsCommand):
@@ -27,5 +28,4 @@ class Command(NoArgsCommand):
                               tst_tx.btc)
     
         tst_cls.create_maindf()
-        test_ss_fra_retirement = tax.get_ss_benefit_future_dollars(tst_tx.ss_fra_todays, tst_tx.dob, tst_tx.desired_retirement_age)
-        
+        test_ss_fra_retirement = helpers.get_ss_benefit_future_dollars(tst_tx.ss_fra_todays, tst_tx.dob, tst_tx.desired_retirement_age)
