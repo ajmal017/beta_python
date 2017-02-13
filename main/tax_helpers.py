@@ -47,6 +47,10 @@ def get_portfolio_return_above_cpi(desired_risk):
             
 
 def get_retirement_account_index(acnt_type):
+    '''
+    Returns index of retirement account (using index rather than name,
+    as can have multiple accounts of same type, so name would not uniqueley identify them)
+    '''
     for i in range(len(constants.US_RETIREMENT_ACCOUNT_TYPES)):
         if acnt_type['acc_type'] == constants.US_RETIREMENT_ACCOUNT_TYPES[i]:
             return i
