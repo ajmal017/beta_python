@@ -300,10 +300,8 @@ class TaxUser(object):
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
                 j = helpers.get_retirement_account_index(acnt)
-                print(str(j) + ' ' + str(acnt) + ' ' + str(constants.US_RETIREMENT_ACCOUNT_TYPES[j]))
                 self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[j] * self.btc_factor[j]
                 self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[j] * self.btc_factor[j]
-
                 pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(j), self.init_balance[j] )       
                 post_balance = [pre_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
                 post_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
@@ -318,24 +316,22 @@ class TaxUser(object):
 
                 self.maindf[str(j) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
                 self.maindf[str(j) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
-                #print(str(self.maindf[str(j) + '_Balance']))
-                pdb.set_trace()
                 self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(j) + '_Balance']
         # NONTAXABLE ACCOUNTS
         # FOLLOWING NEEDS RE-WRITE; VERY FRAGILE ... WHAT IF ORDER OF THE ACCOUNTS IN constants:US_RETIREMENT_ACCOUNT_TYPES IS CHANGED?
-        self.maindf['Nontaxable_Accounts'] = 0
+        self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] = 0
 
         if '9_Balance' in self.maindf:
-            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['9_Balance']  # Ind Roth _401K
+            self.maindf['Nontaxable_AccountsPre_Deccumulation'] = self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['9_Balance']  # Ind Roth _401K
 
         if '19_Balance' in self.maindf:
-            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['19_Balance'] # Roth IRA
+            self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] = self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['19_Balance'] # Roth IRA
 
         if '18_Balance' in self.maindf:
-            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['18_Balance'] # Roth 401k
+            self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] = self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['18_Balance'] # Roth 401k
 
         # TAXABLE ACCOUNTS PRE DECCUMULATION
-        self.maindf['Taxable_Accounts_Pre_Deccumulation'] = self.maindf['All_Accounts'] - self.maindf['Nontaxable_Accounts']
+        self.maindf['Taxable_Accounts_Pre_Deccumulation'] = self.maindf['All_Accounts'] - self.maindf['Nontaxable_Accounts_Pre_Deccumulation']
 
         # CERTAIN INCOME
         if self.retirement_lifestyle == 1:
@@ -386,7 +382,8 @@ class TaxUser(object):
         self.pre_reverse_mortgage = [self.post_reverse_mortgage[0] for i in range (self.pre_retirement_end)]
         self.maindf['Reverse_Mortgage_Nominal'] = self.set_full_series(self.pre_reverse_mortgage, self.post_reverse_mortgage)
         self.maindf['Reverse_Mortgage'] = self.maindf['Deflator'] * self.maindf['Reverse_Mortgage_Nominal']
-        
+
+        # INCOME GAP
         self.maindf['Certain_Ret_Inc'] = self.get_full_post_retirement_and_pre_deflated(self.maindf['Soc_Sec_Benefit']
                                                                                         + self.maindf['Ret_Working_Inc']
                                                                                         + self.maindf['Pension_Payments']
@@ -395,49 +392,89 @@ class TaxUser(object):
                                       
         self.maindf['Ret_Certain_Inc_Gap'] = self.get_full_post_retirement_and_pre_deflated(np.where(self.maindf['Des_Ret_Inc_Pre_Tax']- self.maindf['Certain_Ret_Inc'] > 0. ,
                                                                                                      self.maindf['Des_Ret_Inc_Pre_Tax']- self.maindf['Certain_Ret_Inc'], 0. ))
+
+        # DECCUMULATIONS
+        self.pre_deccumulation_capital_growth_nontaxable = [0. for i in range(self.pre_retirement_end)]
+        self.pre_deccumulation_balance_nontaxable = [0. for i in range(self.pre_retirement_end)]  
+        self.pre_deccumulation_capital_growth_taxable = [0. for i in range(self.pre_retirement_end)]
+        self.pre_deccumulation_balance_taxable = [0. for i in range(self.pre_retirement_end)]       
+
+        self.post_deccumulation_balance_nontaxable = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_deccumulation_capital_growth_nontaxable = [0. for i in range(self.total_rows - self.pre_retirement_end)]    
+        self.post_deccumulation_balance_taxable = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.post_deccumulation_capital_growth_taxable = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+
+        self.reqd_min_dist = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.nontaxable_distribution = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         
-        # DECCUMULATION
-        '''
-        for now can't think of a more 'pythonic' way to do this next bit ... may need re-write ...
-        ''' 
-        self.pre_deccumulation_capital_growth = [0. for i in range(self.pre_retirement_end)]
-        self.pre_deccumulation_balance = [0. for i in range(self.pre_retirement_end)]      
+        for i in range(1, self.total_rows - self.pre_retirement_end):
+            self.post_deccumulation_capital_growth_nontaxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_nontaxable[i - 1] - self.nontaxable_distribution[i - 1]
+            self.post_deccumulation_balance_nontaxable[i] = self.post_deccumulation_capital_growth_nontaxable[i] + self.post_deccumulation_balance_nontaxable[i - 1]
 
-        self.post_deccumulation_balance = [0. for i in range(self.total_rows - self.pre_retirement_end)]
-        self.post_deccumulation_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+            if self.maindf['Person_Age'].iloc[self.pre_retirement_end + i] > 70.5:
+                self.reqd_min_dist[i] = self.maindf['Taxable_Accounts_Pre_Deccumulation'].iloc[self.pre_retirement_end + i-1]/(self.ira_rmd_factor * 12.)
+            else:
+                self.reqd_min_dist[i] = 0.
                 
-        for i in range(1, self.total_rows - self.pre_retirement_end): 
-            self.post_deccumulation_capital_growth[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance[i - 1] - self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i]
-            self.post_deccumulation_balance[i] = self.post_deccumulation_capital_growth[i] + self.post_deccumulation_balance[i - 1]
+            self.post_deccumulation_capital_growth_taxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_taxable[i - 1] - self.reqd_min_dist[i]
+            self.post_deccumulation_balance_taxable[i] = self.post_deccumulation_capital_growth_taxable[i] + self.post_deccumulation_balance_taxable[i - 1]
+                
+            if self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] > self.reqd_min_dist[i]:
+                if self.maindf['Nontaxable_Accounts_Pre_Deccumulation'].iloc[self.pre_retirement_end + i] + self.post_deccumulation_balance_nontaxable[i] > 0:
+                    self.nontaxable_distribution[i] = self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] - self.reqd_min_dist[i]
+                else:
+                    self.nontaxable_distribution[i] = 0.
 
-        self.maindf['Deccumulation_Capital_Growth'] = self.set_full_series(self.pre_deccumulation_capital_growth, self.post_deccumulation_capital_growth)
-        self.maindf['Deccumulation_Balance'] = self.set_full_series(self.pre_deccumulation_balance, self.post_deccumulation_balance)
+        self.maindf['Deccumulation_Capital_Growth_Taxable'] = self.set_full_series(self.pre_deccumulation_capital_growth_taxable, self.post_deccumulation_capital_growth_taxable)
+        self.maindf['Deccumulation_Balance_Taxable'] = self.set_full_series(self.pre_deccumulation_balance_taxable, self.post_deccumulation_balance_taxable) 
+
+        self.maindf['Deccumulation_Capital_Growth_Nontaxable'] = self.set_full_series(self.pre_deccumulation_capital_growth_nontaxable, self.post_deccumulation_capital_growth_nontaxable)
+        self.maindf['Deccumulation_Balance_Nontaxable'] = self.set_full_series(self.pre_deccumulation_balance_nontaxable, self.post_deccumulation_balance_nontaxable)
+
+        pre_zeros = [0. for i in range(self.pre_retirement_end)]
+        self.maindf['Reqd_Min_Dist'] = self.set_full_series(pre_zeros, self.reqd_min_dist)
+        self.maindf['Tot_Taxable_Dist'] = self.maindf['Reqd_Min_Dist']
+        self.maindf['Tot_Non_Taxable_Dist'] = self.set_full_series(pre_zeros, self.nontaxable_distribution)
+
+        #self.pre_deccumulation_capital_growth = [0. for i in range(self.pre_retirement_end)]
+        #self.pre_deccumulation_balance = [0. for i in range(self.pre_retirement_end)]      
+
+        #self.post_deccumulation_balance = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        #self.post_deccumulation_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+                
+        #for i in range(1, self.total_rows - self.pre_retirement_end): 
+        #    self.post_deccumulation_capital_growth[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance[i - 1] - self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i]
+        #    self.post_deccumulation_balance[i] = self.post_deccumulation_capital_growth[i] + self.post_deccumulation_balance[i - 1]
+
+        #self.maindf['Deccumulation_Capital_Growth'] = self.set_full_series(self.pre_deccumulation_capital_growth, self.post_deccumulation_capital_growth)
+        #self.maindf['Deccumulation_Balance'] = self.set_full_series(self.pre_deccumulation_balance, self.post_deccumulation_balance)
 
 
         # TAXABLE ACCOUNTS POST-DECCUMULATION
-        self.maindf['Taxable_Accounts'] = np.where(self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance'] > 0,
-                                                   self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance'], 0)
+        self.maindf['Taxable_Accounts'] = np.where(self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Taxable'] > 0,
+                                                   self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Taxable'], 0)
+        
+        self.maindf['Nontaxable_Accounts'] = np.where(self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Nontaxable'] > 0,
+                                                   self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Nontaxable'], 0)
+        
+        #self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmd_factor * 12.), 0)
 
-        self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmd_factor * 12.), 0)
+        #self.maindf['Tot_Non_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Ret_Certain_Inc_Gap'] > self.maindf['Reqd_Min_Dist'],
+        #                                                                                              np.where(self.maindf['Nontaxable_Accounts'] > 0
+        #                                                                                                       , self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Reqd_Min_Dist'], 0)
+        #                                                                                              , 0))    
 
-        self.maindf['Tot_Non_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Ret_Certain_Inc_Gap'] > self.maindf['Reqd_Min_Dist'],
-                                                                                                      np.where(self.maindf['Nontaxable_Accounts'] > 0
-                                                                                                               , self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Reqd_Min_Dist'], 0)
-                                                                                                      , 0))    
-
-        self.maindf['Tot_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Reqd_Min_Dist'] > 0,
-                                                                                                   self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Tot_Non_Taxable_Dist'],
-                                                                                                   np.where(self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'] > 0,
-                                                                                                            self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'],
-                                                                                                            0)))
+        #self.maindf['Tot_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Reqd_Min_Dist'] > 0,
+        #                                                                                           self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Tot_Non_Taxable_Dist'],
+        #                                                                                           np.where(self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'] > 0,
+        #                                                                                                    self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'],
+        #                                                                                                    0)))
 
         self.maindf['Ret_Inc_Gap'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Certain_Inc_Gap']
                                                                                      - self.maindf['Tot_Non_Taxable_Dist']
                                                                                      - self.maindf['Tot_Taxable_Dist'])
 
-        pdb.set_trace()
         # CALCULATION OF AFTER TAX INCOME
-
         self.maindf['Non_Taxable_Inc'] = self.maindf['Tot_Non_Taxable_Dist'] + self.maindf['Reverse_Mortgage']
         
         self.maindf['Taxable_Soc_Sec'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit']
@@ -583,10 +620,14 @@ class TaxUser(object):
         self.pension_payments = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Pension_Payments'])
         self.ret_working_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Working_Inc'])
         self.soc_sec_benefit = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit'])
+
+        # COMPONENTS OF ACCOUNTS
+        self.taxable_accounts = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Taxable_Accounts']) 
+        self.non_taxable_accounts = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Nontaxable_Accounts'])
         
         if(self.debug):
             self.show_outputs()
-
+            
 
     def get_a_retirement_income(self, begin_date, amount):
         '''
@@ -735,8 +776,7 @@ class TaxUser(object):
                     employer_match_income[i] = employer_match_income[i] + acnt['employer_match']
                     
         monthly_contrib_employee_base = [(monthly_contrib_amt_employee[i]/(self.total_income/12.)) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]           
-        monthly_contrib_employer_base = [((employer_match_income[i] * self.total_income/12.) + (employer_match_contributions[i] * monthly_contrib_employee_base[i]))/(self.total_income/12.) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
-        
+        monthly_contrib_employer_base = [(employer_match_income[i] + (employer_match_contributions[i] * monthly_contrib_employee_base[i])) for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)] 
         return init_balance, monthly_contrib_employee_base, monthly_contrib_employer_base
         
 

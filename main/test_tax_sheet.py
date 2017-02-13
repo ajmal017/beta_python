@@ -86,22 +86,47 @@ ss_fra_todays = 1078.
 
 paid_days = 0
 
-retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
-                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K', 'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
-                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Roth', 'employer_match': 0.07, 'contrib_amt': 100, 'balance': 3000, 'acc_type': 6, 'cat': 1, 'contrib_period': 'yearly'},
-                       {'employer_match_type': 'none', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'IRA', 'employer_match': 0, 'contrib_amt': 25, 'balance': 10, 'acc_type': 7, 'cat': 1, 'contrib_period': 'monthly'},
-                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Roth IRA', 'employer_match': 0.09, 'contrib_amt': 20, 'balance': 15, 'acc_type': 8, 'cat': 1, 'contrib_period': 'monthly'},
-                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'SEP IRA', 'employer_match': 0.82, 'contrib_amt': 12, 'balance': 7, 'acc_type': 9, 'cat': 1, 'contrib_period': 'yearly'},
-                       {'employer_match_type': 'none', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Simple IRA', 'employer_match': 0, 'contrib_amt': 6, 'balance': 12, 'acc_type': 11, 'cat': 2, 'contrib_period': 'monthly'},
-                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'SARSEP', 'employer_match': 1, 'contrib_amt': 24, 'balance': 24, 'acc_type': 12, 'cat': 2, 'contrib_period': 'yearly'},
-                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'MPA', 'employer_match': 0.57, 'contrib_amt': 10, 'balance': 300, 'acc_type': 16, 'cat': 6, 'contrib_period': 'monthly'},
-                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Profit sharing', 'employer_match': 1, 'contrib_amt': 10, 'balance': 36, 'acc_type': 14, 'cat': 2, 'contrib_period': 'monthly'},
-                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'ESOP', 'employer_match': 0.27, 'contrib_amt': 10, 'balance': 50, 'acc_type': 17, 'cat': 7, 'contrib_period': 'monthly'}]
+retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K',
+                        'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K',
+                        'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Roth',
+                        'employer_match': 0.07, 'contrib_amt': 100, 'balance': 3000, 'acc_type': 6, 'cat': 1, 'contrib_period': 'yearly'},
+                       {'employer_match_type': 'none', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'IRA',
+                        'employer_match': 0, 'contrib_amt': 25, 'balance': 10, 'acc_type': 7, 'cat': 1, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Roth IRA',
+                        'employer_match': 0.09, 'contrib_amt': 20, 'balance': 15, 'acc_type': 8, 'cat': 1, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'SEP IRA',
+                        'employer_match': 0.82, 'contrib_amt': 12, 'balance': 7, 'acc_type': 9, 'cat': 1, 'contrib_period': 'yearly'},
+                       {'employer_match_type': 'none', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Simple IRA',
+                        'employer_match': 0, 'contrib_amt': 6, 'balance': 12, 'acc_type': 11, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'SARSEP',
+                        'employer_match': 1, 'contrib_amt': 24, 'balance': 24, 'acc_type': 12, 'cat': 2, 'contrib_period': 'yearly'},
+                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'MPA',
+                        'employer_match': 0.57, 'contrib_amt': 10, 'balance': 300, 'acc_type': 16, 'cat': 6, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'Profit sharing',
+                        'employer_match': 1, 'contrib_amt': 10, 'balance': 36, 'acc_type': 14, 'cat': 2, 'contrib_period': 'monthly'},
+                       {'employer_match_type': 'income', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': 'ESOP',
+                        'employer_match': 0.27, 'contrib_amt': 10, 'balance': 50, 'acc_type': 17, 'cat': 7, 'contrib_period': 'monthly'}]
 
 zip_code = 19104
 
-expenses = [{'amt': 54, 'cat': 11, 'who': 'self', 'desc': 'Savings', 'id': 11}, {'amt': 18, 'cat': 13, 'who': 'self', 'desc': 'Tobacco', 'id': 13}, {'amt': 668, 'cat': 14, 'who': 'self', 'desc': 'Transportation', 'id': 14}, {'amt': 34, 'cat': 15, 'who': 'self', 'desc': 'Miscellaneous', 'id': 15}, {'amt': 37, 'cat': 1, 'who': 'self', 'desc': 'Alcoholic Beverage', 'id': 1}, {'amt': 95, 'cat': 2, 'who': 'self', 'desc': 'Apparel & Services', 'id': 2}, {'amt': 67, 'cat': 3, 'who': 'self', 'desc': 'Education', 'id': 3}, {'amt': 150, 'cat': 4, 'who': 'self', 'desc': 'Entertainment', 'id': 4}, {'amt': 425, 'cat': 5, 'who': 'self', 'desc': 'Food', 'id': 5}, {'amt': 200, 'cat': 6, 'who': 'self', 'desc': 'Healthcare', 'id': 6}, {'amt': 1050, 'cat': 7, 'who': 'self', 'desc': 'Housing', 'id': 7}, {'amt': 394, 'cat': 8, 'who': 'self', 'desc': 'Insuarance, Pensions & Social Security', 'id': 8}, {'amt': 40, 'cat': 9, 'who': 'self', 'desc': 'Personal Care', 'id': 9}, {'amt': 5, 'cat': 10, 'who': 'self', 'desc': 'Reading', 'id': 10}, {'amt': 517, 'cat': 12, 'who': 'self', 'desc': 'Taxes', 'id': 12}]
+expenses = [{'amt': 54, 'cat': 11, 'who': 'self', 'desc': 'Savings', 'id': 11},
+            {'amt': 18, 'cat': 13, 'who': 'self', 'desc': 'Tobacco', 'id': 13},
+            {'amt': 668, 'cat': 14, 'who': 'self', 'desc': 'Transportation', 'id': 14},
+            {'amt': 34, 'cat': 15, 'who': 'self', 'desc': 'Miscellaneous', 'id': 15},
+            {'amt': 37, 'cat': 1, 'who': 'self', 'desc': 'Alcoholic Beverage', 'id': 1},
+            {'amt': 95, 'cat': 2, 'who': 'self', 'desc': 'Apparel & Services', 'id': 2},
+            {'amt': 67, 'cat': 3, 'who': 'self', 'desc': 'Education', 'id': 3},
+            {'amt': 150, 'cat': 4, 'who': 'self', 'desc': 'Entertainment', 'id': 4},
+            {'amt': 425, 'cat': 5, 'who': 'self', 'desc': 'Food', 'id': 5},
+            {'amt': 200, 'cat': 6, 'who': 'self', 'desc': 'Healthcare', 'id': 6},
+            {'amt': 1050, 'cat': 7, 'who': 'self', 'desc': 'Housing', 'id': 7},
+            {'amt': 394, 'cat': 8, 'who': 'self', 'desc': 'Insuarance, Pensions & Social Security', 'id': 8},
+            {'amt': 40, 'cat': 9, 'who': 'self', 'desc': 'Personal Care', 'id': 9},
+            {'amt': 5, 'cat': 10, 'who': 'self', 'desc': 'Reading', 'id': 10},
+            {'amt': 517, 'cat': 12, 'who': 'self', 'desc': 'Taxes', 'id': 12}]
 
-btc = 6660.
+btc = 50000.
 
 
