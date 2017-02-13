@@ -300,6 +300,7 @@ class TaxUser(object):
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
                 j = helpers.get_retirement_account_index(acnt)
+                print(str(j) + ' ' + str(acnt) + ' ' + str(constants.US_RETIREMENT_ACCOUNT_TYPES[j]))
                 self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[j] * self.btc_factor[j]
                 self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[j] * self.btc_factor[j]
 
@@ -317,8 +318,9 @@ class TaxUser(object):
 
                 self.maindf[str(j) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
                 self.maindf[str(j) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
+                #print(str(self.maindf[str(j) + '_Balance']))
+                pdb.set_trace()
                 self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(j) + '_Balance']
-        
         # NONTAXABLE ACCOUNTS
         # FOLLOWING NEEDS RE-WRITE; VERY FRAGILE ... WHAT IF ORDER OF THE ACCOUNTS IN constants:US_RETIREMENT_ACCOUNT_TYPES IS CHANGED?
         self.maindf['Nontaxable_Accounts'] = 0
@@ -433,7 +435,7 @@ class TaxUser(object):
                                                                                      - self.maindf['Tot_Non_Taxable_Dist']
                                                                                      - self.maindf['Tot_Taxable_Dist'])
 
-        
+        pdb.set_trace()
         # CALCULATION OF AFTER TAX INCOME
 
         self.maindf['Non_Taxable_Inc'] = self.maindf['Tot_Non_Taxable_Dist'] + self.maindf['Reverse_Mortgage']
@@ -514,8 +516,7 @@ class TaxUser(object):
         taxFed.create_tax_engine()
         taxFed.create_tax_projected()
 
-        self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax']
-        
+        self.annual_projected_tax = taxFed.tax_projected['Projected_Fed_Tax'] 
         self.post_projected_tax = pd.Series()
         
         for i in range(len(self.years_post)):
@@ -547,44 +548,33 @@ class TaxUser(object):
         
         full_post = pd.Series(self.post_projected_tax, index=self.dateind_post) 
         self.maindf['Fed_Regular_Tax'] = self.set_full_series([0. for i in range(self.pre_retirement_end)], self.post_projected_tax )
-        
         self.maindf['State_Tax_After_Credits'] = self.maindf['Adj_Gross_Inc'] * self.state_effective_rate_to_agi
-
         self.maindf['After_Tax_Income'] = self.maindf['Adj_Gross_Inc'] - self.maindf['Fed_Regular_Tax'] - self.maindf['State_Tax_After_Credits']
-
 
         # ACTUAL INCOME
         self.maindf['Actual_Inc'] = self.maindf['Total_Income'] + self.maindf['Tot_Inc']
-
 
         # DESIRED INCOME
         self.pre_0 = [0 for i in range(self.pre_retirement_end)]
         self.maindf['Desired_Inc'] = self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) * self.maindf['Inflator']
 
-
         # DEFLATION FACTOR AT RETIREMENT IN TODAYS
         self.deflation_factor_retirement_in_todays = helpers.get_inflator_to_period(self.retirement_start)['Inflator'][self.retirement_start - 1]
-
 
         # PROJECTED BALANCE AT RETIREMENT IN TODAYS
         self.projected_balance_at_retirement_in_todays = self.maindf['Taxable_Accounts'][self.retirement_start]/self.deflation_factor_retirement_in_todays
 
-
         # PROJECTED INCOME ACTUAL AT RETIREMENT IN TODAYS
         self.projected_income_actual_at_retirement_in_todays = self.maindf['Tot_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
-
 
         # PROJECTED INCOME DESIRED AT RETIREMENT IN TODAYS
         self.projected_income_desired_at_retirement_in_todays = self.maindf['Desired_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
 
-
         # SAVINGS END DATE AS AGE 
         self.savings_end_date_as_age = self.get_savings_end_date_as_age()
 
-
         # SOA DOLLAR BILL PERCENTAGES CURRENT
         self.soc_sec_percent_current, self.medicare_percent_current, self.fed_tax_percent_current, self.state_tax_percent_current = self.get_soa_dollar_bill_percentages()
-
 
         # COMPONENTS OF TAXABLE INCOME
         self.non_taxable_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Non_Taxable_Inc'])
@@ -593,7 +583,6 @@ class TaxUser(object):
         self.pension_payments = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Pension_Payments'])
         self.ret_working_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Working_Inc'])
         self.soc_sec_benefit = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit'])
-        
         
         if(self.debug):
             self.show_outputs()
