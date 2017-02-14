@@ -424,7 +424,8 @@ class RetirementAdvice(models.Model):
     text = models.CharField(max_length=512)
 
     """
-    actions: List of actions JSON.
+    actions: List of actions JSON.= models.FloatField(default=0,
+                                      help_text="Above consumer price index (inflation)")
         'label': Button label in string.
         'type': Api type in string that front-end web app can use to get url from.
         'url': Api URL, Both type or url should not be used together.
@@ -556,3 +557,49 @@ def determine_accounts(plan):
         rv[0] = tmp
         rv[1] = tmp2
     return rv
+
+
+class RetirementProjection(models.Model):
+    plan = models.ForeignKey(RetirementPlan, null=True, on_delete=models.CASCADE, related_name='projection')
+    
+    #user
+    proj_balance_at_retire_in_todays = models.FloatField(default=0, help_text="Projected balance at retirement in today's money") 
+    proj_inc_actual_at_retire_in_todays = models.FloatField(default=0, help_text="Projected monthly income actual at retirement in today's money")  
+    proj_inc_desired_at_retire_in_todays = models.FloatField(default=0, help_text="Projected monthly income desired at retirement in today's money")  
+    savings_end_date_as_age = models.FloatField(default=0, help_text="Projected age post retirement when taxable assets first deplete to zero")   
+    current_percent_soc_sec = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards social security")   
+    current_percent_medicare = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards medicare") 
+    current_percent_fed_tax = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards federal taxes") 
+    current_percent_state_tax = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards state taxes") 
+    non_taxable_inc = JSONField(null=True, blank=True, help_text="List of monthly non taxable monthly income received")  
+    tot_taxable_dist = JSONField(null=True, blank=True, help_text="List of monthly total taxable distributions received") 
+    annuity_payments = JSONField(null=True, blank=True, help_text="List of monthly annuity payments received")  
+    pension_payments = JSONField(null=True, blank=True, help_text="List of monthly pension payments received") 
+    ret_working_inc = JSONField(null=True, blank=True, help_text="List of monthly retirement working payments received") 
+    soc_sec_benefit = JSONField(null=True, blank=True, help_text="List of monthly social security benefit payments received") 
+    taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly taxable accounts") 
+    non_taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly nontaxable accounts")
+    
+    #partner
+    part_proj_balance_at_retire_in_todays = models.FloatField(default=0, help_text="Projected balance at retirement in today's money") 
+    part_proj_inc_actual_at_retire_in_todays = models.FloatField(default=0, help_text="Projected monthly income actual at retirement in today's money")  
+    part_proj_inc_desired_at_retire_in_todays = models.FloatField(default=0, help_text="Projected monthly income desired at retirement in today's money")  
+    part_savings_end_date_as_age = models.FloatField(default=0, help_text="Projected age post retirement when taxable assets first deplete to zero")   
+    part_current_percent_soc_sec = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards social security")   
+    part_current_percent_medicare = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards medicare") 
+    part_current_percent_fed_tax = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards federal taxes") 
+    part_current_percent_state_tax = models.FloatField(default=0, help_text="Current percentage of monthly income represented by payments made towards state taxes") 
+    part_non_taxable_inc = JSONField(null=True, blank=True, help_text="List of monthly non taxable monthly income received")  
+    part_tot_taxable_dist = JSONField(null=True, blank=True, help_text="List of monthly total taxable distributions received") 
+    part_annuity_payments = JSONField(null=True, blank=True, help_text="List of monthly annuity payments received")  
+    part_pension_payments = JSONField(null=True, blank=True, help_text="List of monthly pension payments received") 
+    part_ret_working_inc = JSONField(null=True, blank=True, help_text="List of monthly retirement working payments received") 
+    part_soc_sec_benefit = JSONField(null=True, blank=True, help_text="List of monthly social security benefit payments received") 
+    part_taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly taxable accounts") 
+    part_non_taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly nontaxable accounts")  
+
+    def save(self, *args, **kwargs):
+        super(RetirementProjection, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return "{} Projection {}".format(self.plan, self.id)
