@@ -609,7 +609,7 @@ class TaxUser(object):
         '''
         self.maindf['This_Annuity_Payments_Nominal'] = 0
         try:
-            months_to_annuity_start = math.cget_employee_monthly_contrib_monthly_vieweil(((pd.Timestamp(begin_date) - pd.Timestamp('today')).days) * (12./365.25))
+            months_to_annuity_start = math.ceil(((pd.Timestamp(begin_date) - pd.Timestamp('today')).days) * (12./365.25))
             if months_to_annuity_start > 0 and months_to_annuity_start < self.total_rows:
                 pre_ret_inc = [0. for i in range(months_to_annuity_start)]
                 post_ret_inc_nominal = [amount for i in range(self.total_rows - months_to_annuity_start)]
