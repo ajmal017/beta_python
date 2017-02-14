@@ -130,6 +130,20 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     def __str__(self):
         return self.user.get_full_name()
 
+    @cached_property
+    def employment_status_text(self):
+        choices = constants.EMPLOYMENT_STATUSES
+        if self.employment_status is None: return ''
+        idx = list(map(lambda x: x[0], choices)).index(self.employment_status)
+        return choices[idx][1] # returns employment status text
+
+    @cached_property
+    def employer_type_text(self):
+        choices = constants.EMPLOYER_TYPES
+        if self.employer_type is None: return ''
+        idx = list(map(lambda x: x[0], choices)).index(self.employer_type)
+        return choices[idx][1] # returns employment status text
+
     def _net_worth(self):
         # Sum ExternalAssets for the client
         assets = self.external_assets.all()

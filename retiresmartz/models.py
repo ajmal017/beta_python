@@ -332,6 +332,23 @@ class RetirementPlan(TimestampedModel):
             partner_income = self.partner_plan.income
         return self.desired_income / (self.income + partner_income)
 
+    @staticmethod
+    def get_lifestyle_text(lifestyle):
+        choices = RetirementPlan.LifestyleCategory.choices()
+        if lifestyle is None: return ''
+        idx = list(map(lambda x: x[0], choices)).index(lifestyle)
+        return choices[idx][1] # returns life style text
+
+    @cached_property
+    def lifestyle_text(self):
+        return RetirementPlan.get_lifestyle_text(self.lifestyle)
+
+    @staticmethod
+    def get_expense_category_text(expense_cat):
+        choices = RetirementPlan.ExpenseCategory.choices()
+        if expense_cat is None: return ''
+        idx = list(map(lambda x: x[0], choices)).index(expense_cat)
+        return choices[idx][1] # returns expense category text
 
 @receiver(post_save, sender=RetirementPlan)
 def resolve_retirement_invitations(sender, instance, created, **kwargs):

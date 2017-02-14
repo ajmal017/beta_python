@@ -142,6 +142,20 @@ class PersonalData(models.Model):
         except:
             return None
 
+    @cached_property
+    def is_married(self):
+        return self.civil_status in [
+            PersonalData.CivilStatus.MARRIED_FILING_JOINTLY.value,
+            PersonalData.CivilStatus.MARRIED_FILING_SEPARATELY_LIVED_TOGETHER
+        ]
+
+    @cached_property
+    def filing_status_text(self):
+        choices = PersonalData.CivilStatus.choices()
+        if self.civil_status is None: return ''
+        idx = list(map(lambda x: x[0], choices)).index(self.civil_status)
+        return choices[idx][1] # returns filing status text
+
 
 class NeedApprobation(models.Model):
     class Meta:

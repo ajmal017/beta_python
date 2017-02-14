@@ -1,0 +1,616 @@
+{% load static from staticfiles %}
+{% load humanize %}
+<!DOCTYPE html>
+<head>
+<title>SOA Retirement Document - {{statement.create_date|date:"b d Y"|upper}}</title>
+<style type="text/css">
+  @page {
+    margin: 0.76in 0.5in 0.815in;
+  }
+  body {
+    margin: 0;
+  }
+  .footer {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    margin-bottom: -0.815in;
+    height: 0.815in;
+    font-size: 7.5pt;
+    padding-top: 5pt;
+    line-height: 1.2;
+  }
+</style>
+</head>
+<body bgcolor="#A0A0A0" vlink="blue" link="blue">
+<!-- Page 1 -->
+<a name="1"></a>
+<style type="text/css">
+<!--
+  body { font-family: Roboto, Arial, Helvetica; box-sizing: border-box; }
+  body * { box-sizing: border-box; }
+	p {font-size: 11pt; line-height: 1.2; margin-top: 0; margin-bottom: 16pt;}
+  ul, ol { padding-left: 8pt; margin-left: 5pt; }
+  li { line-height: 1.2; font-size: 11pt; line-height: 1.2; }
+  .justified { text-align: justify; }
+  .firm_logo { max-width: 1.87in; max-height: 1in; width: auto; height: auto; }
+  .footer-text { margin-left: 2in; }
+  .clearfix:after { clear: both; content: ''; display: table; }
+  .fl { float: left; }
+  .fr { float: right; }
+
+	.sidebar { position: absolute; right: 0; top: 0; width: 1.85in; }
+  .firm_row { font-size: 8pt; }
+  .banner { width: 100%; height: 4.8647in; position: absolute; left: 0; top: 2in; background-color: #333; border-radius: 5pt; color: #fff; padding: 0.15in 0.09in; }
+  .banner h3 { font-size: 13pt; line-height: 1; margin-top: 0; margin-bottom: 5pt; padding-bottom: 0; }
+  .banner p { font-size: 9pt; }
+  .intro-footer { position: absolute; bottom: 0; right: 0; left: 0; background-color: #f2f2f3; font-family: 'RobotoLight'; font-size: 8pt; z-index: 999; margin-left: -0.53in; margin-right: -0.53in; padding: 5pt 0.53in; color: #818386; }
+
+  .page-header { margin-top: -0.76in; height: 0.8in; margin-bottom: 0.4in; }
+  .page-header .headline { border-bottom-left-radius: 5pt; margin-left: auto; border-bottom-right-radius: 5pt; background-color: #44A247; color: #fff; height: 100%; padding-top: 0.38in; font-size: 13pt; width: 1.85in; text-align: center; }
+  .page-title { line-height: 1; font-size: 18pt; color: #44A247; font-style: italic; }
+  .page-subtitle { line-height: 1; font-size: 15pt; color: #44A247; font-weight: 700; font-style: italic; margin: 0 0 5pt 0; }
+
+  .outline-box { border-radius: 5pt; padding: 10pt; border: 1pt solid #6d6f71; }
+
+  .page3-table-clients { width: 100%; }
+  .page3-table-clients td { padding: 5pt 0; }
+
+  .page5-table { font-style: italic; font-size: 10pt; border-collapse: collapse; line-height: 1.2; }
+  .page5-table th { text-align: center; padding: 8pt; }
+  .page5-table td { padding: 8pt; border: none; width: 30%; }
+  .page5-table td:first-child { font-weight: 700; }
+  .page5-table tbody tr:nth-child(odd) { background-color: rgba(168, 212, 140, .5); }
+
+-->
+</style>
+
+<div id="page1-div" class="page-div">
+  <div class="page-div-inner">
+
+    <div class="page-content">
+      <p style="padding-top: 50px; margin-bottom: 74px; white-space:nowrap">
+      	{{statement.create_date|date:"b d Y"|upper}}
+      </p>
+
+      <p style="margin-bottom: 45px;">
+      	{{owner.full_name}}<br/>
+      	{{owner.residential_address.address}}<br/>
+      	{{owner.residential_address.region.name}}
+      	{{owner.residential_address.post_code}}
+      	{{owner.residential_address.global.name}}<br/>
+      </p>
+
+      <p style="margin-bottom: 30px;">
+      	Dear {{owner.full_name}}{% if has_partner %} {{plan.partner_data.name}}{% endif %},
+      </p>
+      <div class="justified">
+        <p>We are here to help you achieve your retirement dreams.</p>
+        <p>Thank you for the opportunity to help you plan your retirement and get you on track for the future.</p>
+        <p>We're pleased to provide your Retirement Plan Statement of Advice (SOA), which details our advice. This document will help you understand how you're placed to meet your dream retirement outcome.</p>
+        <p>In preparing this document we have taken into account the information you provided, together with your financial situation, needs and goals. In particular you told us that:</p>
+        <ul>
+          <li>
+            {{client.full_name}}, you want to retire at {{plan.retirement_age}}
+            {% if has_partner %} and {{plan.partner_data.name}}, you want to retire at {{plan.partner_data.retirement_age}}{% endif %}.
+          </li>
+          <li>
+            At retirement you want to start using your retirement savings as income.
+          </li>
+          <li>
+            You want to know how long your money will last through retirement.
+          </li>
+          <li>
+            You want to know what type of lifestyle you’ll have in retirement.
+          </li>
+        </ul>
+        <p>Full details of how we meet these objectives and goals can be found within the Recommendations section of this Statement of Advice (SOA).</p>
+      </div>
+    </div>
+    <div class="sidebar">
+      <p>
+      	<img src="{{ firm.colored_logo }}" class="firm_logo" />
+      </p>
+      <p class="firm_row">
+      	{{firm.name}} <br />
+      	{{firm.firm_details.office_address.address}}<br />
+      	{{firm.firm_details.office_address.region.name}}<br />
+      	{{firm.firm_details.office_address.post_code}}<br />
+      	{{firm.firm_details.office_address.global.name}}<br />
+      </p>
+
+      <div class="banner">
+        <h3>Dream</h3>
+        <p style="margin-bottom: 40pt;">
+          It all starts with a dream<br />
+          for life after work. We'll<br />
+          talk to members first<br />
+          about where they want to<br />
+          be so we can find the<br />
+          best way to get them
+          there.
+        </p>
+        <h3>Plan</h3>
+        <p style="margin-bottom: 40pt;">
+          Dreams without a plan are<br />
+          just wishes. Your unique<br />
+          retirement dreams need a<br />
+          plan that's made just for<br />
+          them - a personal, ongoing<br />
+          plan that changes as their<br />
+          life does.
+        </p>
+        <h3>Achieve</h3>
+        <p>
+          Success doesn't happen<br />
+          by chance. A watchful eye<br />
+          and dependable support<br />
+          can help get you where<br />
+          you want to be.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="intro-footer">
+    Retirement Plan Statement of Advice (SOA) Please make sure you read each section of this SOA as
+    it explains the advice provided by a representative of {{firm.name}}, AFSL No {{firm.afsl_asic}}
+    ABN {{firm.australian_business_number}}. You can visit us at
+    {{firm.firm_details.office_address.full_address}},
+    write to us at {{firm.firm_details.postal_address.full_address}},
+    or visit us at {{firm.firm_details.site_url}}.
+    Please refer to the enclosed SFS Financial Services Guide (FSG).
+  </div>
+</div>
+
+<!-- Page 2 -->
+<div id="page2-div" class="page-div">
+  <div class="page-div-inner">
+    <p><img class="bgimg" src="{% static 'statements/retirement/next_steps.png' %}" style="width: 1.6344in; height: 0.3899in;" /></p>
+    <p>
+      You should read the attached SOA and our Form ADV Part 2 and ensure you understand
+      our advice and the basis for it before proceeding. In addition,
+      {{owner.user.first_name}} {% if has_partner %} and {{plan.partner_data.name}}{% endif %},
+      you should review your situation on a regular basis.
+    </p>
+    <p>
+      You can use our online planning tools as frequently as you like, and find more information
+      and ideas to help you make the right decisions.
+    </p>
+    <p style="margin-bottom: 0;">This SOA is comprised of 3 parts:</p>
+    <ul>
+      <li>Personal situation - which contains details of the information you have provided.</li>
+      <li>Recommendations - which contains details of the recommendations we are making for you.</li>
+      <li>Supplementary information - which contains fee and other important information.</li>
+    </ul>
+    <p>
+      If you have questions, or your situation changes, you can go online and update your details
+      or contact us on {{firm.daytime_phone_num}}.
+    </p>
+    <p style="margin-bottom: 40pt;">
+      We can help you keep your plan for your retirement up-to-date and give you the confidence
+      you need to keep on track for your future.
+    </p>
+    <p style="margin-bottom: 35pt;">
+      Sincerely yours
+    </p>
+    <p style="margin-bottom: 25pt;">
+      {{advisor.user.full_name}}
+    </p>
+    <p>
+      Financial Advisor<br />
+      Representative<br />
+      {{firm.name}}
+    </p>
+  </div>
+</div>
+
+<!-- Page 3 -->
+<div id="page3-div" class="page-div">
+  <p><img class="bgimg" src="{% static 'statements/retirement/page3_you_are_here.png' %}" style="width: 100%;" /></p>
+  <div class="outline-box" style="margin-bottom: 20pt;">
+    <p style="font-weight: 300; font-style: italic; font-size: 15pt;">
+      There are things you can do today, to change the type of retirement<br /> you will have tomorrow.
+    </p>
+    <h2 style="color: #44A247; font-weight: 700; font-size: 30pt; line-height: 1; margin: 0; padding: 0;">
+      Retirement Plan
+    </h2>
+    <p style="font-weight: 500; font-style: italic; margin-top: 5pt; margin-bottom: 0;">
+      This Retirement Plan is to help you understand how to set up your retirement and what it will look like.
+      As part of the {name of firm}, every 3 years we will contact you to see if your plan is still on track.
+    </p>
+  </div>
+
+  <div style="padding: 0 15pt;">
+    <table width="100%" class="page3-table-clients">
+      <tr>
+        <td style="width: 75%;">{{client.full_name}}</td>
+        <td>{{client.id}}</td> <!-- TODO: confirm the client number -->
+      </tr>
+      {% if has_partner %}
+        <tr>
+          <td>{{plan.partner_data.name}}</td>
+          <td>{{'--'}}</td> <!-- TODO: confirm the spouse client number -->
+        </tr>
+      {% endif %}
+    </table>
+    <hr style="border-bottom: 2pt solid #44A247; margin: 0 0 5pt;" />
+    <p style="font-style: italic; text-align: right; font-size: 9pt">
+      Advice provided {{statement.create_date|date:"b d Y"|upper}}
+    </p>
+  </div>
+
+  <div class="clearfix" style="background-color: #231F20; color: #fff; border-radius: 5pt; padding: 10pt; margin-top: 30pt; margin-bottom: 16pt;">
+    <div class="fl" style="width: 2in; font-size: 12pt; font-weight: 600; padding-top: 3pt; padding-left: 5pt;">
+      What should I do now?
+    </div>
+    <div class="fl" style="width: 2.8in; font-size: 11pt; font-weight: 600; font-style: italic; padding-top: 5pt;">
+      1. Read this Retirement Plan<br />
+      2. Monitor our recommendation
+    </div>
+    <div class="fr" style="border-left: 1pt solid #fff; padding-left: 10pt;">
+      <div style="font-size: 10pt; margin-bottom: 5pt;">
+        Any Changes or Questions?
+      </div>
+      <div style="font-size: 15pt; font-style: italic;">
+        <img src="{% static 'statements/retirement/page3_icon_phone.png' %}" style="vertical-align: middle; width: 15pt; height: 15pt;" />
+        <span style="vertical-align: middle;">
+          {{advisor.phone_num}}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="clearfix" style="padding: 0 15pt;">
+    <div class="fl" style="border-top-left-radius: 5pt; border-bottom-right-radius: 5pt; padding: 15pt; background-color: #44A247; font-weight: 600; font-size: 14px; font-style: italic; color: white; width: 2in; height: 0.76in;">
+      What happends next?
+    </div>
+    <div style="margin-left: 2.5in; padding-top: 15pt;">
+      <p style="font-style: italic; font-size: 8.26pt;">
+        We will keep you updated with an Annual Checkpoint, just to make sure everything's
+        going to plan for you. Then, every three years, we'll review your plan to see if
+        you're on track in retirement.
+      </p>
+    </div>
+  </div>
+  <div style="padding: 0 30pt">
+    <img src="{% static 'statements/retirement/page3_whats_next.png' %}" style="width: 100%;" />
+  </div>
+</div>
+
+<!-- Page 4 -->
+<div id="page4-div" class="page-div">
+  <div class="page-header">
+    <div class="headline">Personal Situation 2</div>
+    <h2 class="page-title" style="margin-top: -18pt; text-align: center; padding-right: 1.5in;">
+      Your Retirement Plan
+    </h2>
+  </div>
+  <div style="font-size: 12pt; color: #44A247; font-size: 12pt; font-style: italic;">
+    <span style="font-weight: 700;">
+      How to setup for retirement - recommendations
+    </span>
+    <span style="font-weight: 300;">
+      (see Recommendations section for full details)
+    </span>
+  </div>
+  <ol>
+    <li>Existing retirement account income – See our specific Recommendations section.</li>
+    <li>Start a {firm.name} retirement account</li>
+    <li>Obtain Social Security</li>
+    {% if plan.reverse_mortgage %}
+    <li>Apply for a reverse mortgage on your home</li>
+    {% endif %}
+  </ol>
+  <div class="outline-box clearfix" style="margin-bottom: 15pt; font-style: italic; font-weight: 700;">
+    <div class="fr" style="font-size: 13.6pt; ">
+      {{plan.balance}} <!-- TODO: confirm the projected balance -->
+    </div>
+    <div style="font-size: 11pt; padding-right: 2in; padding-top: 2pt;">
+      Your projected investment balance at retirement in today's dollars
+    </div>
+  </div>
+  <div class="clearfix" style="margin-bottom: 30pt;">
+    <div class="fl" style="width: 50%;">
+      <h3 class="page-subtitle">
+        Your target retirement lifestyle
+      </h3>
+      <ul style="transform:scale(0.8,1.0); transform-origin: left center;">
+        <li>Your retirement accounts are expected to last until you are age {savings end date as age}.</li> <!-- TODO: confirm {savings end date as age}-->
+      </ul>
+    </div>
+    <div class="fr" style="width: 2.32in; border-radius: 5pt; background-color: #231F20; color: #fff; padding: 15pt;">
+      <div style="width: 1in; margin-left: auto; text-align: center; font-size: 8pt; color: white; line-height: 1.2;">
+        <div style="border-radius: 3pt; border: 1px solid #fff; background-color: #44A247; padding: 1pt 0 7pt">
+          {{plan.lifestyle_text}}
+        </div>
+        <div style="border-radius: 3pt; border: 1px solid #fff; background-color: #FAA71C; padding: 1pt 0; margin-top: -6pt; box-shadow: 0 0 3pt rgba(0, 0, 0, .5);">
+          {% for num in lifestyle_stars %}
+            &bigstar;
+          {% endfor %}
+        </div>
+      </div>
+      <div style="text-align: right; font-size: 11pt; font-style: italic; font-weight: 600; margin-top: 10pt;">
+        Target retirement income
+      </div>
+      <div style="text-align: right; font-size: 11pt; font-style: italic; margin-top: 5pt;">
+        ${{plan.desired_income|intcomma}}
+      </div>
+    </div>
+  </div>
+  <div class="clearfix" style="margin-bottom: 30pt;">
+    <div class="fl" style="margin-left: 1in;">
+      <div style="font-size: 11pt; font-weight: 700; font-style: italic; margin-bottom: 5pt;">
+        Estimated regular retirement income
+      </div>
+      <div style="padding-top: 20pt; padding-right: 10pt; width: 4.8in; border-left: 1pt solid #000; border-bottom: 1pt solid #000;">
+        <div style="position: relative; height: 1.7in;">
+          {% with estimated=retirement_income_graph.estimated %}
+          <div style="top: {{estimated.y}}%; height: {{estimated.h}}%; position: absolute; left: 0; width: 3.46in; border-color: #05AB4D; border-width: 3.5pt; border-top-style: solid; border-right-style: solid; border-top-right-radius: 15pt;">
+            <div style="position: absolute; left: -1in; width: 1in; top: -6pt; font-size: 11pt; text-align: right; padding-right: 4pt;">
+              ${{plan.desired_income|intcomma}} <!-- TODO: confirm estimated retirement income -->
+            </div>
+          </div>
+          {% endwith %}
+          {% with target=retirement_income_graph.target %}
+          <div style="top: {{target.y}}%; height: {{target.h}}%; position: absolute; left: 0; width: 3.97in; border-color: #FAA71C; border-width: 3.5pt; border-top-style: solid; border-right-style: solid; border-top-right-radius: 15pt;">
+            <div style="position: absolute; left: -1in; width: 1in; top: -6pt; font-size: 11pt; text-align: right; padding-right: 4pt;">
+              ${{plan.desired_income|intcomma}} <!-- TODO: confirm target retirement income -->
+            </div>
+            <div style="margin-top: -15pt; font-size: 10pt; font-weight: 600; color: #FAA71C; font-style: italic; text-align: right;">
+              Target
+            </div>
+          </div>
+          {% endwith %}
+        </div>
+        <img src="{% static 'statements/retirement/page5_social_security_axis.png' %}" style="width: 100%; height: auto; display: block;" />
+      </div>
+      <div style="font-size: 9pt; padding: 5pt 0 0 15pt;">
+        {{firm.name}} Income account run out age
+        <span style="font-weight: bold; text-transform: uppercase; margin-left: 10pt;">
+          {{plan.selected_life_expectancy}} YEARS
+        </span>
+      </div>
+    </div>
+    <div class="fr" style="width: 1in; padding-top: 2in;">
+      <p style="font-size: 7.5pt;">
+        Please note: <br />
+        This is a simplified visual guide only based on the assumptions used for your projections.
+      </p>
+    </div>
+  </div>
+  <div class="clearfix">
+    <div class="fl" style="width: 4.3in;">
+      <h3 class="page-subtitle">
+        Your Retirement to {{plan.selected_life_expectancy}} retirement lifestyle
+      </h3>
+      <ul>
+        <li>Your {{firm.name}} Income account is expected to last until you are age 90.</li>
+        <li>This is an alternate way of withdrawing your Retirement Income account payments.</li>
+      </ul>
+    </div>
+    <div class="fr" style="width: 2.5in; padding: 30pt 10pt 10pt; font-style: italic; text-align: right; background-color: #44A247; border-radius: 10pt;">
+      <p style="margin-bottom: 5pt; font-weight: 700;">
+        Retirement to <span style="font-style: normal">{{plan.selected_life_expectancy}}</span><br />
+        retirement income
+      </p>
+      <div style="font-size: 18pt;">
+        ${{plan.desired_income|intcomma}} p.a <!-- TODO: confirm estimated retirement income -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page5-div" class="page-div">
+  <div class="page-header">
+    <div class="headline">Personal Situation 3</div>
+    <h2 class="page-title" style="margin-top: -18pt; text-align: center; padding-right: 1.5in;">
+      Your Retirement Plan
+    </h2>
+  </div>
+  <h3 class="page-subtitle" style="margin-bottom: 20pt;">
+    What we know about you
+  </h3>
+  <table class="page5-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>{{client.full_name}}</th>
+        {% if has_partner %}<th>{{plan.partner_data.name}}</th>{% endif %}
+      </tr>
+    </thad>
+    <tbody>
+      <tr>
+        <td>Account advice applies to</td>
+        <td colspan="2" style="text-align: center;">Retirement-savings</td>
+      </tr>
+      <tr>
+        <td>Your age</td>
+        <td>{{client.age}}</td>
+        {% if has_partner %}<td></td>{% endif %}
+      </tr>
+      <tr>
+        <td>Retirement age</td>
+        <td>{{plan.retirement_age}}</td>
+        {% if has_partner %}<td></td>{% endif %}
+      </tr>
+      <tr>
+        <td>Current investment profile</td>
+        <td>{{plan.desired_risk}}</td>
+        {% if has_partner %}<td>{{plan.desired_risk}}</td>{% endif %} <!--TODO: confirm partner's risk_profile_group -->
+      </tr>
+      <tr>
+        <td>Your gross salary</td>
+        <td>${{client.income|intcomma}}</td>
+        {% if has_partner %}<td>${{plan.partner_data.income|intcomma}}</td>{% endif %}
+      </tr>
+      <tr>
+        <td>Projected Income Growth Rate</td>
+        <td>{{plan.income_growth}}</td>
+        {% if has_partner %}<td>{{plan.partner_data.income_growth}}</td>{% endif %} <!--TODO: confirm partner's income_growth -->
+      </tr>
+      <tr>
+        <td>Tax Filing Status</td>
+        <td>{{client.filing_status_text}}</td>
+        {% if has_partner %}<td>{{client.filing_status_text}}</td>{% endif %} <!--TODO: confirm partner's risk_profile_group -->
+      </tr>
+      <tr>
+        <td>Retirement account savings – qualified plans</td>
+        <td>${{sum_of_retirement_accounts|intcomma}}</td>
+        {% if has_partner %}<td>${{sum_of_retirement_accounts|intcomma}}</td>{% endif %} <!--TODO: confirm partner's sum of retirement_accounts -->
+      </tr>
+      <tr>
+        <td>Retirement account savings – individual retirement accounts</td>
+        <td>${{sum_of_retirement_accounts_ira|intcomma}}</td> <!--TODO: confirm sum of retirement_accounts ira -->
+        {% if has_partner %}<td>${{sum_of_retirement_accounts_ira|intcomma}}</td>{% endif %} <!--TODO: confirm partner's sum of retirement_accounts ira -->
+      </tr>
+      <tr>
+        <td>Employment status</td>
+        <td>{{client.employment_status_text}}</td>
+        {% if has_partner %}<td></td>{% endif %} <!--TODO: confirm partner's employement_status -->
+      </tr>
+      <tr>
+        <td>Employer Name</td>
+        <td>{{client.employer}}</td>
+        {% if has_partner %}<td></td>{% endif %} <!--TODO: confirm partner's employer_name -->
+      </tr>
+      <tr>
+        <td>Employer Type</td>
+        <td>{{client.employer_type_text}}</td>
+        {% if has_partner %}<td></td>{% endif %} <!--TODO: confirm partner's employer_type -->
+      </tr>
+      <tr>
+        <td>Occupation</td>
+        <td>{{client.occupation}}</td>
+        {% if has_partner %}<td></td>{% endif %} <!--TODO: confirm partner's occupation -->
+      </tr>
+      <tr>
+        <td>Home Value</td>
+        <td>${{client.home_value|intcomma}}</td>
+        {% if has_partner %}<td></td>{% endif %} <!--TODO: confirm partner's occupation -->
+      </tr>
+      <tr>
+        <td>ReverseMortgage</td>
+        <td>{% if client.reverse_mortgage %}Yes{% else %}No{% endif %}</td>
+        {% if has_partner %}<td></td>{% endif %}
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<div id="page6-div" class="page-div">
+  <div class="page-header">
+    <div class="headline">Personal Situation 4</div>
+  </div>
+  <h2 class="page-title" style="text-align: center; margin: 20pt 0;">
+    Your Household Budget
+  </h2>
+  <p>
+    Based on the information you have provided to us we have determined your peer group
+    based on your age, your income bracket and where you live. This helps you in understanding
+    your budget in comparison to other people similar to you to:
+  </p>
+  <ol>
+    <li>Enable you to compare your monthly household budget to other Americans, and</li>
+    <li>Identify spending areas where you could find additional money to save for your retirement.</li>
+  </ol>
+</div>
+
+<div id="page7-div" class="page-div">
+  <div class="page-header">
+    <div class="headline">Personal Situation 5</div>
+  </div>
+  <h2 class="page-title" style="text-align: center; margin: 20pt 0;">
+    Your Tax Situation
+  </h2>
+  <p>
+    Based on the information you have provided to us we have optimized your retirement
+    income to ensure you maximize your after tax income. This is based on your most recent
+    tax filing information you provided to us.
+  </p>
+</div>
+
+<div id="page8-div" class="page-div">
+  <div class="page-header">
+    <div class="headline">Personal Situation 5</div>
+  </div>
+  <h2 class="page-title" style="text-align: center; margin: 20pt 0;">
+    Your Retirement Plan
+  </h2>
+  <p style="margin-bottom: 5pt;">
+    <span style="font-weight: 700; font-style: italic;">
+      More on your retirement lifestyle
+    </span><br />
+    <span style="font-size: 9pt;">
+      (for more information about retirement lifestyles please visit RetireSmartz online)
+    </span>
+  </p>
+  <p>
+    Your target retirement lifestyle is {{plan.lifestyle_text}} ({{plan.lifestyle}})<br />
+    This lifestyle profile has a retirement income target of ${{plan.desired_income|intcomma}}
+  </p>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <img src="{{ firm.colored_logo }}" class="firm_logo fl" />
+  <div class="footer-text">
+    Retirement Plan Statement of Advice (SOA) Please make sure you read each section of this SOA as
+    it explains the advice provided by a representative of {{firm.name}}. You can write to us at
+    {{firm.firm_details.postal_address.full_address}}
+    or visit us at
+    {{firm.firm_details.office_address.full_address}}.
+    Please refer to the {{firm.name}} Form ADV Part 2 and privacy disclosure.
+  </div>
+</footer>
+</body>
+<script>
+(function() {
+document.body.className = "dom-body"
+if(window.location.hash == '#borders')
+    document.body.className = "dom-body borders"
+})();
+</script>
+<style type="text/css">
+/*
+   ********************************
+   This CSS + JS is essential to centering
+   pages and aligning the frames of an HTML
+   view to the actual bounds of the PDFs generated
+   Additionally, there is a secret option --
+   Add "#borders" to the end of your url
+   ( e.g. /statements/123#borders )
+   to view the print margins
+*/
+.dom-body .page-div {
+  background: white;
+  margin: 0.76in 0.5in 0.815in;
+}
+.dom-body.borders .page-div {
+    border: red 1px solid;
+}
+.dom-body.borders .bgimg {
+    border: blue 1px dashed;
+}
+.dom-body #page1-div {
+  margin: 0.76in 0.5in 0;
+}
+.page-content {
+  position: relative;
+  width: 4.95in;
+}
+
+.page-div {
+	position: relative;
+	width: 7.27in;
+	height: 11.7in;
+}
+.page-div-inner {
+  position: relative;
+  padding-left: 0.26in;
+}
+/*
+***********************************
+*/
+</style>
+</html>

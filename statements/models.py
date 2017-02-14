@@ -4,7 +4,11 @@ from weasyprint import HTML
 from django.conf import settings
 from io import BytesIO
 from django.core.files.base import ContentFile
-
+from main.settings import BASE_DIR
+from functools import reduce
+from main import constants
+from retiresmartz.models import RetirementPlan
+from statements import utils
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +38,7 @@ class PDFStatement(models.Model):
         # Have to source the images locally for WeasyPrint
         static_path = settings.STATICFILES_DIRS[0]
         html = html.replace('/static/', 'file://%s/' % static_path)
+        html = html.replace('/media/', 'file://%s/media/' % BASE_DIR)
         pdf_builder = HTML(string=html)
         return pdf_builder.write_pdf()
 
@@ -84,8 +89,48 @@ class RetirementStatementOfAdvice(PDFStatement):
 
     @property
     def default_template(self):
-        return "statements/statement_of_advice.html"
+        return "statements/retirement_statement_of_advice/index.html"
 
+    def render_template(self, template_name=None):
+        from django.template.loader import render_to_string
+        template_name = template_name or self.default_template
+        plan = self.retirement_plan
+        retirement_accounts = plan.retirement_accounts if plan.retirement_accounts else []
+
+        retirement_income_graph = {
+            'estimated': { 'y': 0, 'h': 100 },
+            'target': { 'y': 30, 'h': 70 }
+        }
+        iraTypes = [
+            constants.ACCOUNT_TYPE_IRA,
+            constants.ACCOUNT_TYPE_ROTHIRA,
+            constants.ACCOUNT_TYPE_SIMPLEIRA,
+            constants.ACCOUNT_TYPE_SARSEPIRA,
+        ]
+        client_retirement_accounts = list(filter(lambda item: item['owner'] == 'self', retirement_accounts))
+        partner_retirement_accounts = list(filter(lambda item: item['owner'] == 'partner', retirement_accounts))
+        ira_retirement_accounts = filter(lambda item: item['acc_type'] in iraTypes, retirement_accounts)
+        has_partner = self.client.is_married and plan.partner_data
+
+        return render_to_string(template_name, {
+            'object': self,
+            'statement': self,
+            'client': self.client,
+            'owner': self.client,
+            'advisor': self.client.advisor,
+            'firm': self.client.advisor.firm,
+            'plan': plan,
+            'has_partner': has_partner,
+            'partner_name': plan.partner_data['name'] if has_partner else '',
+            'lifestyle_stars': range(plan.lifestyle + 2),
+            'retirement_income_graph': retirement_income_graph,
+            'sum_of_retirement_accounts': reduce(lambda acc, item: acc + item['balance'], retirement_accounts, 0),
+            'sum_of_retirement_accounts_ira': reduce(lambda acc, item: acc + item['balance'], ira_retirement_accounts, 0),
+            'lifestyle_box': utils.get_lifestyle_box(self.client),
+            'client_retirement_accounts': client_retirement_accounts,
+            'partner_retirement_accounts': partner_retirement_accounts,
+            'waterfall_chart': utils.get_waterfall_chart(plan)
+        })
 
 class RecordOfAdvice(PDFStatement):
     account = models.ForeignKey('client.ClientAccount', related_name='records_of_advice')
