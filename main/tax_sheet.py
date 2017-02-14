@@ -299,24 +299,25 @@ class TaxUser(object):
         
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
-                j = helpers.get_retirement_account_index(acnt)
-                self.maindf[str(j) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[j] * self.btc_factor[j]
-                self.maindf[str(j) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[j] * self.btc_factor[j]
-                pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(j), self.init_balance[j] )       
+                k = helpers.get_retirement_account_index(acnt)
+                self.maindf[str(k) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[k] * self.btc_factor[k]
+                self.maindf[str(k) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[k] * self.btc_factor[k]
+                pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(k), self.init_balance[k] )       
                 post_balance = [pre_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
                 post_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
                         
                 for i in range(1, self.total_rows - self.pre_retirement_end): 
-                    post_capital_growth[i] = (self.btc_factor[j] * (self.monthly_contrib_employee_base[j] + self.monthly_contrib_employer_base[j]) * self.post_total_income[i]) + (self.post_portfolio_return[i] * post_balance[i - 1]) 
+                    post_capital_growth[i] = (self.post_portfolio_return[i] * post_balance[i - 1]) 
 
-                    if (self.btc_factor[j] * (self.monthly_contrib_employee_base[j] + self.monthly_contrib_employer_base[j])) * self.post_total_income[i] + post_capital_growth[i] + post_balance[i - 1] > 0:
+                    if  post_capital_growth[i] + post_balance[i - 1] > 0:
                         post_balance[i] = post_capital_growth[i] + post_balance[i - 1]
                     else:
                         post_balance[i] = 0.
 
-                self.maindf[str(j) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
-                self.maindf[str(j) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
-                self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(j) + '_Balance']
+                self.maindf[str(k) + '_Capital_Growth'] = self.set_full_series(pre_capital_growth, post_capital_growth)
+                self.maindf[str(k) + '_Balance'] = self.set_full_series(pre_balance, post_balance)
+                self.maindf['All_Accounts'] = self.maindf['All_Accounts'] + self.maindf[str(k) + '_Balance']
+                
         # NONTAXABLE ACCOUNTS
         # FOLLOWING NEEDS RE-WRITE; VERY FRAGILE ... WHAT IF ORDER OF THE ACCOUNTS IN constants:US_RETIREMENT_ACCOUNT_TYPES IS CHANGED?
         self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] = 0
@@ -407,7 +408,7 @@ class TaxUser(object):
         self.reqd_min_dist = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.nontaxable_distribution = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         
-        for i in range(1, self.total_rows - self.pre_retirement_end):
+        for i in range(0, self.total_rows - self.pre_retirement_end):
             self.post_deccumulation_capital_growth_nontaxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_nontaxable[i - 1] - self.nontaxable_distribution[i - 1]
             self.post_deccumulation_balance_nontaxable[i] = self.post_deccumulation_capital_growth_nontaxable[i] + self.post_deccumulation_balance_nontaxable[i - 1]
 
@@ -434,21 +435,7 @@ class TaxUser(object):
         pre_zeros = [0. for i in range(self.pre_retirement_end)]
         self.maindf['Reqd_Min_Dist'] = self.set_full_series(pre_zeros, self.reqd_min_dist)
         self.maindf['Tot_Taxable_Dist'] = self.maindf['Reqd_Min_Dist']
-        self.maindf['Tot_Non_Taxable_Dist'] = self.set_full_series(pre_zeros, self.nontaxable_distribution)
-
-        #self.pre_deccumulation_capital_growth = [0. for i in range(self.pre_retirement_end)]
-        #self.pre_deccumulation_balance = [0. for i in range(self.pre_retirement_end)]      
-
-        #self.post_deccumulation_balance = [0. for i in range(self.total_rows - self.pre_retirement_end)]
-        #self.post_deccumulation_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
-                
-        #for i in range(1, self.total_rows - self.pre_retirement_end): 
-        #    self.post_deccumulation_capital_growth[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance[i - 1] - self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i]
-        #    self.post_deccumulation_balance[i] = self.post_deccumulation_capital_growth[i] + self.post_deccumulation_balance[i - 1]
-
-        #self.maindf['Deccumulation_Capital_Growth'] = self.set_full_series(self.pre_deccumulation_capital_growth, self.post_deccumulation_capital_growth)
-        #self.maindf['Deccumulation_Balance'] = self.set_full_series(self.pre_deccumulation_balance, self.post_deccumulation_balance)
-
+        self.maindf['Tot_Nontaxable_Dist'] = self.set_full_series(pre_zeros, self.nontaxable_distribution)
 
         # TAXABLE ACCOUNTS POST-DECCUMULATION
         self.maindf['Taxable_Accounts'] = np.where(self.maindf['Taxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Taxable'] > 0,
@@ -456,26 +443,13 @@ class TaxUser(object):
         
         self.maindf['Nontaxable_Accounts'] = np.where(self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Nontaxable'] > 0,
                                                    self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Nontaxable'], 0)
-        
-        #self.maindf['Reqd_Min_Dist'] = np.where(self.maindf['Person_Age'] > 70.5, self.maindf['Taxable_Accounts'] /(self.ira_rmd_factor * 12.), 0)
-
-        #self.maindf['Tot_Non_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Ret_Certain_Inc_Gap'] > self.maindf['Reqd_Min_Dist'],
-        #                                                                                              np.where(self.maindf['Nontaxable_Accounts'] > 0
-        #                                                                                                       , self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Reqd_Min_Dist'], 0)
-        #                                                                                              , 0))    
-
-        #self.maindf['Tot_Taxable_Dist'] = self.get_full_post_retirement_and_pre_set_zero(np.where(self.maindf['Reqd_Min_Dist'] > 0,
-        #                                                                                           self.maindf['Ret_Certain_Inc_Gap'] - self.maindf['Tot_Non_Taxable_Dist'],
-        #                                                                                           np.where(self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'] > 0,
-        #                                                                                                    self.maindf['Reqd_Min_Dist'] - self.maindf['Tot_Non_Taxable_Dist'],
-        #                                                                                                    0)))
 
         self.maindf['Ret_Inc_Gap'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Certain_Inc_Gap']
-                                                                                     - self.maindf['Tot_Non_Taxable_Dist']
+                                                                                     - self.maindf['Tot_Nontaxable_Dist']
                                                                                      - self.maindf['Tot_Taxable_Dist'])
 
         # CALCULATION OF AFTER TAX INCOME
-        self.maindf['Non_Taxable_Inc'] = self.maindf['Tot_Non_Taxable_Dist'] + self.maindf['Reverse_Mortgage']
+        self.maindf['Non_Taxable_Inc'] = self.maindf['Tot_Nontaxable_Dist'] + self.maindf['Reverse_Mortgage']
         
         self.maindf['Taxable_Soc_Sec'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit']
                                                                                         + self.maindf['Ret_Working_Inc']
@@ -627,7 +601,7 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
-            
+
 
     def get_a_retirement_income(self, begin_date, amount):
         '''
@@ -884,25 +858,51 @@ class TaxUser(object):
 
     
     def show_outputs(self):
+        start = max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 10)
+        end = min(max(helpers.get_period_of_age(self.age, 71) , start + 1) ,self.total_rows)
         print("--------------------------------------Retirement model OUTPUTS -------------------")
         print("--------------------------------------Taxable_Accounts ---------------------------")
-        print(self.maindf['Taxable_Accounts'][520:560])
+        print(self.maindf['Taxable_Accounts'][start:end])
+        print("--------------------------------------Taxable_Accounts_Pre_Deccumulation ---------------------------")
+        print(self.maindf['Taxable_Accounts_Pre_Deccumulation'][start:end])
+        print("--------------------------------------Nontaxable_Accounts ---------------------------")
+        print(self.maindf['Nontaxable_Accounts'][start:end])
+        print("--------------------------------------Nontaxable_Accounts_Pre_Deccumulation ---------------------------")
+        print(self.maindf['Nontaxable_Accounts_Pre_Deccumulation'][start:end])
         print("--------------------------------------Actual_Inc ---------------------------")
-        print(self.maindf['Actual_Inc'][520:560])
-        print("--------------------------------------Desired_Inc ---------------------------")
-        print(self.maindf['Desired_Inc'][520:560])
+        print(self.maindf['Actual_Inc'][start:end])
+        print("--------------------------------------Non_Taxable_Inc ---------------------------")
+        print(self.maindf['Non_Taxable_Inc'][start:end])
+        print("--------------------------------------Tot_Taxable_Dist ---------------------------")
+        print(self.maindf['Tot_Taxable_Dist'][start:end])
+        print("--------------------------------------Annuity_Payments ---------------------------")
+        print(self.maindf['Annuity_Payments'][start:end])
+        print("--------------------------------------Pension_Payments ---------------------------")
+        print(self.maindf['Pension_Payments'][start:end])
+        print("--------------------------------------Ret_Working_Inc ---------------------------")
+        print(self.maindf['Ret_Working_Inc'][start:end])
         print("--------------------------------------Soc_Sec_Benefit ---------------------------")
-        print(self.maindf['Soc_Sec_Benefit'][520:560])
+        print(self.maindf['Soc_Sec_Benefit'][start:end])
+        print("--------------------------------------Desired_Inc ---------------------------")
+        print(self.maindf['Desired_Inc'][start:end])
         print("--------------------------------------Ret_Certain_Inc_Gap ---------------------------")
-        print(self.maindf['Ret_Certain_Inc_Gap'][520:560])
+        print(self.maindf['Ret_Certain_Inc_Gap'][start:end])
+        print("--------------------------------------Ret_Inc_Gap ---------------------------")
+        print(self.maindf['Ret_Inc_Gap'][start:end])
+        print("--------------------------------------Reqd_Min_Dist ---------------------------")
+        print(self.maindf['Reqd_Min_Dist'][start:end])
+        print("--------------------------------------Person_Age ---------------------------")
+        print(self.maindf['Person_Age'][start:end])
         print("--------------------------------------Various ---------------------------")
-        print('self.age:                    ' + str(self.age))
+        print('self.get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):age:                    ' + str(self.age))
         print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
         print('self.soc_sec_percent_current ' + str(self.soc_sec_percent_current))
         print('self.medicare_percent_current' + str(self.medicare_percent_current))
         print('self.fed_tax_percent_current ' + str(self.fed_tax_percent_current))
         print('self.state_tax_percent_current:' + str(self.state_tax_percent_current))
         print('ss_fra_retirement:           ' + str(helpers.get_ss_benefit_future_dollars(self.ss_fra_todays, self.dob, self.desired_retirement_age)))
+        print('self.get_employee_monthly_contrib_monthly_view():' + str(self.get_employee_monthly_contrib_monthly_view()))
+        print('self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), monthly_contrib_employee_base):' + str(self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)))
         print("[Set self.debug=False to hide these]")
             
 

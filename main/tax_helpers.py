@@ -7,7 +7,6 @@ from main import inflation
 
 inflation_level = inflation.inflation_level
 
-
 def get_age(dob):
     '''
     returns current age today based on dob
@@ -119,8 +118,7 @@ def get_sum_expenses(expenses):
             if exp['amt'] < 0:
                 raise Exception("exp['amt'] < 0")
             else:
-                sum_expenses = sum_expenses + exp['amt']
-                                
+                sum_expenses = sum_expenses + exp['amt']                         
     return sum_expenses
     
 
