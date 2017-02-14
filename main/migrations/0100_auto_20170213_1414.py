@@ -8,7 +8,7 @@ import main.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0098_auto_20170122_1522'),
+        ('main', '0099_portfolio_rebalance'),
     ]
 
     operations = [
