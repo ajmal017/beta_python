@@ -601,7 +601,7 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
-            
+
 
     def get_a_retirement_income(self, begin_date, amount):
         '''
@@ -609,7 +609,7 @@ class TaxUser(object):
         '''
         self.maindf['This_Annuity_Payments_Nominal'] = 0
         try:
-            months_to_annuity_start = math.ceil(((pd.Timestamp(begin_date) - pd.Timestamp('today')).days) * (12./365.25))
+            months_to_annuity_start = math.cget_employee_monthly_contrib_monthly_vieweil(((pd.Timestamp(begin_date) - pd.Timestamp('today')).days) * (12./365.25))
             if months_to_annuity_start > 0 and months_to_annuity_start < self.total_rows:
                 pre_ret_inc = [0. for i in range(months_to_annuity_start)]
                 post_ret_inc_nominal = [amount for i in range(self.total_rows - months_to_annuity_start)]
@@ -645,7 +645,6 @@ class TaxUser(object):
                     btc_factor[j] = 0.
                 else:
                     btc_factor[j] = (employee_monthly_contrib_monthly_view/monthly_contrib_employee_base[j])
-        pdb.set_trace()
         return btc_factor
 
 
@@ -895,13 +894,15 @@ class TaxUser(object):
         print("--------------------------------------Person_Age ---------------------------")
         print(self.maindf['Person_Age'][start:end])
         print("--------------------------------------Various ---------------------------")
-        print('self.age:                    ' + str(self.age))
+        print('self.get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):age:                    ' + str(self.age))
         print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
         print('self.soc_sec_percent_current ' + str(self.soc_sec_percent_current))
         print('self.medicare_percent_current' + str(self.medicare_percent_current))
         print('self.fed_tax_percent_current ' + str(self.fed_tax_percent_current))
         print('self.state_tax_percent_current:' + str(self.state_tax_percent_current))
         print('ss_fra_retirement:           ' + str(helpers.get_ss_benefit_future_dollars(self.ss_fra_todays, self.dob, self.desired_retirement_age)))
+        print('self.get_employee_monthly_contrib_monthly_view():' + str(self.get_employee_monthly_contrib_monthly_view()))
+        print('self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), monthly_contrib_employee_base):' + str(self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)))
         print("[Set self.debug=False to hide these]")
             
 
