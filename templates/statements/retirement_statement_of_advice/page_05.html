@@ -15,14 +15,14 @@
     <thead>
       <tr>
         <th></th>
-        <th>{{client.full_name}}</th>
+        <th {% if not has_partner %} style="text-align: left;"{% endif %}>{{client.full_name}}</th>
         {% if has_partner %}<th>{{partner_name}}</th>{% endif %}
       </tr>
     </thad>
     <tbody>
       <tr>
         <td>Account advice applies to</td>
-        <td {% if has_partner %}colspan="2" {% endif %}style="text-align: center;">Retirement-savings</td>
+        <td {% if has_partner %}colspan="2" style="text-align: center;"{% endif %}>Retirement-savings</td>
       </tr>
       <tr>
         <td>Your age</td>
