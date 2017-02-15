@@ -21,8 +21,10 @@ from pinax.eventlog.models import log
 from retiresmartz.calculator.social_security import calculate_payments
 from main import constants
 from main import abstract
+import pandas as pd
 import os
 from django.conf import settings
+import pdb
 
 mocked_now = datetime(2016, 1, 1)
 
@@ -788,23 +790,6 @@ class RetiresmartzTests(APITestCase):
         # Now set the date of birth
         plan.client.date_of_birth = old_dob
         plan.client.save()
-
-        # Try life_expectancy below valid range
-        old_life_expectancy = plan.selected_life_expectancy
-        plan.selected_life_expectancy = 60
-        plan.save()
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        # Try life_expectancy above valid range
-        plan.selected_life_expectancy = 101
-        plan.save()
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        # Now set valid life expectancy
-        plan.selected_life_expectancy = old_life_expectancy
-        plan.save()
         
         # We should be ready to calculate properly
         response = self.client.get(url)
@@ -812,6 +797,7 @@ class RetiresmartzTests(APITestCase):
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
         self.assertEqual(len(response.data['projection']), 50)
+        
         # Make sure the goal_setting is now populated.
         plan.refresh_from_db()
         self.assertIsNotNone(plan.goal_setting.portfolio)
@@ -1053,6 +1039,133 @@ class RetiresmartzTests(APITestCase):
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
         self.assertEqual(len(response.data['projection']), 50)
+
+
+    @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
+    def test_retirement_plan_calculate_retirementmodel(self):
+        ret_accts = [{'employer_match_type': 'contributions',
+                      'id': 1,
+                      'owner': 'self',
+                      'balance_efdt': '2017-02-02',
+                      'name': '401K',
+                      'employer_match': 0.49,
+                      'contrib_amt': 250,
+                      'balance': 25000,
+                      'acc_type': 5,
+                      'cat': 2,
+                      'contrib_period': 'monthly'}]
+        
+        plan = RetirementPlanFactory.create(income=100000.,
+                                            retirement_home_price=250000.,
+                                            paid_days=1,
+                                            retirement_age=69.,
+                                            lifestyle=1,
+                                            reverse_mortgage=True,
+                                            income_growth=0.01,
+                                            desired_risk=0.5,
+                                            selected_life_expectancy=95.,
+                                            retirement_postal_code=90210,
+                                            retirement_accounts=ret_accts,
+                                            btc=10000)
+
+        plan.client.residential_address.post_code=int(94123)
+        plan.client.home_value = 250000
+        plan.client.employment_status = constants.EMPLOYMENT_STATUS_SELF_EMPLOYED
+        plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
+        plan.client.ss_fra_retirement = 3490
+        plan.client.ss_fra_todays = 1390
+        plan.client.date_of_birth = date(1960, 1, 1)
+        plan.client.regional_data = { "tax_transcript_data":{   "taxable_income":0,
+                                                                "total_payments":0,
+                                                                "adjusted_gross_income":1370}}
+        plan.client.save()
+
+        # some tickers for portfolio
+        bonds_asset_class = AssetClassFactory.create(name='US_TOTAL_BOND_MARKET')
+        stocks_asset_class = AssetClassFactory.create(name='HEDGE_FUNDS')
+
+        TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='IPO')
+        fund = TickerFactory.create(symbol='rest')
+
+        # Add the asset classes to the advisor's default portfolio set
+        plan.client.advisor.default_portfolio_set.asset_classes.add(bonds_asset_class, stocks_asset_class, fund.asset_class)
+
+        # Set the markowitz bounds for today
+        self.m_scale = MarkowitzScaleFactory.create()
+
+        # populate the data needed for the optimisation
+        # We need at least 500 days as the cycles go up to 70 days and we need at least 7 cycles.
+        populate_prices(500, asof=mocked_now.date())
+        populate_cycle_obs(500, asof=mocked_now.date())
+        populate_cycle_prediction(asof=mocked_now.date())
+        populate_inflation(asof=mocked_now.date())
+
+        self.assertIsNone(plan.goal_setting)
+        old_settings = GoalSetting.objects.all().count()
+        old_mgroups = GoalMetricGroup.objects.all().count()
+        old_metrics = GoalMetric.objects.all().count()
+        url = '/api/v1/clients/{}/retirement-plans/{}/calculate'.format(plan.client.id, plan.id)
+        self.client.force_authenticate(user=plan.client.user)
+        
+        # We should be ready to calculate properly
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('portfolio' in response.data)
+        self.assertTrue('projection' in response.data)
+        self.assertEqual(len(response.data['projection']), 50)
+
+        # Try life_expectancy below valid range
+        old_life_expectancy = plan.selected_life_expectancy
+        plan.selected_life_expectancy = 60
+        plan.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Try life_expectancy above valid range
+        plan.selected_life_expectancy = 101
+        plan.save()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Now set valid life expectancy
+        plan.selected_life_expectancy = old_life_expectancy
+        plan.save()
+
+        # Try with an older partner ...
+        plan.client.civil_status = abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY'].value
+        plan.client.save()
+        
+        partner_year = pd.Timestamp(plan.client.date_of_birth).year - 3
+        partner_day = min(pd.Timestamp(plan.client.date_of_birth).day, 28)
+        partner_month = pd.Timestamp(plan.client.date_of_birth).month
+        partner_dob = pd.Timestamp(str(partner_year)+'-'+str(partner_month)+'-'+str(partner_day))
+
+        partner_data = [{'income': 75000.,'dob': partner_dob}]
+        plan.partner_data = partner_data
+        plan.save()
+                
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Try with a younger partner ... 
+        partner_year = pd.Timestamp(plan.client.date_of_birth).year + 5
+        partner_day = min(pd.Timestamp(plan.client.date_of_birth).day, 28)
+        partner_month = pd.Timestamp(plan.client.date_of_birth).month
+        partner_dob = pd.Timestamp(str(partner_year)+'-'+str(partner_month)+'-'+str(partner_day))
+
+        partner_data = [{'income': 75000.,'dob': partner_dob}]
+        plan.partner_data = partner_data
+        plan.save()
+        
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Go back to being all alone ...
+        plan.client.civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
+        plan.client.save()
 
     @skip('Fails intermittently on deployment, something wrong with calculate_payments')
     def test_get_social_security(self):

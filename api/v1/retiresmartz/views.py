@@ -32,10 +32,12 @@ from retiresmartz.models import RetirementAdvice, RetirementPlan, RetirementProj
 from support.models import SupportRequest
 from . import serializers
 from main import tax_sheet as tax
+from main import tax_helpers as helpers
 from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
 import time
+import pdb
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
 
@@ -607,9 +609,21 @@ equired to generate the
         plans = RetirementPlan.objects.all()
 
         # Get projection of future income and assets for US tax payer
+        projection_end = plan.selected_life_expectancy
+
+        # terminate projection based on partner with longest life expectancy
+        # i.e. based on life expectancy of younger of user or partner
+        if plan.client.civil_status == 1 or plan.client.civil_status == 2:
+            user_age = helpers.get_age(plan.client.date_of_birth)
+            partner_age = helpers.get_age(plan.partner_data[0]['dob'])
+            user_older_by = user_age - partner_age
+            if user_older_by > 0:
+                # life expectancy must be no greater than 100 
+                projection_end = min(projection_end + user_older_by, 100) 
+        
         user = tax.TaxUser(plan.client.date_of_birth,
                         plan.retirement_age,
-                        plan.selected_life_expectancy,
+                        projection_end,
                         plan.lifestyle,
                         plan.income,
                         plan.reverse_mortgage,
@@ -651,11 +665,12 @@ equired to generate the
         projection.non_taxable_accounts = user.non_taxable_accounts
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
-            partner = tax.TaxUser(plan.client.date_of_birth,
+
+            partner = tax.TaxUser(plan.partner_data[0]['dob'],
                         plan.retirement_age,
-                        plan.selected_life_expectancy,
+                        projection_end,
                         plan.lifestyle,
-                        plan.income,
+                        plan.partner_data[0]['income'],
                         False,
                         plan.client.home_value,
                         plan.desired_risk,
