@@ -790,6 +790,7 @@ class TaxUser(object):
         age = self.get_period_as_age(self.get_savings_end_date_as_period())
         if age < self.desired_retirement_age:
             raise Exception('age < self.desired_retirement_age')
+        return age
 
 
     def get_soa_dollar_bill_percentages(self):
