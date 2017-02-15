@@ -407,24 +407,27 @@ class TaxUser(object):
 
         self.reqd_min_dist = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.nontaxable_distribution = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.taxable_distribution = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         
         for i in range(0, self.total_rows - self.pre_retirement_end):
             self.post_deccumulation_capital_growth_nontaxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_nontaxable[i - 1] - self.nontaxable_distribution[i - 1]
             self.post_deccumulation_balance_nontaxable[i] = self.post_deccumulation_capital_growth_nontaxable[i] + self.post_deccumulation_balance_nontaxable[i - 1]
 
             if self.maindf['Person_Age'].iloc[self.pre_retirement_end + i] > 70.5:
-                self.reqd_min_dist[i] = self.maindf['Taxable_Accounts_Pre_Deccumulation'].iloc[self.pre_retirement_end + i-1]/(self.ira_rmd_factor * 12.)
+                self.reqd_min_dist[i] = self.maindf['Taxable_Accounts_Pre_Deccumulation'].iloc[self.pre_retirement_end + i]/(self.ira_rmd_factor * 12.)
             else:
                 self.reqd_min_dist[i] = 0.
                 
-            self.post_deccumulation_capital_growth_taxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_taxable[i - 1] - self.reqd_min_dist[i]
-            self.post_deccumulation_balance_taxable[i] = self.post_deccumulation_capital_growth_taxable[i] + self.post_deccumulation_balance_taxable[i - 1]
-                
             if self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] > self.reqd_min_dist[i]:
-                if self.maindf['Nontaxable_Accounts_Pre_Deccumulation'].iloc[self.pre_retirement_end + i] + self.post_deccumulation_balance_nontaxable[i] > 0:
+                if self.maindf['Nontaxable_Accounts_Pre_Deccumulation'].iloc[self.pre_retirement_end + i - 1] + self.post_deccumulation_balance_nontaxable[i - 1] > 0:
                     self.nontaxable_distribution[i] = self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] - self.reqd_min_dist[i]
+                    self.taxable_distribution[i] = 0.
                 else:
                     self.nontaxable_distribution[i] = 0.
+                    self.taxable_distribution[i] = self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] - self.reqd_min_dist[i]
+                
+            self.post_deccumulation_capital_growth_taxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_taxable[i - 1] - self.reqd_min_dist[i] - self.taxable_distribution[i]
+            self.post_deccumulation_balance_taxable[i] = self.post_deccumulation_capital_growth_taxable[i] + self.post_deccumulation_balance_taxable[i - 1]
 
         self.maindf['Deccumulation_Capital_Growth_Taxable'] = self.set_full_series(self.pre_deccumulation_capital_growth_taxable, self.post_deccumulation_capital_growth_taxable)
         self.maindf['Deccumulation_Balance_Taxable'] = self.set_full_series(self.pre_deccumulation_balance_taxable, self.post_deccumulation_balance_taxable) 
@@ -790,6 +793,7 @@ class TaxUser(object):
         age = self.get_period_as_age(self.get_savings_end_date_as_period())
         if age < self.desired_retirement_age:
             raise Exception('age < self.desired_retirement_age')
+        return age
 
 
     def get_soa_dollar_bill_percentages(self):
@@ -858,41 +862,38 @@ class TaxUser(object):
 
     
     def show_outputs(self):
+        
+        self.check_acc_df = pd.DataFrame(index=self.dateind)
+        self.check_inc_df = pd.DataFrame(index=self.dateind)
+        
+        self.check_acc_df['Person_Age'] = self.maindf['Person_Age']
+        self.check_acc_df['Taxable_Accounts'] = self.maindf['Taxable_Accounts']
+        self.check_acc_df['Taxable_Accounts_Pre_Deccumulation'] = self.maindf['Taxable_Accounts_Pre_Deccumulation']
+        self.check_acc_df['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts']
+        self.check_acc_df['Nontaxable_Accounts_Pre_Deccumulation'] = self.maindf['Nontaxable_Accounts_Pre_Deccumulation']
+        
+        self.check_inc_df['Person_Age'] = self.maindf['Person_Age']
+        self.check_inc_df['Actual_Inc'] = self.maindf['Actual_Inc']
+        self.check_inc_df['Desired_Inc'] = self.maindf['Desired_Inc']
+        self.check_inc_df['Ret_Certain_Inc_Gap'] = self.maindf['Ret_Certain_Inc_Gap']
+        self.check_inc_df['Ret_Inc_Gap'] = self.maindf['Ret_Inc_Gap']
+        self.check_inc_df['Reqd_Min_Dist'] = self.maindf['Reqd_Min_Dist']
+        self.check_inc_df['Non_Taxable_Inc'] = self.maindf['Non_Taxable_Inc']
+        self.check_inc_df['Tot_Taxable_Dist'] = self.maindf['Tot_Taxable_Dist']
+        self.check_inc_df['Annuity_Payments'] = self.maindf['Annuity_Payments']
+        self.check_inc_df['Pension_Payments'] = self.maindf['Pension_Payments']
+        self.check_inc_df['Ret_Working_Inc'] = self.maindf['Ret_Working_Inc']
+        self.check_inc_df['Soc_Sec_Benefit'] = self.maindf['Soc_Sec_Benefit']
+        
         start = max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 10)
         end = min(max(helpers.get_period_of_age(self.age, 71) , start + 1) ,self.total_rows)
+        
+        print("")
         print("--------------------------------------Retirement model OUTPUTS -------------------")
         print("--------------------------------------Taxable_Accounts ---------------------------")
-        print(self.maindf['Taxable_Accounts'][start:end])
-        print("--------------------------------------Taxable_Accounts_Pre_Deccumulation ---------------------------")
-        print(self.maindf['Taxable_Accounts_Pre_Deccumulation'][start:end])
-        print("--------------------------------------Nontaxable_Accounts ---------------------------")
-        print(self.maindf['Nontaxable_Accounts'][start:end])
-        print("--------------------------------------Nontaxable_Accounts_Pre_Deccumulation ---------------------------")
-        print(self.maindf['Nontaxable_Accounts_Pre_Deccumulation'][start:end])
-        print("--------------------------------------Actual_Inc ---------------------------")
-        print(self.maindf['Actual_Inc'][start:end])
-        print("--------------------------------------Non_Taxable_Inc ---------------------------")
-        print(self.maindf['Non_Taxable_Inc'][start:end])
-        print("--------------------------------------Tot_Taxable_Dist ---------------------------")
-        print(self.maindf['Tot_Taxable_Dist'][start:end])
-        print("--------------------------------------Annuity_Payments ---------------------------")
-        print(self.maindf['Annuity_Payments'][start:end])
-        print("--------------------------------------Pension_Payments ---------------------------")
-        print(self.maindf['Pension_Payments'][start:end])
-        print("--------------------------------------Ret_Working_Inc ---------------------------")
-        print(self.maindf['Ret_Working_Inc'][start:end])
-        print("--------------------------------------Soc_Sec_Benefit ---------------------------")
-        print(self.maindf['Soc_Sec_Benefit'][start:end])
-        print("--------------------------------------Desired_Inc ---------------------------")
-        print(self.maindf['Desired_Inc'][start:end])
-        print("--------------------------------------Ret_Certain_Inc_Gap ---------------------------")
-        print(self.maindf['Ret_Certain_Inc_Gap'][start:end])
-        print("--------------------------------------Ret_Inc_Gap ---------------------------")
-        print(self.maindf['Ret_Inc_Gap'][start:end])
-        print("--------------------------------------Reqd_Min_Dist ---------------------------")
-        print(self.maindf['Reqd_Min_Dist'][start:end])
-        print("--------------------------------------Person_Age ---------------------------")
-        print(self.maindf['Person_Age'][start:end])
+        print(self.check_acc_df[start:end])
+        print("--------------------------------------Income ---------------------------")
+        print(self.check_inc_df[start:end])
         print("--------------------------------------Various ---------------------------")
         print('self.get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):age:                    ' + str(self.age))
         print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
@@ -904,6 +905,7 @@ class TaxUser(object):
         print('self.get_employee_monthly_contrib_monthly_view():' + str(self.get_employee_monthly_contrib_monthly_view()))
         print('self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), monthly_contrib_employee_base):' + str(self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)))
         print("[Set self.debug=False to hide these]")
+        print("")
             
 
     def validate_age(self):
