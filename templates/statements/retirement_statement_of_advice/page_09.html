@@ -1,4 +1,4 @@
-{% load humanize %}
+{% load i18n filters %}
 <div id="page9-div" class="page-div">
   <div class="page-header">
     <div class="headline dark">Recommendations 1</div>
@@ -25,27 +25,27 @@
         <tbody>
           <tr>
             <td>Name</td>
-            <td>&nbsp;</td><!-- TODO: pension_name -->
+            <td>{{pensions_annuities.name}}</td>
             <td>&nbsp;</td><!-- TODO: spouse's pension_name -->
           </tr>
           <tr>
             <td>Start Date</td>
-            <td>&nbsp;</td><!-- TODO: pension_start -->
+            <td>{% if pensions_annuities.begin_date %}{{pensions_annuities.begin_date}}{% else %}N/A{% endif %}</td><!-- TODO: pension_start -->
             <td>&nbsp;</td><!-- TODO: spouse's pension_start -->
           </tr>
           <tr>
             <td>Amount(future dollars)</td>
-            <td>&nbsp;</td><!-- TODO: pension_amount -->
+            <td>{% if pensions_annuities.amount %}{{pensions_annuities.amount|currency}}{% else %}N/A{% endif %}</td><!-- TODO: pension_amount -->
             <td>&nbsp;</td><!-- TODO: spouse's pension_amount -->
           </tr>
           <tr>
             <td>Type</td>
-            <td>&nbsp;</td><!-- TODO: account_type -->
-            <td>&nbsp;</td><!-- TODO: spouse's account_type -->
+            <td>Pension Account</td><!-- TODO: account_type -->
+            <td>{% if has_partner %}Pension Account{% endif %}</td><!-- TODO: spouse's account_type -->
           </tr>
           <tr>
             <td>Taxable Amount</td>
-            <td>&nbsp;</td>
+            <td>{% if pensions_annuities.amount %}{{pensions_annuities.amount|currency}}{% else %}N/A{% endif %}</td><!-- TODO: taxable_amount -->
             <td>&nbsp;</td>
           </tr>
         </tbody>
@@ -68,23 +68,18 @@
         </thad>
         <tbody>
           <tr>
-            <td>Name</td>
-            <td>&nbsp;</td><!-- TODO: pension_name -->
-            <td>&nbsp;</td><!-- TODO: spouse's pension_name -->
-          </tr>
-          <tr>
             <td>Estimated start age</td>
             <td>{{plan.date_of_estimate}}</td>
             <td>&nbsp;</td><!-- TODO: spouse's pension_start -->
           </tr>
           <tr>
             <td>Social Security amount <br />(todays dollars)</td>
-            <td>${{client.ss_fra_todays|intcomma}}</td>
+            <td>{{client.ss_fra_todays|currency:0}}</td>
             <td>&nbsp;</td><!-- TODO: spouse's ss_fra_todays -->
           </tr>
           <tr>
             <td>Social Security amount <br />(future dollars)</td>
-            <td>${{client.ss_fra_retirement|intcomma}}</td>
+            <td>{{client.ss_fra_retirement|currency:0}}</td>
             <td>&nbsp;</td><!-- TODO: spouse's ss_fra_retirement -->
           </tr>
           <tr>
@@ -112,7 +107,7 @@
         <tbody>
           <tr>
             <td>Property valuation (today)</td>
-            <td>${{client.home_value|intcomma}}</td>
+            <td>{{client.home_value|currency:0}}</td>
           </tr>
           <tr>
             <td>Property valuation (future)</td>

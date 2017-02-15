@@ -129,7 +129,9 @@ class RetirementStatementOfAdvice(PDFStatement):
             'lifestyle_box': utils.get_lifestyle_box(self.client),
             'client_retirement_accounts': client_retirement_accounts,
             'partner_retirement_accounts': partner_retirement_accounts,
-            'waterfall_chart': utils.get_waterfall_chart(plan)
+            'tax_situation': utils.get_tax_situation(plan),
+            'pensions_annuities': utils.get_pensions_annuities(plan),
+            'waterfall_chart': utils.get_waterfall_chart(plan, has_partner)
         })
 
 class RecordOfAdvice(PDFStatement):

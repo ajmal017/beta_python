@@ -1,6 +1,7 @@
 from functools import reduce
 from main import constants
 from retiresmartz.models import RetirementPlan
+from django.core.exceptions import ObjectDoesNotExist
 import math
 
 def get_lifestyle_box(client):
@@ -66,12 +67,10 @@ expenseGroups = [
     }
 ]
 
-def get_waterfall_chart(plan):
+def get_waterfall_chart(plan, has_partner):
     expenses = plan.expenses if plan.expenses else []
     ExpenseCategory = RetirementPlan.ExpenseCategory
-    x_axis = list(map(lambda item: RetirementPlan.get_expense_category_text(item['cat']), expenses))
     sum_expenses = reduce(lambda acc, item: acc + item['amt'], expenses, 0)
-    y_axis = range(int(math.ceil(sum_expenses / 1000.0)) * 1000, 0, -1000)
 
     expensesGroupsMapping = {
         ExpenseCategory.ALCOHOLIC_BEVERAGE.value: 0,
@@ -91,16 +90,81 @@ def get_waterfall_chart(plan):
         ExpenseCategory.MISCELLANEOUS.value: 0
     }
 
+    btc = (plan.btc + (plan.partner_data['btc'] if has_partner else 0)) / 12
+    sum_expenses += btc
+
+    btc_bar = {
+        'color': expenseGroups[1]['color'],
+        'amt': round(btc),
+        'height': btc / max(1, sum_expenses) * 100,
+        'left': 0
+    }
+
+    x_axis = [expenseGroups[1]['label']] + list(map(lambda item: RetirementPlan.get_expense_category_text(item['cat']), expenses))
+    y_axis = range(int(math.ceil(sum_expenses / 1000.0)) * 1000, 0, -1000)
+
+    # TODO: Group by categories and sort by alphabetical order of x_axis
+    bars = [btc_bar] + [{
+        'color': expenseGroups[expensesGroupsMapping[item['cat']]]['color'],
+        'amt': round(item['amt']),
+        'height': item['amt'] / sum_expenses * 100,
+        'left': (i + 1) * 100 / max(1, len(x_axis))
+    } for i, item in enumerate(expenses)]
+
     return {
         'x_axis': x_axis,
         'x_unit_width': int(100 / max(1, len(x_axis)) * 100) / 100,
         'y_axis': y_axis,
         'y_unit_width': 100 / max(1, len(y_axis)),
         'legends': expenseGroups,
-        'bars': [{
-            'color': expenseGroups[expensesGroupsMapping[item['cat']]]['color'],
-            'amt': round(item['amt']),
-            'height': item['amt'] / sum_expenses * 100,
-            'left': i * 100 / max(1, len(x_axis))
-        } for i, item in enumerate(expenses)]
+        'bars': bars
     }
+
+def get_tax_situation(plan):
+    try:
+        p = plan.projection
+        return {
+            'client': {
+                'yours_to_keep': 1 - p.current_percent_state_tax - p.current_percent_fed_tax - p.current_percent_medicare - p.current_percent_soc_sec,
+                'state_income_tax': p.current_percent_state_tax,
+                'federal_income_tax': p.current_percent_fed_tax,
+                'medicare': p.current_percent_medicare,
+                'social_security': p.current_percent_soc_sec
+            },
+            'partner': {
+                'yours_to_keep': 1 - p.part_current_percent_state_tax - p.part_current_percent_fed_tax - p.part_current_percent_medicare - p.part_current_percent_soc_sec,
+                'state_income_tax': p.part_current_percent_state_tax,
+                'federal_income_tax': p.part_current_percent_fed_tax,
+                'medicare': p.part_current_percent_medicare,
+                'social_security': p.part_current_percent_soc_sec
+            }
+        }
+    except ObjectDoesNotExist:
+        return {
+            'client': {
+                'yours_to_keep': 0.5805,
+                'state_income_tax': 0.093,
+                'federal_income_tax': 0.25,
+                'medicare': 0.0145,
+                'social_security': 0.062
+            },
+            'partner': {
+                'yours_to_keep': 0.5805,
+                'state_income_tax': 0.093,
+                'federal_income_tax': 0.25,
+                'medicare': 0.0145,
+                'social_security': 0.062
+            }
+        }
+
+def get_pensions_annuities(plan):
+    pa = plan.external_income.all()
+    # TODO: return all the external incomes added or restrict to have only one external income
+    if pa.count():
+        return pa[0]
+    else:
+        return {
+            'name': 'N/A',
+            'begin_date': None,
+            'amount': None
+        }

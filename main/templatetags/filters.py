@@ -34,8 +34,11 @@ def percentage(value, decimals=2):
 @register.filter
 def currency(value, decimals=2, symbol='$'):
     try:
-        value = round(float(value), 2)
-        return "%s%s%s" % (symbol, intcomma(int(value)), ("%0.2f" % value)[-3:])
+        value = round(float(value), decimals)
+        if decimals > 0:
+            return "%s%s%s" % (symbol, intcomma(int(value)), (("%0." + str(decimals) + "f") % value)[-(decimals+1):])
+        else:
+            return "%s%s" % (symbol, intcomma(int(value)))
     except (ValueError, TypeError):
         return ''
 

@@ -3,7 +3,7 @@
 
     <div class="page-content" style="padding-left: 0.26in;">
       <p style="padding-top: 50px; margin-bottom: 74px; white-space:nowrap">
-      	{{statement.create_date|date:"b d Y"|upper}}
+      	{{statement.create_date|date:"F d, Y"}}
       </p>
 
       <p style="margin-bottom: 45px;">
@@ -15,7 +15,7 @@
       </p>
 
       <p style="margin-bottom: 30px;">
-      	Dear {{owner.full_name}}{% if has_partner %} {{partner_name}}{% endif %},
+      	Dear {{owner.first_name}}{% if has_partner %} and {{partner_name}}{% endif %},
       </p>
       <div class="justified">
         <p>We are here to help you achieve your retirement dreams.</p>
@@ -24,7 +24,7 @@
         <p>In preparing this document we have taken into account the information you provided, together with your financial situation, needs and goals. In particular you told us that:</p>
         <ul>
           <li>
-            {{client.full_name}}, you want to retire at {{plan.retirement_age}}
+            {{client.first_name}}, you want to retire at {{plan.retirement_age}}
             {% if has_partner %} and {{partner_name}}, you want to retire at {{plan.partner_data.retirement_age}}{% endif %}.
           </li>
           <li>

@@ -1,5 +1,5 @@
 {% load static from staticfiles %}
-{% load humanize %}
+{% load i18n filters %}
 <div id="page8-div" class="page-div">
   <div class="page-header">
     <div class="headline">Personal Situation 6</div>
@@ -17,7 +17,7 @@
   </p>
   <p>
     Your target retirement lifestyle is {{plan.lifestyle_text}} ({{plan.lifestyle}})<br />
-    This lifestyle profile has a retirement income target of ${{plan.desired_income|intcomma}}
+    This lifestyle profile has a retirement income target of {{plan.desired_income|currency:0}}
   </p>
   <p style="font-size: 8pt;">
     In preparing our recommendations we have taken into account your circumstances and
