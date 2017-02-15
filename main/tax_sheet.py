@@ -407,6 +407,7 @@ class TaxUser(object):
 
         self.reqd_min_dist = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         self.nontaxable_distribution = [0. for i in range(self.total_rows - self.pre_retirement_end)]
+        self.taxable_distribution = [0. for i in range(self.total_rows - self.pre_retirement_end)]
         
         for i in range(0, self.total_rows - self.pre_retirement_end):
             self.post_deccumulation_capital_growth_nontaxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_nontaxable[i - 1] - self.nontaxable_distribution[i - 1]
@@ -417,14 +418,16 @@ class TaxUser(object):
             else:
                 self.reqd_min_dist[i] = 0.
                 
-            self.post_deccumulation_capital_growth_taxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_taxable[i - 1] - self.reqd_min_dist[i]
-            self.post_deccumulation_balance_taxable[i] = self.post_deccumulation_capital_growth_taxable[i] + self.post_deccumulation_balance_taxable[i - 1]
-                
             if self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] > self.reqd_min_dist[i]:
                 if self.maindf['Nontaxable_Accounts_Pre_Deccumulation'].iloc[self.pre_retirement_end + i - 1] + self.post_deccumulation_balance_nontaxable[i - 1] > 0:
                     self.nontaxable_distribution[i] = self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] - self.reqd_min_dist[i]
+                    self.taxable_distribution[i] = 0.
                 else:
                     self.nontaxable_distribution[i] = 0.
+                    self.taxable_distribution[i] = self.maindf['Ret_Certain_Inc_Gap'].iloc[self.pre_retirement_end + i] - self.reqd_min_dist[i]
+                
+            self.post_deccumulation_capital_growth_taxable[i] = self.post_portfolio_return[i] * self.post_deccumulation_balance_taxable[i - 1] - self.reqd_min_dist[i] - self.taxable_distribution[i]
+            self.post_deccumulation_balance_taxable[i] = self.post_deccumulation_capital_growth_taxable[i] + self.post_deccumulation_balance_taxable[i - 1]
 
         self.maindf['Deccumulation_Capital_Growth_Taxable'] = self.set_full_series(self.pre_deccumulation_capital_growth_taxable, self.post_deccumulation_capital_growth_taxable)
         self.maindf['Deccumulation_Balance_Taxable'] = self.set_full_series(self.pre_deccumulation_balance_taxable, self.post_deccumulation_balance_taxable) 
@@ -884,6 +887,7 @@ class TaxUser(object):
         
         start = max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 10)
         end = min(max(helpers.get_period_of_age(self.age, 71) , start + 1) ,self.total_rows)
+        
         print("")
         print("--------------------------------------Retirement model OUTPUTS -------------------")
         print("--------------------------------------Taxable_Accounts ---------------------------")
