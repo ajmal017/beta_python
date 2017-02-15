@@ -122,9 +122,9 @@ class TaxUser(object):
         self.ss_fra_todays = ss_fra_todays
         self.paid_days = paid_days
         self.retirement_accounts = retirement_accounts
-        self.contrib_rate_employee_401k = 0
-        self.contrib_rate_employer_401k = 0
-        self.initial_401k_balance = 0
+        #self.contrib_rate_employee_401k = 0
+        #self.contrib_rate_employer_401k = 0
+        #self.initial_401k_balance = 0
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
         self.sum_expenses = helpers.get_sum_expenses(expenses)
