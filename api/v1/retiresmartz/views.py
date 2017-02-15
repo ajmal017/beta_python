@@ -6,6 +6,7 @@ import scipy.stats as st
 from dateutil.relativedelta import relativedelta
 from django.db.models import Q
 from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.decorators import detail_route, list_route
 from rest_framework.exceptions import ValidationError
@@ -27,7 +28,7 @@ from retiresmartz.calculator.cashflows import EmploymentIncome, \
     InflatedCashFlow, ReverseMortgage
 from retiresmartz.calculator.desired_cashflows import RetiresmartzDesiredCashFlow
 from retiresmartz.calculator.social_security import calculate_payments
-from retiresmartz.models import RetirementAdvice, RetirementPlan
+from retiresmartz.models import RetirementAdvice, RetirementPlan, RetirementProjection
 from support.models import SupportRequest
 from . import serializers
 from main import tax_sheet as tax
@@ -596,7 +597,7 @@ equired to generate the
             return Response({'error': rdata}, status=status.HTTP_400_BAD_REQUEST)
 
         plan.set_settings(settings)
-        plan.save() 
+        plan.save()
 
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
@@ -627,6 +628,27 @@ equired to generate the
                         plan.expenses,
                         plan.btc)
         user.create_maindf()
+        try:
+            projection = plan.projection
+        except ObjectDoesNotExist:
+            projection = RetirementProjection(plan=plan)
+
+        projection.proj_balance_at_retire_in_todays = user.proj_balance_at_retire_in_todays
+        projection.proj_inc_actual_at_retire_in_todays = user.proj_inc_actual_at_retire_in_todays
+        projection.proj_inc_desired_at_retire_in_todays = user.proj_inc_desired_at_retire_in_todays
+        projection.savings_end_date_as_age = user.savings_end_date_as_age
+        projection.current_percent_soc_sec = user.current_percent_soc_sec
+        projection.current_percent_medicare = user.current_percent_medicare
+        projection.current_percent_fed_tax = user.current_percent_fed_tax
+        projection.current_percent_state_tax = user.current_percent_state_tax
+        projection.non_taxable_inc = user.non_taxable_inc
+        projection.tot_taxable_dist = user.tot_taxable_dist
+        projection.annuity_payments = user.annuity_payments
+        projection.pension_payments = user.pension_payments
+        projection.ret_working_inc = user.ret_working_inc
+        projection.soc_sec_benefit = user.soc_sec_benefit
+        projection.taxable_accounts = user.taxable_accounts
+        projection.non_taxable_accounts = user.non_taxable_accounts
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             partner = tax.TaxUser(plan.client.date_of_birth,
@@ -650,6 +672,25 @@ equired to generate the
                         plan.expenses,
                         plan.btc)
             partner.create_maindf()
+
+            projection.part_proj_balance_at_retire_in_todays = partner.proj_balance_at_retire_in_todays
+            projection.part_proj_inc_actual_at_retire_in_todays = partner.proj_inc_actual_at_retire_in_todays
+            projection.part_proj_inc_desired_at_retire_in_todays = partner.proj_inc_desired_at_retire_in_todays
+            projection.part_savings_end_date_as_age = partner.savings_end_date_as_age
+            projection.part_current_percent_soc_sec = partner.current_percent_soc_sec
+            projection.part_current_percent_medicare = partner.current_percent_medicare
+            projection.part_current_percent_fed_tax = partner.current_percent_fed_tax
+            projection.part_current_percent_state_tax = partner.current_percent_state_tax
+            projection.part_non_taxable_inc = partner.non_taxable_inc
+            projection.part_tot_taxable_dist = partner.tot_taxable_dist
+            projection.part_annuity_payments = partner.annuity_payments
+            projection.part_pension_payments = partner.pension_payments
+            projection.part_ret_working_inc = partner.ret_working_inc
+            projection.part_soc_sec_benefit = partner.soc_sec_benefit
+            projection.part_taxable_accounts = partner.taxable_accounts
+            projection.part_non_taxable_accounts = partner.non_taxable_accounts
+
+        projection.save()
 
         # Convert these returned values to a format for the API
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:

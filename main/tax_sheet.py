@@ -573,19 +573,19 @@ class TaxUser(object):
         self.deflation_factor_retirement_in_todays = helpers.get_inflator_to_period(self.retirement_start)['Inflator'][self.retirement_start - 1]
 
         # PROJECTED BALANCE AT RETIREMENT IN TODAYS
-        self.projected_balance_at_retirement_in_todays = self.maindf['Taxable_Accounts'][self.retirement_start]/self.deflation_factor_retirement_in_todays
+        self.proj_balance_at_retire_in_todays = self.maindf['Taxable_Accounts'][self.retirement_start]/self.deflation_factor_retirement_in_todays
 
         # PROJECTED INCOME ACTUAL AT RETIREMENT IN TODAYS
-        self.projected_income_actual_at_retirement_in_todays = self.maindf['Tot_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
+        self.proj_inc_actual_at_retire_in_todays = self.maindf['Tot_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
 
         # PROJECTED INCOME DESIRED AT RETIREMENT IN TODAYS
-        self.projected_income_desired_at_retirement_in_todays = self.maindf['Desired_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
+        self.proj_inc_desired_at_retire_in_todays = self.maindf['Desired_Inc'][self.retirement_start]/self.deflation_factor_retirement_in_todays
 
         # SAVINGS END DATE AS AGE 
         self.savings_end_date_as_age = self.get_savings_end_date_as_age()
 
         # SOA DOLLAR BILL PERCENTAGES CURRENT
-        self.soc_sec_percent_current, self.medicare_percent_current, self.fed_tax_percent_current, self.state_tax_percent_current = self.get_soa_dollar_bill_percentages()
+        self.current_percent_soc_sec, self.current_percent_medicare, self.current_percent_fed_tax, self.current_percent_state_tax = self.get_soa_dollar_bill_percentages()
 
         # COMPONENTS OF TAXABLE INCOME
         self.non_taxable_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Non_Taxable_Inc'])
@@ -896,10 +896,10 @@ class TaxUser(object):
         print("--------------------------------------Various ---------------------------")
         print('self.get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):age:                    ' + str(self.age))
         print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
-        print('self.soc_sec_percent_current ' + str(self.soc_sec_percent_current))
-        print('self.medicare_percent_current' + str(self.medicare_percent_current))
-        print('self.fed_tax_percent_current ' + str(self.fed_tax_percent_current))
-        print('self.state_tax_percent_current:' + str(self.state_tax_percent_current))
+        print('self.current_percent_soc_sec ' + str(self.current_percent_soc_sec))
+        print('self.current_percent_medicare' + str(self.current_percent_medicare))
+        print('self.current_percent_fed_tax ' + str(self.current_percent_fed_tax))
+        print('self.current_percent_state_tax:' + str(self.current_percent_state_tax))
         print('ss_fra_retirement:           ' + str(helpers.get_ss_benefit_future_dollars(self.ss_fra_todays, self.dob, self.desired_retirement_age)))
         print('self.get_employee_monthly_contrib_monthly_view():' + str(self.get_employee_monthly_contrib_monthly_view()))
         print('self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), monthly_contrib_employee_base):' + str(self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)))
