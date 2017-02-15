@@ -123,8 +123,8 @@ class FirmFactory(factory.django.DjangoModelFactory):
     token = factory.Sequence(lambda n: 'Token %d' % n)
     default_portfolio_set = factory.SubFactory(PortfolioSetFactory)
     slug = factory.Sequence(lambda n: 'Slug %d' % n)
-    logo = factory.django.ImageField(filename='some_firm_logo.jpg')
-    knocked_out_logo = factory.django.ImageField(filename='some_colored_logo.jpg')
+    logo = factory.django.ImageField(filename='some_firm_logo.png', format='PNG')
+    knocked_out_logo = factory.django.ImageField(filename='some_colored_logo.png', format='PNG')
 
 
 class RiskProfileGroupFactory(factory.django.DjangoModelFactory):
