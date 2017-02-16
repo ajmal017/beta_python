@@ -579,6 +579,10 @@ class RetirementProjection(models.Model):
     soc_sec_benefit = JSONField(null=True, blank=True, help_text="List of monthly social security benefit payments received")
     taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly taxable accounts")
     non_taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly nontaxable accounts")
+    reverse_mort = models.BooleanField(default=False, null=False, help_text="Whether user has a reverse mortgage")
+    house_value = models.FloatField(default=0, null=True, help_text="Current value of house")
+    house_value_at_retire_in_todays = models.FloatField(default=0, null=True, help_text="Future value of house in todays")
+    reverse_mort_pymnt_at_retire_in_todays = models.FloatField(default=0, null=True, help_text="Future value of monthly reverse mortgage payment in todays")
 
     #partner
     part_proj_balance_at_retire_in_todays = models.FloatField(default=0, null=True, help_text="Projected balance at retirement in today's money")
@@ -597,6 +601,10 @@ class RetirementProjection(models.Model):
     part_soc_sec_benefit = JSONField(null=True, blank=True, help_text="List of monthly social security benefit payments received")
     part_taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly taxable accounts")
     part_non_taxable_accounts = JSONField(null=True, blank=True, help_text="List of monthly nontaxable accounts")
+    part_reverse_mort = models.BooleanField(default=False, null=False, help_text="Whether user has a reverse mortgage")
+    part_house_value = models.FloatField(default=0, null=True, help_text="Current value of house")
+    part_house_value_at_retire_in_todays = models.FloatField(default=0, null=True, help_text="Future value of house in todays")
+    part_reverse_mort_pymnt_at_retire_in_todays = models.FloatField(default=0, null=True, help_text="Future value of monthly reverse mortgage payment in todays")
 
     def save(self, *args, **kwargs):
         super(RetirementProjection, self).save(*args, **kwargs)

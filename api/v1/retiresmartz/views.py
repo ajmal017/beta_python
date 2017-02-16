@@ -663,6 +663,10 @@ equired to generate the
         projection.soc_sec_benefit = user.soc_sec_benefit
         projection.taxable_accounts = user.taxable_accounts
         projection.non_taxable_accounts = user.non_taxable_accounts
+        projection.reverse_mort = user.reverse_mort
+        projection.house_value = user.house_value
+        projection.house_value_at_retire_in_todays = user.house_value_at_retire_in_todays
+        projection.reverse_mort_pymnt_at_retire_in_todays = user.reverse_mort_pymnt_at_retire_in_todays
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
 
@@ -704,6 +708,10 @@ equired to generate the
             projection.part_soc_sec_benefit = partner.soc_sec_benefit
             projection.part_taxable_accounts = partner.taxable_accounts
             projection.part_non_taxable_accounts = partner.non_taxable_accounts
+            projection.part_reverse_mort = partner.reverse_mort
+            projection.part_house_value = partner.house_value
+            projection.part_house_value_at_retire_in_todays = partner.house_value_at_retire_in_todays
+            projection.part_reverse_mort_pymnt_at_retire_in_todays = partner.reverse_mort_pymnt_at_retire_in_todays
 
         projection.save()
 

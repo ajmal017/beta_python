@@ -15,6 +15,33 @@ def get_age(dob):
     return ((pd.Timestamp('today') - pd.Timestamp(dob)).days)/365.25
 
 
+def get_annual_sum(intra_year_series, year_list):
+    '''
+    returns series of annualized quantities for each year in year_list, obtained by summing all values in intra_year_series for each year
+    '''
+    year_series_elements = []
+    for yr in year_list:
+        annual_sum = 0
+        for element in intra_year_series.loc[pd.Timestamp(str(yr) + '0101').date():pd.Timestamp(str(yr) + '1231').date()]:
+            annual_sum = annual_sum + element
+        year_series_elements.append(annual_sum)
+    return year_series_elements
+
+
+def get_annual_year_end_value(intra_year_series, year_list):
+    '''
+    returns series of year_end quantities for each year in year_list, obtained by taking the last (i.e. latest)
+    value in the intra_year_series for each year
+    '''
+    year_series_elements = []
+    for yr in year_list:
+        latest_value = 0
+        for element in intra_year_series.loc[pd.Timestamp(str(yr) + '0101').date():pd.Timestamp(str(yr) + '1231').date()]:
+            latest_value = element
+        year_series_elements.append(latest_value)
+    return year_series_elements
+            
+
 def get_deflator_from_period(period):
     '''
     returns dataframe of 'period-based' deflation factors for each period back from period, from now out to period
@@ -44,6 +71,13 @@ def get_period_of_age(age_now, future_age):
 
 def get_portfolio_return_above_cpi(desired_risk):
     return desired_risk * 10.0 * 0.005
+
+
+def get_pre_retirement_years(dob, desired_retirement_age):
+    '''
+    returns number of years between now and start of retirement
+    '''
+    return round(desired_retirement_age - get_age(dob))
             
 
 def get_retirement_account_index(acnt_type):
@@ -55,6 +89,20 @@ def get_retirement_account_index(acnt_type):
         if acnt_type['acc_type'] == constants.US_RETIREMENT_ACCOUNT_TYPES[i]:
             return i
     raise Exception('unrecognized account type')
+    
+
+def get_retirement_model_projection_index(start_date, period):
+    '''
+    returns retirement model dataframe index from given start date and for given period
+    '''
+    return [start_date + relativedelta(months=1) + relativedelta(months=+i) for i in range(period)]
+
+
+def get_retirement_years(life_exp, desired_retirement_age):
+    '''
+    returns the number of years between retirement and life expectancy
+    '''
+    return round(math.ceil(life_exp) - desired_retirement_age)
 
 
 def get_soc_sec_factor(desired_retirement_age):
@@ -109,6 +157,13 @@ def get_ss_fra_future_dollars(ss_fra_todays, period):
     return ss_fra_todays * get_inflator_to_period(period)['Inflator']    
 
 
+def get_start_year():
+    '''
+    returns start year
+    '''
+    return pd.Timestamp('today').year
+
+
 def get_sum_expenses(expenses):
     '''
     returns sum of expenses
@@ -121,13 +176,40 @@ def get_sum_expenses(expenses):
             else:
                 sum_expenses = sum_expenses + exp['amt']                         
     return sum_expenses
-    
 
-def get_retirement_model_projection_index(start_date, period):
+
+def get_years(dob, life_exp):
     '''
-    returns retirement model dataframe index from given start date and for given period
+    retuns a list of the years between now and end of projection
     '''
-    return [start_date + relativedelta(months=1) + relativedelta(months=+i) for i in range(period)]
+    start_year = get_start_year()
+    years = [i for i in range(start_year, start_year + get_years_to_project(dob, life_exp))]
+    return years
+
+
+def get_years_post(dob, desired_retirement_age, life_exp):
+    '''
+    retuns a list of the years between retirement ... and DEATH
+    '''
+    start_year = get_start_year()
+    years = [i for i in range(start_year + get_pre_retirement_years(dob, desired_retirement_age), start_year + get_years_to_project(dob, life_exp))]
+    return years
+
+
+def get_years_pre(dob, desired_retirement_age, life_exp):
+    '''
+    retuns a list of the years between now and start of retirement
+    '''
+    start_year = get_start_year()
+    years = [i for i in range(start_year, start_year + get_pre_retirement_years(dob, desired_retirement_age))]
+    return years
+
+
+def get_years_to_project(dob, life_exp):
+    '''
+    returns the number of years to be projected
+    '''
+    return round(math.ceil(life_exp) - get_age(dob)) # i.e. assume user dies at the start of the year of their life expectancy, rather than at the end
 
 
 def show_inputs(dob,
