@@ -9,7 +9,7 @@ from django.utils import timezone
 from api.v1.tests.factories import TickerFactory, GoalFactory, TransactionFactory, ExecutionDistributionFactory, \
     PositionLotFactory, ContentTypeFactory, AssetClassFactory
 from main.models import Goal, Transaction, MarketOrderRequest, Execution, InvestmentType
-from main.models import PortfolioProvider
+#from main.models import PortfolioProvider
 from main.tests.fixture import Fixture1
 
 
