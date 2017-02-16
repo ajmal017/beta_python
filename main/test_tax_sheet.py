@@ -10,11 +10,11 @@ test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py
 
 dob = pd.Timestamp('1991-04-05')
 
-desired_retirement_age = 66.
+desired_retirement_age = 65.
 
-life_exp = 81.
+life_exp = 82.
 
-retirement_lifestyle = 3
+retirement_lifestyle = 4
 
 total_income = 51078.
 
@@ -22,7 +22,7 @@ reverse_mort = False
 
 house_value = 1.0
 
-risk_profile_group = 0.2
+risk_profile_group = 0.13
 
 filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
@@ -43,70 +43,26 @@ regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
                                                "standardDeduction":0,
                                                "earnedIncomeCredit":0 },
                   "politically_exposed":False,
-                  "tax_transcript_data":{   "se_tax":0,
-                                            "premium_tax_credit":0,
-                                            "exemption_amount":0,
-                                            "total_credits":0,
-                                            "exemptions":3,
-                                            "SSN_spouse":"123-45-6789\n987-65-4321",
-                                            "blind":False,
-                                            "adjusted_gross_income":1370,
-                                            "taxable_income":0,
-                                            "total_payments":0,                                            
-                                            "add_child_tax_credit":0,
-                                            "name":"THOMAS E TAXPAYER",
-                                            "address":{     "address2":"",
-                                                            "state":"USA",
-                                                            "post_code":"00001",
-                                                            "city":"ANYWHERE",
-                                                            "address1":"123 MAIN STREET"   },
-                                            "tax_period":"2011-12-31",
-                                            "total_income":0,
-                                            "excess_ss_credit":0,
-                                            "earned_income_credit":0,
-                                            "total_adjustments":0,
-                                            "total_tax":0,
-                                            "blind_spouse":False,
-                                            "refundable_credit":0,
-                                            "std_deduction":0,
-                                            "SSN":"123-12-3412",
-                                            "filing_status":1,
-                                            "combat_credit":0,
-                                            "tentative_tax":0,
-                                            "name_spouse":"TAMARA B TAXPAYER" }
+                  "tax_transcript_data":None
                   }
 
-external_income = {'amount':0, 'begin_date': date(2020, 1, 1)}
+external_income = []
 
 income_growth = 1.0
 
 employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
 
-ss_fra_todays = 1078.
+ss_fra_todays = 2000.
 
 paid_days = 0
 
-retirement_accounts = [{'employer_match_type': 'contributions', 'id': 1, 'owner': 'self', 'balance_efdt': '2017-02-02', 'name': '401K',
-                        'employer_match': 0.49, 'contrib_amt': 250, 'balance': 25000, 'acc_type': 5, 'cat': 2, 'contrib_period': 'monthly'}]
+retirement_accounts = [{'owner': 'self', 'id': 1, 'contrib_amt': 28, 'balance': 15000, 'employer_match_type': 'contributions', 'cat': 3, 'name': 'Walmart 401k', 'balance_efdt': '2016-12-31', 'acc_type': 5, 'contrib_period': 'monthly', 'employer_match': 0.5}, {'owner': 'self', 'id': 2, 'contrib_amt': 13, 'balance': 1200, 'employer_match_type': 'none', 'cat': 4, 'name': 'Roth IRA', 'balance_efdt': '2017-02-01', 'acc_type': 8, 'contrib_period': 'yearly', 'employer_match': 0}]
 
 zip_code = 19104
 
-expenses = [{'amt': 54, 'cat': 11, 'who': 'self', 'desc': 'Savings', 'id': 11},
-            {'amt': 18, 'cat': 13, 'who': 'self', 'desc': 'Tobacco', 'id': 13},
-            {'amt': 668, 'cat': 14, 'who': 'self', 'desc': 'Transportation', 'id': 14},
-            {'amt': 34, 'cat': 15, 'who': 'self', 'desc': 'Miscellaneous', 'id': 15},
-            {'amt': 37, 'cat': 1, 'who': 'self', 'desc': 'Alcoholic Beverage', 'id': 1},
-            {'amt': 95, 'cat': 2, 'who': 'self', 'desc': 'Apparel & Services', 'id': 2},
-            {'amt': 67, 'cat': 3, 'who': 'self', 'desc': 'Education', 'id': 3},
-            {'amt': 150, 'cat': 4, 'who': 'self', 'desc': 'Entertainment', 'id': 4},
-            {'amt': 425, 'cat': 5, 'who': 'self', 'desc': 'Food', 'id': 5},
-            {'amt': 200, 'cat': 6, 'who': 'self', 'desc': 'Healthcare', 'id': 6},
-            {'amt': 1050, 'cat': 7, 'who': 'self', 'desc': 'Housing', 'id': 7},
-            {'amt': 394, 'cat': 8, 'who': 'self', 'desc': 'Insuarance, Pensions & Social Security', 'id': 8},
-            {'amt': 40, 'cat': 9, 'who': 'self', 'desc': 'Personal Care', 'id': 9},
-            {'amt': 5, 'cat': 10, 'who': 'self', 'desc': 'Reading', 'id': 10},
-            {'amt': 517, 'cat': 12, 'who': 'self', 'desc': 'Taxes', 'id': 12}]
+expenses = [{'id': 11, 'desc': 'Savings', 'who': 'self', 'amt': 55, 'cat': 11}, {'id': 13, 'desc': 'Tobacco', 'who': 'self', 'amt': 46, 'cat': 13}, {'id': 14, 'desc': 'Transportation', 'who': 'self', 'amt': 718, 'cat': 14}, {'id': 15, 'desc': 'Miscellaneous', 'who': 'self', 'amt': 30, 'cat': 15}, {'id': 1, 'desc': 'Alcoholic Beverage', 'who': 'self', 'amt': 45, 'cat': 1}, {'id': 2, 'desc': 'Apparel & Services', 'who': 'self', 'amt': 166, 'cat': 2}, {'id': 3, 'desc': 'Education', 'who': 'self', 'amt': 129, 'cat': 3}, {'id': 4, 'desc': 'Entertainment', 'who': 'self', 'amt': 154, 'cat': 4}, {'id': 5, 'desc': 'Food', 'who': 'self', 'amt': 614, 'cat': 5}, {'id': 6, 'desc': 'Healthcare', 'who': 'self', 'amt': 158, 'cat': 6}, {'id': 7, 'desc': 'Housing', 'who': 'self', 'amt': 1729, 'cat': 7}, {'id': 8, 'desc': 'Insuarance, Pensions & Social Security', 'who': 'self', 'amt': 215, 'cat': 8}, {'id': 12, 'desc': 'Taxes', 'who': 'self', 'amt': 154.1006810700825, 'cat': 12}]
 
-btc = 50000.
+
+btc = 349.
 
 

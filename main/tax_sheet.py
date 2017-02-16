@@ -616,7 +616,7 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
-
+        
 
     def get_a_retirement_income(self, begin_date, amount):
         '''
@@ -655,11 +655,11 @@ class TaxUser(object):
         btc_factor = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
-                j = helpers.get_retirement_account_index(acnt)
-                if monthly_contrib_employee_base[j] == 0:
-                    btc_factor[j] = 0.
+                k = helpers.get_retirement_account_index(acnt)
+                if monthly_contrib_employee_base[k] == 0:
+                    btc_factor[k] = 0.
                 else:
-                    btc_factor[j] = (employee_monthly_contrib_monthly_view/monthly_contrib_employee_base[j])
+                    btc_factor[k] = (employee_monthly_contrib_monthly_view/monthly_contrib_employee_base[k])
         return btc_factor
 
 
@@ -915,7 +915,10 @@ class TaxUser(object):
         print('self.current_percent_state_tax:' + str(self.current_percent_state_tax))
         print('ss_fra_retirement:           ' + str(helpers.get_ss_benefit_future_dollars(self.ss_fra_todays, self.dob, self.desired_retirement_age)))
         print('self.get_employee_monthly_contrib_monthly_view():' + str(self.get_employee_monthly_contrib_monthly_view()))
+        print('self.monthly_contrib_employee_base:' + str(self.monthly_contrib_employee_base))
         print('self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), monthly_contrib_employee_base):' + str(self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)))
+        print("--------------------------------------Annualized for SOA ---------------------------")
+        print(self.annual_df)
         print("[Set self.debug=False to hide these]")
         print("")
             
