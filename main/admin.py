@@ -12,11 +12,12 @@ from advisors import models as advisor_models
 from genericadmin.admin import BaseGenericModelAdmin, GenericAdminModelAdmin
 from main.models import AccountGroup, ActivityLog, ActivityLogEvent, Advisor, \
     AssetFeature, AssetFeePlan, AuthorisedRepresentative, Dividend, \
-    EventMemo, Firm, FirmData, FiscalYear, PortfolioProvider, Goal, GoalMetric, GoalMetricGroup, \
+    EventMemo, Firm, FirmData, FiscalYear, Goal, GoalMetric, GoalMetricGroup, \
     GoalSetting, GoalType, Inflation, InvestmentType, MarketIndex, Performer, \
     Portfolio, PortfolioItem, PortfolioSet, PositionLot, PricingPlan, \
     ProxyAssetClass, ProxyTicker, Ticker, Transaction, User, View, \
-    ManagerBenchmarks, DefaultPortfolioProvider
+    ManagerBenchmarks
+#from main.models import PortfolioProvider, DefaultPortfolioProvider
 
 
 class AssetResource(resources.ModelResource):
@@ -366,8 +367,8 @@ admin.site.register(advisor_models.ChangeDealerGroup, AdvisorChangeDealerGroupAd
 admin.site.register(advisor_models.SingleInvestorTransfer, AdvisorSingleInvestorTransferAdmin)
 admin.site.register(advisor_models.BulkInvestorTransfer, AdvisorBulkInvestorTransferAdmin)
 admin.site.register(Performer, PerformerAdmin)
-admin.site.register(PortfolioProvider, PortfolioProviderAdmin)
-admin.site.register(DefaultPortfolioProvider, DefaultDefaultPortfolioProviderAdmin)
+#admin.site.register(PortfolioProvider, PortfolioProviderAdmin)
+#admin.site.register(DefaultPortfolioProvider, DefaultDefaultPortfolioProviderAdmin)
 admin.site.register(Goal, GoalAdmin)
 admin.site.register(GoalType, GoalTypeAdmin)
 admin.site.register(MarketIndex)
