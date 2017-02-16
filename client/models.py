@@ -1023,3 +1023,23 @@ class JointAccountConfirmationModel(models.Model):
         super(JointAccountConfirmationModel, self).save(force_insert,
                                                         force_update,
                                                         using, update_fields)
+
+
+class HealthDevice(models.Model):
+    class ProviderType(ChoiceEnum):
+        GOOGLE_FIT = 1, 'Google Fit'
+        FITBIT = 2, 'Fitbit'
+        SAMSUNG_DIGI_HEALTH = 3, 'Samsung Digital Health'
+        MICROSOFT_HEALTH = 4, 'Microsoft Health'
+        JAWBONE = 5, 'Jawbone'
+        UNDERARMOUR = 6, 'Under Armour'
+        WITHINGS = 7, 'Withings'
+        TOMTOM = 8, 'TomTom'
+        GARMIN = 9, 'Garmin'
+
+    client = models.OneToOneField('client.Client', related_name='health_device', help_text='The health device owner')
+    provider = models.IntegerField(null=True, choices=ProviderType.choices(), help_text='Heath device provider')
+    token = models.CharField(max_length=1000, help_text='Auth Token')
+    refresh_token = models.CharField(max_length=1000, null=True, blank=True, help_text='Auth refresh token')
+    expires_at = models.DateTimeField(null=True, blank=True, help_text='Auth token expiry time')
+    meta = JSONField(null=True, blank=True, help_text='Meta data')

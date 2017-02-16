@@ -27,6 +27,7 @@ import json
 from api.v1.utils import activity
 from django.template.loader import render_to_string
 from main import quovo, plaid
+from client import healthdevices
 from address.models import USState, USFips, USZipcode
 from consumer_expenditure.models import AreaQuotient, PeerGroupData
 from consumer_expenditure import utils as ce_utils
@@ -285,6 +286,22 @@ class ClientViewSet(ApiViewMixin,
         }]
 
         return Response(results)
+
+    # @detail_route(methods=['post'], permission_classes=[IsAdvisorOrClient,], url_path='connect-health-device/')
+    # def create_health_device(self, request, *args, **kwargs):
+    #     user = SupportRequest.target_user(request)
+    #     if not user.is_client:
+    #         return Response('You do not have permission to access this page', status=status.HTTP_403_FORBIDDEN)
+    #     data = healthdevices.create_access_token(request)
+    #     return Response(data)
+
+    @detail_route(methods=['get'], permission_classes=[IsAdvisorOrClient,], url_path='health-device-data/')
+    def get_health_device(self, request, *args, **kwargs):
+        user = SupportRequest.target_user(request)
+        if not user.is_client:
+            return Response('You do not have permission to access this page', status=status.HTTP_403_FORBIDDEN)
+        data = healthdevices.get_data(request)
+        return Response(data)
 
 
 class InvitesView(ApiViewMixin, views.APIView):

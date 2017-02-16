@@ -1,0 +1,34 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+  <title>Betasmartz Client</title>
+</head>
+<body>
+<script type="text/javascript">
+
+// function parseParams(str) {
+//     str = str.replace('#_=_', '');
+//     var pieces = str.split("&"), data = {}, i, parts;
+//     // process each query pair
+//     for (i = 0; i < pieces.length; i++) {
+//         parts = pieces[i].split("=");
+//         if (parts.length < 2) {
+//             parts.push("");
+//         }
+//         data[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+//     }
+//     return data;
+// }
+//
+window.opener.postMessage({
+  type: 'oauth2-healthdevices',
+  payload: {
+    provider: {{provider}},
+    status: {% if status %}true{% else %}false{% endif %}
+  }
+}, '*')
+
+window.close()
+</script>
+</body>
+</html>
