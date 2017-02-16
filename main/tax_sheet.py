@@ -142,17 +142,16 @@ class TaxUser(object):
         '''
         years
         '''
-        self.start_year = pd.Timestamp('today').year
-        self.years_to_project = round(math.ceil(self.life_exp) - self.age) # i.e. assume user dies at the start of the year of their life expectancy, rather than at the ...
-        self.retirement_years = round(math.ceil(self.life_exp) - self.desired_retirement_age)
-        self.pre_retirement_years = round(self.desired_retirement_age - self.age)
-        self.years = [i for i in range(self.start_year, self.start_year + self.years_to_project)]
-        self.years_pre = [i for i in range(self.start_year, self.start_year + self.pre_retirement_years)]
-        self.years_post = [i for i in range(self.start_year + self.pre_retirement_years, self.start_year + self.years_to_project)]
+        self.start_year = helpers.get_start_year()
+        self.years_to_project = helpers.get_years_to_project(self.dob, self.life_exp)
+        self.retirement_years = helpers.get_retirement_years(self.life_exp, self.desired_retirement_age)
+        self.pre_retirement_years = helpers.get_pre_retirement_years(self.dob, self.desired_retirement_age)
+        self.years = helpers.get_years(self.dob, self.life_exp)
+        self.years_pre = helpers.get_years_pre(self.dob, self.desired_retirement_age, self.life_exp)
+        self.years_post = helpers.get_years_post(self.dob, self.desired_retirement_age, self.life_exp)
 
         '''
         remenant
-
         period to retirement may not be a whole number of years.
         'remenant' = periods representing this 'gap'
         '''
@@ -588,16 +587,28 @@ class TaxUser(object):
         self.current_percent_soc_sec, self.current_percent_medicare, self.current_percent_fed_tax, self.current_percent_state_tax = self.get_soa_dollar_bill_percentages()
 
         # COMPONENTS OF TAXABLE INCOME
-        self.non_taxable_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Non_Taxable_Inc'])
-        self.tot_taxable_dist = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Tot_Taxable_Dist'])
-        self.annuity_payments = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Annuity_Payments'])
-        self.pension_payments = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Pension_Payments'])
-        self.ret_working_inc = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Working_Inc'])
-        self.soc_sec_benefit = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit'])
+        self.annual_df = pd.DataFrame(index=self.years)
+        
+        self.annual_df['Non_Taxable_Inc'] = helpers.get_annual_sum(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Non_Taxable_Inc']), self.years)
+        self.annual_df['Tot_Taxable_Dist'] = helpers.get_annual_sum(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Tot_Taxable_Dist']), self.years)
+        self.annual_df['Annuity_Payments'] = helpers.get_annual_sum(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Annuity_Payments']), self.years)
+        self.annual_df['Pension_Payments'] = helpers.get_annual_sum(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Pension_Payments']), self.years)
+        self.annual_df['Ret_Working_Inc'] = helpers.get_annual_sum(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Working_Inc']), self.years)
+        self.annual_df['Soc_Sec_Benefit'] = helpers.get_annual_sum(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit']), self.years)
+
+        self.non_taxable_inc = self.annual_df['Non_Taxable_Inc']
+        self.tot_taxable_dist = self.annual_df['Tot_Taxable_Dist']
+        self.annuity_payments = self.annual_df['Annuity_Payments']
+        self.pension_payments = self.annual_df['Pension_Payments']
+        self.ret_working_inc = self.annual_df['Ret_Working_Inc']
+        self.soc_sec_benefit = self.annual_df['Soc_Sec_Benefit']
 
         # COMPONENTS OF ACCOUNTS
-        self.taxable_accounts = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Taxable_Accounts']) 
-        self.non_taxable_accounts = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Nontaxable_Accounts'])
+        self.annual_df['Taxable_Accounts'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Taxable_Accounts']), self.years)
+        self.annual_df['Nontaxable_Accounts'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['Nontaxable_Accounts']), self.years)
+        
+        self.taxable_accounts = self.annual_df['Taxable_Accounts']
+        self.non_taxable_accounts = self.annual_df['Nontaxable_Accounts']
 
         # REVERSE MORT
         self.house_value_at_retire_in_todays = self.maindf['Home_Value'][self.retirement_start]/self.deflation_factor_retirement_in_todays
@@ -605,6 +616,7 @@ class TaxUser(object):
         
         if(self.debug):
             self.show_outputs()
+
 
     def get_a_retirement_income(self, begin_date, amount):
         '''
