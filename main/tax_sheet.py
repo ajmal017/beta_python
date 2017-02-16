@@ -122,9 +122,6 @@ class TaxUser(object):
         self.ss_fra_todays = ss_fra_todays
         self.paid_days = paid_days
         self.retirement_accounts = retirement_accounts
-        #self.contrib_rate_employee_401k = 0
-        #self.contrib_rate_employer_401k = 0
-        #self.initial_401k_balance = 0
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
         self.sum_expenses = helpers.get_sum_expenses(expenses)
@@ -437,7 +434,7 @@ class TaxUser(object):
 
         pre_zeros = [0. for i in range(self.pre_retirement_end)]
         self.maindf['Reqd_Min_Dist'] = self.set_full_series(pre_zeros, self.reqd_min_dist)
-        self.maindf['Tot_Taxable_Dist'] = self.maindf['Reqd_Min_Dist']
+        self.maindf['Tot_Taxable_Dist'] = self.maindf['Reqd_Min_Dist'] + self.set_full_series(pre_zeros, self.taxable_distribution)
         self.maindf['Tot_Nontaxable_Dist'] = self.set_full_series(pre_zeros, self.nontaxable_distribution)
 
         # TAXABLE ACCOUNTS POST-DECCUMULATION
@@ -601,10 +598,13 @@ class TaxUser(object):
         # COMPONENTS OF ACCOUNTS
         self.taxable_accounts = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Taxable_Accounts']) 
         self.non_taxable_accounts = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Nontaxable_Accounts'])
+
+        # REVERSE MORT
+        self.house_value_at_retire_in_todays = self.maindf['Home_Value'][self.retirement_start]/self.deflation_factor_retirement_in_todays
+        self.reverse_mort_pymnt_at_retire_in_todays = self.maindf['Reverse_Mortgage'][self.retirement_start]/self.deflation_factor_retirement_in_todays
         
         if(self.debug):
             self.show_outputs()
-
 
     def get_a_retirement_income(self, begin_date, amount):
         '''

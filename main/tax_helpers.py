@@ -109,6 +109,13 @@ def get_ss_fra_future_dollars(ss_fra_todays, period):
     return ss_fra_todays * get_inflator_to_period(period)['Inflator']    
 
 
+def get_start_year():
+    '''
+    returns start year
+    '''
+    return pd.Timestamp('today').year
+
+
 def get_sum_expenses(expenses):
     '''
     returns sum of expenses
@@ -128,6 +135,13 @@ def get_retirement_model_projection_index(start_date, period):
     returns retirement model dataframe index from given start date and for given period
     '''
     return [start_date + relativedelta(months=1) + relativedelta(months=+i) for i in range(period)]
+
+
+def get_years_to_project(dob, life_exp):
+    '''
+    returns the number of years to be projected
+    '''
+    return round(math.ceil(life_exp) - get_age(dob)) # i.e. assume user dies at the start of the year of their life expectancy, rather than at the end
 
 
 def show_inputs(dob,
