@@ -647,6 +647,10 @@ equired to generate the
         except ObjectDoesNotExist:
             projection = RetirementProjection(plan=plan)
 
+        projection.income_actual_monthly = user.income_actual_monthly
+        projection.income_desired_monthly = user.income_desired_monthly
+        projection.taxable_assets_monthly = user.taxable_assets_monthly
+        projection.nontaxable_assets_monthly = user.nontaxable_assets_monthly
         projection.proj_balance_at_retire_in_todays = user.proj_balance_at_retire_in_todays
         projection.proj_inc_actual_at_retire_in_todays = user.proj_inc_actual_at_retire_in_todays
         projection.proj_inc_desired_at_retire_in_todays = user.proj_inc_desired_at_retire_in_todays
@@ -692,6 +696,11 @@ equired to generate the
                         plan.btc)
             partner.create_maindf()
 
+            
+            projection.part_income_actual_monthly = partner.income_actual_monthly
+            projection.part_income_desired_monthly = partner.income_desired_monthly
+            projection.part_taxable_assets_monthly = partner.taxable_assets_monthly
+            projection.part_nontaxable_assets_monthly = partner.nontaxable_assets_monthly
             projection.part_proj_balance_at_retire_in_todays = partner.proj_balance_at_retire_in_todays
             projection.part_proj_inc_actual_at_retire_in_todays = partner.proj_inc_actual_at_retire_in_todays
             projection.part_proj_inc_desired_at_retire_in_todays = partner.proj_inc_desired_at_retire_in_todays

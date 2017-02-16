@@ -568,6 +568,12 @@ class TaxUser(object):
         self.pre_0 = [0 for i in range(self.pre_retirement_end)]
         self.maindf['Desired_Inc'] = self.set_full_series(self.pre_0, self.post_des_ret_inc_pre_tax) * self.maindf['Inflator']
 
+        # MONTHLY INPUTS FOR RETIRESMARTZ PLAN GRAPH
+        self.income_actual_monthly = self.maindf['Actual_Inc']
+        self.income_desired_monthly = self.maindf['Desired_Inc']
+        self.taxable_assets_monthly = self.maindf['Taxable_Accounts']
+        self.nontaxable_assets_monthly = self.maindf['Nontaxable_Accounts']
+
         # DEFLATION FACTOR AT RETIREMENT IN TODAYS
         self.deflation_factor_retirement_in_todays = helpers.get_inflator_to_period(self.retirement_start)['Inflator'][self.retirement_start - 1]
 
