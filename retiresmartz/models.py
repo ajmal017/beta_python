@@ -237,7 +237,10 @@ class RetirementPlan(TimestampedModel):
                 old_group = old_setting.metric_group
                 custom_group = old_group.type == GoalMetricGroup.TYPE_CUSTOM
                 last_user = old_group.settings.count() == 1
-                old_setting.delete()
+                try:
+                    old_setting.delete()
+                except Exception as e:
+                    logger.error(e)
                 if custom_group and last_user:
                     old_group.delete()
 
