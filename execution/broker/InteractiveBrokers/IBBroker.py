@@ -144,6 +144,7 @@ class ReferenceWrapper(EWrapper):
     def receiveFA(self, faDataType, xml):
         logger.debug('receiveFA', vars())
 
+
     def historicalData(self, reqId, date, open, high, low, close, volume, count, WAP, hasGaps):
         logger.debug('historicalData', vars())
 
@@ -266,6 +267,11 @@ class IBBroker(BaseBroker):
         if self._connection.isConnected():
             self._connection.eDisconnect()
 
+    def send_pre_trade(self, trade_info): # trade info is fa profile
+
+        self._connection.requestFA(self._connection.PROFILES)
+        self._connection.replaceFA(self._connection.PROFILES, trade_info)
+
     def send_order(self, order):
         order.__class__ = IBOrder # casting to IBOrder
         order.prepare_IB_order()
@@ -288,7 +294,8 @@ class IBBroker(BaseBroker):
         self._connection.reqExecutions(requestId, exf)  #
         while not self._wrapper.isExecutionRequestFinished(requestId):
             very_short_sleep()
-        for execution in self._wrapper.getExecutions(requestId):
+        executions = self._wrapper.getExecutions(requestId)
+        for execution in executions:
             for order in orders:
                 if execution.m_shares > 0 and execution.m_orderId == order.Order_Id:
                     order.setFills(execution.m_price, execution.m_shares)
@@ -299,3 +306,8 @@ class IBBroker(BaseBroker):
         while not self._wrapper.isExecutionRequestFinished(requestId):
             very_short_sleep()
         return self._wrapper.getAccountInfo(broker_account.ib_account)
+
+
+
+       # long_sleep()
+
