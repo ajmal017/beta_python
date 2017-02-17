@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.conf import settings
 from client.models import HealthDevice
 from datetime import datetime, timedelta
 from support.models import SupportRequest
@@ -20,20 +21,20 @@ def connect_fitbit(request):
     if code is not None:
 
         #This is the Fitbit URL
-        TokenURL = "https://api.fitbit.com/oauth2/token"
+        token_url = "https://api.fitbit.com/oauth2/token"
 
 
         #Form the data payload
-        BodyText = {'code' : code,
-                    'redirect_uri' : 'http://local.betasmartz.com/oauth2/health-devices/fitbit/',
+        body_text = {'code' : code,
+                    'redirect_uri' : '{}/oauth2/health-devices/fitbit/'.format(settings.SITE_URL),
                     'client_id' : FITBIT_SETTINGS['CLIENT_ID'],
                     'grant_type' : 'authorization_code'}
 
-        BodyURLEncoded = urllib.parse.urlencode(BodyText)
-        print(BodyURLEncoded)
+        body_url_encoded = urllib.parse.urlencode(body_text)
+        print(body_url_encoded)
 
         #Start the request
-        req = urllib2.Request(TokenURL,BodyURLEncoded.encode('utf-8'))
+        req = urllib2.Request(token_url, body_url_encoded.encode('utf-8'))
 
         #Add the headers, first we base64 encode the client id and client secret with a : inbetween and create the authorisation header
         print(bytes('Basic ', 'utf-8') + base64.b64encode(bytes(FITBIT_SETTINGS['CLIENT_ID'] + ":" + FITBIT_SETTINGS['CLIENT_SECRET'], 'utf-8')))

@@ -10,6 +10,8 @@ main() {
     then
         DBPW='*821917ic2bB&82'
         REDDB=1
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_DEMOSTAGING}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_DEMOSTAGING}
     elif [[ ${2} == 'v2' ]]
     then
         DBPW='Exu!&L+6}/!-m(-}'
@@ -18,10 +20,14 @@ main() {
     then
         DBPW='0ZUbnZ5+:msz:*1O'
         REDDB=3
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_DEV}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_DEV}
     elif [[ ${2} == 'beta' ]]
     then
         DBPW='Beta02jzjdne*10'
         REDDB=4
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_BETA}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_BETA}
     elif [[ ${2} == 'aus' ]]
     then
         DBPW='Ausliejivjljl*20'
@@ -30,24 +36,34 @@ main() {
     then
         DBPW='BetaStagingMGIS129013923i!'
         REDDB=6
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_BETASTAGING}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_BETASTAGING}
     elif [[ ${2} == 'staging' ]]
     then
         DBPW='StagingOgacahi8971*!'
         REDDB=7
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_STAGING}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_STAGING}
     elif [[ ${2} == 'ipdemostaging' ]]
     then
         DBPW='OOJNVuo2ojamscop9j092'
         REDDB=8
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_IPDEMOSTAGING}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_IPDEMOSTAGING}
     elif [[ ${2} == 'ipdev' ]]
     then
         DBPW='Nuion4582nN9a1@'
         REDDB=9
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_IPDEV}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_IPDEV}
     elif [[ ${2} == 'production' ]]
     then
         # production deployment on separate machine
         # storing sensitive production info in environment
         DBPW=${PRODUCTION_DBPW}
         POSTGRES_PASSWORD=${PRODUCTION_POSTGRES}
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_APP}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_APP}
         REDDB=1
     elif [[ ${2} == 'demo' ]]
     then
@@ -55,17 +71,23 @@ main() {
         DBPW=${DEMO_DBPW}
         POSTGRES_PASSWORD=${PRODUCTION_POSTGRES}
         REDDB=2
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_DEMO}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_DEMO}
     elif [[ ${2} == 'ipdemo' ]]
     then
         # ipdemo deploys on production machine
         DBPW=${IPDEMO_DBPW}
         POSTGRES_PASSWORD=${PRODUCTION_POSTGRES}
         REDDB=3
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_IPDEMO}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_IPDEMO}
     elif [[ ${2} == 'manudemo' ]]
     then
         # ipdemo deploys on production machine
         DBPW=${MANUDEMO_DBPW}
         POSTGRES_PASSWORD=${PRODUCTION_POSTGRES}
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_MANUDEMO}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_MANUDEMO}
         REDDB=4
     else
         echo "Unsupported auto-deployment for domain: ${2}" >&2
@@ -91,6 +113,8 @@ main() {
                -e 'MAILGUN_API_KEY='${MAILGUN_API_KEY} \
                -e 'WEBHOOK_AUTHORIZATION='${WEBHOOK_AUTHORIZATION} \
                -e 'DEFAULT_FROM_EMAIL='${DEFAULT_FROM_EMAIL} \
+               -e 'FITBIT_CLIENT_ID='${FITBIT_CLIENT_ID} \
+               -e 'FITBIT_CLIENT_SECRET='${FITBIT_CLIENT_SECRET} \
                --net=betasmartz-local \
                --name=${2}_betasmartz_app_test \
                -d betasmartz/backend:${2}_cd
