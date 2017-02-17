@@ -143,6 +143,9 @@ class SettingsTests(APITestCase):
         self.assertTrue('occupation_types' in response.data)
         self.assertEqual(set(('id', 'name')), set(response.data['occupation_types'][0].keys()))
 
+        # Make sure the 'health_devices' are there
+        self.assertTrue('health_devices' in response.data)
+
     def test_closed_tickers_not_in_settings(self):
         """
         Make sure closed tickers are not returned by the /api/v1/settings endpoint

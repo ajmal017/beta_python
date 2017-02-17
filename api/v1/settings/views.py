@@ -53,7 +53,8 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'constants': self.constants(request).data,
             'industry_types': self.industry_types(request).data,
             'occupation_types': self.occupation_types(request).data,
-            'employer_types': self.employer_types(request).data
+            'employer_types': self.employer_types(request).data,
+            'health_devices': self.health_devices(request).data
         }
         return Response(data)
 
@@ -216,3 +217,10 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
                 "name": itd[key]
             })
         return Response(res)
+
+    @list_route(methods=['get'], url_path='health-devices', permission_classes=[IsAuthenticated])
+    def health_devices(self, request):
+        HEALTH_DEVICES_CONFIG = {
+            'FITBIT_CLIENT_ID': settings.FITBIT_SETTINGS['CLIENT_ID']
+        }
+        return Response(HEALTH_DEVICES_CONFIG)
