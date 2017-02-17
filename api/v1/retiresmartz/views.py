@@ -37,10 +37,8 @@ from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
 from functools import reduce
 import time
-import pdb
 
 logger = logging.getLogger('api.v1.retiresmartz.views')
-
 
 class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     model = RetirementPlan
@@ -613,9 +611,16 @@ equired to generate the
 
         # terminate projection based on partner with longest life expectancy
         # i.e. based on life expectancy of younger of user or partner
+        print(str('----------------------'))
+        if plan.partner_data is not None:
+            print('plan.patrner_data: ' + str(plan.partner_data))
+        else:
+            print('plan.patrner_data: None')
+        print(str('----------------------'))
+        
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             user_age = helpers.get_age(plan.client.date_of_birth)
-            partner_age = helpers.get_age(plan.partner_data[0]['dob'])
+            partner_age = helpers.get_age(plan.partner_data['dob'])
             user_older_by = user_age - partner_age
             if user_older_by > 0:
                 # life expectancy must be no greater than 100 
@@ -674,11 +679,11 @@ equired to generate the
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
 
-            partner = tax.TaxUser(plan.partner_data[0]['dob'],
+            partner = tax.TaxUser(plan.partner_data['dob'],
                         plan.retirement_age,
                         projection_end,
                         plan.lifestyle,
-                        plan.partner_data[0]['income'],
+                        plan.partner_data['income'],
                         False,
                         plan.client.home_value,
                         plan.desired_risk,

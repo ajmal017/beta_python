@@ -24,10 +24,8 @@ from main import abstract
 import pandas as pd
 import os
 from django.conf import settings
-import pdb
 
 mocked_now = datetime(2016, 1, 1)
-
 
 class RetiresmartzTests(APITestCase):
     def setUp(self):
@@ -756,6 +754,7 @@ class RetiresmartzTests(APITestCase):
         TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='MAMMGCP', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
 
@@ -1013,6 +1012,7 @@ class RetiresmartzTests(APITestCase):
         TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='MAMMGCP', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
 
@@ -1042,7 +1042,7 @@ class RetiresmartzTests(APITestCase):
 
 
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
-    def test_retirement_plan_calculate_retirementmodel(self):
+    def test_retirement_plan_calculate_retirement_model(self):
         ret_accts = [{'employer_match_type': 'contributions',
                       'id': 1,
                       'owner': 'self',
@@ -1087,6 +1087,7 @@ class RetiresmartzTests(APITestCase):
         TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='MAMMGCP', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
 
@@ -1143,8 +1144,7 @@ class RetiresmartzTests(APITestCase):
         partner_month = pd.Timestamp(plan.client.date_of_birth).month
         partner_dob = pd.Timestamp(str(partner_year)+'-'+str(partner_month)+'-'+str(partner_day))
 
-        partner_data = [{'income': 75000.,'dob': partner_dob}]
-        plan.partner_data = partner_data
+        plan.partner_data = {'income': 75000.,'dob': partner_dob}
         plan.save()
                 
         response = self.client.get(url)
@@ -1156,8 +1156,7 @@ class RetiresmartzTests(APITestCase):
         partner_month = pd.Timestamp(plan.client.date_of_birth).month
         partner_dob = pd.Timestamp(str(partner_year)+'-'+str(partner_month)+'-'+str(partner_day))
 
-        partner_data = [{'income': 75000.,'dob': partner_dob}]
-        plan.partner_data = partner_data
+        plan.partner_data = {'income': 75000.,'dob': partner_dob}
         plan.save()
         
         response = self.client.get(url)

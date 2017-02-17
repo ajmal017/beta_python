@@ -13,13 +13,11 @@ from dateutil.relativedelta import relativedelta
 from main import zip2state
 from ssa import ssa as ssa
 from rest_framework.exceptions import ValidationError
-import pdb
 
 logger = logging.getLogger('taxsheet')
 inflation_level = inflation.inflation_level
 
 NUM_US_RETIREMENT_ACCOUNT_TYPES = len(constants.US_RETIREMENT_ACCOUNT_TYPES)
-
 
 class TaxUser(object):
     '''
