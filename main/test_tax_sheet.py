@@ -10,19 +10,19 @@ test settings to test TaxUser class in taxsheet.py (also used in projectedtax.py
 
 dob = pd.Timestamp('1991-04-05')
 
-desired_retirement_age = 65.
+desired_retirement_age = 67.
 
-life_exp = 82.
+life_exp = 79.
 
-retirement_lifestyle = 4
+retirement_lifestyle = 3
 
 total_income = 51078.
 
 reverse_mort = False
 
-house_value = 1.0
+house_value = 250000.0
 
-risk_profile_group = 0.13
+risk_profile_group = 0.08
 
 filing_status = abstract.PersonalData.CivilStatus['SINGLE']
 
@@ -56,11 +56,11 @@ ss_fra_todays = 2000.
 
 paid_days = 0
 
-retirement_accounts = [{'owner': 'self', 'id': 1, 'contrib_amt': 28, 'balance': 15000, 'employer_match_type': 'contributions', 'cat': 3, 'name': 'Walmart 401k', 'balance_efdt': '2016-12-31', 'acc_type': 5, 'contrib_period': 'monthly', 'employer_match': 0.5}, {'owner': 'self', 'id': 2, 'contrib_amt': 13, 'balance': 1200, 'employer_match_type': 'none', 'cat': 4, 'name': 'Roth IRA', 'balance_efdt': '2017-02-01', 'acc_type': 8, 'contrib_period': 'yearly', 'employer_match': 0}]
+retirement_accounts = [{'cat': 3, 'employer_match_type': 'contributions', 'owner': 'self', 'contrib_period': 'monthly', 'contrib_amt': 28, 'employer_match': 0.5, 'balance_efdt': '2016-12-31', 'acc_type': 5, 'balance': 15000, 'id': 1, 'name': 'Walmart 401k'}, {'cat': 4, 'employer_match_type': 'none', 'owner': 'self', 'contrib_period': 'yearly', 'contrib_amt': 13, 'employer_match': 0, 'balance_efdt': '2017-02-16', 'acc_type': 6, 'balance': 100, 'id': 2, 'name': 'Roth'}]
 
 zip_code = 19104
 
-expenses = [{'id': 11, 'desc': 'Savings', 'who': 'self', 'amt': 55, 'cat': 11}, {'id': 13, 'desc': 'Tobacco', 'who': 'self', 'amt': 46, 'cat': 13}, {'id': 14, 'desc': 'Transportation', 'who': 'self', 'amt': 718, 'cat': 14}, {'id': 15, 'desc': 'Miscellaneous', 'who': 'self', 'amt': 30, 'cat': 15}, {'id': 1, 'desc': 'Alcoholic Beverage', 'who': 'self', 'amt': 45, 'cat': 1}, {'id': 2, 'desc': 'Apparel & Services', 'who': 'self', 'amt': 166, 'cat': 2}, {'id': 3, 'desc': 'Education', 'who': 'self', 'amt': 129, 'cat': 3}, {'id': 4, 'desc': 'Entertainment', 'who': 'self', 'amt': 154, 'cat': 4}, {'id': 5, 'desc': 'Food', 'who': 'self', 'amt': 614, 'cat': 5}, {'id': 6, 'desc': 'Healthcare', 'who': 'self', 'amt': 158, 'cat': 6}, {'id': 7, 'desc': 'Housing', 'who': 'self', 'amt': 1729, 'cat': 7}, {'id': 8, 'desc': 'Insuarance, Pensions & Social Security', 'who': 'self', 'amt': 215, 'cat': 8}, {'id': 12, 'desc': 'Taxes', 'who': 'self', 'amt': 154.1006810700825, 'cat': 12}]
+expenses = [{'cat': 11, 'amt': 24.083333333333332, 'id': 11, 'who': 'self', 'desc': 'Savings'}, {'cat': 13, 'amt': 18.666666666666668, 'id': 13, 'who': 'self', 'desc': 'Tobacco'}, {'cat': 14, 'amt': 289.4166666666667, 'id': 14, 'who': 'self', 'desc': 'Transportation'}, {'cat': 15, 'amt': 12.166666666666666, 'id': 15, 'who': 'self', 'desc': 'Miscellaneous'}, {'cat': 1, 'amt': 18.5, 'id': 1, 'who': 'self', 'desc': 'Alcoholic Beverage'}, {'cat': 2, 'amt': 66.91666666666667, 'id': 2, 'who': 'self', 'desc': 'Apparel & Services'}, {'cat': 3, 'amt': 52.5, 'id': 3, 'who': 'self', 'desc': 'Education'}, {'cat': 4, 'amt': 62.083333333333336, 'id': 4, 'who': 'self', 'desc': 'Entertainment'}, {'cat': 5, 'amt': 247.83333333333334, 'id': 5, 'who': 'self', 'desc': 'Food'}, {'cat': 6, 'amt': 64.08333333333333, 'id': 6, 'who': 'self', 'desc': 'Healthcare'}, {'cat': 7, 'amt': 696.9166666666666, 'id': 7, 'who': 'self', 'desc': 'Housing'}, {'cat': 8, 'amt': 93.41666666666667, 'id': 8, 'who': 'self', 'desc': 'Insuarance, Pensions & Social Security'}, {'cat': 9, 'amt': 24.5, 'id': 9, 'who': 'self', 'desc': 'Personal Care'}, {'cat': 10, 'amt': 2.4166666666666665, 'id': 10, 'who': 'self', 'desc': 'Reading'}, {'cat': 12, 'amt': 139, 'id': 12, 'who': 'self', 'desc': 'Taxes'}]
 
 
 btc = 349.

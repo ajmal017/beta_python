@@ -175,6 +175,7 @@ class TaxUser(object):
         retirement_accounts
         '''
         self.init_balance, self.monthly_contrib_employee_base, self.monthly_contrib_employer_base = self.get_retirement_accounts()
+        self.miscellaneous_base = helpers.get_miscellaneous_base(self.total_income, self.sum_expenses, self.monthly_contrib_employee_base)
         self.btc_factor = self.get_btc_factor(self.get_employee_monthly_contrib_monthly_view(), self.monthly_contrib_employee_base)
 
         '''
@@ -686,9 +687,9 @@ class TaxUser(object):
 
     def get_employee_monthly_contrib_monthly_view(self):
         '''
-        returns monthly contriburion for employee based on monthly view pie chart
+        returns monthly contribution for employee based on monthly view pie chart
         '''
-        return max(0, (self.total_income/12. - self.sum_expenses)/(self.total_income/12.))
+        return max(0, (self.total_income/12. - self.sum_expenses - self.miscellaneous_base)/(self.total_income/12.))
         # NB - both following quantities are annual
         # return (self.btc/self.total_income) 
     
