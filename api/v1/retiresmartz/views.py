@@ -726,13 +726,13 @@ equired to generate the
 
         # Convert these returned values to a format for the API
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
-            user.maindf['Joint_Taxable_Accounts'] = user.maindf['Taxable_Accounts'] + partner.maindf['Taxable_Accounts']
+            user.maindf['Joint_Taxable_And_Nontaxable_Accounts'] = user.maindf['Taxable_And_Nontaxable_Accounts'] + partner.maindf['Taxable_And_Nontaxable_Accounts']
             user.maindf['Joint_Actual_Inc'] = user.maindf['Actual_Inc'] + partner.maindf['Actual_Inc']
             user.maindf['Joint_Desired_Inc'] = user.maindf['Desired_Inc'] + partner.maindf['Desired_Inc']
-            catd = pd.concat([user.maindf['Joint_Taxable_Accounts'], user.maindf['Joint_Actual_Inc'], user.maindf['Joint_Desired_Inc']], axis=1)
+            catd = pd.concat([user.maindf['Joint_Taxable_And_Nontaxable_Accounts'], user.maindf['Joint_Actual_Inc'], user.maindf['Joint_Desired_Inc']], axis=1)
 
         else:
-            catd = pd.concat([user.maindf['Taxable_Accounts'], user.maindf['Actual_Inc'], user.maindf['Desired_Inc']], axis=1)
+            catd = pd.concat([user.maindf['Taxable_And_Nontaxable_Accounts'], user.maindf['Actual_Inc'], user.maindf['Desired_Inc']], axis=1)
 
         locs = np.linspace(0, len(catd)-1, num=50, dtype=int)
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]

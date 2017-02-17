@@ -59,6 +59,19 @@ def get_inflator_to_period(period):
     return inflation_df 
 
     
+def get_miscellaneous_base(total_income, sum_expenses, monthly_contrib_employee_base):
+    '''
+    returns amount of undisclosed miscellaneous items implied by
+    total_income - expenses - employee_contributions != 0
+    '''
+    tot_contrib = 0
+    for contrib in monthly_contrib_employee_base:
+        tot_contrib = tot_contrib + contrib
+
+    abs_contrib = tot_contrib * total_income/12.
+    return total_income - abs_contrib - sum_expenses
+
+
 def get_period_of_age(age_now, future_age):
     '''
     given age now, returns retirement model period last period in which TaxUser is younger than age
