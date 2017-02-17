@@ -17,7 +17,7 @@ from main.models import AccountGroup, ActivityLog, ActivityLogEvent, Advisor, \
     Portfolio, PortfolioItem, PortfolioSet, PositionLot, PricingPlan, \
     ProxyAssetClass, ProxyTicker, Ticker, Transaction, User, View, \
     ManagerBenchmarks
-#from main.models import PortfolioProvider, DefaultPortfolioProvider
+from main.models import PortfolioProvider, DefaultPortfolioProvider
 
 
 class AssetResource(resources.ModelResource):
@@ -367,8 +367,8 @@ admin.site.register(advisor_models.ChangeDealerGroup, AdvisorChangeDealerGroupAd
 admin.site.register(advisor_models.SingleInvestorTransfer, AdvisorSingleInvestorTransferAdmin)
 admin.site.register(advisor_models.BulkInvestorTransfer, AdvisorBulkInvestorTransferAdmin)
 admin.site.register(Performer, PerformerAdmin)
-#admin.site.register(PortfolioProvider, PortfolioProviderAdmin)
-#admin.site.register(DefaultPortfolioProvider, DefaultDefaultPortfolioProviderAdmin)
+admin.site.register(PortfolioProvider, PortfolioProviderAdmin)
+admin.site.register(DefaultPortfolioProvider, DefaultDefaultPortfolioProviderAdmin)
 admin.site.register(Goal, GoalAdmin)
 admin.site.register(GoalType, GoalTypeAdmin)
 admin.site.register(MarketIndex)

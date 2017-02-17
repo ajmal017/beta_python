@@ -1519,11 +1519,11 @@ class InvalidStateError(Exception):
         return "Invalid state: {}. Should have been one of: {}".format(self.current, self.required)
 
 
-'''class PortfolioProvider(models.Model):
+class PortfolioProvider(models.Model):
     name = models.CharField(max_length=100)
     TLH = models.BooleanField(default=True)
     portfolio_optimization = models.BooleanField(default=True)
-    constants = models.BooleanField(default=True)
+    constraints = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -1539,7 +1539,7 @@ def get_default_provider_id():
         default = default_providers.latest('changed')
     else:
         default = DefaultPortfolioProvider.objects.get_or_create(default_provider=betasmartz)[0]
-    return default.default_provider.id'''
+    return default.default_provider.id
 
 
 class Goal(models.Model):
