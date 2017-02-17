@@ -3,7 +3,7 @@ git+git://github.com/ITCase-django/django-tinymce-4#egg=django_tinymce_4
 Django==1.8.17
 
 # rocket science
-numpy==1.9.2
+numpy==1.11.2
 pandas==0.16.2
 CVXcanon==0.0.23.3
 cvxopt==1.1.8
