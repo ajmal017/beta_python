@@ -444,6 +444,8 @@ class TaxUser(object):
         self.maindf['Nontaxable_Accounts'] = np.where(self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Nontaxable'] > 0,
                                                    self.maindf['Nontaxable_Accounts_Pre_Deccumulation'] + self.maindf['Deccumulation_Balance_Nontaxable'], 0)
 
+        self.maindf['Taxable_And_Nontaxable_Accounts'] = self.maindf['Taxable_Accounts'] + self.maindf['Nontaxable_Accounts'] 
+
         self.maindf['Ret_Inc_Gap'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Certain_Inc_Gap']
                                                                                      - self.maindf['Tot_Nontaxable_Dist']
                                                                                      - self.maindf['Tot_Taxable_Dist'])
