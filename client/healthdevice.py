@@ -65,6 +65,23 @@ def get_data(client):
     return None
 
 
+def get_fitbit_redirect_uri():
+    url = 'https://www.fitbit.com/oauth2/authorize'
+    scope = '%20'.join([
+      'activity',
+      'profile',
+      'weight'
+    ])
+    query = '&'.join([
+      'response_type=code',
+      'client_id={}'.format(FITBIT_SETTINGS['CLIENT_ID']),
+      'redirect_uri={}%2Foauth2%2Fhealth-devices%2Ffitbit%2F'.format(settings.SITE_URL),
+      'scope={}'.format(scope),
+      'expires_in={}'.format(604800)
+    ])
+    return '{}?{}'.format(url, query)
+
+
 def get_fitbit(healthdevice):
     #This is the Fitbit URL
     profile_url = '{}/1/user/-/profile.json'.format(FITBIT_SETTINGS['API_BASE'])
