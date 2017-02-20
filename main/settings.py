@@ -313,6 +313,7 @@ CLIENT_SESSION_TIMEOUT = 600  # 10 min
 AUTHENTICATED_SESSION_TIMEOUT = 1800  # 30 min - advisor/firm accounts
 
 FITBIT_SETTINGS = {
+    'API_BASE': 'https://api.fitbit.com',
     'CLIENT_ID': os.environ.get('FITBIT_CLIENT_ID', ''),
     'CLIENT_SECRET': os.environ.get('FITBIT_CLIENT_SECRET', ''),
 }

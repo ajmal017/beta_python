@@ -27,7 +27,7 @@ import json
 from api.v1.utils import activity
 from django.template.loader import render_to_string
 from main import quovo, plaid
-from client import healthdevices
+from client import healthdevice
 from address.models import USState, USFips, USZipcode
 from consumer_expenditure.models import AreaQuotient, PeerGroupData
 from consumer_expenditure import utils as ce_utils
@@ -300,7 +300,7 @@ class ClientViewSet(ApiViewMixin,
         user = SupportRequest.target_user(request)
         if not user.is_client:
             return Response('You do not have permission to access this page', status=status.HTTP_403_FORBIDDEN)
-        data = healthdevices.get_data(request)
+        data = healthdevice.get_data(user.client)
         return Response(data)
 
 
