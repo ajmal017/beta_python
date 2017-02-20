@@ -9,7 +9,7 @@ def fitbit(request):
     code = request.GET.get('code', None)
     status = False
     if code is not None:
-        status = healthdevice.connect_fitbit(user.client, code)
+        status = healthdevice.fitbit_connect(user.client, code)
 
     context = {
         'provider': HealthDevice.ProviderType.FITBIT.value,

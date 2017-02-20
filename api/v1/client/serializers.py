@@ -30,6 +30,7 @@ class ClientSerializer(ReadOnlyModelSerializer):
     residential_address = AddressSerializer()
     regional_data = serializers.JSONField()
     reason = serializers.SerializerMethodField()
+    health_device = serializers.IntegerField(source='health_device.id', read_only=True)
 
     class Meta:
         model = Client
