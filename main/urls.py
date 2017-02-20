@@ -48,7 +48,7 @@ urlpatterns_firm = patterns(
 
 urlpatterns_oauth2healthdevice = patterns(
     '',
-    url(r'^fitbit/', healthdevices.connect_fitbit, name='connect-fitbit'),
+    url(r'^fitbit/', healthdevices.fitbit, name='fitbit'),
 )
 
 urlpatterns = patterns(
