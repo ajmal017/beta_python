@@ -16,7 +16,7 @@ from main.models import AccountType, Ticker
 from user.autologout import SessionExpire
 from . import serializers
 from ..permissions import IsAdvisorOrClient
-from client import models as client_models
+from client import models as client_models, healthdevice
 from retiresmartz import models as retirement_models
 
 
@@ -221,6 +221,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     @list_route(methods=['get'], url_path='health-devices', permission_classes=[IsAuthenticated])
     def health_devices(self, request):
         HEALTH_DEVICES_CONFIG = {
-            'FITBIT_CLIENT_ID': settings.FITBIT_SETTINGS['CLIENT_ID']
+            'FITBIT_CLIENT_ID': settings.FITBIT_SETTINGS['CLIENT_ID'],
+            'FITBIT_REDIRECT_URI': healthdevice.get_fitbit_redirect_uri()
         }
         return Response(HEALTH_DEVICES_CONFIG)
