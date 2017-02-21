@@ -123,37 +123,40 @@ def get_waterfall_chart(plan, has_partner):
 def get_tax_situation(plan):
     try:
         p = plan.projection
+        client = {
+            'state_income_tax': round(p.current_percent_state_tax * 100, 2),
+            'federal_income_tax': round(p.current_percent_fed_tax * 100, 2),
+            'medicare': round(p.current_percent_medicare * 100, 2),
+            'social_security': round(p.current_percent_soc_sec * 100, 2)
+        }
+        client['yours_to_keep'] = 100 - (client['state_income_tax'] + client['federal_income_tax'] + client['medicare'] + client['social_security'])
+
+        partner = {
+            'state_income_tax': round(p.part_current_percent_state_tax * 100, 2),
+            'federal_income_tax': round(p.part_current_percent_fed_tax * 100, 2),
+            'medicare': round(p.part_current_percent_medicare * 100, 2),
+            'social_security': round(p.part_current_percent_soc_sec * 100, 2)
+        }
+        partner['yours_to_keep'] = 100 - (partner['state_income_tax'] + partner['federal_income_tax'] + partner['medicare'] + partner['social_security'])
         return {
-            'client': {
-                'yours_to_keep': 1 - p.current_percent_state_tax - p.current_percent_fed_tax - p.current_percent_medicare - p.current_percent_soc_sec,
-                'state_income_tax': p.current_percent_state_tax,
-                'federal_income_tax': p.current_percent_fed_tax,
-                'medicare': p.current_percent_medicare,
-                'social_security': p.current_percent_soc_sec
-            },
-            'partner': {
-                'yours_to_keep': 1 - p.part_current_percent_state_tax - p.part_current_percent_fed_tax - p.part_current_percent_medicare - p.part_current_percent_soc_sec,
-                'state_income_tax': p.part_current_percent_state_tax,
-                'federal_income_tax': p.part_current_percent_fed_tax,
-                'medicare': p.part_current_percent_medicare,
-                'social_security': p.part_current_percent_soc_sec
-            }
+            'client': client,
+            'partner': partner
         }
     except ObjectDoesNotExist:
         return {
             'client': {
-                'yours_to_keep': 0.5805,
-                'state_income_tax': 0.093,
-                'federal_income_tax': 0.25,
-                'medicare': 0.0145,
-                'social_security': 0.062
+                'yours_to_keep': 58.05,
+                'state_income_tax': 9.3,
+                'federal_income_tax': 25,
+                'medicare': 1.45,
+                'social_security': 6.2
             },
             'partner': {
-                'yours_to_keep': 0.5805,
-                'state_income_tax': 0.093,
-                'federal_income_tax': 0.25,
-                'medicare': 0.0145,
-                'social_security': 0.062
+                'yours_to_keep': 58.05,
+                'state_income_tax': 9.3,
+                'federal_income_tax': 25,
+                'medicare': 1.45,
+                'social_security': 6.2
             }
         }
 
