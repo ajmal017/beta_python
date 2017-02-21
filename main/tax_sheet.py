@@ -735,15 +735,6 @@ class TaxUser(object):
         full_post = pd.Series(series_post, index=self.dateind_post)
         result = full_pre.append(full_post)
         return result
-
-
-    def get_period_as_age(self, period):
-        '''
-        returns age corresponding to period
-        '''
-        if period < 0:
-            raise Exception('period < 0')
-        return self.age + (period/12.)
             
     
     def get_retirement_accounts(self):
@@ -809,7 +800,7 @@ class TaxUser(object):
         '''
         returns age post retirement when taxable assets first deplete to zero
         '''
-        age = self.get_period_as_age(self.get_savings_end_date_as_period())
+        age = helpers.get_period_as_age(self.dob, self.get_savings_end_date_as_period())
         if age < self.desired_retirement_age:
             raise Exception('age < self.desired_retirement_age')
         return age

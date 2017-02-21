@@ -72,6 +72,15 @@ def get_miscellaneous_base(total_income, sum_expenses, monthly_contrib_employee_
     return total_income - abs_contrib - sum_expenses
 
 
+def get_period_as_age(dob, period):
+    '''
+    returns age corresponding to period
+    '''
+    if period < 0:
+        raise Exception('period < 0')
+    return get_age(dob) + (period/12.)
+
+
 def get_period_of_age(age_now, future_age):
     '''
     given age now, returns retirement model period last period in which TaxUser is younger than age

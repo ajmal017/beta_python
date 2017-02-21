@@ -612,7 +612,6 @@ class RetirementProjection(models.Model):
     part_soc_sec_benefit = JSONField(null=True, blank=True, help_text="List of annual social security benefit payments received")
     part_taxable_accounts = JSONField(null=True, blank=True, help_text="List of annual taxable accounts")
     part_non_taxable_accounts = JSONField(null=True, blank=True, help_text="List of annual nontaxable accounts")
-    part_reverse_mort = models.BooleanField(default=False, null=False, help_text="Whether user has a reverse mortgage")
     part_house_value = models.FloatField(default=0, null=True, help_text="Current value of house")
     part_house_value_at_retire_in_todays = models.FloatField(default=0, null=True, help_text="Future value of house in todays")
     part_reverse_mort_pymnt_at_retire_in_todays = models.FloatField(default=0, null=True, help_text="Future value of monthly reverse mortgage payment in todays")
