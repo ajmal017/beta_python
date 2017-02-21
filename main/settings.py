@@ -319,4 +319,11 @@ FITBIT_SETTINGS = {
     'EXPIRES_IN': 604800,
 }
 
+GOOGLEFIT_SETTINGS = {
+    'API_BASE': 'https://www.googleapis.com/fitness/v1/',
+    'CLIENT_ID': os.environ.get('GOOGLEFIT_CLIENT_ID', ''),
+    'CLIENT_SECRET': os.environ.get('GOOGLEFIT_CLIENT_SECRET', ''),
+    'EXPIRES_IN': 604800,
+}
+
 from local_settings import *

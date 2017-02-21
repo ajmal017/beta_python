@@ -222,6 +222,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     def health_devices(self, request):
         HEALTH_DEVICES_CONFIG = {
             'FITBIT_CLIENT_ID': settings.FITBIT_SETTINGS['CLIENT_ID'],
-            'FITBIT_REDIRECT_URI': healthdevice.fitbit_get_redirect_uri()
+            'FITBIT_REDIRECT_URI': healthdevice.fitbit_get_redirect_uri(),
+            'GOOGLEFIT_REDIRECT_URI': healthdevice.googlefit_get_redirect_uri()
         }
         return Response(HEALTH_DEVICES_CONFIG)
