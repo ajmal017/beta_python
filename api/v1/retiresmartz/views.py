@@ -625,7 +625,7 @@ equired to generate the
             if user_older_by > 0:
                 # life expectancy must be no greater than 100 
                 projection_end = min(projection_end + user_older_by, 100) 
-        
+        '''
         user = tax.TaxUser(plan.client.date_of_birth,
                         plan.retirement_age,
                         projection_end,
@@ -646,6 +646,8 @@ equired to generate the
                                               plan.client.residential_address.post_code)),
                         plan.expenses,
                         plan.btc)
+        '''
+        user = tax.TaxUser(plan, projection_end, False, plans)
         user.create_maindf()
         try:
             projection = plan.projection
@@ -678,7 +680,7 @@ equired to generate the
         projection.reverse_mort_pymnt_at_retire_in_todays = user.reverse_mort_pymnt_at_retire_in_todays
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
-
+            '''
             partner = tax.TaxUser(plan.partner_data['dob'],
                         plan.retirement_age,
                         projection_end,
@@ -699,6 +701,8 @@ equired to generate the
                                               plan.client.residential_address.post_code)),
                         plan.expenses,
                         plan.btc)
+            '''
+            partner = tax.TaxUser(plan, projection_end, True, plans)
             partner.create_maindf()
 
             
@@ -800,15 +804,6 @@ equired to generate the
         target_rt_value = value_at_retirement(rt_dt_epoch, target_values)
 
         return target_rt_value >= rt_value
-
-    def get_zip_code(self, retirement_zip_code, residential_zip_code):
-        '''
-        Returns retirement_zip_code if not None, otherwise returns residential_zip_code
-        '''
-        if not retirement_zip_code:
-            return residential_zip_code
-        else:
-            return retirement_zip_code
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):

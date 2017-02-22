@@ -234,6 +234,16 @@ def get_years_to_project(dob, life_exp):
     return round(math.ceil(life_exp) - get_age(dob)) # i.e. assume user dies at the start of the year of their life expectancy, rather than at the end
 
 
+def get_zip_code(retirement_zip_code, residential_zip_code):
+    '''
+    Returns retirement_zip_code if not None, otherwise returns residential_zip_code
+    '''
+    if not retirement_zip_code:
+        return residential_zip_code
+    else:
+        return retirement_zip_code
+
+
 def show_inputs(dob,
             desired_retirement_age,
             life_exp,

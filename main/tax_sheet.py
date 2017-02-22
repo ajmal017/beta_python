@@ -13,6 +13,7 @@ from dateutil.relativedelta import relativedelta
 from main import zip2state
 from ssa import ssa as ssa
 from rest_framework.exceptions import ValidationError
+import pdb
 
 logger = logging.getLogger('taxsheet')
 inflation_level = inflation.inflation_level
@@ -24,26 +25,46 @@ class TaxUser(object):
     Contains a list of inputs and functions for Andrew's Excel tax sheet (Retirement Modelling v4.xlsx).
     '''
     def __init__(self,
-                 dob,
-                 desired_retirement_age,
+                 plan,
                  life_exp,
-                 retirement_lifestyle,
-                 total_income,
-                 reverse_mort,
-                 house_value,
-                 desired_risk,
-                 filing_status,
-                 tax_transcript_data,
-                 plans,
-                 income_growth,
-                 employment_status,
-                 ss_fra_todays,
-                 paid_days,
-                 retirement_accounts,
-                 zip_code,
-                 expenses,
-                 btc):
+                 is_partner,
+                 plans):
+        
+        #initialize from single plan object
+        if not is_partner:
+            dob = plan.client.date_of_birth
+            total_income = plan.income
+            reverse_mort = plan.reverse_mortgage
 
+        else:
+            dob = plan.partner_data['dob']
+            total_income = plan.partner_data['income']
+            reverse_mort = False
+            
+        desired_retirement_age = plan.retirement_age
+        retirement_lifestyle = plan.lifestyle
+        house_value = plan.client.home_value
+        desired_risk = plan.desired_risk
+        filing_status = plan.client.civil_status
+        tax_transcript_data = plan.client.regional_data.get('tax_transcript_data', None)
+        income_growth = plan.income_growth
+        employment_status = plan.client.employment_status
+        ss_fra_todays = plan.client.ss_fra_todays
+        paid_days = plan.paid_days
+        retirement_accounts = plan.retirement_accounts
+
+        if not plan.retirement_postal_code:
+            try:
+                zip_code = int(plan.client.residential_address.post_code)
+            except:
+                raise Exception("no valid zip code provided")
+        else:
+            zip_code = int(plan.retirement_postal_code)
+            
+        expenses = plan.expenses
+        btc = plan.btc
+
+        # show inputs
         self.debug = True
         if (self.debug):
             helpers.show_inputs(dob,
