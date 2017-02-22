@@ -5,8 +5,6 @@ from main import state_tax_engine
 from main import tax_sheet
 from main import abstract
 from main import constants
-from main import test_tax_sheet as tst_tx
-import pdb
  
 
 class FederalTax(object):

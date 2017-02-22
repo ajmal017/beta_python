@@ -234,6 +234,16 @@ def get_years_to_project(dob, life_exp):
     return round(math.ceil(life_exp) - get_age(dob)) # i.e. assume user dies at the start of the year of their life expectancy, rather than at the end
 
 
+def get_zip_code(retirement_zip_code, residential_zip_code):
+    '''
+    Returns retirement_zip_code if not None, otherwise returns residential_zip_code
+    '''
+    if not retirement_zip_code:
+        return residential_zip_code
+    else:
+        return retirement_zip_code
+
+
 def show_inputs(dob,
             desired_retirement_age,
             life_exp,
@@ -328,6 +338,24 @@ def validate_inputs(dob,
 
     if desired_risk < 0 or desired_risk > 1:
         raise Exception('desired_risk outside 0 <= desired_risk <= 1')
+        self.client = TestClient(regional_data,
+                                 date_of_birth,
+                                 home_value,
+                                 civil_status,
+                                 employment_status,
+                                 ss_fra_todays)
+
+        self.retirement_age = retirement_age
+        self.lifestyle = lifestyle
+        self.income = income
+        self.reverse_mortgage = reverse_mortgage
+        self.desired_risk = desired_risk
+        self.income_growth = income_growth
+        self.paid_days = paid_days
+        self.retirement_postal_code = retirement_postal_code
+        self.retirement_accounts = retirement_accounts
+        self.expenses = expenses
+        self.btc = btc
 
     if house_value < 0:
         raise Exception('house_value less than 0')
