@@ -111,6 +111,10 @@ class RetirementStatementOfAdvice(PDFStatement):
         partner_retirement_accounts = list(filter(lambda item: item['owner'] == 'partner', retirement_accounts))
         ira_retirement_accounts = filter(lambda item: item['acc_type'] in iraTypes, retirement_accounts)
         has_partner = self.client.is_married and plan.partner_data
+        try:
+            projection = plan.projection
+        except:
+            projection = {}
 
         return render_to_string(template_name, {
             'object': self,
@@ -133,7 +137,8 @@ class RetirementStatementOfAdvice(PDFStatement):
             'pensions_annuities': utils.get_pensions_annuities(plan),
             'waterfall_chart': utils.get_waterfall_chart(plan, has_partner),
             'income_chart': utils.get_retirement_income_chart(plan, has_partner),
-            'balance_chart': utils.get_account_balance_chart(plan, has_partner)
+            'balance_chart': utils.get_account_balance_chart(plan, has_partner),
+            'projection': projection
         })
 
 class RecordOfAdvice(PDFStatement):

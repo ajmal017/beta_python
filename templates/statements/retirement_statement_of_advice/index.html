@@ -83,7 +83,8 @@
   .waterfall-chart { position: relative; padding: 15pt 30pt 1in 0.7in; }
   .waterfall-chart .x-axis { position: absolute; bottom: -1in; height: 1in; width: 100%; border-top: 1pt solid #E7E8E9; }
   .waterfall-chart .x-axis-item { float: left; position: relative; }
-  .waterfall-chart .x-label { transform: rotate(40deg); transform-origin: left top; display: block; font-size: 7pt; white-space: nowrap; position: relative; top: 9pt; left: 50%; }
+  .waterfall-chart .x-label { transform: rotate(40deg); transform-origin: left top; display: inline-block; font-size: 7pt; white-space: nowrap; position: relative; top: 9pt; left: 50%; }
+  .waterfall-chart .x-axis-item:last-child { margin-right: -100%; }
   .waterfall-chart .x-axis-item:before { content: ''; position: absolute; left: 50%; margin-left: -0.5pt; height: 5pt; border-right: 1pt solid #E7E8E9; }
   .waterfall-chart .y-axis { position: absolute; left: 0; top: 0; height: 100%; width: 100%; }
   .waterfall-chart .y-axis-item { position: relative; }
@@ -94,6 +95,7 @@
   .waterfall-chart .bars { height: 100%; position: relative; }
   .waterfall-chart .bar-item { background-clip: content-box; padding: 0 2pt; position: relative; }
   .waterfall-chart .bar-amt { display: block; position: absolute; bottom: -10pt; text-align: center; left: 0; right: 0; font-size: 8pt; }
+  .waterfall-chart .bar-item:last-child .bar-amt { bottom: auto; top: -10pt; }
   .waterfall-chart .legends { position: absolute; top: 5pt; right: 5pt; background-color: #fff; border: 1pt solid #E7E8E9; padding: 0 3pt; }
   .waterfall-chart .legend-item { margin: 2pt 0; font-size: 8pt; }
   .waterfall-chart .legend-colorbox { margin-right: 2pt; width: 8pt; height: 8pt; display: inline-block; border: 1pt solid #231F20; vertical-align: middle; }

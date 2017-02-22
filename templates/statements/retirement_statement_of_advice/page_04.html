@@ -1,5 +1,6 @@
 {% load static from staticfiles %}
 {% load humanize %}
+{% load i18n filters %}
 
 <div id="page4-div" class="page-div">
   <div class="page-header">
@@ -26,7 +27,7 @@
   </ol>
   <div class="outline-box clearfix italic" style="margin-bottom: 15pt; font-weight: 700;">
     <div class="fr" style="font-size: 13.6pt; ">
-      {{plan.balance}} <!-- TODO: confirm the projected balance -->
+      {{projection.proj_balance_at_retire_in_todays|currency:0}}
     </div>
     <div style="font-size: 11pt; padding-right: 2in; padding-top: 2pt;">
       Your projected investment balance at retirement in today's dollars
@@ -38,7 +39,7 @@
         Your target retirement lifestyle
       </h3>
       <ul style="transform:scale(0.8,1.0); transform-origin: left center;">
-        <li>Your retirement accounts are expected to last until you are age {savings end date as age}.</li> <!-- TODO: confirm {savings end date as age}-->
+        <li>Your retirement accounts are expected to last until you are age {{projection.savings_end_date_as_age|intcomma}}.</li>
       </ul>
     </div>
     <div class="fr" style="width: 2.32in; border-radius: 5pt; background-color: #231F20; color: #fff; padding: 15pt;">

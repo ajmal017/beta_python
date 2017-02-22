@@ -12,6 +12,7 @@ from jsonfield.fields import JSONField
 from pinax.eventlog.models import Log
 
 from common.structures import ChoiceEnum
+from common.utils import get_text_of_choices_enum
 from main.models import TransferPlan, GoalSetting, GoalMetricGroup
 from main.risk_profiler import GoalSettingRiskProfile
 from retiresmartz.managers import RetirementAdviceQueryset
@@ -337,10 +338,7 @@ class RetirementPlan(TimestampedModel):
 
     @staticmethod
     def get_lifestyle_text(lifestyle):
-        choices = RetirementPlan.LifestyleCategory.choices()
-        if lifestyle is None: return ''
-        idx = list(map(lambda x: x[0], choices)).index(lifestyle)
-        return choices[idx][1] # returns life style text
+        return get_text_of_choices_enum(lifestyle, RetirementPlan.LifestyleCategory.choices())
 
     @cached_property
     def lifestyle_text(self):
@@ -348,10 +346,7 @@ class RetirementPlan(TimestampedModel):
 
     @staticmethod
     def get_expense_category_text(expense_cat):
-        choices = RetirementPlan.ExpenseCategory.choices()
-        if expense_cat is None: return ''
-        idx = list(map(lambda x: x[0], choices)).index(expense_cat)
-        return choices[idx][1] # returns expense category text
+        return get_text_of_choices_enum(expense_cat, RetirementPlan.ExpenseCategory.choices())
 
 @receiver(post_save, sender=RetirementPlan)
 def resolve_retirement_invitations(sender, instance, created, **kwargs):

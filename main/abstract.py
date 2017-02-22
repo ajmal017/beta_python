@@ -12,7 +12,7 @@ from jsonfield import JSONField
 from phonenumber_field.modelfields import PhoneNumberField
 
 from common.structures import ChoiceEnum
-from common.utils import d2dt
+from common.utils import d2dt, get_text_of_choices_enum
 from main.constants import GENDERS, GENDER_MALE
 
 
@@ -151,10 +151,7 @@ class PersonalData(models.Model):
 
     @cached_property
     def filing_status_text(self):
-        choices = PersonalData.CivilStatus.choices()
-        if self.civil_status is None: return ''
-        idx = list(map(lambda x: x[0], choices)).index(self.civil_status)
-        return choices[idx][1] # returns filing status text
+        return get_text_of_choices_enum(self.civil_status, PersonalData.CivilStatus.choices())
 
 
 class NeedApprobation(models.Model):
