@@ -131,7 +131,9 @@ class RetirementStatementOfAdvice(PDFStatement):
             'partner_retirement_accounts': partner_retirement_accounts,
             'tax_situation': utils.get_tax_situation(plan),
             'pensions_annuities': utils.get_pensions_annuities(plan),
-            'waterfall_chart': utils.get_waterfall_chart(plan, has_partner)
+            'waterfall_chart': utils.get_waterfall_chart(plan, has_partner),
+            'income_chart': utils.get_retirement_income_chart(plan, has_partner),
+            'balance_chart': utils.get_account_balance_chart(plan, has_partner)
         })
 
 class RecordOfAdvice(PDFStatement):
