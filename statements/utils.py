@@ -1,8 +1,10 @@
 from functools import reduce
-from main import constants
+from main import constants, tax_helpers
 from retiresmartz.models import RetirementPlan
 from django.core.exceptions import ObjectDoesNotExist
 import math
+import numpy as np
+# import matplotlib.pyplot as plt
 
 def get_lifestyle_box(client):
     return [
@@ -171,3 +173,144 @@ def get_pensions_annuities(plan):
             'begin_date': None,
             'amount': None
         }
+
+def get_retirement_income_chart(plan, has_partner):
+    try:
+        p = plan.projection
+
+        base_idx = plan.retirement_age - plan.client.age - 1
+        last_idx = plan.selected_life_expectancy - plan.client.age
+
+        max_limit = plan.desired_income
+        for idx in range(base_idx, last_idx):
+            sum_value = p.non_taxable_inc[idx] + p.tot_taxable_dist[idx] + p.annuity_payments[idx] + p.pension_payments[idx] + p.ret_working_inc[idx] + p.soc_sec_benefit[idx]
+            if has_partner:
+                sum_value += p.part_non_taxable_inc[idx] + p.part_tot_taxable_dist[idx] + p.part_annuity_payments[idx] + p.part_pension_payments[idx] + p.part_ret_working_inc[idx] + p.part_soc_sec_benefit[idx]
+            max_limit = max(max_limit, sum_value)
+
+        colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#ae5b1d', '#335989', '#83b75e', '#767676', '#a98419', '#3273a0', '#54783c', '#7da2d7', '#f4a872', '#ff0000']
+        legends = ['Nontaxable Income', 'Total Taxable Distributions', 'Annuity Payments', 'Pension Payments', 'Retirement Working Income', 'Social Security Benefit']
+        if has_partner:
+            partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
+            legends += ['Spouse - Nontaxable Income', 'Spouse - Total Taxable Distributions', 'Spouse - Annuity Payments', 'Spouse - Pension Payments', 'Spouse - Retirement Working Income', 'Spouse - Social Security Benefit']
+        legends += ['Desired Income']
+        values = []
+        if max_limit > 0:
+            y_interval_0 = max_limit / 10
+            y_interval = pow(10, np.floor(np.log10(y_interval_0)))
+            y_interval = y_interval * 5 if y_interval_0 < y_interval * 5 else y_interval * 10
+            max_limit = int(np.ceil(max_limit / y_interval) * y_interval)
+        else:
+            y_interval = 1
+            max_limit = 1
+        y_axis = range(0, max_limit + 1, int(y_interval))
+        y_axis = list(reversed(list(y_axis)))
+        y_height = y_interval / max_limit * 100
+        x_num = last_idx - base_idx
+        x_interval = min(40, 600 / x_num)
+        x_width = x_interval * x_num + 42
+
+        for idx in range(base_idx, last_idx):
+            y_values = [
+                p.non_taxable_inc[idx] / max_limit * 100,
+                p.tot_taxable_dist[idx] / max_limit * 100,
+                p.annuity_payments[idx] / max_limit * 100,
+                p.pension_payments[idx] / max_limit * 100,
+                p.ret_working_inc[idx] / max_limit * 100,
+                p.soc_sec_benefit[idx] / max_limit * 100,
+            ]
+            x_label = str(plan.client.age + 1 + idx)
+            if has_partner:
+                y_values += [
+                    p.part_non_taxable_inc[idx] / max_limit * 100,
+                    p.part_tot_taxable_dist[idx] / max_limit * 100,
+                    p.part_annuity_payments[idx] / max_limit * 100,
+                    p.part_pension_payments[idx] / max_limit * 100,
+                    p.part_ret_working_inc[idx] / max_limit * 100,
+                    p.part_soc_sec_benefit[idx] / max_limit * 100,
+                ]
+                x_label += ' / ' + str(partner_age + 1 + idx)
+
+            values += [{
+                'x_label': x_label,
+                'y_values': y_values,
+                'y_offset': 100 - sum(y_values)
+            }]
+        return {
+            'values': values,
+            'colors': colors,
+            'legends': legends,
+            'y_axis': list(y_axis),
+            'y_height': y_height,
+            'desired_income': (1 - plan.desired_income / max_limit) * 100,
+            'x_interval': x_interval,
+            'x_width': x_width
+        }
+    except ObjectDoesNotExist:
+        return None
+
+
+def get_account_balance_chart(plan, has_partner):
+    try:
+        p = plan.projection
+
+        base_idx = plan.retirement_age - plan.client.age - 1
+        last_idx = plan.selected_life_expectancy - plan.client.age
+
+        max_limit = 0
+        for idx in range(base_idx, last_idx):
+            sum_value = p.taxable_accounts[idx] + p.non_taxable_accounts[idx]
+            if has_partner:
+                sum_value += p.part_taxable_accounts[idx] + p.part_non_taxable_accounts[idx]
+            max_limit = max(max_limit, sum_value)
+
+        colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#7da2d7']
+        legends = ['Taxable Accounts', 'Non Taxable Accounts']
+        if has_partner:
+            partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
+            legends += ['Spouse - Taxable Accounts', 'Spouse - Non Taxable Accounts']
+        values = []
+        if max_limit > 0:
+            y_interval_0 = max_limit / 10
+            y_interval = pow(10, np.floor(np.log10(y_interval_0)))
+            y_interval = y_interval * 5 if y_interval_0 < y_interval * 5 else y_interval * 10
+            max_limit = int(np.ceil(max_limit / y_interval) * y_interval)
+        else:
+            y_interval = 1
+            max_limit = 1
+        y_axis = range(0, max_limit + 1, int(y_interval))
+        y_axis = list(reversed(list(y_axis)))
+        y_height = y_interval / max_limit * 100
+        x_num = last_idx - base_idx
+        x_interval = min(40, 600 / x_num)
+        x_width = x_interval * x_num + 42
+
+        for idx in range(base_idx, last_idx):
+            y_values = [
+                p.taxable_accounts[idx] / max_limit * 100,
+                p.non_taxable_accounts[idx] / max_limit * 100,
+            ]
+            x_label = str(plan.client.age + 1 + idx)
+            if has_partner:
+                y_values += [
+                    p.part_taxable_accounts[idx] / max_limit * 100,
+                    p.part_non_taxable_accounts[idx] / max_limit * 100,
+                ]
+                x_label += ' / ' + str(partner_age + 1 + idx)
+
+            values += [{
+                'x_label': x_label,
+                'y_values': y_values,
+                'y_offset': 100 - sum(y_values)
+            }]
+        return {
+            'values': values,
+            'colors': colors,
+            'legends': legends,
+            'y_axis': list(y_axis),
+            'y_height': y_height,
+            'x_interval': x_interval,
+            'x_width': x_width
+        }
+    except ObjectDoesNotExist:
+        return None

@@ -11,5 +11,41 @@
   <h4 class="page-subtitle-h4">
     Appendix - projections (based on recommendations)
   </h4>
-  <!-- TODO: implement account balance chart -->
+  <div style="height: 600pt; margin-top: 30pt; position: relative;">
+    {% if balance_chart %}
+      <div class="income-chart" style="width: {{balance_chart.x_width}}pt;">
+        <div class="chart-title">Account balance (today's dollars)</div>
+        <div class="income-chart-inner">
+          <div class="income-chart-bars">
+            <div class="y-axis">
+              {% for y in balance_chart.y_axis %}
+                <div class="y-label" style="height: {{balance_chart.y_height}}%;">
+                  {{y}}
+                </div>
+              {% endfor %}
+            </div>
+            {% for item in balance_chart.values %}
+              <div class="chart-item" style="width: {{balance_chart.x_interval}}pt;">
+                <div class="x-label">{{item.x_label}}</div>
+                <div class="bar">
+                  <div class="y-seg" style="height: {{item.y_offset}}%;"></div>
+                  {% for value in item.y_values %}
+                    <div class="y-seg" style="height: {{value}}%; background-color: {{balance_chart.colors|index:forloop.counter0}};"></div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="clearfix">
+            {% for legend in balance_chart.legends %}
+              <div class="legend">
+                <span class="legend-color" style="background-color: {{balance_chart.colors|index:forloop.counter0}};"></span>
+                <span class="legend-label">{{legend}}</span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
 </div>
