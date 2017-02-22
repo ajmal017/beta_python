@@ -17,6 +17,14 @@ def months_between(date1, date2):
     return m2 - m1
 
 
+def get_text_of_choices_enum(value, choices):
+    try:
+        idx = list(map(lambda x: x[0], choices)).index(value)
+        return choices[idx][1]
+    except:
+        return ''
+
+
 def d2dt(d: datetime.date) -> datetime.datetime:
     if isinstance(d, datetime.date):
         d = datetime.datetime(year=d.year, month=d.month, day=d.day, tzinfo=None)

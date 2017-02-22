@@ -69,7 +69,7 @@
         <tbody>
           <tr>
             <td>Estimated start age</td>
-            <td>{{plan.date_of_estimate}}</td>
+            <td>{{plan.retirement_age}}</td>
             <td>&nbsp;</td><!-- TODO: spouse's pension_start -->
           </tr>
           <tr>
@@ -84,7 +84,7 @@
           </tr>
           <tr>
             <td>Taxable Amount</td>
-            <td>&nbsp;</td>
+            <td>{{client.ss_fra_todays|currency:0}}</td>
             <td>&nbsp;</td>
           </tr>
         </tbody>
@@ -111,11 +111,11 @@
           </tr>
           <tr>
             <td>Property valuation (future)</td>
-            <td>&nbsp;</td><!-- TODO: home_value_retirement -->
+            <td>{{projection.house_value_at_retire_in_todays|currency:0}};</td>
           </tr>
           <tr>
             <td>Estimated reverse mortgage payment</td>
-            <td>&nbsp;</td><!-- TODO: reverse_mort_payment -->
+            <td>{{projection.reverse_mort_pymnt_at_retire_in_todays|currency:0}};</td><!-- TODO: reverse_mort_payment -->
           </tr>
         </tbody>
         <tfoot>

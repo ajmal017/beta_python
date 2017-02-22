@@ -2,6 +2,7 @@ from django.template import Library
 from django.utils.safestring import mark_safe
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.utils.timezone import now
+from client.models import ClientAccount
 
 register = Library()
 
@@ -68,3 +69,7 @@ def menu_active(value, url_names=''):
 @register.filter
 def index(ary, i):
     return ary[int(i)]
+
+@register.filter
+def account_type_text(acc_type):
+    return ClientAccount.get_account_type_text(acc_type)

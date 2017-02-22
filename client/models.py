@@ -17,6 +17,7 @@ from jsonfield.fields import JSONField
 from rest_framework.reverse import reverse
 
 from common.structures import ChoiceEnum
+from common.utils import get_text_of_choices_enum
 from main import constants
 from main.abstract import NeedApprobation, NeedConfirmation, PersonalData
 from main.finance import mod_dietz_rate
@@ -132,17 +133,15 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
 
     @cached_property
     def employment_status_text(self):
-        choices = constants.EMPLOYMENT_STATUSES
-        if self.employment_status is None: return ''
-        idx = list(map(lambda x: x[0], choices)).index(self.employment_status)
-        return choices[idx][1] # returns employment status text
+        return get_text_of_choices_enum(self.employment_status, constants.EMPLOYMENT_STATUSES)
 
     @cached_property
     def employer_type_text(self):
-        choices = constants.EMPLOYER_TYPES
-        if self.employer_type is None: return ''
-        idx = list(map(lambda x: x[0], choices)).index(self.employer_type)
-        return choices[idx][1] # returns employment status text
+        return get_text_of_choices_enum(self.employer_type, constants.EMPLOYER_TYPES)
+
+    @cached_property
+    def occupation_text(self):
+        return get_text_of_choices_enum(self.occupation, constants.OCCUPATION_TYPES)
 
     def _net_worth(self):
         # Sum ExternalAssets for the client
@@ -711,6 +710,15 @@ class ClientAccount(models.Model):
             return self.apex_account.apex_account
         else:
             return None
+
+    @staticmethod
+    def get_account_type_text(acc_type):
+        return get_text_of_choices_enum(acc_type, constants.ACCOUNT_TYPES)
+
+    @cached_property
+    def account_type_text(self):
+        return ClientAccount.get_account_type_text(this.account_type, constants.ACCOUNT_TYPES)
+
 
 class RiskProfileGroup(models.Model):
     """

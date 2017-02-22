@@ -1,5 +1,6 @@
 {% load static from staticfiles %}
 {% load humanize %}
+{% load i18n filters %}
 
 <div id="page5-div" class="page-div">
   <div class="page-header">
@@ -36,8 +37,8 @@
       </tr>
       <tr>
         <td>Current investment profile</td>
-        <td>{{plan.desired_risk}}</td>
-        {% if has_partner %}<td>{{plan.desired_risk}}</td>{% endif %} <!--TODO: confirm partner's risk_profile_group -->
+        <td>{{plan.desired_risk|floatformat:2}}</td>
+        {% if has_partner %}<td>{{plan.desired_risk|floatformat:2}}</td>{% endif %} <!--TODO: confirm partner's risk_profile_group -->
       </tr>
       <tr>
         <td>Your gross salary</td>
@@ -46,13 +47,13 @@
       </tr>
       <tr>
         <td>Projected Income Growth Rate</td>
-        <td>{{plan.income_growth}}</td>
-        {% if has_partner %}<td>{{plan.partner_data.income_growth}}</td>{% endif %} <!--TODO: confirm partner's income_growth -->
+        <td>{{plan.income_growth|percentage}} a year</td>
+        {% if has_partner %}<td>{{plan.income_growth|percentage}} a year</td>{% endif %} <!--TODO: confirm partner's income_growth -->
       </tr>
       <tr>
         <td>Tax Filing Status</td>
         <td>{{client.filing_status_text}}</td>
-        {% if has_partner %}<td>{{client.filing_status_text}}</td>{% endif %} <!--TODO: confirm partner's risk_profile_group -->
+        {% if has_partner %}<td>{{client.filing_status_text}}</td>{% endif %} <!--TODO: confirm partner's filing status -->
       </tr>
       <tr>
         <td>Retirement account savings – qualified plans</td>
@@ -81,12 +82,12 @@
       </tr>
       <tr>
         <td>Occupation</td>
-        <td>{{client.occupation}}</td>
+        <td>{{client.occupation_text}}</td>
         {% if has_partner %}<td></td>{% endif %} <!--TODO: confirm partner's occupation -->
       </tr>
       <tr>
         <td>Home Value</td>
-        <td>${{client.home_value|intcomma}}</td>
+        <td>{{client.home_value|currency:0}}</td>
         {% if has_partner %}<td></td>{% endif %} <!--TODO: confirm partner's occupation -->
       </tr>
       <tr>

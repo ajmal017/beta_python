@@ -46,7 +46,7 @@ def get_lifestyle_box(client):
         }
     ]
 
-expenseGroups = [
+expense_groups = [
     {
       'label': 'Expenditures',
       'color': '#d47877'
@@ -74,7 +74,7 @@ def get_waterfall_chart(plan, has_partner):
     ExpenseCategory = RetirementPlan.ExpenseCategory
     sum_expenses = reduce(lambda acc, item: acc + item['amt'], expenses, 0)
 
-    expensesGroupsMapping = {
+    expenses_group_mapping = {
         ExpenseCategory.ALCOHOLIC_BEVERAGE.value: 0,
         ExpenseCategory.APPAREL_SERVICES.value: 0,
         ExpenseCategory.EDUCATION.value: 0,
@@ -96,18 +96,18 @@ def get_waterfall_chart(plan, has_partner):
     sum_expenses += btc
 
     btc_bar = {
-        'color': expenseGroups[1]['color'],
+        'color': expense_groups[1]['color'],
         'amt': round(btc),
         'height': btc / max(1, sum_expenses) * 100,
         'left': 0
     }
 
-    x_axis = [expenseGroups[1]['label']] + list(map(lambda item: RetirementPlan.get_expense_category_text(item['cat']), expenses))
+    x_axis = [expense_groups[1]['label']] + list(map(lambda item: RetirementPlan.get_expense_category_text(item['cat']), expenses))
     y_axis = range(int(math.ceil(sum_expenses / 1000.0)) * 1000, 0, -1000)
 
     # TODO: Group by categories and sort by alphabetical order of x_axis
     bars = [btc_bar] + [{
-        'color': expenseGroups[expensesGroupsMapping[item['cat']]]['color'],
+        'color': expense_groups[expenses_group_mapping[item['cat']]]['color'],
         'amt': round(item['amt']),
         'height': item['amt'] / sum_expenses * 100,
         'left': (i + 1) * 100 / max(1, len(x_axis))
@@ -118,7 +118,7 @@ def get_waterfall_chart(plan, has_partner):
         'x_unit_width': int(100 / max(1, len(x_axis)) * 100) / 100,
         'y_axis': y_axis,
         'y_unit_width': 100 / max(1, len(y_axis)),
-        'legends': expenseGroups,
+        'legends': expense_groups,
         'bars': bars
     }
 
