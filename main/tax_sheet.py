@@ -144,7 +144,7 @@ class TaxUser(object):
         self.ira_rmd_factor = 26.5
         self.state = zip2state.get_state(zip_code)
         self.sum_expenses = helpers.get_sum_expenses(expenses)
-        self.btc = btc
+        self.btc = btc # this is an ANNUAL quantity
 
         '''
         age
@@ -316,8 +316,8 @@ class TaxUser(object):
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
                 k = helpers.get_retirement_account_index(acnt)
-                self.maindf[str(k) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[k] * self.btc_factor[k]
-                self.maindf[str(k) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[k] * self.btc_factor[k]
+                self.maindf[str(k) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[k] * self.btc_factor
+                self.maindf[str(k) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[k] * self.btc_factor
                 pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(k), self.init_balance[k] )       
                 post_balance = [pre_balance[self.pre_retirement_end - 1] for i in range(self.total_rows - self.pre_retirement_end)]
                 post_capital_growth = [0. for i in range(self.total_rows - self.pre_retirement_end)]
@@ -680,14 +680,15 @@ class TaxUser(object):
         '''
         'btc factor' is multiplied by all retirement account contributions to incorporate effect of varying proportions in Monthly View pie chart. 
         '''
-        btc_factor = [0. for i in range(NUM_US_RETIREMENT_ACCOUNT_TYPES)]
         if self.retirement_accounts is not None:
+            contribs = 0
             for acnt in self.retirement_accounts:
                 k = helpers.get_retirement_account_index(acnt)
-                if monthly_contrib_employee_base[k] == 0:
-                    btc_factor[k] = 0.
-                else:
-                    btc_factor[k] = (employee_monthly_contrib_monthly_view/monthly_contrib_employee_base[k])
+                contribs = contribs + monthly_contrib_employee_base[k]
+            if contribs > 0:
+                btc_factor = employee_monthly_contrib_monthly_view/contribs
+            else:
+                btc_factor = 0
         return btc_factor
 
 
@@ -710,9 +711,9 @@ class TaxUser(object):
         '''
         returns monthly contribution for employee based on monthly view pie chart
         '''
-        return max(0, (self.total_income/12. - self.sum_expenses - self.miscellaneous_base)/(self.total_income/12.))
+        # return max(0, (self.total_income/12. - self.sum_expenses - self.miscellaneous_base)/(self.total_income/12.))
         # NB - both following quantities are annual
-        # return (self.btc/self.total_income) 
+        return (self.btc/self.total_income) 
     
 
     def get_full_post_retirement_and_pre_deflated(self, temp_df_column):
@@ -920,13 +921,39 @@ class TaxUser(object):
         end = min(max(helpers.get_period_of_age(self.age, 71) , start + 1) ,self.total_rows)
         
         print("")
+        print("--------------------------------------Retirement model OUTPUTS by row -------------------")
+        print(self.maindf.ix[0][0:30])
+        print(self.maindf.ix[0][31:60])
+        print(self.maindf.ix[0][61:90])
+        print(self.maindf.ix[0][91:120])
+        print(self.maindf.ix[1][0:30])
+        print(self.maindf.ix[1][31:60])
+        print(self.maindf.ix[1][61:90])
+        print(self.maindf.ix[1][91:120])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 1)][0:30])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 1)][31:60])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 1)][61:90])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 1)][91:120])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age))][0:30])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age))][31:60])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age))][61:90])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age))][91:120])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) + 1)][0:30])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) + 1)][31:60])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) + 1)][61:90])
+        print(self.maindf.ix[max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) + 1)][91:120])
+        print()
         print("--------------------------------------Retirement model OUTPUTS -------------------")
+        print("--------------------------------------At start - Taxable_Accounts ---------------------------")
+        print(self.check_acc_df[:12])
+        print("--------------------------------------At start - Income ---------------------------")
+        print(self.check_inc_df[:12])
         print("--------------------------------------Taxable_Accounts ---------------------------")
         print(self.check_acc_df[start:end])
         print("--------------------------------------Income ---------------------------")
         print(self.check_inc_df[start:end])
         print("--------------------------------------Various ---------------------------")
-        print('self.get_btc_factor(self, employee_monthly_contrib_monthly_view, monthly_contrib_employee_base):age:                    ' + str(self.age))
+        print('self.age:                    ' + str(self.age))
         print('self.savings_end_date_as_age:' + str(self.savings_end_date_as_age))
         print('self.current_percent_soc_sec ' + str(self.current_percent_soc_sec))
         print('self.current_percent_medicare' + str(self.current_percent_medicare))
