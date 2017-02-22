@@ -157,27 +157,27 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     @list_route(methods=['get'], url_path='retirement-account-categories')
     def retirement_account_categories(self, request):
         serializer = serializers.EnumSerializer(retirement_models.RetirementPlan.AccountCategory)
-        return Response(serializer.data)
+        return Response(serializer.data['choices'])
 
     @list_route(methods=['get'], url_path='retirement-saving-categories')
     def retirement_saving_categories(self, request):
         serializer = serializers.EnumSerializer(retirement_models.RetirementPlan.SavingCategory)
-        return Response(serializer.data)
+        return Response(serializer.data['choices'])
 
     @list_route(methods=['get'], url_path='retirement-expense-categories')
     def retirement_expense_categories(self, request):
         serializer = serializers.EnumSerializer(retirement_models.RetirementPlan.ExpenseCategory)
-        return Response(serializer.data)
+        return Response(serializer.data['choices'])
 
     @list_route(methods=['get'], url_path='retirement-housing-categories')
     def retirement_housing_categories(self, request):
         serializer = serializers.EnumSerializer(retirement_models.RetirementPlan.HomeStyle)
-        return Response(serializer.data)
+        return Response(serializer.data['choices'])
 
     @list_route(methods=['get'], url_path='retirement-lifestyle-categories')
     def retirement_lifestyle_categories(self, request):
         serializer = serializers.EnumSerializer(retirement_models.RetirementPlan.LifestyleCategory)
-        return Response(serializer.data)
+        return Response(serializer.data['choices'])
 
     @list_route(methods=['get'], url_path='retirement-lifestyles')
     def retirement_lifestyles(self, request):
