@@ -20,7 +20,7 @@
             <div class="y-axis">
               {% for y in balance_chart.y_axis %}
                 <div class="y-label" style="height: {{balance_chart.y_height}}%;">
-                  {{y}}
+                  {{y|currency:0}}
                 </div>
               {% endfor %}
             </div>
