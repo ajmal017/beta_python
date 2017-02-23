@@ -367,6 +367,7 @@ def resolve_retirement_invitations(sender, instance, created, **kwargs):
 
 class RetirementPlanEinc(TransferPlan):
     name = models.CharField(max_length=128)
+    account_type = models.IntegerField(choices=constants.ACCOUNT_TYPES, null=True, blank=True)
     plan = models.ForeignKey(RetirementPlan, related_name='external_income')
 
 

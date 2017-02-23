@@ -714,6 +714,7 @@ class RetirementPlanEincWritableSerializer(serializers.ModelSerializer):
         fields = (
             'name',
             'plan',
+            'account_type',
             'begin_date',
             'amount',
             'growth',
