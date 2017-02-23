@@ -580,6 +580,7 @@ class RetiresmartzTests(APITestCase):
         self.client.force_authenticate(user=client.user)
         income_data = {'name': 'RetirementIncome1',
                        'plan': plan.id,
+                       'account_type': constants.ACCOUNT_TYPE_VARIABLEANNUITY,
                        'begin_date': now().date(),
                        'amount': 200,
                        'growth': 1.0,
@@ -589,6 +590,7 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         income = response.data
         self.assertEqual(income['schedule'], 'DAILY')
+        self.assertEqual(income['account_type'], constants.ACCOUNT_TYPE_VARIABLEANNUITY)
         self.assertEqual(income['amount'], 200)
         self.assertEqual(income['growth'], 1.0)
         self.assertEqual(income['plan'], plan.id)
@@ -721,7 +723,7 @@ class RetiresmartzTests(APITestCase):
                       'acc_type': 5,
                       'cat': 2,
                       'contrib_period': 'monthly'}]
-        
+
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -789,14 +791,14 @@ class RetiresmartzTests(APITestCase):
         # Now set the date of birth
         plan.client.date_of_birth = old_dob
         plan.client.save()
-        
+
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
         self.assertEqual(len(response.data['projection']), 50)
-        
+
         # Make sure the goal_setting is now populated.
         plan.refresh_from_db()
         self.assertIsNotNone(plan.goal_setting.portfolio)
@@ -979,7 +981,7 @@ class RetiresmartzTests(APITestCase):
                       'acc_type': 5,
                       'cat': 2,
                       'contrib_period': 'monthly'}]
-        
+
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -1054,7 +1056,7 @@ class RetiresmartzTests(APITestCase):
                       'acc_type': 5,
                       'cat': 2,
                       'contrib_period': 'monthly'}]
-        
+
         plan = RetirementPlanFactory.create(income=100000.,
                                             retirement_home_price=250000.,
                                             paid_days=1,
@@ -1110,7 +1112,7 @@ class RetiresmartzTests(APITestCase):
         old_metrics = GoalMetric.objects.all().count()
         url = '/api/v1/clients/{}/retirement-plans/{}/calculate'.format(plan.client.id, plan.id)
         self.client.force_authenticate(user=plan.client.user)
-        
+
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1138,7 +1140,7 @@ class RetiresmartzTests(APITestCase):
         # Try with an older partner ...
         plan.client.civil_status = abstract.PersonalData.CivilStatus['MARRIED_FILING_JOINTLY'].value
         plan.client.save()
-        
+
         partner_year = pd.Timestamp(plan.client.date_of_birth).year - 3
         partner_day = min(pd.Timestamp(plan.client.date_of_birth).day, 28)
         partner_month = pd.Timestamp(plan.client.date_of_birth).month
@@ -1146,11 +1148,11 @@ class RetiresmartzTests(APITestCase):
 
         plan.partner_data = {'income': 75000.,'dob': partner_dob}
         plan.save()
-                
+
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Try with a younger partner ... 
+        # Try with a younger partner ...
         partner_year = pd.Timestamp(plan.client.date_of_birth).year + 5
         partner_day = min(pd.Timestamp(plan.client.date_of_birth).day, 28)
         partner_month = pd.Timestamp(plan.client.date_of_birth).month
@@ -1158,7 +1160,7 @@ class RetiresmartzTests(APITestCase):
 
         plan.partner_data = {'income': 75000.,'dob': partner_dob}
         plan.save()
-        
+
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
