@@ -35,17 +35,17 @@
           </tr>
           <tr>
             <td>Amount(future dollars)</td>
-            <td>{% if pensions_annuities.amount %}{{pensions_annuities.amount|currency}}{% else %}N/A{% endif %}</td><!-- TODO: pension_amount -->
+            <td>{% if pensions_annuities.amount %}{{pensions_annuities.amount|currency:0}}{% else %}N/A{% endif %}</td><!-- TODO: pension_amount -->
             <td>&nbsp;</td><!-- TODO: spouse's pension_amount -->
           </tr>
           <tr>
             <td>Type</td>
-            <td>Pension Account</td><!-- TODO: account_type -->
-            <td>{% if has_partner %}Pension Account{% endif %}</td><!-- TODO: spouse's account_type -->
+            <td>{{pensions_annuities.account_type|account_type_text}}</td>
+            <td>{% if has_partner %}{{pensions_annuities.account_type|account_type_text}}{% endif %}</td><!-- TODO: spouse's account_type -->
           </tr>
           <tr>
             <td>Taxable Amount</td>
-            <td>{% if pensions_annuities.amount %}{{pensions_annuities.amount|currency}}{% else %}N/A{% endif %}</td><!-- TODO: taxable_amount -->
+            <td>{% if pensions_annuities.amount %}{{pensions_annuities.amount|currency:0}}{% else %}N/A{% endif %}</td><!-- TODO: taxable_amount -->
             <td>&nbsp;</td>
           </tr>
         </tbody>
@@ -111,11 +111,11 @@
           </tr>
           <tr>
             <td>Property valuation (future)</td>
-            <td>{{projection.house_value_at_retire_in_todays|currency:0}};</td>
+            <td>{{projection.house_value_at_retire_in_todays|currency:0}}</td>
           </tr>
           <tr>
             <td>Estimated reverse mortgage payment</td>
-            <td>{{projection.reverse_mort_pymnt_at_retire_in_todays|currency:0}};</td><!-- TODO: reverse_mort_payment -->
+            <td>{{projection.reverse_mort_pymnt_at_retire_in_todays|currency:0}}</td><!-- TODO: reverse_mort_payment -->
           </tr>
         </tbody>
         <tfoot>

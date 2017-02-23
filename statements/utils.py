@@ -170,6 +170,7 @@ def get_pensions_annuities(plan):
     else:
         return {
             'name': 'N/A',
+            'account_type': None,
             'begin_date': None,
             'amount': None
         }
