@@ -188,12 +188,14 @@ def get_retirement_income_chart(plan, has_partner):
                 sum_value += p.part_non_taxable_inc[idx] + p.part_tot_taxable_dist[idx] + p.part_annuity_payments[idx] + p.part_pension_payments[idx] + p.part_ret_working_inc[idx] + p.part_soc_sec_benefit[idx]
             max_limit = max(max_limit, sum_value)
 
-        colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#ae5b1d', '#335989', '#83b75e', '#767676', '#a98419', '#3273a0', '#54783c', '#7da2d7', '#f4a872', '#ff0000']
+        colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#ae5b1d', '#335989', '#83b75e']
         legends = ['Nontaxable Income', 'Total Taxable Distributions', 'Annuity Payments', 'Pension Payments', 'Retirement Working Income', 'Social Security Benefit']
         if has_partner:
             partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
             legends += ['Spouse - Nontaxable Income', 'Spouse - Total Taxable Distributions', 'Spouse - Annuity Payments', 'Spouse - Pension Payments', 'Spouse - Retirement Working Income', 'Spouse - Social Security Benefit']
+            colors += ['#767676', '#a98419', '#3273a0', '#54783c', '#7da2d7', '#f4a872']
         legends += ['Desired Income']
+        colors += ['#ff0000']
         values = []
         if max_limit > 0:
             y_interval_0 = max_limit / 10
@@ -207,7 +209,7 @@ def get_retirement_income_chart(plan, has_partner):
         y_axis = list(reversed(list(y_axis)))
         y_height = y_interval / max_limit * 100
         x_num = last_idx - base_idx
-        x_interval = min(40, 600 / x_num)
+        x_interval = min(40, 560 / x_num)
         x_width = x_interval * x_num + 42
 
         for idx in range(base_idx, last_idx):
@@ -282,7 +284,7 @@ def get_account_balance_chart(plan, has_partner):
         y_axis = list(reversed(list(y_axis)))
         y_height = y_interval / max_limit * 100
         x_num = last_idx - base_idx
-        x_interval = min(40, 600 / x_num)
+        x_interval = min(40, 560 / x_num)
         x_width = x_interval * x_num + 42
 
         for idx in range(base_idx, last_idx):
