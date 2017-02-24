@@ -287,21 +287,25 @@ class ClientViewSet(ApiViewMixin,
 
         return Response(results)
 
-    # @detail_route(methods=['post'], permission_classes=[IsAdvisorOrClient,], url_path='connect-health-device/')
-    # def create_health_device(self, request, *args, **kwargs):
-    #     user = SupportRequest.target_user(request)
-    #     if not user.is_client:
-    #         return Response('You do not have permission to access this page', status=status.HTTP_403_FORBIDDEN)
-    #     data = healthdevices.create_access_token(request)
-    #     return Response(data)
-
     @detail_route(methods=['get'], permission_classes=[IsAdvisorOrClient,], url_path='health-device-data/')
-    def get_health_device(self, request, *args, **kwargs):
+    def get_health_device_data(self, request, *args, **kwargs):
         user = SupportRequest.target_user(request)
         if not user.is_client:
-            return Response('You do not have permission to access this page', status=status.HTTP_403_FORBIDDEN)
+            raise exceptions.PermissionDenied('You do not have permission to access this page')
         data = healthdevice.get_data(user.client)
+        data['id'] = user.client.id
         return Response(data)
+
+    @detail_route(methods=['delete'], permission_classes=[IsAdvisorOrClient,], url_path='remove-health-device/')
+    def remove_health_device(self, request, *args, **kwargs):
+        user = SupportRequest.target_user(request)
+        if not user.is_client:
+            raise exceptions.PermissionDenied('You do not have permission to access this page')
+        try:
+            user.client.health_device.delete()
+        except:
+            raise exceptions.NotFound('You do not have a health device connected')
+        return Response('ok')
 
 
 class InvitesView(ApiViewMixin, views.APIView):
