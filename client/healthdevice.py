@@ -145,7 +145,6 @@ def fitbit_get_data(healthdevice):
         active_minutes = res['goals']['activeMinutes']
 
         return {
-            'id': healthdevice.id,
             'height': round(height / h_mul, 1),
             'weight': round(weight / w_mul, 1),
             'daily_exercise': active_minutes
@@ -193,7 +192,7 @@ def googlefit_connect(client, code):
         healthdevice.provider = HealthDevice.ProviderType.GOOGLE_FIT.value
         healthdevice.access_token = credentials.access_token
         healthdevice.refresh_token = credentials.refresh_token
-        healthdevice.expires_at = credentials.access_token_expiry
+        healthdevice.expires_at = credentials.token_expiry
         healthdevice.meta = {}
         healthdevice.save()
         return True
@@ -245,7 +244,6 @@ def googlefit_get_data(healthdevice):
         daily_exercise = 0
 
     return {
-        'id': healthdevice.id,
         'height': round(height, 1),
         'weight': round(weight, 1),
         'daily_exercise': round(daily_exercise / (1000000000 * 60)) # nano sec to minutes
@@ -281,7 +279,6 @@ def microsofthealth_connect(client, code):
 
     try:
         token_info = mh_oauth_object.fetch_access_token(code, redirect_uri=microsoft_redirect_uri)
-        print(token_info)
         healthdevice.provider = HealthDevice.ProviderType.MICROSOFT_HEALTH.value
         healthdevice.access_token = token_info['access_token']
         if 'refresh_token' in token_info:
@@ -312,7 +309,6 @@ def microsofthealth_get_data(healthdevice):
         daily_summary = mh_object.make_request(mh_object.API_ENDPOINT + activity_url)
         total_seconds = reduce(lambda acc, item: acc + (item['activeHours'] * 3600 if 'activeHours' in item else 0) + (item['activeSeconds'] if 'activeSeconds' in item else 0), daily_summary['summaries'], 0)
         return {
-            'id': healthdevice.id,
             'height': round(height, 1),
             'weight': round(weight, 1),
             'daily_exercise': total_seconds / 60

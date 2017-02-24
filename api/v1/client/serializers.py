@@ -9,7 +9,7 @@ from api.v1.address.serializers import AddressSerializer, AddressUpdateSerialize
 from api.v1.advisor.serializers import AdvisorFieldSerializer
 from api.v1.serializers import ReadOnlyModelSerializer
 from client.models import AccountTypeRiskProfileGroup, Client, EmailInvite, \
-    EmailNotificationPrefs, RiskProfileAnswer, RiskProfileGroup
+    EmailNotificationPrefs, HealthDevice, RiskProfileAnswer, RiskProfileGroup
 from main import constants
 from main.constants import ACCOUNT_TYPE_PERSONAL
 from main.models import ExternalAsset, ExternalAssetTransfer, User
@@ -24,13 +24,23 @@ logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
 
 
+class HealthDeviceSerializer(ReadOnlyModelSerializer):
+    # id = serializers.IntegerField(source='health_device.id', read_only=True)
+    # provider = serializers.IntegerField(source='health_device.provider', read_only=True)
+    # expires_at = serializers.DateTimeField(source='health_device.expires_at', read_only=True)
+
+    class Meta:
+        model = HealthDevice
+        fields = ('id', 'provider', 'expires_at')
+
+
 class ClientSerializer(ReadOnlyModelSerializer):
     user = UserFieldSerializer()
     advisor = AdvisorFieldSerializer()
     residential_address = AddressSerializer()
     regional_data = serializers.JSONField()
     reason = serializers.SerializerMethodField()
-    health_device = serializers.IntegerField(source='health_device.id', read_only=True)
+    health_device = serializers.SerializerMethodField()
 
     class Meta:
         model = Client
@@ -38,6 +48,11 @@ class ClientSerializer(ReadOnlyModelSerializer):
     def get_reason(self, obj):
         if hasattr(obj.user, 'invitation'):
             return obj.user.invitation.reason
+        return None
+
+    def get_health_device(self, obj):
+        if hasattr(obj, 'health_device'):
+            return HealthDeviceSerializer(obj.health_device).data
         return None
 
 
