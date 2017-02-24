@@ -326,4 +326,10 @@ GOOGLEFIT_SETTINGS = {
     'EXPIRES_IN': 604800,
 }
 
+MICROSOFTHEALTH_SETTINGS = {
+    'API_BASE': 'https://api.microsofthealth.net/v1/me',
+    'CLIENT_ID': os.environ.get('MICROSOFTHEALTH_CLIENT_ID', ''),
+    'CLIENT_SECRET': os.environ.get('MICROSOFTHEALTH_CLIENT_SECRET', ''),
+}
+
 from local_settings import *

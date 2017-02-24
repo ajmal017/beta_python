@@ -57,6 +57,7 @@ PyPDF2==1.26.0
 pysftp==0.2.8
 python-dateutil==2.5.3 # For rrule parsing
 pytz==2015.7
+tzlocal==1.3
 scs==1.1.7
 six==1.10.0
 git+git://github.com/kennethreitz/tablib@ddc4bd30f22e40ae4e3aa9347747f1f96912191a
@@ -77,6 +78,7 @@ djangorestframework==3.4.6
 django-rest-swagger==2.0.5
 plaid-python>=1.4.0
 google-api-python-client>=1.6.2
+MicrosoftHealth>=0.1.0
 
 # misc
 django-model-utils==2.3.1

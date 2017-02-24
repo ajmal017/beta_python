@@ -1047,7 +1047,7 @@ class HealthDevice(models.Model):
 
     client = models.OneToOneField('client.Client', related_name='health_device', help_text='The health device owner')
     provider = models.IntegerField(null=True, choices=ProviderType.choices(), help_text='Heath device provider')
-    token = models.CharField(max_length=1000, help_text='Auth Token')
-    refresh_token = models.CharField(max_length=1000, null=True, blank=True, help_text='Auth refresh token')
-    expires_at = models.DateTimeField(null=True, blank=True, help_text='Auth token expiry time')
+    access_token = models.CharField(max_length=2000, default='', help_text='OAuth access Token')
+    refresh_token = models.CharField(max_length=1000, null=True, blank=True, help_text='OAuth refresh token')
+    expires_at = models.DateTimeField(null=True, blank=True, help_text='OAuth token expiry time')
     meta = JSONField(null=True, blank=True, help_text='Meta data')
