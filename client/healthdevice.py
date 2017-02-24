@@ -2,15 +2,20 @@ from client.models import HealthDevice
 from django.conf import settings
 from datetime import datetime, timedelta
 from support.models import SupportRequest
-from main.settings import FITBIT_SETTINGS, GOOGLEFIT_SETTINGS
+from main.settings import FITBIT_SETTINGS, GOOGLEFIT_SETTINGS, MICROSOFTHEALTH_SETTINGS
 from apiclient.discovery import build
 from oauth2client.client import OAuth2Credentials, OAuth2WebServerFlow
+from MicrosoftHealth import MHOauth2Client, MH
+from MicrosoftHealth.Exceptions import *
 from functools import reduce
 import base64
 import urllib.request as urllib2
+from urllib.parse import quote_plus
 import urllib
 import json
 import httplib2
+import pytz
+from tzlocal import get_localzone
 
 def get_json_response(req):
     response = urllib2.urlopen(req)
@@ -27,6 +32,8 @@ def get_data(client):
         return fitbit_get_data(healthdevice)
     if healthdevice.provider == HealthDevice.ProviderType.GOOGLE_FIT.value:
         return googlefit_get_data(healthdevice)
+    if healthdevice.provider == HealthDevice.ProviderType.MICROSOFT_HEALTH.value:
+        return microsofthealth_get_data(healthdevice)
 
     return None
 
@@ -94,7 +101,7 @@ def fitbit_save_fields(healthdevice, url, body_text):
     try:
         res = get_json_response(req)
         healthdevice.provider = HealthDevice.ProviderType.FITBIT.value
-        healthdevice.token = res['access_token']
+        healthdevice.access_token = res['access_token']
         healthdevice.refresh_token = res['refresh_token']
         healthdevice.expires_at = datetime.now() + timedelta(seconds=int(res['expires_in']))
         healthdevice.meta = {
@@ -118,7 +125,7 @@ def fitbit_get_data(healthdevice):
     try:
         #Start the request
         req = urllib2.Request(profile_url)
-        req.add_header('Authorization', 'Bearer ' + healthdevice.token)
+        req.add_header('Authorization', 'Bearer ' + healthdevice.access_token)
         res = get_json_response(req)
         if fitbit_should_refresh_token(res):
             fitbit_refresh_token(healthdevice)
@@ -130,7 +137,7 @@ def fitbit_get_data(healthdevice):
         w_mul = 0.453592 if res['user']['weightUnit'] == 'en_US' else 1 # oz to kg
 
         req = urllib2.Request(activity_url)
-        req.add_header('Authorization', 'Bearer ' + healthdevice.token)
+        req.add_header('Authorization', 'Bearer ' + healthdevice.access_token)
         response = urllib2.urlopen(req)
         full_response = response.read()
         res = json.loads(full_response.decode("utf-8"))
@@ -184,9 +191,9 @@ def googlefit_connect(client, code):
         credentials = flow.step2_exchange(code)
 
         healthdevice.provider = HealthDevice.ProviderType.GOOGLE_FIT.value
-        healthdevice.token = credentials.access_token
+        healthdevice.access_token = credentials.access_token
         healthdevice.refresh_token = credentials.refresh_token
-        healthdevice.expires_at = credentials.token_expiry
+        healthdevice.expires_at = credentials.access_token_expiry
         healthdevice.meta = {}
         healthdevice.save()
         return True
@@ -206,7 +213,7 @@ def googlefit_get_data(healthdevice):
     # 64 bit integers (epoch time with nanoseconds).
     DATA_SET = "0-{}".format(to_nano_epoch(datetime.now()))
 
-    credentials = OAuth2Credentials(healthdevice.token,
+    credentials = OAuth2Credentials(healthdevice.access_token,
                       GOOGLEFIT_SETTINGS['CLIENT_ID'],
                       GOOGLEFIT_SETTINGS['CLIENT_SECRET'],
                       healthdevice.refresh_token,
@@ -243,3 +250,72 @@ def googlefit_get_data(healthdevice):
         'weight': round(weight, 1),
         'daily_exercise': round(daily_exercise / (1000000000 * 60)) # nano sec to minutes
     }
+
+
+# Microsoft Health Module
+microsoft_scopes = [
+    'mshealth.ReadProfile',
+    'mshealth.ReadActivityHistory',
+]
+
+microsoft_redirect_uri = '{}/oauth2/health-devices/microsoft-health/'.format(settings.SITE_URL)
+def microsofthealth_get_redirect_uri():
+    url = 'https://login.live.com/oauth20_authorize.srf'
+    query = '&'.join([
+        'response_type=code',
+        'client_id={}'.format(MICROSOFTHEALTH_SETTINGS['CLIENT_ID']),
+        'redirect_uri={}'.format(microsoft_redirect_uri),
+        'scope={}'.format('+'.join(microsoft_scopes))
+    ])
+    return '{}?{}'.format(url, query)
+
+
+def microsofthealth_connect(client, code):
+    try:
+        healthdevice = client.health_device
+    except:
+        healthdevice = HealthDevice(client=client)
+
+    mh_oauth_object = MHOauth2Client(client_id = MICROSOFTHEALTH_SETTINGS['CLIENT_ID'],
+                                   client_secret = MICROSOFTHEALTH_SETTINGS['CLIENT_SECRET'])
+
+    try:
+        token_info = mh_oauth_object.fetch_access_token(code, redirect_uri=microsoft_redirect_uri)
+        print(token_info)
+        healthdevice.provider = HealthDevice.ProviderType.MICROSOFT_HEALTH.value
+        healthdevice.access_token = token_info['access_token']
+        if 'refresh_token' in token_info:
+            healthdevice.refresh_token = token_info['refresh_token']
+        healthdevice.expires_at = datetime.now() + timedelta(seconds=int(token_info['expires_in']))
+        healthdevice.meta = {
+            'user_id': token_info['user_id']
+        }
+        healthdevice.save()
+        return True
+    except:
+        return False
+
+
+def microsofthealth_get_data(healthdevice):
+    local_tz = get_localzone()
+    dt_start = datetime.now() - timedelta(days=7)
+    activity_url = '/v1/me/Summaries/daily?startTime={}Z'.format(dt_start.isoformat())
+    try:
+        mh_object = MH(microsoft_health_key = MICROSOFTHEALTH_SETTINGS['CLIENT_ID'],
+                      microsoft_health_secret = MICROSOFTHEALTH_SETTINGS['CLIENT_SECRET'],
+                      access_token = healthdevice.access_token,
+                      refresh_token = healthdevice.refresh_token)
+        profile = mh_object.user_profile_get(user_id=healthdevice.meta['user_id'])
+
+        height = float(profile['height']) / 10
+        weight = float(profile['weight']) / 1000
+        daily_summary = mh_object.make_request(mh_object.API_ENDPOINT + activity_url)
+        total_seconds = reduce(lambda acc, item: acc + (item['activeHours'] * 3600 if 'activeHours' in item else 0) + (item['activeSeconds'] if 'activeSeconds' in item else 0), daily_summary['summaries'], 0)
+        return {
+            'id': healthdevice.id,
+            'height': round(height, 1),
+            'weight': round(weight, 1),
+            'daily_exercise': total_seconds / 60
+        }
+    except HTTPNotFound as e:
+        return e
