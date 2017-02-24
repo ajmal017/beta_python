@@ -117,6 +117,8 @@ main() {
                -e 'FITBIT_CLIENT_SECRET='${FITBIT_CLIENT_SECRET} \
                -e 'GOOGLEFIT_CLIENT_ID='${GOOGLEFIT_CLIENT_ID} \
                -e 'GOOGLEFIT_CLIENT_SECRET='${GOOGLEFIT_CLIENT_SECRET} \
+               -e 'MICROSOFTHEALTH_CLIENT_ID='${MICROSOFTHEALTH_CLIENT_ID} \
+               -e 'MICROSOFTHEALTH_CLIENT_SECRET='${MICROSOFTHEALTH_CLIENT_SECRET} \
                --net=betasmartz-local \
                --name=${2}_betasmartz_app_test \
                -d betasmartz/backend:${2}_cd
