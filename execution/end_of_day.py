@@ -3,26 +3,28 @@ import types
 from collections import defaultdict
 from datetime import timedelta
 from functools import partial
+from execution.broker.InteractiveBrokers.IBOrder import IBOrder
 from logging import DEBUG, INFO, WARN, ERROR
 from time import sleep
-
+import time
 import numpy as np
 from django.db import transaction
 from django.db.models import Sum, F, Case, When, Value, FloatField
 from django.utils import timezone
-
-from main.management.commands.rebalance import TAX_BRACKET_LESS1Y, TAX_BRACKET_MORE1Y, get_position_lots_by_tax_lot
-
-
+from portfolios.providers.execution.django import ExecutionProviderDjango
+from main.management.commands.rebalance import TAX_BRACKET_LESS1Y, TAX_BRACKET_MORE1Y, rebalance, create_request, build_positions, get_position_lots_by_tax_lot
+from portfolios.calculation import build_instruments, calculate_portfolio, \
+    calculate_portfolios, get_instruments
+from portfolios.providers.data.django import DataProviderDjango
 from client.models import ClientAccount
 from execution.market_data.InteractiveBrokers.IBProvider import IBProvider
 from execution.broker.ETNA.ETNABroker import ETNABroker
 from execution.broker.InteractiveBrokers.IBBroker import IBBroker
 from execution.account_groups.create_account_groups import FAAccountProfile
-from main.models import MarketOrderRequest, ExecutionRequest, Execution, Ticker, MarketOrderRequestAPEX, \
+from main.models import MarketOrderRequest, ExecutionRequest, Execution, Goal, Ticker, MarketOrderRequestAPEX, \
     Fill, ExecutionFill, ExecutionDistribution, Transaction, PositionLot, Sale, Order
 # TODO remove obsolete functionality
-
+from api.v1.tests.factories import MarkowitzScaleFactory
 
 short_sleep = partial(sleep, 1)
 long_sleep = partial(sleep, 10)
@@ -178,29 +180,48 @@ def create_orders():
         else:
             ers.append(er_obj)
     for grouped_volume_per_share in ers:
-        ticker = Ticker.objects.get(id=grouped_volume_per_share.ticker_id)
+        if not grouped_volume_per_share.volume == 0:
+            ticker = Ticker.objects.get(id=grouped_volume_per_share.ticker_id)
 
-        # TODO get actual price
-        provider = provider_manager.get("IB")
-        md = provider.get_market_depth_L1(ticker.symbol)
-        order = broker_manager.get(grouped_volume_per_share.broker).create_order(price=md.get_mid(), quantity=grouped_volume_per_share.volume, ticker=ticker)
-        order.save()
-        mor_ids = MarketOrderRequest.objects.all().filter(state=MarketOrderRequest.State.APPROVED.value,
-                                                          execution_requests__asset_id=ticker.id).\
-            values_list('id', flat=True).distinct()
+            provider = provider_manager.get("IB")
+            md = provider.get_market_depth_L1(ticker.symbol)
+            order = broker_manager.get(grouped_volume_per_share.broker).create_order(price=round(md.get_mid()*0.995 if grouped_volume_per_share.volume > 0 else md.get_mid()*1.005,2), quantity=grouped_volume_per_share.volume, ticker=ticker)
+            order.save()
+            mor_ids = MarketOrderRequest.objects.all().filter(state=MarketOrderRequest.State.APPROVED.value,
+                                                              execution_requests__asset_id=ticker.id).\
+                values_list('id', flat=True).distinct()
 
-        for id in mor_ids:
-            mor = MarketOrderRequest.objects.get(id=id)
-            MarketOrderRequestAPEX.objects.create(market_order_request=mor, ticker=ticker, order=order)
+            for id in mor_ids:
+                mor = MarketOrderRequest.objects.get(id=id)
+                MarketOrderRequestAPEX.objects.create(market_order_request=mor, ticker=ticker, order=order)
 
+# should not get mix of two brokers
+def update_orders(orders):
+    distributions = {}
+    orders_by_broker = {}
+    for order in orders:
+        if order.Broker not in orders_by_broker:
+            orders_by_broker[order.Broker] = []
+        orders_by_broker[order.Broker].append(order)
+    for broker in orders_by_broker:
+        if broker not in distributions:
+            distributions[broker] = broker_manager.get(broker).update_orders(orders_by_broker[broker])
+    return distributions
 
-def send_order(order):
+def send_pre_trade(broker,profile):
+    broker_manager.get(broker).send_pre_trade(profile)
+
+def send_order(order, execute = False):
     order.Status = Order.StatusChoice.Sent.value
     order.save()
+    distributions = None
+    if execute:
+        broker_manager.get(order.Broker).send_order(order)
     mors = MarketOrderRequest.objects.filter(morsAPEX__order=order).distinct()
     for m in mors:
         m.state = MarketOrderRequest.State.SENT.value
         m.save()
+    return distributions
 
 
 def mark_order_as_complete(order):
@@ -209,7 +230,20 @@ def mark_order_as_complete(order):
 
 
 @transaction.atomic
-def process_fills():
+def create_pre_trade_allocation():
+    allocation = {}
+    ers = ExecutionRequest.objects.all().filter(order__state=MarketOrderRequest.State.APPROVED.value)
+    for er in ers:
+        if er.asset.symbol not in allocation:
+            allocation[er.asset.symbol] = {}
+        mor = MarketOrderRequest.objects.get(execution_requests__id=er.id)
+        if mor.account.broker_acc_id not in allocation[er.asset.symbol]:
+            allocation[er.asset.symbol][mor.account.broker_acc_id] = 0
+        allocation[er.asset.symbol][mor.account.broker_acc_id] += er.volume
+    return allocation
+
+@transaction.atomic
+def process_fills(volume_distribution=None):
     '''
     from existing apex fills create executions, execution distributions, transactions and positionLots - pro rata all fills
     :return:
@@ -227,13 +261,19 @@ def process_fills():
         sum_ers = np.sum([er.volume for er in ers])
 
         for er in ers:
-            pro_rata = er.volume/float(sum_ers)
-            volume = fill['volume'] * pro_rata
-
             apex_fill = Fill.objects.get(id=fill['id'])
             ticker = Ticker.objects.get(id=fill['ticker_id'])
             mor = MarketOrderRequest.objects.get(execution_requests__id=er.id)
             complete_mor_ids.add(mor.id)
+            # now volume is directly obtained, if it's provided under volume distribution
+            pro_rata = er.volume / float(sum_ers)
+            if volume_distribution is None:
+                volume = fill['volume'] * pro_rata
+            else:
+                volume = 0
+                for broker in volume_distribution:
+                    if broker in volume_distribution and er.asset.symbol in volume_distribution[broker] and mor.account.broker_acc_id in volume_distribution[broker][er.asset.symbol]:
+                        volume += volume_distribution[broker][er.asset.symbol][mor.account.broker_acc_id] * pro_rata
 
             order = Order.objects.get(morsAPEX__market_order_request__execution_requests__id=er.id)
             complete_order_ids.add(order.id)
@@ -291,6 +331,77 @@ def create_sale(ticker_id, volume, current_price, execution_distribution):
         Sale.objects.create(quantity=- (lot.quantity - new_quantity),
                             sell_execution_distribution=execution_distribution,
                             buy_execution_distribution=lot.execution_distribution)
+
+def execute():
+    # 1 market_order_request, 1 execution_request, 2 fills
+    # out
+    create_orders()
+    allocations = create_pre_trade_allocation()
+    orders = []
+    for order in Order.objects.all():
+        account_profile = FAAccountProfile()
+        account_profile.append_share_allocation(order.Symbol, allocations[order.Symbol])
+        profile = account_profile.get_profile()
+        send_pre_trade(order.Broker, profile)
+        if order.Broker == "IB":
+            order.__class__ = IBOrder
+            order.m_faProfile = order.Symbol
+        send_order(order, True)
+
+
+        orders.append(order)
+    time.sleep(1 * 60)
+    distributions = update_orders(orders)
+    for order in orders:
+        mark_order_as_complete(order)
+
+    process_fills(distributions)
+
+
+def process(data_provider, execution_provider):
+    # actually tickers are created here - we need to set proper asset class for each ticker
+    goals = Goal.objects.all()
+    #get_markowitz_scale(self)
+    #MarkowitzScaleFactory.create()
+    data_provider.get_goals()
+
+    build_instruments(data_provider)
+
+    # optimization fails due to
+    #portfolios_stats = calculate_portfolios(setting=goal.selected_settings,
+    #                                       data_provider=data_provider,
+    #                                       execution_provider=execution_provider)
+    #portfolio_stats = calculate_portfolio(settings=goal.selected_settings,
+    #                                      data_provider=data_provider,
+    #                                      execution_provider=execution_provider)
+    for goal in goals:
+        weights, instruments, reason = rebalance(idata=get_instruments(data_provider),
+                                                goal=goal,
+                                                data_provider=data_provider,
+                                                execution_provider=execution_provider)
+
+
+
+
+        new_positions = build_positions(goal, weights, instruments)
+
+        # create sell requests first
+        mor, requests = create_request(goal, new_positions, reason,
+                                        execution_provider=execution_provider,
+                                        data_provider=data_provider,
+                                        allowed_side=-1)
+        approve_mor(mor)
+    # process sells
+    execute()
+    for goal in goals:
+        # now create buys - but only use cash to finance proceeds of buys
+        mor, requests = create_request(goal, new_positions, reason,
+                                        execution_provider=execution_provider,
+                                        data_provider=data_provider,
+                                        allowed_side=1)
+        approve_mor(mor)
+    execute()
+
 
 # obsolete - delete
 def example_usage_with_IB():

@@ -20,6 +20,17 @@ class ReferenceWrapper(EWrapper):
         basicConfig()
         self._market_depth_L1 = {}
         self._requests_finished = {}
+        self._errors = {}
+
+
+    def isError(self, id):
+        return id in self._errors
+
+    def getError(self, id):
+        if id in self._errors:
+            return self._errors[id]
+        else:
+            return None
 
     def isExecutionRequestFinished(self, requestId):
         return requestId in self._requests_finished
@@ -104,6 +115,8 @@ class ReferenceWrapper(EWrapper):
         logger.debug('connectionClosed', {})
 
     def error(self, id=None, errorCode=None, errorMsg=None):
+        self._errors[id] = errorMsg
+        print('error', vars())
         logger.error('error', vars())
 
     def error_0(self, strvalue=None):
@@ -227,11 +240,15 @@ class IBProvider(BaseProvider):
         return contract
 
     def _get_next_request_id(self):
-        return ++self._request_id
+        self._request_id += 1
+        return self._request_id
     def get_market_depth_L1(self, symbol):
         contract = self._make_contract(symbol)
         request_id = self._get_next_request_id()
         self._connection.reqMktData(request_id, contract, '', True)
         while not self._wrapper.isExecutionRequestFinished(request_id):
+            err = self._wrapper.getError(request_id)
+            if err is not None:
+                raise Exception(err)
             very_short_sleep()
         return self._wrapper.getMarketDepthL1(request_id)

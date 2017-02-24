@@ -45,6 +45,25 @@ class BaseTest(TestCase):
         profile = account_profile.get_profile()
         self.con.send_pre_trade(profile)
 
+    def test_IB_distribution(self):
+        account_profile = FAAccountProfile()
+
+        account_dict = {
+            'DU627759': 5,
+            'DU627760': 10,
+        }
+        account_profile.append_share_allocation('MSFT', account_dict)
+        profile = account_profile.get_profile()
+        self.con.send_pre_trade(profile)
+        order = self.test_IB_send_order()
+        orders = []
+        orders.append(order)
+        distribution = self.con.update_orders(orders)
+        self.assertFalse('DU627759' in distribution and 'DU627760'in distribution)
+        if 'DU627759' in distribution and 'DU627760'in distribution:
+            self.assertFalse(distribution['DU627759'] == 5)
+            self.assertFalse(distribution['DU627760'] == 10)
+
     def test_IB_send_order(self):
 
         order = self.con.create_order(783, 15, self.ticker)

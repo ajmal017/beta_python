@@ -6,7 +6,7 @@ from api.v1.tests.factories import ExecutionRequestFactory, MarketOrderRequestFa
 from main.models import Order, Execution
 from execution.broker.ETNA.ETNABroker import ETNABroker
 from main.models import Fill
-from execution.end_of_day import create_orders, send_order, process_fills, mark_order_as_complete
+from execution.end_of_day import create_orders, send_order, process_fills, mark_order_as_complete, update_orders
 from unittest import skipIf
 from tests.test_settings import IB_TESTING
 
@@ -68,6 +68,10 @@ class BaseTest(TestCase):
         order2_etna = Order.objects.get(ticker=self.ticker2)
         send_order(order1_etna)
         send_order(order2_etna)
+        #orders = []
+        #orders.append(order1_etna)
+        #orders.append(order2_etna)
+        #distributions = update_orders(orders)
         mark_order_as_complete(order1_etna)
         mark_order_as_complete(order2_etna)
 
@@ -75,7 +79,7 @@ class BaseTest(TestCase):
         FillFactory.create(volume=fill2_volume, price=fill2_price, order=order2_etna)
         FillFactory.create(volume=fill3_volume, price=fill3_price, order=order1_etna)
 
-        process_fills()
+        process_fills()#distributions)
 
         sum_volume = Execution.objects.filter(distributions__execution_request__goal=self.goal1)\
             .aggregate(sum=Sum('volume'))
@@ -108,13 +112,16 @@ class BaseTest(TestCase):
          fill1b_price = 15
 
          order1_etna = Order.objects.get(ticker=self.ticker1)
-         send_order(order1_etna)
+         send_order(order1_etna)#, True)
+         #orders = []
+         #orders.append(order1_etna)
+         #distributions = update_orders(orders)
          mark_order_as_complete(order1_etna)
 
          FillFactory.create(volume=fill1a_volume, price=fill1a_price, order=order1_etna)
          FillFactory.create(volume=fill1b_volume, price=fill1b_price, order=order1_etna)
 
-         process_fills()
+         process_fills()#distributions)
 
          sum_volume = Execution.objects.filter(distributions__execution_request__goal=self.goal1)\
              .aggregate(sum=Sum('volume'))
@@ -148,13 +155,16 @@ class BaseTest(TestCase):
          fill1b_price = 15
 
          order1_etna = Order.objects.get(ticker=self.ticker1)
-         send_order(order1_etna)
+         send_order(order1_etna)#, True)
+         #orders = []
+         #orders.append(order1_etna)
+         #distributions = update_orders(orders)
          mark_order_as_complete(order1_etna)
 
          FillFactory.create(volume=fill1a_volume, price=fill1a_price, order=order1_etna)
          FillFactory.create(volume=fill1b_volume, price=fill1b_price, order=order1_etna)
 
-         process_fills()
+         process_fills()#distributions)
          order1 = Order.objects.get(ticker=self.ticker1)
          self.assertTrue(order1.fill_info == Order.FillInfo.PARTIALY_FILLED.value)
 

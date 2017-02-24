@@ -9,13 +9,14 @@ class BaseBroker(object):
         side = Order.SideChoice.Buy.value if quantity > 0 else Order.SideChoice.Sell.value
         security = self.get_security(ticker.symbol)
         order = Order.objects.create(Price=price,
-                                     Quantity=quantity,
+                                     Quantity=abs(quantity),
                                      SecurityId=security.symbol_id,
                                      Symbol=security.Symbol,
                                      Side=side,
                                      TimeInForce=6,
                                      ExpireDate=int((datetime.now() + timedelta(minutes=5)).timestamp()),
-                                     ticker=ticker)
+                                     ticker=ticker,
+                                     Broker=type(self).__name__.replace("Broker",""))
         return order
     @abstractmethod
     def connect(self):
@@ -31,7 +32,10 @@ class BaseBroker(object):
         pass
     def send_orders(self, orders):
         for order in orders:
-            self.send_order(order)
+            if order.Quantity==0:
+                order.setFills(0,0)
+            else:
+                self.send_order(order)
         return orders
     @abstractmethod
     def update_orders(self, orders):
