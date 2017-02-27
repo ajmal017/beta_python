@@ -797,6 +797,7 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
+        self.assertTrue('reload_feed' in response.data)
         self.assertEqual(len(response.data['projection']), 50)
 
         # Make sure the goal_setting is now populated.
@@ -815,6 +816,14 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(old_mgroups+1, GoalMetricGroup.objects.all().count())
         self.assertEqual(old_metrics+1, GoalMetric.objects.all().count())
         self.assertNotEqual(old_id, plan.goal_setting.id)
+
+        # Tests calculated-data api endpoint respones with correct data
+        url = '/api/v1/clients/{}/retirement-plans/{}/calculated-data'.format(plan.client.id, plan.id)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('portfolio' in response.data)
+        self.assertTrue('projection' in response.data)
+        self.assertTrue('reload_feed' in response.data)
 
     def test_retirement_plan_advice_feed_list_unread(self):
         self.content_type = ContentTypeFactory.create()

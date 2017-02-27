@@ -556,6 +556,16 @@ equired to generate the
         client = Client.objects.get(pk=parent_lookup_client)
         return Response(serializers.PDFUploadSerializer(client).data)
 
+    @detail_route(methods=['get'], url_path='calculated-data')
+    def calculated_data(self, request, parent_lookup_client, pk, format=None):
+        plan = self.get_object()
+        try:
+            projection = plan.projection
+            pser = PortfolioSerializer(instance=plan.goal_setting.portfolio)
+            return Response({'portfolio': pser.data, 'projection': projection.proj_data, 'reload_feed': False})
+        except ObjectDoesNotExist:
+            return self.calculate(request, parent_lookup_client, format)
+
     @detail_route(methods=['get'], url_path='calculate')
     def calculate(self, request, parent_lookup_client, pk, format=None):
         """
@@ -617,14 +627,14 @@ equired to generate the
         else:
             print('plan.patrner_data: None')
         print(str('----------------------'))
-        
+
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             user_age = helpers.get_age(plan.client.date_of_birth)
             partner_age = helpers.get_age(plan.partner_data['dob'])
             user_older_by = user_age - partner_age
             if user_older_by > 0:
-                # life expectancy must be no greater than 100 
-                projection_end = min(projection_end + user_older_by, 100) 
+                # life expectancy must be no greater than 100
+                projection_end = min(projection_end + user_older_by, 100)
         '''
         user = tax.TaxUser(plan.client.date_of_birth,
                         plan.retirement_age,
@@ -705,7 +715,7 @@ equired to generate the
             partner = tax.TaxUser(plan, projection_end, True, plans)
             partner.create_maindf()
 
-            
+
             projection.part_income_actual_monthly = partner.income_actual_monthly
             projection.part_income_desired_monthly = partner.income_desired_monthly
             projection.part_taxable_assets_monthly = partner.taxable_assets_monthly
@@ -731,8 +741,6 @@ equired to generate the
             projection.part_house_value_at_retire_in_todays = partner.house_value_at_retire_in_todays
             projection.part_reverse_mort_pymnt_at_retire_in_todays = partner.reverse_mort_pymnt_at_retire_in_todays
 
-        projection.save()
-
         # Convert these returned values to a format for the API
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
             user.maindf['Joint_Taxable_And_Nontaxable_Accounts'] = user.maindf['Taxable_And_Nontaxable_Accounts'] + partner.maindf['Taxable_And_Nontaxable_Accounts']
@@ -747,9 +755,15 @@ equired to generate the
         proj_data = [(d2ed(d), a, i, desired) for d, a, i, desired in catd.iloc[locs, :].itertuples()]
         pser = PortfolioSerializer(instance=settings.portfolio)
 
+        on_track = self.check_is_on_track(proj_data, plan)
+
+        projection.proj_data = proj_data
+        projection.on_track = on_track
+
+        projection.save()
+
         # log status of on/off track change.
         reload_feed = False
-        on_track = self.check_is_on_track(proj_data, plan)
         events = EventLog.objects.filter(
             Q(action='RETIRESMARTZ_ON_TRACK_NOW') |
             Q(action='RETIRESMARTZ_OFF_TRACK_NOW')
@@ -803,7 +817,7 @@ equired to generate the
         rt_value = value_at_retirement(rt_dt_epoch, values)
         target_rt_value = value_at_retirement(rt_dt_epoch, target_values)
 
-        return target_rt_value >= rt_value
+        return rt_value >= target_rt_value
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):

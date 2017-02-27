@@ -561,6 +561,8 @@ def determine_accounts(plan):
 class RetirementProjection(models.Model):
     plan = models.OneToOneField(RetirementPlan, null=True, on_delete=models.CASCADE, related_name='projection')
 
+    proj_data = JSONField(null=True, blank=True, help_text="Calculated Projection data for api response")
+    on_track = models.BooleanField(default=False, null=False, help_text="Whether the retirement plan is on track")
     #user
     income_actual_monthly = JSONField(null=True, blank=True, help_text="List of monthly actual income")
     income_desired_monthly = JSONField(null=True, blank=True, help_text="List of monthly desired income")
