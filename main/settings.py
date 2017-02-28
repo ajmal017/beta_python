@@ -332,4 +332,10 @@ MICROSOFTHEALTH_SETTINGS = {
     'CLIENT_SECRET': os.environ.get('MICROSOFTHEALTH_CLIENT_SECRET', ''),
 }
 
+UNDERARMOUR_SETTINGS = {
+    'API_BASE': 'https://api.ua.com/v7.1',
+    'CLIENT_ID': os.environ.get('UNDERARMOUR_CLIENT_ID', ''),
+    'CLIENT_SECRET': os.environ.get('UNDERARMOUR_CLIENT_SECRET', ''),
+}
+
 from local_settings import *

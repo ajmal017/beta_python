@@ -293,6 +293,8 @@ class ClientViewSet(ApiViewMixin,
         if not user.is_client:
             raise exceptions.PermissionDenied('You do not have permission to access this page')
         data = healthdevice.get_data(user.client)
+        if data is None:
+            raise exceptions.ParseError('Failed to get data from your health device')
         data['id'] = user.client.id
         return Response(data)
 
