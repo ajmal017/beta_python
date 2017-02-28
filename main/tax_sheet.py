@@ -675,6 +675,32 @@ class TaxUser(object):
         self.non_taxable_accounts = self.annual_df['Nontaxable_Accounts']
 
         # ... BY ACCOUNT TYPE
+
+        self.accounts_401a = None
+        self.accounts_401k = None
+        self.accounts_403b = None
+        self.accounts_403k = None
+        self.accounts_409a = None
+        self.accounts_457 = None
+        self.accounts_esop = None
+        self.accounts_gov = None
+        self.accounts_ind_401k = None
+        self.accounts_ind_roth_401k= None 
+        self.accounts_ira = None
+        self.accounts_mon_purch = None
+        self.accounts_pay_deduct_ira = None 
+        self.accounts_prof_sharing = None
+        self.accounts_qual_annuity = None
+        self.accounts_qual_np = None
+        self.accounts_qual_np_roth = None
+        self.accounts_priv_457 = None 
+        self.accounts_roth_401k = None
+        self.accounts_roth_ira = None  
+        self.accounts_sarsep_ira = None
+        self.accounts_sep_ira = None
+        self.accounts_simple_ira = None
+        self.accounts_tax_def_annuity = None
+        
         if '0_Balance' in self.maindf:
             self.annual_df['401A'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['0_Balance']), self.years)
             self.accounts_401a = self.annual_df['401A']
@@ -713,7 +739,7 @@ class TaxUser(object):
             
         if '9_Balance' in self.maindf:
             self.annual_df['INDROTH401K'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['9_Balance']), self.years)
-            self.accounts_ind_roth:401k = self.annual_df['INDROTH401K']
+            self.accounts_ind_roth_401k = self.annual_df['INDROTH401K']
             
         if '10_Balance' in self.maindf:
             self.annual_df['IRA'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['10_Balance']), self.years)
