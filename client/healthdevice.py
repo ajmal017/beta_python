@@ -2,7 +2,8 @@ from client.models import HealthDevice
 from django.conf import settings
 from datetime import datetime, timedelta
 from support.models import SupportRequest
-from main.settings import FITBIT_SETTINGS, GOOGLEFIT_SETTINGS, MICROSOFTHEALTH_SETTINGS
+from main.settings import FITBIT_SETTINGS, GOOGLEFIT_SETTINGS, MICROSOFTHEALTH_SETTINGS, \
+    UNDERARMOUR_SETTINGS
 from apiclient.discovery import build
 from oauth2client.client import OAuth2Credentials, OAuth2WebServerFlow
 from MicrosoftHealth import MHOauth2Client, MH
@@ -14,8 +15,7 @@ from urllib.parse import quote_plus
 import urllib
 import json
 import httplib2
-import pytz
-from tzlocal import get_localzone
+import requests
 
 def get_json_response(req):
     response = urllib2.urlopen(req)
@@ -34,7 +34,8 @@ def get_data(client):
         return googlefit_get_data(healthdevice)
     if healthdevice.provider == HealthDevice.ProviderType.MICROSOFT_HEALTH.value:
         return microsofthealth_get_data(healthdevice)
-
+    if healthdevice.provider == HealthDevice.ProviderType.UNDERARMOUR.value:
+        return underarmour_get_data(healthdevice)
     return None
 
 
@@ -294,7 +295,6 @@ def microsofthealth_connect(client, code):
 
 
 def microsofthealth_get_data(healthdevice):
-    local_tz = get_localzone()
     dt_start = datetime.now() - timedelta(days=7)
     activity_url = '/v1/me/Summaries/daily?startTime={}Z'.format(dt_start.isoformat())
     try:
@@ -311,7 +311,130 @@ def microsofthealth_get_data(healthdevice):
         return {
             'height': round(height, 1),
             'weight': round(weight, 1),
-            'daily_exercise': total_seconds / 60
+            'daily_exercise': round(total_seconds / 60, 0)
         }
     except HTTPNotFound as e:
-        return e
+        # return e
+        return None
+
+
+# Under Armour
+def underarmour_get_redirect_uri():
+    url = 'https://www.mapmyfitness.com/v7.1/oauth2/authorize/'
+    query = '&'.join([
+        'response_type=code',
+        'client_id={}'.format(UNDERARMOUR_SETTINGS['CLIENT_ID']),
+        'redirect_uri={}/oauth2/health-devices/under-armour/'.format(settings.SITE_URL)
+    ])
+    return '{}?{}'.format(url, query)
+
+def underarmour_connect(client, code):
+    try:
+        healthdevice = client.health_device
+    except:
+        healthdevice = HealthDevice(client=client)
+    access_token_url = 'https://api.mapmyfitness.com/v7.1/oauth2/access_token/'
+    access_token_data = {
+        'grant_type': 'authorization_code',
+        'client_id': UNDERARMOUR_SETTINGS['CLIENT_ID'],
+        'client_secret': UNDERARMOUR_SETTINGS['CLIENT_SECRET'],
+        'code': code
+    }
+    response = requests.post(url=access_token_url,
+                             data=access_token_data,
+                             headers={'Api-Key': UNDERARMOUR_SETTINGS['CLIENT_ID']})
+    return underarmour_save_fields(healthdevice, response)
+
+
+def underarmour_refresh_token(healthdevice):
+    refresh_token_url = '{}/oauth2/access_token/'.format(UNDERARMOUR_SETTINGS['API_BASE'])
+    #Form the data payload
+    refresh_token_data = {'grant_type' : 'refresh_token',
+                          'refresh_token' : healthdevice.refresh_token,
+                          'client_id': UNDERARMOUR_SETTINGS['CLIENT_ID'],
+                          'client_secret': UNDERARMOUR_SETTINGS['CLIENT_SECRET']}
+    response = requests.post(url=refresh_token_url, data=refresh_token_data,
+                             headers={'api-key': UNDERARMOUR_SETTINGS['CLIENT_ID'],
+                                      'authorization': 'Bearer %s' % healthdevice.access_token})
+    return underarmour_save_fields(healthdevice, response)
+
+
+def underarmour_save_fields(healthdevice, response):
+    try:
+        token_info = response.json()
+        print(token_info)
+
+        healthdevice.provider = HealthDevice.ProviderType.UNDERARMOUR.value
+        healthdevice.access_token = token_info['access_token']
+        healthdevice.refresh_token = token_info['refresh_token']
+        healthdevice.expires_at = datetime.now() + timedelta(seconds=int(token_info['expires_in']))
+        healthdevice.meta = {
+            'token_type': token_info['token_type'],
+            'user_id': token_info['user_id'],
+            'scope': token_info['scope'],
+            'user_href': token_info['user_href']
+        }
+        healthdevice.save()
+        return True
+    except:
+        print(response)
+        print(response.content)
+        return False
+
+
+def underarmour_make_request(url, healthdevice):
+    return requests.get(url=url, verify=False,
+                        headers={'api-key': UNDERARMOUR_SETTINGS['CLIENT_ID'],
+                                 'authorization': 'Bearer %s' % healthdevice.access_token})
+
+def underarmour_get_data(healthdevice):
+    #These are the Fitbit URLs
+    profile_url = '{}/user/self/'.format(UNDERARMOUR_SETTINGS['API_BASE'])
+    aggregate_url = '{}/aggregate'.format(UNDERARMOUR_SETTINGS['API_BASE'])
+
+    height = None
+    weight = None
+    daily_exercise = None
+    profile_error = False
+    aggregate_error = False
+
+    response = underarmour_make_request(profile_url, healthdevice)
+    if response.status_code == 401: # token expired
+        underarmour_refresh_token(healthdevice)
+        response = underarmour_make_request(profile_url, healthdevice)
+
+    try:
+        profile_json = response.json()
+        print(profile_json)
+        height = round(profile_json['height'] * 100, 1)
+        weight = round(profile_json['weight'], 1)
+    except:
+        print(response)
+        profile_error = True
+
+    query = '&'.join([
+        'data_types=sessions_summary',
+        'end_datetime={}Z'.format(datetime.now().isoformat()),
+        'period=P1D',
+        'start_datetime={}Z'.format((datetime.now() - timedelta(days=7)).isoformat()),
+        'user_id={}'.format(healthdevice.meta['user_id'])
+    ])
+    response = underarmour_make_request('{}?{}'.format(aggregate_url, query), healthdevice)
+    try:
+        aggregate_json = response.json()
+        print(aggregate_json)
+        aggregates = aggregate_json['_embedded']['aggregates']
+        total_seconds = reduce(lambda acc, item: acc + (item['summary']['value']['sessions_active_time_sum'] if 'summary' in item else 0), aggregates, 0)
+        daily_exercise = round(total_seconds / (7 * 60), 0)
+    except:
+        print(response)
+        aggregate_error = True
+
+    if profile_error and aggregate_error:
+        return None
+    else:
+        return {
+            'height': height,
+            'weight': weight,
+            'daily_exercise': daily_exercise
+        }

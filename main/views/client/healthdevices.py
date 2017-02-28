@@ -42,3 +42,16 @@ def microsoft_health(request):
         'status': status
     }
     return render(request, 'healthdevices/microsoft_health.html', context)
+
+def under_armour(request):
+    user = SupportRequest.target_user(request)
+    code = request.GET.get('code', None)
+    status = False
+    if code is not None:
+        status = healthdevice.underarmour_connect(user.client, code)
+
+    context = {
+        'provider': HealthDevice.ProviderType.UNDERARMOUR.value,
+        'status': status
+    }
+    return render(request, 'healthdevices/under_armour.html', context)
