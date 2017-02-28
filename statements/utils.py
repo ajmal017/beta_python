@@ -175,25 +175,55 @@ def get_pensions_annuities(plan):
             'amount': None
         }
 
+def value_at(lst, index):
+    try:
+        return lst[index]
+    except:
+        return 0
+
 def get_retirement_income_chart(plan, has_partner):
     try:
         p = plan.projection
 
-        base_idx = plan.retirement_age - plan.client.age - 1
-        last_idx = plan.selected_life_expectancy - plan.client.age
+        base_idx = tax_helpers.get_pre_retirement_years(plan.client.date_of_birth, plan.retirement_age)
+        last_idx = base_idx + tax_helpers.get_retirement_years(plan.selected_life_expectancy, plan.retirement_age) - 1
 
         max_limit = plan.desired_income
         for idx in range(base_idx, last_idx):
-            sum_value = p.non_taxable_inc[idx] + p.tot_taxable_dist[idx] + p.annuity_payments[idx] + p.pension_payments[idx] + p.ret_working_inc[idx] + p.soc_sec_benefit[idx]
+            sum_value = value_at(p.non_taxable_inc, idx) + \
+                        value_at(p.tot_taxable_dist, idx) + \
+                        value_at(p.annuity_payments, idx) + \
+                        value_at(p.pension_payments, idx) + \
+                        value_at(p.ret_working_inc, idx) + \
+                        value_at(p.soc_sec_benefit, idx)
             if has_partner:
-                sum_value += p.part_non_taxable_inc[idx] + p.part_tot_taxable_dist[idx] + p.part_annuity_payments[idx] + p.part_pension_payments[idx] + p.part_ret_working_inc[idx] + p.part_soc_sec_benefit[idx]
+                sum_value += value_at(p.part_non_taxable_inc, idx) + \
+                             value_at(p.part_tot_taxable_dist, idx) + \
+                             value_at(p.part_annuity_payments, idx) + \
+                             value_at(p.part_pension_payments, idx) + \
+                             value_at(p.part_ret_working_inc, idx) + \
+                             value_at(p.part_soc_sec_benefit, idx)
             max_limit = max(max_limit, sum_value)
 
         colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#ae5b1d', '#335989', '#83b75e']
-        legends = ['Nontaxable Income', 'Total Taxable Distributions', 'Annuity Payments', 'Pension Payments', 'Retirement Working Income', 'Social Security Benefit']
+        legends = [
+            'Nontaxable Income',
+            'Total Taxable Distributions',
+            'Annuity Payments',
+            'Pension Payments',
+            'Retirement Working Income',
+            'Social Security Benefit'
+        ]
         if has_partner:
             partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
-            legends += ['Spouse - Nontaxable Income', 'Spouse - Total Taxable Distributions', 'Spouse - Annuity Payments', 'Spouse - Pension Payments', 'Spouse - Retirement Working Income', 'Spouse - Social Security Benefit']
+            legends += [
+                'Spouse - Nontaxable Income',
+                'Spouse - Total Taxable Distributions',
+                'Spouse - Annuity Payments',
+                'Spouse - Pension Payments',
+                'Spouse - Retirement Working Income',
+                'Spouse - Social Security Benefit'
+            ]
             colors += ['#767676', '#a98419', '#3273a0', '#54783c', '#7da2d7', '#f4a872']
         legends += ['Desired Income']
         colors += ['#ff0000']
@@ -215,25 +245,24 @@ def get_retirement_income_chart(plan, has_partner):
 
         for idx in range(base_idx, last_idx):
             y_values = [
-                p.non_taxable_inc[idx] / max_limit * 100,
-                p.tot_taxable_dist[idx] / max_limit * 100,
-                p.annuity_payments[idx] / max_limit * 100,
-                p.pension_payments[idx] / max_limit * 100,
-                p.ret_working_inc[idx] / max_limit * 100,
-                p.soc_sec_benefit[idx] / max_limit * 100,
+                value_at(p.non_taxable_inc, idx) / max_limit * 100,
+                value_at(p.tot_taxable_dist, idx) / max_limit * 100,
+                value_at(p.annuity_payments, idx) / max_limit * 100,
+                value_at(p.pension_payments, idx) / max_limit * 100,
+                value_at(p.ret_working_inc, idx) / max_limit * 100,
+                value_at(p.soc_sec_benefit, idx) / max_limit * 100,
             ]
             x_label = str(plan.client.age + 1 + idx)
             if has_partner:
                 y_values += [
-                    p.part_non_taxable_inc[idx] / max_limit * 100,
-                    p.part_tot_taxable_dist[idx] / max_limit * 100,
-                    p.part_annuity_payments[idx] / max_limit * 100,
-                    p.part_pension_payments[idx] / max_limit * 100,
-                    p.part_ret_working_inc[idx] / max_limit * 100,
-                    p.part_soc_sec_benefit[idx] / max_limit * 100,
+                    value_at(p.part_non_taxable_inc, idx) / max_limit * 100,
+                    value_at(p.part_tot_taxable_dist, idx) / max_limit * 100,
+                    value_at(p.part_annuity_payments, idx) / max_limit * 100,
+                    value_at(p.part_pension_payments, idx) / max_limit * 100,
+                    value_at(p.part_ret_working_inc, idx) / max_limit * 100,
+                    value_at(p.part_soc_sec_benefit, idx) / max_limit * 100,
                 ]
                 x_label += ' / ' + str(partner_age + 1 + idx)
-
             values += [{
                 'x_label': x_label,
                 'y_values': y_values,
@@ -262,9 +291,9 @@ def get_account_balance_chart(plan, has_partner):
 
         max_limit = 0
         for idx in range(base_idx, last_idx):
-            sum_value = p.taxable_accounts[idx] + p.non_taxable_accounts[idx]
+            sum_value = value_at(p.taxable_accounts, idx) + value_at(p.non_taxable_accounts, idx)
             if has_partner:
-                sum_value += p.part_taxable_accounts[idx] + p.part_non_taxable_accounts[idx]
+                sum_value += value_at(p.part_taxable_accounts, idx) + value_at(p.part_non_taxable_accounts, idx)
             max_limit = max(max_limit, sum_value)
 
         colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#7da2d7']
@@ -290,14 +319,14 @@ def get_account_balance_chart(plan, has_partner):
 
         for idx in range(base_idx, last_idx):
             y_values = [
-                p.taxable_accounts[idx] / max_limit * 100,
-                p.non_taxable_accounts[idx] / max_limit * 100,
+                value_at(p.taxable_accounts, idx) / max_limit * 100,
+                value_at(p.non_taxable_accounts, idx) / max_limit * 100,
             ]
             x_label = str(plan.client.age + 1 + idx)
             if has_partner:
                 y_values += [
-                    p.part_taxable_accounts[idx] / max_limit * 100,
-                    p.part_non_taxable_accounts[idx] / max_limit * 100,
+                    value_at(p.part_taxable_accounts, idx) / max_limit * 100,
+                    value_at(p.part_non_taxable_accounts, idx) / max_limit * 100,
                 ]
                 x_label += ' / ' + str(partner_age + 1 + idx)
 
