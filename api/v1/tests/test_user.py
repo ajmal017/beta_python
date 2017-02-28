@@ -224,7 +224,7 @@ class UserTests(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Authenticated valid phone number returns 200')
-        self.assertEqual(response.data, '12122465555')
+        self.assertEqual(response.data, '+12122465555')
 
     def test_phone_number_invalid(self):
         url = reverse('api:v1:phonenumber-validation')
@@ -267,4 +267,4 @@ class UserTests(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_200_OK,
                          msg='Authenticated valid phone number with + and - symbols returns 200')
-        self.assertEqual(response.data, '12342342342')
+        self.assertEqual(response.data, '+12342342342')
