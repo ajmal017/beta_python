@@ -8,6 +8,28 @@ import pdb
 
 inflation_level = inflation.inflation_level
 
+def get_account_balance(balance_start, capital_growth, contribution, distribution):
+    '''
+    returns balance given starting balance, capital growth, contribution and distributions
+    '''
+    return max(0, balance_start + capital_growth + contribution - distribution)
+
+
+def get_account_growth(balance_start, rate):
+    '''
+    returns growth given starting balance and growth rate
+    '''
+    return (balance_start * rate)
+
+
+def get_account_proportion(period, accnt_balance, class_balance):
+    '''
+    returns proportion of total balance of account class represented
+    by the given account for the given period
+    '''
+    return (accnt_balance.iloc[period]/class_balance.iloc[period])
+
+
 def get_age(dob):
     '''
     returns current age today based on dob
@@ -72,6 +94,20 @@ def get_miscellaneous_base(total_income, sum_expenses, monthly_contrib_employee_
     return total_income - abs_contrib - sum_expenses
 
 
+def get_nontaxable_distribution(ret_certain_inc_gap, reqd_min_dist, balance_start_nontaxable):
+    '''
+    returns nontaxable distribution given retirement certain income gap, required minimum
+    distribution, nontaxable starting balance
+    '''
+    if ret_certain_inc_gap > reqd_min_dist:
+        if balance_start_nontaxable > 0:
+            return min(ret_certain_inc_gap - reqd_min_dist, balance_start_nontaxable)
+        else:
+            return 0.
+    else:
+        return 0.
+
+
 def get_period_as_age(dob, period):
     '''
     returns age corresponding to period
@@ -100,6 +136,19 @@ def get_pre_retirement_years(dob, desired_retirement_age):
     returns number of years between now and start of retirement
     '''
     return round(desired_retirement_age - get_age(dob))
+
+
+def get_reqd_min_distribution(age, balance_start_taxable, ira_rmd_factor):
+    '''
+    returns required minimumn distribution given starting balance of taxable accounts and age
+    '''
+    if balance_start_taxable > 0.:
+        if age > 70.5:
+            return balance_start_taxable/(ira_rmd_factor * 12.)
+        else:
+            return 0.
+    else:
+        return 0.
             
 
 def get_retirement_account_index(acnt_type):
@@ -198,6 +247,17 @@ def get_sum_expenses(expenses):
             else:
                 sum_expenses = sum_expenses + exp['amt']                         
     return sum_expenses
+
+
+def get_taxable_distribution(balance_start_taxable, ret_certain_inc_gap, nontaxable_distribution):
+    '''
+    returns taxable distribution given taxable account starting balance, retirement
+    certain income gap, nontaxable distributions
+    '''
+    if balance_start_taxable > 0:
+        return min(ret_certain_inc_gap - nontaxable_distribution, balance_start_taxable)
+    else:
+        return 0.
 
 
 def get_years(dob, life_exp):
