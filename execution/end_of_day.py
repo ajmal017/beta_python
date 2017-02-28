@@ -264,7 +264,8 @@ def process_fills(volume_distribution=None):
             apex_fill = Fill.objects.get(id=fill['id'])
             ticker = Ticker.objects.get(id=fill['ticker_id'])
             mor = MarketOrderRequest.objects.get(execution_requests__id=er.id)
-            complete_mor_ids.add(mor.id)
+            if mor.id not in complete_mor_ids:
+                complete_mor_ids.add(mor.id)
             # now volume is directly obtained, if it's provided under volume distribution
             pro_rata = er.volume / float(sum_ers)
             if volume_distribution is None:
@@ -275,8 +276,10 @@ def process_fills(volume_distribution=None):
                     if broker in volume_distribution and er.asset.symbol in volume_distribution[broker] and mor.account.broker_acc_id in volume_distribution[broker][er.asset.symbol]:
                         volume += volume_distribution[broker][er.asset.symbol][mor.account.broker_acc_id] * pro_rata
 
-            order = Order.objects.get(morsAPEX__market_order_request__execution_requests__id=er.id)
-            complete_order_ids.add(order.id)
+            orders = list(Order.objects.filter(morsAPEX__market_order_request__execution_requests__id=er.id))
+            for order in orders:
+                if order.id not in complete_order_ids:
+                    complete_order_ids.add(order.id)
 
             execution = Execution.objects.create(asset=ticker, volume=volume, price=fill['price'],
                                                  amount=volume*fill['price'], order=mor, executed=fill['executed'])
@@ -338,7 +341,7 @@ def execute():
     create_orders()
     allocations = create_pre_trade_allocation()
     orders = []
-    for order in Order.objects.all():
+    for order in Order.objects.all().filter(Status=Order.StatusChoice.New.value):
         account_profile = FAAccountProfile()
         account_profile.append_share_allocation(order.Symbol, allocations[order.Symbol])
         profile = account_profile.get_profile()

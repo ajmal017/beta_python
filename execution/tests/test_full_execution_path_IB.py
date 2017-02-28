@@ -35,7 +35,7 @@ class BaseTest(TestCase):
         self.t2 = TickerFactory.create(symbol='VEA', unit_price=5)
         self.t3 = TickerFactory.create(symbol='TIP', unit_price=100)
         self.t4 = TickerFactory.create(symbol='IEV', unit_price=100)
-        self.t5 = TickerFactory.create(symbol='IEV2', unit_price=100, asset_class=self.t4.asset_class)
+        #self.t5 = TickerFactory.create(symbol='IEV2', unit_price=100, asset_class=self.t4.asset_class)
 
 
         self.equity = AssetFeatureValueFactory.create(name='equity', assets=[self.t1, self.t2])
