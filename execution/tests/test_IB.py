@@ -78,7 +78,7 @@ class BaseTest(TestCase):
         orders = []
         orders.append(order)
         self.con.update_orders(orders)
-        self.assertFalse(Order.FillInfo(order.fill_info) == Order.FillInfo.UNFILLED)
+        self.assertFalse(Order.FillInfo(order.fill_info) == Order.FillInfo.UNFILLED.value)
 
 
     def tearDown(self):

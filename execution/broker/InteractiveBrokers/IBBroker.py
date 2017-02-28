@@ -28,6 +28,14 @@ class ReferenceWrapper(EWrapper):
         self._requests_finished = {}
         self._errors = {}
         self._open_orders_end = {}
+        self._max_request = False
+
+    def getMaxRequestFailureError(self):
+        if self._max_request:
+            self._max_request = False
+            return True
+        else:
+            return False
 
     def getAccountInfo(self, ib_account):
         return self._account_info[ib_account]
@@ -124,6 +132,8 @@ class ReferenceWrapper(EWrapper):
 
     def error(self, id=None, errorCode=None, errorMsg=None):
         self._errors[id] = errorMsg
+        if "Maximum number of account summary requests exceeded" in errorMsg:
+            self._max_request = True
         print('error', vars())
         logger.error('error', vars())
 
@@ -326,6 +336,12 @@ class IBBroker(BaseBroker):
         requestId = self._get_next_request_id()
         self._connection.reqAccountSummary(requestId, 'All', 'AccountType,TotalCashValue')
         while not self._wrapper.isExecutionRequestFinished(requestId):
+            err = self._wrapper.getError(requestId)
+            max_resp = self._wrapper.getMaxRequestFailureError()
+            if err is not None:
+                raise Exception(err)
+            if max_resp:
+                raise Exception("Maximum number of account summary requests exceeded")
             very_short_sleep()
         return self._wrapper.getAccountInfo(broker_account.ib_account)
 

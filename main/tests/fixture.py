@@ -347,7 +347,7 @@ class Fixture1:
     @classmethod
     def ib_account1(cls) -> IBAccount:
         params = {
-            'ib_account': 'DU299694',
+            'ib_account': 'DU627759',
             'bs_account': Fixture1.personal_account1()
         }
         return IBAccount.objects.get_or_create(id=1, defaults=params)[0]
@@ -355,7 +355,7 @@ class Fixture1:
     @classmethod
     def ib_account2(cls) -> IBAccount:
         params = {
-            'ib_account': 'DU299695',
+            'ib_account': 'DU627760',
             'bs_account': Fixture1.personal_account2()
         }
         return IBAccount.objects.get_or_create(id=2, defaults=params)[0]
