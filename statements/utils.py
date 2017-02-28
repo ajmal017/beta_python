@@ -131,7 +131,10 @@ def get_tax_situation(plan):
             'medicare': round(p.current_percent_medicare * 100, 2),
             'social_security': round(p.current_percent_soc_sec * 100, 2)
         }
-        client['yours_to_keep'] = 100 - (client['state_income_tax'] + client['federal_income_tax'] + client['medicare'] + client['social_security'])
+        client['yours_to_keep'] = 100 - (client['state_income_tax'] + \
+                                         client['federal_income_tax'] + \
+                                         client['medicare'] + \
+                                         client['social_security'])
 
         partner = {
             'state_income_tax': round(p.part_current_percent_state_tax * 100, 2),
@@ -139,7 +142,10 @@ def get_tax_situation(plan):
             'medicare': round(p.part_current_percent_medicare * 100, 2),
             'social_security': round(p.part_current_percent_soc_sec * 100, 2)
         }
-        partner['yours_to_keep'] = 100 - (partner['state_income_tax'] + partner['federal_income_tax'] + partner['medicare'] + partner['social_security'])
+        partner['yours_to_keep'] = 100 - (partner['state_income_tax'] + \
+                                          partner['federal_income_tax'] + \
+                                          partner['medicare'] + \
+                                          partner['social_security'])
         return {
             'client': client,
             'partner': partner
@@ -206,6 +212,7 @@ def get_retirement_income_chart(plan, has_partner):
             max_limit = max(max_limit, sum_value)
 
         colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#ae5b1d', '#335989', '#83b75e']
+        partner_colors = ['#767676', '#a98419', '#3273a0', '#54783c', '#7da2d7', '#f4a872']
         legends = [
             'Nontaxable Income',
             'Total Taxable Distributions',
@@ -214,19 +221,21 @@ def get_retirement_income_chart(plan, has_partner):
             'Retirement Working Income',
             'Social Security Benefit'
         ]
+        partner_legends = [
+            'Spouse - Nontaxable Income',
+            'Spouse - Total Taxable Distributions',
+            'Spouse - Annuity Payments',
+            'Spouse - Pension Payments',
+            'Spouse - Retirement Working Income',
+            'Spouse - Social Security Benefit'
+        ]
         if has_partner:
             partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
-            legends += [
-                'Spouse - Nontaxable Income',
-                'Spouse - Total Taxable Distributions',
-                'Spouse - Annuity Payments',
-                'Spouse - Pension Payments',
-                'Spouse - Retirement Working Income',
-                'Spouse - Social Security Benefit'
-            ]
-            colors += ['#767676', '#a98419', '#3273a0', '#54783c', '#7da2d7', '#f4a872']
+            legends += partner_legends
+            colors += partner_colors
         legends += ['Desired Income']
         colors += ['#ff0000']
+
         values = []
         if max_limit > 0:
             y_interval_0 = max_limit / 10
@@ -296,11 +305,14 @@ def get_account_balance_chart(plan, has_partner):
                 sum_value += value_at(p.part_taxable_accounts, idx) + value_at(p.part_non_taxable_accounts, idx)
             max_limit = max(max_limit, sum_value)
 
-        colors = ['#b4b4b4', '#6faddb', '#ffc82c', '#7da2d7']
+        colors = ['#83b75e', '#6faddb']
+        partner_colors = ['#ffc82c', '#a98419']
         legends = ['Taxable Accounts', 'Non Taxable Accounts']
+        partner_legends = ['Spouse - Taxable Accounts', 'Spouse - Non Taxable Accounts']
         if has_partner:
             partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
-            legends += ['Spouse - Taxable Accounts', 'Spouse - Non Taxable Accounts']
+            colors += partner_colors
+            legends += partner_legends
         values = []
         if max_limit > 0:
             y_interval_0 = max_limit / 10
