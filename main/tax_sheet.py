@@ -392,7 +392,7 @@ class TaxUser(object):
         self.maindf['Nontaxable_Accounts'] = 0
 
         if '9_Balance' in self.maindf:
-            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['9_Balance']  # Ind Roth _401K
+            self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['9_Balance']  # Ind Roth 401K
 
         if '19_Balance' in self.maindf:
             self.maindf['Nontaxable_Accounts'] = self.maindf['Nontaxable_Accounts'] + self.maindf['19_Balance'] # Roth IRA
@@ -486,6 +486,25 @@ class TaxUser(object):
         self.maindf['Ret_Inc_Gap'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Ret_Certain_Inc_Gap']
                                                                                      - self.maindf['Tot_Nontaxable_Dist']
                                                                                      - self.maindf['Tot_Taxable_Dist'])
+        
+        # TRACK ACCOUNT BALANCES PER ACCOUNT TYPE
+        account_proportion = {}
+        if self.retirement_accounts is not None:
+            for acnt in self.retirement_accounts:
+                k = helpers.get_retirement_account_index(acnt)
+                if k == 9 or k == 19 or k == 18:
+                    account_proportion[str(k)] = helpers.get_account_proportion(self.pre_retirement_end - 1,
+                                                                                      self.maindf[str(k) + '_Balance'],
+                                                                                      self.maindf['Nontaxable_Accounts'])
+                    multiplier = self.maindf['Balance_Nontaxable']
+                    
+                else:
+                    account_proportion[str(k)] = helpers.get_account_proportion(self.pre_retirement_end - 1,
+                                                                                      self.maindf[str(k) + '_Balance'],
+                                                                                      self.maindf['Taxable_Accounts'])
+                    multiplier = self.maindf['Balance_Taxable']
+                self.maindf[str(k) + '_Balance'] = self.maindf[str(k) + '_Balance'] * account_proportion[str(k)]   
+
         pdb.set_trace()
         # CALCULATION OF AFTER TAX INCOME
         self.maindf['Non_Taxable_Inc'] = self.maindf['Tot_Nontaxable_Dist'] + self.maindf['Reverse_Mortgage']

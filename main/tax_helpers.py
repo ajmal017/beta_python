@@ -22,6 +22,14 @@ def get_account_growth(balance_start, rate):
     return (balance_start * rate)
 
 
+def get_account_proportion(period, accnt_balance, class_balance):
+    '''
+    returns proportion of total balance of account class represented
+    by the given account for the given period
+    '''
+    return (accnt_balance.iloc[period]/class_balance.iloc[period])
+
+
 def get_age(dob):
     '''
     returns current age today based on dob
