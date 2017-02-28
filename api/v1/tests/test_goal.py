@@ -17,7 +17,7 @@ from .factories import MarkowitzScaleFactory, GoalTypeFactory, \
     ContentTypeFactory, TransactionFactory, PositionLotFactory
 from common.constants import GROUP_SUPPORT_STAFF
 from main.event import Event
-from main.models import GoalMetric, Execution, Transaction, Goal
+from main.models import GoalMetric, Execution, Transaction, Goal, PortfolioProvider
 from main.risk_profiler import max_risk, MINIMUM_RISK
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction
 from main.models import ActivityLog, ActivityLogEvent, EventMemo, MarketOrderRequest, InvestmentType
@@ -636,7 +636,7 @@ class GoalTests(APITestCase):
                                                  benchmark=self.bonds_index)
         self.stocks_ticker = TickerFactory.create(asset_class=self.stocks_asset_class,
                                                   benchmark=self.stocks_index)
-
+        self.portfolio_provider = PortfolioProvider.objects.create(name='BetaSmartz')
         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
         # populate the data needed for the optimisation
@@ -657,6 +657,7 @@ class GoalTests(APITestCase):
             'completion': "2016-01-01",
             'initial_deposit': 5000,
             'ethical': True,
+            'portfolio_provider': self.portfolio_provider.id
         }
         # unauthenticated 403
         response = self.client.post(url, data)
@@ -666,6 +667,7 @@ class GoalTests(APITestCase):
         self.client.force_authenticate(account.primary_owner.user)
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertDictEqual(response.data['portfolio_provider'], {'id': self.portfolio_provider.id, 'name': self.portfolio_provider.name})
 
     def test_get_goal_positions(self):
         goal = GoalFactory.create()

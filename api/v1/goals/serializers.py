@@ -10,9 +10,10 @@ from rest_framework.fields import FloatField, IntegerField
 
 from api.v1.serializers import EventMemoMixin, NoCreateModelSerializer, \
     NoUpdateModelSerializer, ReadOnlyModelSerializer
+from api.v1.settings.serializers import PortfolioProviderSerializer
 from main.event import Event
 from main.models import AssetFeatureValue, Goal, GoalMetric, GoalMetricGroup, GoalSetting, GoalType, Portfolio, \
-    PortfolioItem, RecurringTransaction, Ticker, Transaction
+    PortfolioItem, RecurringTransaction, Ticker, Transaction, get_default_provider_id
 from main.risk_profiler import recommend_risk, validate_risk_score
 from portfolios.calculation import Unsatisfiable, calculate_portfolio, current_stats_from_weights, get_instruments
 from portfolios.providers.data.django import DataProviderDjango
@@ -494,7 +495,7 @@ class GoalSerializer(ReadOnlyModelSerializer):
     invested = InvestedSerializer(source='investments')
     earned = EarnedSerializer(source='earnings')
     selected_settings = GoalSettingSerializer()
-    #portfolio_provider = PortfolioProviderSerializer()
+    portfolio_provider = PortfolioProviderSerializer()
 
     class Meta:
         model = Goal
@@ -508,6 +509,7 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
     completion = serializers.DateField()
     initial_deposit = serializers.IntegerField(required=False)
     ethical = serializers.BooleanField(required=False, default=False)
+    portfolio_provider = serializers.IntegerField(required=False)
 
     class Meta:
         model = Goal
@@ -519,6 +521,7 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
             'completion',
             'initial_deposit',
             'ethical',
+            'portfolio_provider'
         )  # list fields explicitly
 
     def __init__(self, *args, **kwargs):
@@ -560,6 +563,8 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
         data_provider = DataProviderDjango()
         execution_provider = ExecutionProviderDjango()
         idata = get_instruments(data_provider)
+
+        portfolio_provider_id = validated_data['portfolio_provider'] if 'portfolio_provider' in validated_data else get_default_provider_id
 
         with transaction.atomic():
             metric_group = GoalMetricGroup.objects.create(type=GoalMetricGroup.TYPE_CUSTOM)
