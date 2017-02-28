@@ -12,7 +12,7 @@ from client.models import RiskProfileGroup
 from main import constants, models
 from main.abstract import PersonalData
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
-from main.models import AccountType, Ticker
+from main.models import AccountType, Ticker, PortfolioProvider
 from user.autologout import SessionExpire
 from . import serializers
 from ..permissions import IsAdvisorOrClient
@@ -37,8 +37,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'asset_classes': self.asset_classes(request).data,
             'tickers': self.tickers(request).data,
             'asset_features': self.asset_features(request).data,
-            'constraint_comparisons':
-                self.constraint_comparisons(request).data,
+            'constraint_comparisons': self.constraint_comparisons(request).data,
             'risk_profile_groups': self.risk_profile_groups(request).data,
             'civil_statuses': self.civil_statuses(request).data,
             'employment_statuses': self.employment_statuses(request).data,
@@ -54,6 +53,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'industry_types': self.industry_types(request).data,
             'occupation_types': self.occupation_types(request).data,
             'employer_types': self.employer_types(request).data,
+            'portfolio_providers': self.portfolio_providers(request).data,
             'health_devices': self.health_devices(request).data
         }
         return Response(data)
@@ -217,6 +217,12 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
                 "name": itd[key]
             })
         return Response(res)
+
+    @list_route(methods=['get'], url_path='portfolio-providers')
+    def portfolio_providers(self, request):
+        pps = PortfolioProvider.objects.all()
+        serializer = serializers.PortfolioProviderSerializer(pps, many=True)
+        return Response(serializer.data)
 
     @list_route(methods=['get'], url_path='health-devices', permission_classes=[IsAuthenticated])
     def health_devices(self, request):

@@ -5,7 +5,7 @@ from client.models import AccountTypeRiskProfileGroup, RiskCategory
 from main.constants import ACCOUNT_TYPE_CORPORATE, ACCOUNT_TYPE_JOINT, \
     ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_SMSF, ACCOUNT_TYPE_TRUST, ACCOUNT_TYPE_ROTH401K
 from main.event import Event
-from main.models import ActivityLog, ActivityLogEvent, AccountType
+from main.models import ActivityLog, ActivityLogEvent, AccountType, PortfolioProvider
 from main.tests.fixture import Fixture1
 from common.constants import GROUP_SUPPORT_STAFF
 from api.v1.tests.factories import MarketIndexFactory, TickerFactory, AssetFeatureFactory, GroupFactory, \
@@ -143,6 +143,9 @@ class SettingsTests(APITestCase):
         self.assertTrue('occupation_types' in response.data)
         self.assertEqual(set(('id', 'name')), set(response.data['occupation_types'][0].keys()))
 
+        # Make sure the portfolio_providers are there
+        self.assertTrue('portfolio_providers' in response.data)
+
         # Make sure the 'health_devices' are there
         self.assertTrue('health_devices' in response.data)
 
@@ -249,3 +252,13 @@ class SettingsTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data[0]['name'], group.name)
+
+    def test_get_portfolio_providers(self):
+        PortfolioProvider.objects.create(name='BetaSmartz')
+
+        url = '/api/v1/settings/portfolio-providers'
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        response = self.client.get(url)
+
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['name'], 'BetaSmartz')
