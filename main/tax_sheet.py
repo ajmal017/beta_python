@@ -505,8 +505,7 @@ class TaxUser(object):
                     multiplier = self.maindf['Balance_Taxable']
                 self.maindf[str(k) + '_Balance'] = self.maindf[str(k) + '_Balance'] * account_proportion[str(k)]   
 
-        pdb.set_trace()
-        # CALCULATION OF AFTER TAX INCOME
+                # CALCULATION OF AFTER TAX INCOME
         self.maindf['Non_Taxable_Inc'] = self.maindf['Tot_Nontaxable_Dist'] + self.maindf['Reverse_Mortgage']
         
         self.maindf['Taxable_Soc_Sec'] = self.get_full_post_retirement_and_pre_set_zero(self.maindf['Soc_Sec_Benefit']
@@ -674,6 +673,103 @@ class TaxUser(object):
         
         self.taxable_accounts = self.annual_df['Taxable_Accounts']
         self.non_taxable_accounts = self.annual_df['Nontaxable_Accounts']
+
+        # ... BY ACCOUNT TYPE
+        if '0_Balance' in self.maindf:
+            self.annual_df['401A'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['0_Balance']), self.years)
+            self.accounts_401a = self.annual_df['401A']
+
+        if '1_Balance' in self.maindf:
+            self.annual_df['401K'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['1_Balance']), self.years)
+            self.accounts_401k = self.annual_df['401K']
+
+        if '2_Balance' in self.maindf:
+            self.annual_df['403B'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['2_Balance']), self.years)
+            self.accounts_403b = self.annual_df['403B']
+            
+        if '3_Balance' in self.maindf:
+            self.annual_df['403K'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['3_Balance']), self.years)
+            self.accounts_403k = self.annual_df['403K']
+
+        if '4_Balance' in self.maindf:
+            self.annual_df['409A'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['4_Balance']), self.years)
+            self.accounts_409a = self.annual_df['409A']
+
+        if '5_Balance' in self.maindf:    
+            self.annual_df['457'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['5_Balance']), self.years)
+            self.accounts_457 = self.annual_df['457']
+            
+        if '6_Balance' in self.maindf:
+            self.annual_df['ESOP'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['6_Balance']), self.years)
+            self.accounts_esop = self.annual_df['ESOP']
+            
+        if '7_Balance' in self.maindf:
+            self.annual_df['GOVERNMENTAL'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['7_Balance']), self.years)
+            self.accounts_gov = self.annual_df['GOVERNMENTAL']
+
+        if '8_Balance' in self.maindf:
+            self.annual_df['INDIVIDUAL401K'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['8_Balance']), self.years)
+            self.accounts_ind_401k = self.annual_df['INDIVIDUAL401K']
+            
+        if '9_Balance' in self.maindf:
+            self.annual_df['INDROTH401K'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['9_Balance']), self.years)
+            self.accounts_ind_roth:401k = self.annual_df['INDROTH401K']
+            
+        if '10_Balance' in self.maindf:
+            self.annual_df['IRA'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['10_Balance']), self.years)
+            self.accounts_ira = self.annual_df['IRA']
+            
+        if '11_Balance' in self.maindf:
+            self.annual_df['MONEYPURCHASE'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['11_Balance']), self.years)
+            self.accounts_mon_purch = self.annual_df['MONEYPURCHASE']
+            
+        if '12_Balance' in self.maindf:
+            self.annual_df['PAYROLLDEDUCTIRA'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['12_Balance']), self.years)
+            self.accounts_pay_deduct_ira = self.annual_df['PAYROLLDEDUCTIRA']
+            
+        if '13_Balance' in self.maindf:
+            self.annual_df['PROFITSHARING'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['13_Balance']), self.years)
+            self.accounts_prof_sharing = self.annual_df['PROFITSHARING']
+
+        if '14_Balance' in self.maindf:
+            self.annual_df['QUALIFIEDANNUITY'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['14_Balance']), self.years)
+            self.accounts_qual_annuity = self.annual_df['QUALIFIEDANNUITY']
+
+        if '15_Balance' in self.maindf:
+            self.annual_df['QUALIFIEDNPPLAN'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['15_Balance']), self.years)
+            self.accounts_qual_np = self.annual_df['QUALIFIEDNPPLAN']
+
+        if '16_Balance' in self.maindf:
+            self.annual_df['QUALIFIEDNPROTHPLAN'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['16_Balance']), self.years)
+            self.accounts_qual_np_roth = self.annual_df['QUALIFIEDNPROTHPLAN']
+
+        if '17_Balance' in self.maindf:
+            self.annual_df['QUALIFIEDPRIV457PLAN'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['17_Balance']), self.years)
+            self.accounts_priv_457 = self.annual_df['QUALIFIEDPRIV457PLAN']
+            
+        if '18_Balance' in self.maindf:
+            self.annual_df['ROTH401K'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['18_Balance']), self.years)
+            self.accounts_roth_401k = self.annual_df['ROTH401K']
+
+        if '19_Balance' in self.maindf:
+            self.annual_df['ROTHIRA'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['19_Balance']), self.years)
+            self.accounts_roth_ira = self.annual_df['ROTHIRA']
+
+        if '20_Balance' in self.maindf:
+            self.annual_df['SARSEPIRA'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['20_Balance']), self.years)
+            self.accounts_sarsep_ira = self.annual_df['SARSEPIRA']
+            
+        if '21_Balance' in self.maindf:
+            self.annual_df['SEPIRA'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['21_Balance']), self.years)
+            self.accounts_sep_ira = self.annual_df['SEPIRA']
+            
+        if '22_Balance' in self.maindf:
+            self.annual_df['SIMPLEIRA'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['22_Balance']), self.years)
+            self.accounts_simple_ira = self.annual_df['SIMPLEIRA']
+            
+        if '23_Balance' in self.maindf:
+            self.annual_df['TAXDEFERRED_ANNUITY'] = helpers.get_annual_year_end_value(self.get_full_post_retirement_and_pre_set_zero(self.maindf['23_Balance']), self.years)
+            self.accounts_tax_def_annuity = self.annual_df['TAXDEFERRED_ANNUITY']
 
         # REVERSE MORT
         self.house_value_at_retire_in_todays = self.maindf['Home_Value'][self.retirement_start]/self.deflation_factor_retirement_in_todays
@@ -954,6 +1050,8 @@ class TaxUser(object):
         
         start = max(1, helpers.get_period_of_age(self.age, self.desired_retirement_age) - 10)
         end = min(max(helpers.get_period_of_age(self.age, 71) , start + 1) ,self.total_rows)
+        print("--------------------------------------ALL MONTHLY--------------------------------------------------")
+        print(self.maindf)
         print("--------------------------------------Retirement projection OUTPUTS by row yr 1 -------------------")
         print(self.maindf.ix[0][0:30])
         print(self.maindf.ix[0][31:60])

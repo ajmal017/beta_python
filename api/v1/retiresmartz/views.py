@@ -464,8 +464,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     @detail_route(methods=['get'], url_path='calculate-income-balance')
     def calculate_income_balance(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates the retirement income possible with a suppli
-ed
+        Calculates the retirement income possible with a supplied
         retirement balance and other details on the retirement plan.
         """
         # TODO: Make this work
@@ -482,8 +481,7 @@ ed
     @detail_route(methods=['get'], url_path='calculate-contributions-balance')
     def calculate_contributions_balance(self, request, parent_lookup_client, pk, format=None):
         """
-        Calculates the contributions r
-equired to generate the
+        Calculates the contributions required to generate the
         given retirement balance.
         """
         # TODO: Make this work
@@ -633,32 +631,12 @@ equired to generate the
             partner_age = helpers.get_age(plan.partner_data['dob'])
             user_older_by = user_age - partner_age
             if user_older_by > 0:
-                # life expectancy must be no greater than 100
-                projection_end = min(projection_end + user_older_by, 100)
-        '''
-        user = tax.TaxUser(plan.client.date_of_birth,
-                        plan.retirement_age,
-                        projection_end,
-                        plan.lifestyle,
-                        plan.income,
-                        plan.reverse_mortgage,
-                        plan.client.home_value,
-                        plan.desired_risk,
-                        plan.client.civil_status,
-                        plan.client.regional_data.get('tax_transcript_data', None),
-                        plans,
-                        plan.income_growth,
-                        plan.client.employment_status,
-                        plan.client.ss_fra_todays,
-                        plan.paid_days,
-                        plan.retirement_accounts,
-                        int(self.get_zip_code(plan.retirement_postal_code,
-                                              plan.client.residential_address.post_code)),
-                        plan.expenses,
-                        plan.btc)
-        '''
+                # life expectancy must be no greater than 100 
+                projection_end = min(projection_end + user_older_by, 100) 
+
         user = tax.TaxUser(plan, projection_end, False, plans)
         user.create_maindf()
+        
         try:
             projection = plan.projection
         except ObjectDoesNotExist:
@@ -684,37 +662,38 @@ equired to generate the
         projection.soc_sec_benefit = user.soc_sec_benefit
         projection.taxable_accounts = user.taxable_accounts
         projection.non_taxable_accounts = user.non_taxable_accounts
+        projection.accounts_401a = user.accounts_401a
+        projection.accounts_401k = user.accounts_401k
+        projection.accounts_403b = user.accounts_403b
+        projection.accounts_403k = user.accounts_403k
+        projection.accounts_409a = user.accounts_409a
+        projection.accounts_457 = user.accounts_457
+        projection.accounts_esop = user.accounts_esop
+        projection.accounts_gov = user.accounts_gov
+        projection.accounts_ind_401k = user.accounts_ind_401k
+        projection.accounts_ind_roth_401k = user.accounts_ind_roth_401k
+        projection.accounts_ira = user.accounts_ira
+        projection.accounts_mon_purch = user.accounts_mon_purch
+        projection.accounts_pay_deduct_ira = user.accounts_pay_deduct_ira
+        projection.accounts_prof_sharing = user.accounts_prof_sharing
+        projection.accounts_qual_annuity = user.accounts_qual_annuity
+        projection.accounts_qual_np = user.accounts_qual_np
+        projection.accounts_qual_np_roth = user.accounts_qual_np_roth
+        projection.accounts_priv_457 = user.accounts_priv_457 
+        projection.accounts_roth_401k = user.accounts_roth_401k
+        projection.accounts_roth_ira = user.accounts_roth_ira 
+        projection.accounts_sarsep_ira = user.accounts_sarsep_ira
+        projection.accounts_sep_ira = user.accounts_sep_ira
+        projection.accounts_simple_ira = user.accounts_simple_ira
+        projection.accounts_tax_def_annuity = user.accounts_tax_def_annuity
         projection.reverse_mort = user.reverse_mort
         projection.house_value = user.house_value
         projection.house_value_at_retire_in_todays = user.house_value_at_retire_in_todays
         projection.reverse_mort_pymnt_at_retire_in_todays = user.reverse_mort_pymnt_at_retire_in_todays
 
         if plan.client.civil_status == 1 or plan.client.civil_status == 2:
-            '''
-            partner = tax.TaxUser(plan.partner_data['dob'],
-                        plan.retirement_age,
-                        projection_end,
-                        plan.lifestyle,
-                        plan.partner_data['income'],
-                        False,
-                        plan.client.home_value,
-                        plan.desired_risk,
-                        plan.client.civil_status,
-                        plan.client.regional_data.get('tax_transcript_data', None),
-                        plans,
-                        plan.income_growth,
-                        plan.client.employment_status,
-                        plan.client.ss_fra_todays,
-                        plan.paid_days,
-                        plan.retirement_accounts,
-                        int(self.get_zip_code(plan.retirement_postal_code,
-                                              plan.client.residential_address.post_code)),
-                        plan.expenses,
-                        plan.btc)
-            '''
             partner = tax.TaxUser(plan, projection_end, True, plans)
             partner.create_maindf()
-
 
             projection.part_income_actual_monthly = partner.income_actual_monthly
             projection.part_income_desired_monthly = partner.income_desired_monthly
@@ -729,6 +708,30 @@ equired to generate the
             projection.part_current_percent_fed_tax = partner.current_percent_fed_tax
             projection.part_current_percent_state_tax = partner.current_percent_state_tax
             projection.part_non_taxable_inc = partner.non_taxable_inc
+            projection.part_accounts_401a = partner.accounts_401a
+            projection.part_accounts_401k = partner.accounts_401k
+            projection.part_accounts_403b = partner.accounts_403b
+            projection.part_accounts_403k = partner.accounts_403k
+            projection.part_accounts_409a = partner.accounts_409a
+            projection.part_accounts_457 = partner.accounts_457
+            projection.part_accounts_esop = partner.accounts_esop
+            projection.part_accounts_gov = partner.accounts_gov
+            projection.part_accounts_ind_401k = partner.accounts_ind_401k
+            projection.part_accounts_ind_roth_401k = partner.accounts_ind_roth_401k
+            projection.part_accounts_ira = partner.accounts_ira
+            projection.part_accounts_mon_purch = partner.accounts_mon_purch
+            projection.part_accounts_pay_deduct_ira = partner.accounts_pay_deduct_ira
+            projection.part_accounts_prof_sharing = partner.accounts_prof_sharing
+            projection.part_accounts_qual_annuity = partner.accounts_qual_annuity
+            projection.part_accounts_qual_np = partner.accounts_qual_np
+            projection.part_accounts_qual_np_roth = partner.accounts_qual_np_roth
+            projection.part_accounts_priv_457 = partner.accounts_priv_457 
+            projection.part_accounts_roth_401k = partner.accounts_roth_401k
+            projection.part_accounts_roth_ira = partner.accounts_roth_ira 
+            projection.part_accounts_sarsep_ira = partner.accounts_sarsep_ira
+            projection.part_accounts_sep_ira = partner.accounts_sep_ira
+            projection.part_accounts_simple_ira = partner.accounts_simple_ira
+            projection.part_accounts_tax_def_annuity = partner.accounts_tax_def_annuity
             projection.part_tot_taxable_dist = partner.tot_taxable_dist
             projection.part_annuity_payments = partner.annuity_payments
             projection.part_pension_payments = partner.pension_payments
