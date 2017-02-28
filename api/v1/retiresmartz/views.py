@@ -635,12 +635,10 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
 
         # terminate projection based on partner with longest life expectancy
         # i.e. based on life expectancy of younger of user or partner
-        print(str('----------------------'))
         if plan.partner_data is not None:
             print('plan.patrner_data: ' + str(plan.partner_data))
         else:
             print('plan.patrner_data: None')
-        print(str('----------------------'))
 
         if plan.client.is_married:
             user_age = helpers.get_age(plan.client.date_of_birth)

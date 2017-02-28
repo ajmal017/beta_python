@@ -77,7 +77,6 @@ INSTALLED_APPS = (
     'errorlog',
     'consumer_expenditure',
     'documents',
-    'onboarding',
 )
 
 TEST_WITHOUT_MIGRATIONS_COMMAND = 'django_nose.management.commands.test.Command'

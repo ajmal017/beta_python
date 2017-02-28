@@ -65,7 +65,7 @@ class TaxUser(object):
         btc = plan.btc
 
         # show inputs
-        self.debug = True
+        self.debug = False
         if (self.debug):
             helpers.show_inputs(dob,
                              desired_retirement_age,

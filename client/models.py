@@ -22,8 +22,9 @@ from main import constants
 from main.abstract import NeedApprobation, NeedConfirmation, PersonalData
 from main.finance import mod_dietz_rate
 from main.models import AccountGroup, Goal, Platform, PricingPlan, \
-    PricingPlanBase
+    PricingPlanBase, Region
 from retiresmartz.models import RetirementAdvice, RetirementPlan
+from address.models import Address
 from .managers import ClientAccountQuerySet, ClientQuerySet
 from main.constants import GENDER_MALE
 
