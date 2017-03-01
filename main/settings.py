@@ -353,4 +353,11 @@ JAWBONE_SETTINGS = {
     'CLIENT_SECRET': os.environ.get('JAWBONE_CLIENT_SECRET', ''),
 }
 
+TOMTOM_SETTINGS = {
+    'API_BASE': 'https://api.tomtom.com/mysports',
+    'API_KEY': os.environ.get('TOMTOM_API_KEY', ''),
+    'CLIENT_ID': os.environ.get('TOMTOM_CLIENT_ID', ''),
+    'CLIENT_SECRET': os.environ.get('TOMTOM_CLIENT_SECRET', ''),
+}
+
 from local_settings import *

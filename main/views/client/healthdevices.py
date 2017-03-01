@@ -97,3 +97,16 @@ def jawbone(request):
         'status': status
     }
     return render(request, 'healthdevices/oauth2.html', context)
+
+def tomtom(request):
+    user = SupportRequest.target_user(request)
+    code = request.GET.get('code', None)
+    status = False
+    if code is not None:
+        status = healthdevice.tomtom_connect(user.client, code)
+
+    context = {
+        'provider': HealthDevice.ProviderType.TOMTOM.value,
+        'status': status
+    }
+    return render(request, 'healthdevices/oauth2.html', context)

@@ -59,6 +59,7 @@ urlpatterns_oauth2healthdevice = patterns(
     url(r'^microsoft-health/', healthdevices.microsoft_health, name='microsoft-health'),
     url(r'^under-armour/', healthdevices.under_armour, name='under-armour'),
     url(r'^jawbone/', healthdevices.jawbone, name='jawbone'),
+    url(r'^tomtom/', healthdevices.tomtom, name='tomtom'),
 )
 
 urlpatterns = patterns(

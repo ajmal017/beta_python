@@ -232,6 +232,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'MICROSOFTHEALTH_REDIRECT_URI': healthdevice.microsofthealth_get_redirect_uri(),
             'UNDERARMOUR_REDIRECT_URI': healthdevice.underarmour_get_redirect_uri(),
             'WITHINGS_CONNECT_URI': healthdevice.withings_get_redirect_uri(),
-            'JAWBONE_REDIRECT_URI': healthdevice.jawbone_get_redirect_uri()
+            'JAWBONE_REDIRECT_URI': healthdevice.jawbone_get_redirect_uri(),
+            'TOMTOM_REDIRECT_URI': healthdevice.tomtom_get_redirect_uri()
         }
         return Response(HEALTH_DEVICES_CONFIG)

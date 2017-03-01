@@ -4,7 +4,7 @@ from django.conf import settings
 from datetime import datetime, date, timedelta
 from support.models import SupportRequest
 from main.settings import FITBIT_SETTINGS, GOOGLEFIT_SETTINGS, MICROSOFTHEALTH_SETTINGS, \
-    UNDERARMOUR_SETTINGS, JAWBONE_SETTINGS, WITHINGS_SETTINGS
+    JAWBONE_SETTINGS, TOMTOM_SETTINGS, UNDERARMOUR_SETTINGS, WITHINGS_SETTINGS
 from apiclient.discovery import build
 from oauth2client.client import OAuth2Credentials, OAuth2WebServerFlow
 from MicrosoftHealth import MHOauth2Client, MH
@@ -24,7 +24,7 @@ def get_json_response(req):
     full_response = response.read()
     return json.loads(full_response.decode("utf-8"))
 
-
+PERIOD = 7 # days
 def get_data(client):
     try:
         healthdevice = client.health_device
@@ -42,6 +42,8 @@ def get_data(client):
         return jawbone_get_data(healthdevice)
     if healthdevice.provider == HealthDevice.ProviderType.WITHINGS.value:
         return withings_get_data(healthdevice)
+    if healthdevice.provider == HealthDevice.ProviderType.TOMTOM.value:
+        return tomtom_get_data(healthdevice)
     return None
 
 
@@ -241,12 +243,12 @@ def googlefit_get_data(healthdevice):
               execute()
     weight = res['point'][0]['value'][0]['fpVal'] if len(res['point']) > 0 else 0
 
-    activity_data_set = '{}-{}'.format(to_nano_epoch(datetime.now() - timedelta(days=7)), to_nano_epoch(datetime.now()))
+    activity_data_set = '{}-{}'.format(to_nano_epoch(datetime.now() - timedelta(days=PERIOD)), to_nano_epoch(datetime.now()))
     res = fitness_service.users().dataSources().datasets(). \
               get(userId='me', dataSourceId=activity_source, datasetId=activity_data_set). \
               execute()
     if len(res['point']) > 0:
-        daily_exercise = reduce((lambda acc, item: acc + int(item['endTimeNanos'])-int(item['startTimeNanos'])), res['point'], 0) / 7
+        daily_exercise = reduce((lambda acc, item: acc + int(item['endTimeNanos'])-int(item['startTimeNanos'])), res['point'], 0) / PERIOD
     else:
         daily_exercise = 0
 
@@ -301,7 +303,7 @@ def microsofthealth_connect(client, code):
 
 
 def microsofthealth_get_data(healthdevice):
-    dt_start = datetime.now() - timedelta(days=7)
+    dt_start = datetime.now() - timedelta(days=PERIOD)
     activity_url = '/v1/me/Summaries/daily?startTime={}Z'.format(dt_start.isoformat())
     try:
         mh_object = MH(microsoft_health_key = MICROSOFTHEALTH_SETTINGS['CLIENT_ID'],
@@ -423,7 +425,7 @@ def underarmour_get_data(healthdevice):
         'data_types=sessions_summary',
         'end_datetime={}Z'.format(datetime.now().isoformat()),
         'period=P1D',
-        'start_datetime={}Z'.format((datetime.now() - timedelta(days=7)).isoformat()),
+        'start_datetime={}Z'.format((datetime.now() - timedelta(days=PERIOD)).isoformat()),
         'user_id={}'.format(healthdevice.meta['user_id'])
     ])
     response = underarmour_make_request('{}?{}'.format(aggregate_url, query), healthdevice)
@@ -432,7 +434,7 @@ def underarmour_get_data(healthdevice):
         print(aggregate_json)
         aggregates = aggregate_json['_embedded']['aggregates']
         total_seconds = reduce(lambda acc, item: acc + (item['summary']['value']['sessions_active_time_sum'] if 'summary' in item else 0), aggregates, 0)
-        daily_exercise = round(total_seconds / (7 * 60), 0)
+        daily_exercise = round(total_seconds / (PERIOD * 60), 0)
     except:
         print(response)
         aggregate_error = True
@@ -530,26 +532,22 @@ def jawbone_get_data(healthdevice):
 
     try:
         profile_json = response.json()
-        print(profile_json)
         height = round(profile_json['data']['height'] * 100, 1)
         weight = round(profile_json['data']['weight'], 1)
     except:
-        print(response)
         profile_error = True
 
     query = '&'.join([
-        'start_time={}'.format(int((datetime.now() - timedelta(days=7)).timestamp())),
+        'start_time={}'.format(int((datetime.now() - timedelta(days=PERIOD)).timestamp())),
         'end_time={}'.format(int(datetime.now().timestamp()))
     ])
     response = jawbone_make_request('{}?{}'.format(moves_url, query), healthdevice)
     try:
         moves_json = response.json()
-        print(moves_json)
         moves_items = moves_json['data']['items']
         total_seconds = reduce(lambda acc, item: acc + (item['details']['active_time'] if 'details' in item else 0), moves_items, 0)
-        daily_exercise = round(total_seconds / (7 * 60), 0)
+        daily_exercise = round(total_seconds / (PERIOD * 60), 0)
     except:
-        print(response)
         moves_error = True
 
     if profile_error and moves_error:
@@ -647,15 +645,125 @@ def withings_get_data(healthdevice):
     try:
         workouts_params = {
             'userid': healthdevice.meta['user_id'],
-            'startdateymd': (date.today() - timedelta(days=7)).isoformat(),
+            'startdateymd': (date.today() - timedelta(days=PERIOD)).isoformat(),
             'enddateymd': date.today().isoformat()
         }
         workouts = client.request('v2/measure', 'getworkouts', params=workouts_params)
         if 'series' in workouts:
             total_seconds = reduce(lambda acc, item: acc + withings_get_item_duration(item), workouts['series'], 0)
-            daily_exercise = round(total_seconds / (7 * 60), 0)
+            daily_exercise = round(total_seconds / (PERIOD * 60), 0)
     except:
         pass
+
+    if height is None and weight is None and daily_exercise is None:
+        return None
+    else:
+        return {
+            'height': height,
+            'weight': weight,
+            'daily_exercise': daily_exercise
+        }
+
+
+# TOMTOM module
+def tomtom_get_redirect_uri():
+    url = '{}/oauth2/authorize'.format(TOMTOM_SETTINGS['API_BASE'])
+    query = '&'.join([
+        'Api-Key={}'.format(TOMTOM_SETTINGS['API_KEY']),
+        'response_type=code',
+        'scope=physiology+tracking',
+        'client_id={}'.format(TOMTOM_SETTINGS['CLIENT_ID']),
+        'redirect_uri={}/oauth2/health-devices/tomtom/'.format(settings.SITE_URL)
+    ])
+    return '{}?{}'.format(url, query)
+
+
+def tomtom_connect(client, code):
+    try:
+        healthdevice = client.health_device
+    except:
+        healthdevice = HealthDevice(client=client)
+    access_token_url = '{}/oauth2/token'.format(TOMTOM_SETTINGS['API_BASE'])
+    access_token_data = {
+        'grant_type': 'authorization_code',
+        'client_id': TOMTOM_SETTINGS['CLIENT_ID'],
+        'redirect_uri': '{}/oauth2/health-devices/tomtom/'.format(settings.SITE_URL),
+        'code': code
+    }
+    auth_header = bytes('Basic ', 'utf-8') + \
+        base64.b64encode(bytes(TOMTOM_SETTINGS['CLIENT_ID'] + ":" + TOMTOM_SETTINGS['CLIENT_SECRET'], 'utf-8'))
+    response = requests.post(url=access_token_url,
+                             data=access_token_data,
+                             headers={'Authorization': auth_header,
+                                      'Api-Key': TOMTOM_SETTINGS['API_KEY']})
+    return tomtom_save_fields(healthdevice, response)
+
+
+def tomtom_save_fields(healthdevice, response):
+    try:
+        token_info = response.json()
+        print('success: ', token_info)
+
+        healthdevice.provider = HealthDevice.ProviderType.TOMTOM.value
+        healthdevice.access_token = token_info['access_token']
+        healthdevice.refresh_token = token_info['refresh_token']
+        healthdevice.expires_at = datetime.now() + timedelta(seconds=int(token_info['expires_in']))
+        healthdevice.meta = {
+            'token_type': token_info['token_type'],
+            'scope': token_info['scope']
+        }
+        healthdevice.save()
+        return True
+    except:
+        print(response.content)
+        return False
+
+
+def tomtom_refresh_token(healthdevice):
+    refresh_token_url = '{}/oauth2/token'.format(TOMTOM_SETTINGS['API_BASE'])
+    #Form the data payload
+    auth_header = bytes('Basic ', 'utf-8') + \
+        base64.b64encode(bytes(TOMTOM_SETTINGS['CLIENT_ID'] + ":" + TOMTOM_SETTINGS['CLIENT_SECRET'], 'utf-8'))
+    refresh_token_data = {'grant_type' : 'refresh_token',
+                          'refresh_token' : healthdevice.refresh_token,
+                          'client_id': TOMTOM_SETTINGS['CLIENT_ID'],
+                          'redirect_uri': '{}/oauth2/health-devices/tomtom/'.format(settings.SITE_URL)}
+    response = requests.post(url=refresh_token_url,
+                             data=refresh_token_data,
+                             headers={'Authorization': auth_header,
+                                      'Api-Key': TOMTOM_SETTINGS['API_KEY']})
+    return tomtom_save_fields(healthdevice, response)
+
+
+
+def tomtom_get_item_summary(item):
+    date_key = list(item.keys())[0]
+    return float(item[date_key]['summary'])
+
+def tomtom_get_data(healthdevice):
+    height = None
+    weight = None
+    daily_exercise = None
+
+    req_headers = {'Authorization': 'Bearer ' + healthdevice.access_token,
+             'Api-Key': TOMTOM_SETTINGS['API_KEY']}
+
+    tracking_url = '{}/1/tracking?days={}'.format(TOMTOM_SETTINGS['API_BASE'], PERIOD)
+    response = requests.get(url=tracking_url, headers=req_headers)
+    print(response.content, response.status_code)
+    if response.status_code >= 401: # token expired
+        tomtom_refresh_token(healthdevice)
+        response = requests.get(url=tracking_url, headers=req_headers)
+
+    tracking_json = response.json()
+    weights = tracking_json['series']['weight']
+    active_times = tracking_json['series']['active_time']
+
+    if len(weights) > 0:
+        weight = round(tomtom_get_item_summary(weights[0]), 1)
+
+    if len(active_times) > 0:
+        daily_exercise = round(reduce((lambda acc, item: acc + tomtom_get_item_summary(item)), active_times, 0) / (PERIOD * 60))
 
     if height is None and weight is None and daily_exercise is None:
         return None
