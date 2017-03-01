@@ -231,6 +231,7 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
             'FITBIT_REDIRECT_URI': healthdevice.fitbit_get_redirect_uri(),
             'GOOGLEFIT_REDIRECT_URI': healthdevice.googlefit_get_redirect_uri(),
             'MICROSOFTHEALTH_REDIRECT_URI': healthdevice.microsofthealth_get_redirect_uri(),
-            'UNDERARMOUR_REDIRECT_URI': healthdevice.underarmour_get_redirect_uri()
+            'UNDERARMOUR_REDIRECT_URI': healthdevice.underarmour_get_redirect_uri(),
+            'JAWBONE_REDIRECT_URI': healthdevice.jawbone_get_redirect_uri(),
         }
         return Response(HEALTH_DEVICES_CONFIG)

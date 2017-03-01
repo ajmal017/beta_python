@@ -3,7 +3,7 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from support.models import SupportRequest
 from main.settings import FITBIT_SETTINGS, GOOGLEFIT_SETTINGS, MICROSOFTHEALTH_SETTINGS, \
-    UNDERARMOUR_SETTINGS
+    UNDERARMOUR_SETTINGS, JAWBONE_SETTINGS
 from apiclient.discovery import build
 from oauth2client.client import OAuth2Credentials, OAuth2WebServerFlow
 from MicrosoftHealth import MHOauth2Client, MH
@@ -36,6 +36,8 @@ def get_data(client):
         return microsofthealth_get_data(healthdevice)
     if healthdevice.provider == HealthDevice.ProviderType.UNDERARMOUR.value:
         return underarmour_get_data(healthdevice)
+    if healthdevice.provider == HealthDevice.ProviderType.JAWBONE.value:
+        return jawbone_get_data(healthdevice)
     return None
 
 
@@ -328,6 +330,7 @@ def underarmour_get_redirect_uri():
     ])
     return '{}?{}'.format(url, query)
 
+
 def underarmour_connect(client, code):
     try:
         healthdevice = client.health_device
@@ -362,7 +365,6 @@ def underarmour_refresh_token(healthdevice):
 def underarmour_save_fields(healthdevice, response):
     try:
         token_info = response.json()
-        print(token_info)
 
         healthdevice.provider = HealthDevice.ProviderType.UNDERARMOUR.value
         healthdevice.access_token = token_info['access_token']
@@ -386,6 +388,7 @@ def underarmour_make_request(url, healthdevice):
     return requests.get(url=url, verify=False,
                         headers={'api-key': UNDERARMOUR_SETTINGS['CLIENT_ID'],
                                  'authorization': 'Bearer %s' % healthdevice.access_token})
+
 
 def underarmour_get_data(healthdevice):
     #These are the Fitbit URLs
@@ -431,6 +434,121 @@ def underarmour_get_data(healthdevice):
         aggregate_error = True
 
     if profile_error and aggregate_error:
+        return None
+    else:
+        return {
+            'height': height,
+            'weight': weight,
+            'daily_exercise': daily_exercise
+        }
+
+
+# JAWBONE
+def jawbone_get_redirect_uri():
+    url = 'https://jawbone.com/auth/oauth2/auth'
+    query = '&'.join([
+        'response_type=code',
+        'client_id={}'.format(JAWBONE_SETTINGS['CLIENT_ID']),
+        'scope=basic_read+extended_read+weight_read+move_read',
+        'redirect_uri={}/oauth2/health-devices/jawbone/'.format(settings.SITE_URL)
+    ])
+    return '{}?{}'.format(url, query)
+
+
+def jawbone_connect(client, code):
+    try:
+        healthdevice = client.health_device
+    except:
+        healthdevice = HealthDevice(client=client)
+    access_token_url = 'https://jawbone.com/auth/oauth2/token'
+    access_token_data = {
+        'grant_type': 'authorization_code',
+        'client_id': JAWBONE_SETTINGS['CLIENT_ID'],
+        'client_secret': JAWBONE_SETTINGS['CLIENT_SECRET'],
+        'code': code
+    }
+    response = requests.post(url=access_token_url, data=access_token_data)
+    return jawbone_save_fields(healthdevice, response)
+
+
+def jawbone_save_fields(healthdevice, response):
+    try:
+        token_info = response.json()
+
+        healthdevice.provider = HealthDevice.ProviderType.JAWBONE.value
+        healthdevice.access_token = token_info['access_token']
+        healthdevice.refresh_token = token_info['refresh_token']
+        healthdevice.expires_at = datetime.now() + timedelta(seconds=int(token_info['expires_in']))
+        healthdevice.meta = {
+            'token_type': token_info['token_type']
+        }
+        healthdevice.save()
+        return True
+    except:
+        print(response)
+        print(response.content)
+        return False
+
+
+def jawbone_make_request(url, healthdevice):
+    return requests.get(url=url, headers={'Accept': 'application/json',
+                                          'authorization': 'Bearer %s' % healthdevice.access_token})
+
+
+def jawbone_refresh_token(healthdevice):
+    refresh_token_url = 'https://jawbone.com/auth/oauth2/token'
+    #Form the data payload
+    refresh_token_data = {'grant_type' : 'refresh_token',
+                          'refresh_token' : healthdevice.refresh_token,
+                          'client_id': JAWBONE_SETTINGS['CLIENT_ID'],
+                          'client_secret': JAWBONE_SETTINGS['CLIENT_SECRET']}
+    response = requests.post(url=refresh_token_url, data=refresh_token_data)
+    return jawbone_save_fields(healthdevice, response)
+
+
+def jawbone_get_data(healthdevice):
+    #These are the Fitbit URLs
+    profile_url = '{}/users/@me'.format(JAWBONE_SETTINGS['API_BASE'])
+    moves_url = '{}/users/@me/moves'.format(JAWBONE_SETTINGS['API_BASE'])
+
+    height = None
+    weight = None
+    daily_exercise = None
+    profile_error = False
+    moves_error = False
+
+    response = jawbone_make_request(profile_url, healthdevice)
+    profile_json = response.json()
+    if response.status_code >= 400: # token expired
+        jawbone_refresh_token(healthdevice)
+        response = jawbone_make_request(profile_url, healthdevice)
+        profile_json = response.json()
+
+    try:
+        profile_json = response.json()
+        print(profile_json)
+        height = round(profile_json['data']['height'] * 100, 1)
+        weight = round(profile_json['data']['weight'], 1)
+    except:
+        print(response)
+        profile_error = True
+
+    query = '&'.join([
+        'start_time={}'.format(int((datetime.now() - timedelta(days=7)).timestamp())),
+        'end_time={}'.format(int(datetime.now().timestamp()))
+    ])
+    response = jawbone_make_request('{}?{}'.format(moves_url, query), healthdevice)
+    try:
+        moves_json = response.json()
+        print(moves_json)
+        moves_items = moves_json['data']['items']
+        total_seconds = reduce(lambda acc, item: acc + (item['details']['active_time'] if 'details' in item else 0), moves_items, 0)
+        daily_exercise = round(total_seconds / (7 * 60), 0)
+    except:
+        print(response)
+        moves_error = True
+
+    if profile_error and moves_error:
         return None
     else:
         return {

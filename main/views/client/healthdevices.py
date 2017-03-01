@@ -15,7 +15,7 @@ def fitbit(request):
         'provider': HealthDevice.ProviderType.FITBIT.value,
         'status': status
     }
-    return render(request, 'healthdevices/fitbit.html', context)
+    return render(request, 'healthdevice.html', context)
 
 def google_fit(request):
     user = SupportRequest.target_user(request)
@@ -28,7 +28,7 @@ def google_fit(request):
         'provider': HealthDevice.ProviderType.GOOGLE_FIT.value,
         'status': status
     }
-    return render(request, 'healthdevices/google_fit.html', context)
+    return render(request, 'healthdevice.html', context)
 
 def microsoft_health(request):
     user = SupportRequest.target_user(request)
@@ -41,7 +41,7 @@ def microsoft_health(request):
         'provider': HealthDevice.ProviderType.MICROSOFT_HEALTH.value,
         'status': status
     }
-    return render(request, 'healthdevices/microsoft_health.html', context)
+    return render(request, 'healthdevice.html', context)
 
 def under_armour(request):
     user = SupportRequest.target_user(request)
@@ -54,4 +54,17 @@ def under_armour(request):
         'provider': HealthDevice.ProviderType.UNDERARMOUR.value,
         'status': status
     }
-    return render(request, 'healthdevices/under_armour.html', context)
+    return render(request, 'healthdevice.html', context)
+
+def jawbone(request):
+    user = SupportRequest.target_user(request)
+    code = request.GET.get('code', None)
+    status = False
+    if code is not None:
+        status = healthdevice.jawbone_connect(user.client, code)
+
+    context = {
+        'provider': HealthDevice.ProviderType.JAWBONE.value,
+        'status': status
+    }
+    return render(request, 'healthdevice.html', context)
