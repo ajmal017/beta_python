@@ -338,4 +338,10 @@ UNDERARMOUR_SETTINGS = {
     'CLIENT_SECRET': os.environ.get('UNDERARMOUR_CLIENT_SECRET', ''),
 }
 
+JAWBONE_SETTINGS = {
+    'API_BASE': 'https://jawbone.com/nudge/api/v.1.1',
+    'CLIENT_ID': os.environ.get('JAWBONE_CLIENT_ID', ''),
+    'CLIENT_SECRET': os.environ.get('JAWBONE_CLIENT_SECRET', ''),
+}
+
 from local_settings import *
