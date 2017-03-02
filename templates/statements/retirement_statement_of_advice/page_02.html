@@ -34,6 +34,27 @@
     <p style="margin-bottom: 25pt;">
       {{advisor.user.full_name}}
     </p>
+    {% if plan.agreed_on %}
+      <p>
+        By electronically signing this Statement of Advice you agree to the following retirement plan
+        being created by representative of {{firm.name}}
+      </p>
+      <table style="border: none; width: 100%; margin-bottom: 15pt; font-size: 11pt;">
+        <tbody>
+          <tr>
+            <td style="text-align: center;">
+              <div style="position: relative; display: inline-block; font-family: 'Dancing Script'; font-size: 30pt; padding: 10pt 40pt 0;">
+                {{client.full_name}}
+                <hr style="border-bottom: 1pt solid #333; position: absolute; bottom: 5pt; width: 100%; left: 0; margin: 0;" />
+              </div>
+            </td>
+          <tr/>
+          <tr>
+            <td style="padding-top: 10pt; text-align: center;">{{plan.agreed_on|date:"F d, Y"}}</td>
+          </tr>
+        </tbody>
+      </table>
+    {% endif %}
     <p>
       Financial Advisor<br />
       Representative<br />
