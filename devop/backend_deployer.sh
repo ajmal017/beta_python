@@ -145,6 +145,8 @@ main() {
                -e 'MICROSOFTHEALTH_CLIENT_SECRET='${MICROSOFTHEALTH_CLIENT_SECRET} \
                -e 'UNDERARMOUR_CLIENT_ID='${UNDERARMOUR_CLIENT_ID} \
                -e 'UNDERARMOUR_CLIENT_SECRET='${UNDERARMOUR_CLIENT_SECRET} \
+               -e 'WITHINGS_CONSUMER_KEY='${WITHINGS_CONSUMER_KEY} \
+               -e 'WITHINGS_CONSUMER_SECRET='${WITHINGS_CONSUMER_SECRET} \
                --net=betasmartz-local \
                --name=${2}_betasmartz_app_test \
                -d betasmartz/backend:${2}_cd

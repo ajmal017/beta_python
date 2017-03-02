@@ -338,6 +338,12 @@ UNDERARMOUR_SETTINGS = {
     'CLIENT_SECRET': os.environ.get('UNDERARMOUR_CLIENT_SECRET', ''),
 }
 
+WITHINGS_SETTINGS = {
+    'API_BASE': 'https://wbsapi.withings.net/v2',
+    'CONSUMER_KEY': os.environ.get('WITHINGS_CONSUMER_KEY', ''),
+    'CONSUMER_SECRET': os.environ.get('WITHINGS_CONSUMER_SECRET', ''),
+}
+
 JAWBONE_SETTINGS = {
     'API_BASE': 'https://jawbone.com/nudge/api/v.1.1',
     'CLIENT_ID': os.environ.get('JAWBONE_CLIENT_ID', ''),

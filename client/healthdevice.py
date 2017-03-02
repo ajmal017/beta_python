@@ -1,13 +1,15 @@
 from client.models import HealthDevice
+from django.core.urlresolvers import reverse
 from django.conf import settings
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from support.models import SupportRequest
 from main.settings import FITBIT_SETTINGS, GOOGLEFIT_SETTINGS, MICROSOFTHEALTH_SETTINGS, \
-    UNDERARMOUR_SETTINGS, JAWBONE_SETTINGS
+    UNDERARMOUR_SETTINGS, JAWBONE_SETTINGS, WITHINGS_SETTINGS
 from apiclient.discovery import build
 from oauth2client.client import OAuth2Credentials, OAuth2WebServerFlow
 from MicrosoftHealth import MHOauth2Client, MH
 from MicrosoftHealth.Exceptions import *
+from withings import WithingsAuth, WithingsApi, WithingsCredentials
 from functools import reduce
 import base64
 import urllib.request as urllib2
@@ -38,6 +40,8 @@ def get_data(client):
         return underarmour_get_data(healthdevice)
     if healthdevice.provider == HealthDevice.ProviderType.JAWBONE.value:
         return jawbone_get_data(healthdevice)
+    if healthdevice.provider == HealthDevice.ProviderType.WITHINGS.value:
+        return withings_get_data(healthdevice)
     return None
 
 
@@ -549,6 +553,111 @@ def jawbone_get_data(healthdevice):
         moves_error = True
 
     if profile_error and moves_error:
+        return None
+    else:
+        return {
+            'height': height,
+            'weight': weight,
+            'daily_exercise': daily_exercise
+        }
+
+
+# WITHINGS
+def withings_get_redirect_uri():
+    return settings.SITE_URL + reverse('oauth1healthdevices:withings-redirect')
+
+
+def withings_get_callback_uri():
+    return settings.SITE_URL + reverse('oauth1healthdevices:withings')
+
+
+def withings_authorize_url(client):
+    auth = WithingsAuth(WITHINGS_SETTINGS['CONSUMER_KEY'],
+                        WITHINGS_SETTINGS['CONSUMER_SECRET'],
+                        withings_get_callback_uri())
+    authorize_url = auth.get_authorize_url()
+    auth.oauth_token
+    auth.oauth_secret
+
+
+def withings_connect(client, oauth_verifier, oauth_token, oauth_secret):
+    try:
+        healthdevice = client.health_device
+    except:
+        healthdevice = HealthDevice(client=client)
+    auth = WithingsAuth(WITHINGS_SETTINGS['CONSUMER_KEY'],
+                        WITHINGS_SETTINGS['CONSUMER_SECRET'],
+                        withings_get_callback_uri())
+    auth.oauth_token = oauth_token
+    auth.oauth_secret = oauth_secret
+    print(oauth_verifier, oauth_token, oauth_secret)
+    creds = auth.get_credentials(oauth_verifier)
+    try:
+        healthdevice = client.health_device
+    except:
+        healthdevice = HealthDevice(client=client)
+    healthdevice.provider = HealthDevice.ProviderType.WITHINGS.value
+    healthdevice.access_token = creds.access_token
+    healthdevice.refresh_token = ''
+    healthdevice.expires_at = datetime.now() + timedelta(days=365)
+    healthdevice.meta = {
+        'access_token_secret': creds.access_token_secret,
+        'user_id': creds.user_id
+    }
+    healthdevice.save()
+    return True
+
+
+def withings_get_item_duration(item):
+    if 'data' in item:
+        data = item['data']
+        if 'effduration' in data:
+            return data['effduration']
+        elif 'duration' in data:
+            return data['duration']
+        return 0
+    else:
+        return 0
+
+
+def withings_get_data(healthdevice):
+    height = None
+    weight = None
+    daily_exercise = None
+
+    creds= WithingsCredentials(access_token=healthdevice.access_token,
+                               access_token_secret=healthdevice.meta['access_token_secret'],
+                               consumer_key=WITHINGS_SETTINGS['CONSUMER_KEY'],
+                               consumer_secret=WITHINGS_SETTINGS['CONSUMER_SECRET'],
+                               user_id=healthdevice.meta['user_id'])
+
+    client = WithingsApi(creds)
+    try:
+        measures = client.get_measures(limit=1, meastype='1') # measure type: weight
+        weight = measures[0].weight
+    except:
+        pass
+
+    try:
+        measures = client.get_measures(limit=1, meastype='4') # mesuare type: height
+        height = measures[0].height * 100
+    except:
+        pass
+
+    try:
+        workouts_params = {
+            'userid': healthdevice.meta['user_id'],
+            'startdateymd': (date.today() - timedelta(days=7)).isoformat(),
+            'enddateymd': date.today().isoformat()
+        }
+        workouts = client.request('v2/measure', 'getworkouts', params=workouts_params)
+        if 'series' in workouts:
+            total_seconds = reduce(lambda acc, item: acc + withings_get_item_duration(item), workouts['series'], 0)
+            daily_exercise = round(total_seconds / (7 * 60), 0)
+    except:
+        pass
+
+    if height is None and weight is None and daily_exercise is None:
         return None
     else:
         return {

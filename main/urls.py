@@ -46,6 +46,12 @@ urlpatterns_firm = patterns(
     url(r'^supervisors/(?P<pk>\d+)/delete', FirmSupervisorDelete.as_view(), name='supervisors-delete'),
 )
 
+urlpatterns_oauth1healthdevice = patterns(
+    '',
+    url(r'^withings/', healthdevices.withings, name='withings'),
+    url(r'^withings-redirect/', healthdevices.withings_redirect, name='withings-redirect'),
+)
+
 urlpatterns_oauth2healthdevice = patterns(
     '',
     url(r'^fitbit/', healthdevices.fitbit, name='fitbit'),
@@ -69,6 +75,7 @@ urlpatterns = patterns(
     # Client views
     url(r'^client/', include('client.urls', namespace='client', app_name='client')),
     # Health device views
+    url(r'^oauth/health-devices/', include(urlpatterns_oauth1healthdevice, namespace='oauth1healthdevices')),
     url(r'^oauth2/health-devices/', include(urlpatterns_oauth2healthdevice, namespace='oauth2healthdevices')),
     # Client statements
     url(r'^statements/', include('statements.urls', namespace='statements', app_name='statements')),
