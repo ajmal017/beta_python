@@ -227,11 +227,11 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     @list_route(methods=['get'], url_path='health-devices', permission_classes=[IsAuthenticated])
     def health_devices(self, request):
         HEALTH_DEVICES_CONFIG = {
-            'FITBIT_CLIENT_ID': settings.FITBIT_SETTINGS['CLIENT_ID'],
             'FITBIT_REDIRECT_URI': healthdevice.fitbit_get_redirect_uri(),
             'GOOGLEFIT_REDIRECT_URI': healthdevice.googlefit_get_redirect_uri(),
             'MICROSOFTHEALTH_REDIRECT_URI': healthdevice.microsofthealth_get_redirect_uri(),
             'UNDERARMOUR_REDIRECT_URI': healthdevice.underarmour_get_redirect_uri(),
-            'JAWBONE_REDIRECT_URI': healthdevice.jawbone_get_redirect_uri(),
+            'WITHINGS_CONNECT_URI': healthdevice.withings_get_redirect_uri(),
+            'JAWBONE_REDIRECT_URI': healthdevice.jawbone_get_redirect_uri()
         }
         return Response(HEALTH_DEVICES_CONFIG)
