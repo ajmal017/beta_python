@@ -25,6 +25,15 @@ def get_text_of_choices_enum(value, choices):
         return ''
 
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
 def d2dt(d: datetime.date) -> datetime.datetime:
     if isinstance(d, datetime.date):
         d = datetime.datetime(year=d.year, month=d.month, day=d.day, tzinfo=None)

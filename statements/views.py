@@ -2,6 +2,7 @@
 from django.views.generic import DetailView
 from django.http import HttpResponse
 from main.views.base import ClientView
+from common.utils import get_client_ip
 from statements.models import StatementOfAdvice, RecordOfAdvice, \
     RetirementStatementOfAdvice
 
@@ -43,10 +44,12 @@ class RetirementView(PDFView):
 
     def get(self, request, pk, ext=None):
         obj = RetirementStatementOfAdvice.objects.get(pk=pk)
+        client_ip = get_client_ip(request)
+
         if(ext.lower() == '.pdf'):
-            response = HttpResponse(obj.render_pdf(self.template_name),
+            response = HttpResponse(obj.render_pdf(self.template_name, client_ip=client_ip),
                                     content_type='application/pdf')
             response['Content-Disposition'] = 'inline; filename="statement_%s.pdf"'%obj.date
         else:
-            response = HttpResponse(obj.render_template(self.template_name))
+            response = HttpResponse(obj.render_template(self.template_name, client_ip=client_ip))
         return response

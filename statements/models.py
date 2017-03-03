@@ -20,7 +20,7 @@ class PDFStatement(models.Model):
     def date(self):
         return self.create_date.strftime('%Y-%m-%d_%H:%I:%S')
 
-    def render_template(self, template_name=None):
+    def render_template(self, template_name=None, **kwargs):
         from django.template.loader import render_to_string
         template_name = template_name or self.default_template
         return render_to_string(template_name, {
@@ -33,8 +33,8 @@ class PDFStatement(models.Model):
             'firm': self.client.advisor.firm,
         })
 
-    def render_pdf(self, template_name=None):
-        html = self.render_template(template_name)
+    def render_pdf(self, template_name=None, **kwargs):
+        html = self.render_template(template_name, **kwargs)
         # Have to source the images locally for WeasyPrint
         static_path = settings.STATICFILES_DIRS[0]
         html = html.replace('/static/', 'file://%s/' % static_path)
@@ -91,10 +91,20 @@ class RetirementStatementOfAdvice(PDFStatement):
     def default_template(self):
         return "statements/retirement_statement_of_advice/index.html"
 
-    def render_template(self, template_name=None):
+    def render_template(self, template_name=None, **kwargs):
         from django.template.loader import render_to_string
         template_name = template_name or self.default_template
+        client_ip = kwargs['client_ip'] if 'client_ip' in kwargs else None
         plan = self.retirement_plan
+        if plan.agreed_on and client_ip:
+            tzinfo = utils.get_timezone(client_ip)
+            agreed_on_tz = plan.agreed_on.astimezone(tzinfo)
+            agreed_on = {
+                'date': agreed_on_tz.strftime('%d-%b-%y'),
+                'time': agreed_on_tz.strftime('%H:%M:%S %p %Z')
+            }
+        else:
+            agreed_on = None
         retirement_accounts = plan.retirement_accounts if plan.retirement_accounts else []
 
         retirement_income_graph = {
@@ -124,6 +134,8 @@ class RetirementStatementOfAdvice(PDFStatement):
             'advisor': self.client.advisor,
             'firm': self.client.advisor.firm,
             'plan': plan,
+            'client_ip': client_ip,
+            'agreed_on': agreed_on,
             'has_partner': has_partner,
             'partner_name': plan.partner_data['name'] if has_partner else '',
             'lifestyle_stars': range(plan.lifestyle + 2),

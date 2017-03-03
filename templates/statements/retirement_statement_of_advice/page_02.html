@@ -34,10 +34,15 @@
     <p style="margin-bottom: 25pt;">
       {{advisor.user.full_name}}
     </p>
+    <p>
+      Financial Advisor<br />
+      Representative<br />
+      {{firm.name}}
+    </p>
     {% if plan.agreed_on %}
       <p>
         By electronically signing this Statement of Advice you agree to the following retirement plan
-        being created by representative of {{firm.name}}
+        being created by a representative of {{firm.name}}
       </p>
       <table style="border: none; width: 100%; margin-bottom: 15pt; font-size: 11pt;">
         <tbody>
@@ -50,15 +55,22 @@
             </td>
           <tr/>
           <tr>
-            <td style="padding-top: 10pt; text-align: center;">{{plan.agreed_on|date:"F d, Y"}}</td>
+            <td style="padding-top: 10pt; text-align: center;">
+              Date: {{agreed_on.date}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top: 10pt; text-align: center;">
+              Time: {{agreed_on.time}}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-top: 10pt; text-align: center;">
+              IP Address: {{client_ip}}
+            </td>
           </tr>
         </tbody>
       </table>
     {% endif %}
-    <p>
-      Financial Advisor<br />
-      Representative<br />
-      {{firm.name}}
-    </p>
   </div>
 </div>
