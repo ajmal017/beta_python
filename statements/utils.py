@@ -4,6 +4,9 @@ from retiresmartz.models import RetirementPlan
 from django.core.exceptions import ObjectDoesNotExist
 import math
 import numpy as np
+from tzlocal import get_localzone
+from pytz import timezone
+import requests
 # import matplotlib.pyplot as plt
 
 def get_lifestyle_box(client):
@@ -358,3 +361,14 @@ def get_account_balance_chart(plan, has_partner):
         }
     except ObjectDoesNotExist:
         return None
+
+def get_timezone(client_ip):
+    tz_info = get_localzone()
+    try:
+        res = requests.get(url='http://ip-api.com/json/{}'.format(client_ip))
+        res = res.json()
+        if 'timezone' in res:
+            tz_info = timezone(res['timezone'])
+    except:
+        pass
+    return tz_info
