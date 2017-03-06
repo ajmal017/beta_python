@@ -21,6 +21,7 @@ from pinax.eventlog.models import log
 from retiresmartz.calculator.social_security import calculate_payments
 from main import constants
 from main import abstract
+from statements.models import PDFStatement
 import pandas as pd
 import os
 from django.conf import settings
@@ -96,6 +97,9 @@ class RetiresmartzTests(APITestCase):
             'SurvivorsTotalFamilyBenefitsLimit': '1,616',
             'date_of_estimate': 'January 2, 2016',
         }
+        # Mocked to speed up tests, no need run them every time
+        RetirementPlan.send_plan_agreed_email = MagicMock()
+        PDFStatement.save_pdf = MagicMock()
 
     def tearDown(self):
         self.client.logout()
@@ -529,6 +533,27 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(saved_plan.btc, 1000)
         # make sure name is None
         self.assertEqual(response.data['name'], None)
+
+    def test_sends_soa_email_after_agreed(self):
+        '''
+        Tests:
+        - clients can create a retirement plan.
+        - specifying btc on creation works
+        '''
+        client = Fixture1.client1()
+        url = '/api/v1/clients/%s/retirement-plans' % client.id
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        response = self.client.post(url, self.base_plan_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        plan = RetirementPlan.objects.get(id=response.data['id'])
+        # Now update it with agreed_on=Now
+        url = '/api/v1/clients/%s/retirement-plans/%s'%(client.id, response.data['id'])
+        dt = now()
+        new_data = dict(self.base_plan_data, agreed_on=dt)
+        response = self.client.put(url, new_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        plan.send_plan_agreed_email.assert_called_with(client_ip='127.0.0.1')
 
     def test_cant_change_after_agreed(self):
         '''

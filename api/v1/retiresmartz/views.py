@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.decorators import detail_route, list_route
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, ParseError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -17,7 +17,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from api.v1.goals.serializers import PortfolioSerializer
 from api.v1.views import ApiViewMixin
 from client.models import Client
-from common.utils import d2ed
+from common.utils import d2ed, get_client_ip
 from main.event import Event
 from main.models import Ticker
 from portfolios.calculation import Unsatisfiable
@@ -126,8 +126,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.agreed_on:
-            return Response({'error': 'Unable to update a RetirementPlan that has been agreed on'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            raise ParseError('Unable to update a RetirementPlan that has been agreed on')
 
         partial = kwargs.pop('partial', False)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -423,6 +422,10 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                 advice.text = advice_responses.get_on_track_item_adjusted_to_off_track(advice)
                 advice.save()
 
+        if updated.agreed_on:
+            client_ip = get_client_ip(request)
+            updated.send_plan_agreed_email(client_ip=client_ip)
+
         return Response(self.serializer_response_class(updated).data)
 
     @detail_route(methods=['get'], url_path='suggested-retirement-income')
@@ -626,17 +629,17 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             print('plan.patrner_data: None')
         print(str('----------------------'))
 
-        if plan.client.civil_status == 1 or plan.client.civil_status == 2:
+        if plan.client.is_married:
             user_age = helpers.get_age(plan.client.date_of_birth)
             partner_age = helpers.get_age(plan.partner_data['dob'])
             user_older_by = user_age - partner_age
             if user_older_by > 0:
-                # life expectancy must be no greater than 100 
-                projection_end = min(projection_end + user_older_by, 100) 
+                # life expectancy must be no greater than 100
+                projection_end = min(projection_end + user_older_by, 100)
 
         user = tax.TaxUser(plan, projection_end, False, plans)
         user.create_maindf()
-        
+
         try:
             projection = plan.projection
         except ObjectDoesNotExist:
@@ -679,9 +682,9 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         projection.accounts_qual_annuity = user.accounts_qual_annuity
         projection.accounts_qual_np = user.accounts_qual_np
         projection.accounts_qual_np_roth = user.accounts_qual_np_roth
-        projection.accounts_priv_457 = user.accounts_priv_457 
+        projection.accounts_priv_457 = user.accounts_priv_457
         projection.accounts_roth_401k = user.accounts_roth_401k
-        projection.accounts_roth_ira = user.accounts_roth_ira 
+        projection.accounts_roth_ira = user.accounts_roth_ira
         projection.accounts_sarsep_ira = user.accounts_sarsep_ira
         projection.accounts_sep_ira = user.accounts_sep_ira
         projection.accounts_simple_ira = user.accounts_simple_ira
@@ -725,9 +728,9 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             projection.part_accounts_qual_annuity = partner.accounts_qual_annuity
             projection.part_accounts_qual_np = partner.accounts_qual_np
             projection.part_accounts_qual_np_roth = partner.accounts_qual_np_roth
-            projection.part_accounts_priv_457 = partner.accounts_priv_457 
+            projection.part_accounts_priv_457 = partner.accounts_priv_457
             projection.part_accounts_roth_401k = partner.accounts_roth_401k
-            projection.part_accounts_roth_ira = partner.accounts_roth_ira 
+            projection.part_accounts_roth_ira = partner.accounts_roth_ira
             projection.part_accounts_sarsep_ira = partner.accounts_sarsep_ira
             projection.part_accounts_sep_ira = partner.accounts_sep_ira
             projection.part_accounts_simple_ira = partner.accounts_simple_ira

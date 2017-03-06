@@ -45,9 +45,14 @@ class PDFStatement(models.Model):
     def save(self, *args, **kwargs):
         super(PDFStatement, self).save(*args, **kwargs)
         if not self.pdf:
-            bio = BytesIO(self.render_pdf())
-            self.pdf.save('%s.pdf' % self.account,
-                          ContentFile(bio.getvalue()))
+            self.save_pdf()
+
+    def save_pdf(self):
+        bio = BytesIO(self.render_pdf())
+        pdf_content = bio.getvalue()
+        self.pdf.save('%s.pdf' % self.account,
+                      ContentFile(pdf_content))
+        return pdf_content
 
     @property
     def default_template(self):
@@ -81,7 +86,7 @@ class RetirementStatementOfAdvice(PDFStatement):
 
     @property
     def account(self):
-        return None
+        return self.retirement_plan.id
 
     @property
     def client(self):

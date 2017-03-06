@@ -23,7 +23,11 @@ from dateutil.relativedelta import relativedelta
 from django.utils.functional import cached_property
 import json
 from main.abstract import TimestampedModel
-
+from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from main.settings import BASE_DIR
 from main.constants import GENDER_MALE
 logger = logging.getLogger('retiresmartz.models')
 
@@ -307,6 +311,33 @@ class RetirementPlan(TimestampedModel):
         soa = RetirementStatementOfAdvice(retirement_plan_id=self.id)
         soa.save()
         return soa
+
+    def send_plan_agreed_email(self, **kwargs):
+        soa = self.get_soa()
+        pdf_content = soa.save_pdf()
+        partner_name = self.partner_data['name'] if self.client.is_married and self.partner_data else None
+        context = {
+            'client': self.client,
+            'advisor': self.client.advisor,
+            'partner_name': partner_name
+        }
+
+        # Send to client
+        subject = "Your BetaSmartz Retirement Plan Completed"
+        html_content = render_to_string('email/retiresmartz/plan_agreed_client.html', context)
+        email = EmailMessage(subject, html_content, None, [self.client.user.email])
+        email.content_subtype = "html"
+        email.attach('SOA.pdf', pdf_content, 'application/pdf')
+        email.send()
+
+        # Send to advisor
+        subject = "Your clients have completed their Retirement Plan" if partner_name else \
+                  "Your client completed a Retirement Plan"
+        html_content = render_to_string('email/retiresmartz/plan_agreed_client.html', context)
+        email = EmailMessage(subject, html_content, None, [self.client.advisor.user.email])
+        email.content_subtype = "html"
+        email.attach('SOA.pdf', pdf_content, 'application/pdf')
+        email.send()
 
     @property
     def portfolio(self):
