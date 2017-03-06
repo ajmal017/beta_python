@@ -11,6 +11,8 @@ TEST_RUNNER = "tests.fast_test_runner.FastTestRunner"
 PAGE_DEFAULT_TEMPLATE = "support/base.html"
 PAGE_LANGUAGES = (('en-us', 'US English'),)
 STATIC_URL = '/static/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media_test')
+MEDIA_URL = '/media_test/'
 
 PLAID_PUBLIC_KEY = "test_key"
 
