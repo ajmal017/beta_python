@@ -91,6 +91,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'user.autologout.SessionExpireMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'user.log_ip.LogIPMiddleware',
 
 )
 

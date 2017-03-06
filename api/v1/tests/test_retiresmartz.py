@@ -553,7 +553,7 @@ class RetiresmartzTests(APITestCase):
         new_data = dict(self.base_plan_data, agreed_on=dt)
         response = self.client.put(url, new_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        plan.send_plan_agreed_email.assert_called_with(client_ip='127.0.0.1')
+        plan.send_plan_agreed_email.assert_called_with()
 
     def test_cant_change_after_agreed(self):
         '''

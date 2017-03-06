@@ -99,17 +99,17 @@ class RetirementStatementOfAdvice(PDFStatement):
     def render_template(self, template_name=None, **kwargs):
         from django.template.loader import render_to_string
         template_name = template_name or self.default_template
-        client_ip = kwargs['client_ip'] if 'client_ip' in kwargs else None
         plan = self.retirement_plan
-        if plan.agreed_on and client_ip:
+        client_ip = plan.client.user.last_ip
+        agreed_on = None
+        if plan.agreed_on:
             tzinfo = utils.get_timezone(client_ip)
             agreed_on_tz = plan.agreed_on.astimezone(tzinfo)
             agreed_on = {
                 'date': agreed_on_tz.strftime('%d-%b-%y'),
                 'time': agreed_on_tz.strftime('%H:%M:%S %p %Z')
             }
-        else:
-            agreed_on = None
+
         retirement_accounts = plan.retirement_accounts if plan.retirement_accounts else []
 
         retirement_income_graph = {
