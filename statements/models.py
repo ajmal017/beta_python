@@ -50,9 +50,12 @@ class PDFStatement(models.Model):
     def save_pdf(self):
         bio = BytesIO(self.render_pdf())
         pdf_content = bio.getvalue()
-        self.pdf.save('%s.pdf' % self.account,
-                      ContentFile(pdf_content))
+        self.pdf.save('%s.pdf' % self.filename, ContentFile(pdf_content))
         return pdf_content
+
+    @property
+    def filename(self):
+        return self.id
 
     @property
     def default_template(self):
@@ -74,6 +77,10 @@ class StatementOfAdvice(PDFStatement):
         return 'Statement of Advice for %s' % self.account
 
     @property
+    def filename(self):
+        return self.account
+
+    @property
     def default_template(self):
         return "statements/statement_of_advice.html"
 
@@ -85,8 +92,8 @@ class RetirementStatementOfAdvice(PDFStatement):
         return 'Statement of Advice for %s' % self.retirement_plan
 
     @property
-    def account(self):
-        return self.retirement_plan.id
+    def filename(self):
+        return 'soa_{}'.format(self.retirement_plan.id)
 
     @property
     def client(self):
@@ -163,6 +170,10 @@ class RecordOfAdvice(PDFStatement):
 
     def __str__(self):
         return 'Record of Advice %s %s' % (self.account, self.date)
+
+    @property
+    def filename(self):
+        return self.account
 
     @property
     def default_template(self):
