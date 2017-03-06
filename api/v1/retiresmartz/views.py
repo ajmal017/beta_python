@@ -17,7 +17,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from api.v1.goals.serializers import PortfolioSerializer
 from api.v1.views import ApiViewMixin
 from client.models import Client
-from common.utils import d2ed, get_client_ip
+from common.utils import d2ed
 from main.event import Event
 from main.models import Ticker
 from portfolios.calculation import Unsatisfiable
@@ -423,8 +423,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                 advice.save()
 
         if updated.agreed_on:
-            client_ip = get_client_ip(request)
-            updated.send_plan_agreed_email(client_ip=client_ip)
+            updated.send_plan_agreed_email()
 
         return Response(self.serializer_response_class(updated).data)
 

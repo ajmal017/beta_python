@@ -54,53 +54,6 @@ import uuid
 from datetime import date, datetime, timedelta
 from enum import Enum, unique
 
-import numpy as np
-import scipy.stats as st
-from django.conf import settings
-from django.contrib.auth.models import AbstractBaseUser, Group, \
-    PermissionsMixin, UserManager, send_mail
-from django.contrib.auth.signals import user_logged_in, user_logged_out
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.staticfiles.templatetags.staticfiles import static
-from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.validators import (MaxValueValidator, MinLengthValidator,
-                                    MinValueValidator, RegexValidator, ValidationError)
-from django.db import models, transaction
-from django.db.models import F, Sum
-from django.db.models.deletion import CASCADE, PROTECT, SET_NULL
-from django.db.models.functions import Coalesce
-from django.db.models.query_utils import Q
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.template.loader import render_to_string
-from django.utils.functional import cached_property
-from django.utils.timezone import now
-from django.utils.translation import ugettext as _
-from django_pandas.managers import DataFrameManager
-from jsonfield.fields import JSONField
-from phonenumber_field.modelfields import PhoneNumberField
-from pinax.eventlog import models as el_models
-
-from address.models import Address
-from common.constants import GROUP_SUPPORT_STAFF
-from common.structures import ChoiceEnum
-from common.utils import months_between
-from main import redis
-from main.constants import ACCOUNT_TYPES_COUNTRY, ACCOUNT_UNKNOWN
-from main.finance import mod_dietz_rate
-from main.managers import AccountTypeQuerySet
-from main.risk_profiler import validate_risk_score
-from notifications.models import Notify
-from portfolios.returns import get_price_returns
-from . import constants
-from .abstract import FinancialInstrument, NeedApprobation, \
-    NeedConfirmation, PersonalData, TransferPlan
-from .fields import ColorField
-from .managers import ExternalAssetQuerySet, GoalQuerySet, PositionLotQuerySet
-from .slug import unique_slugify
-
 logger = logging.getLogger('main.models')
 
 
@@ -161,6 +114,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     prepopulated = models.BooleanField(default=False)
 
     avatar = models.ImageField(_('avatar'), blank=True, null=True)
+
+    last_ip = models.CharField(max_length=20, blank=True, null=True,
+                               help_text='Last requested IP address')
 
     # aka activity
     notifications = GenericRelation('notifications.Notification',
