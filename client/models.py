@@ -143,6 +143,20 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     def occupation_text(self):
         return get_text_of_choices_enum(self.occupation, constants.OCCUPATION_TYPES)
 
+    @cached_property
+    def salutation(self):
+        if hasattr(self.user, 'invitation'):
+            return self.user.invitation.salutation
+        else:
+            return None
+
+    @cached_property
+    def suffix(self):
+        if hasattr(self.user, 'invitation'):
+            return self.user.invitation.suffix
+        else:
+            return None
+
     def _net_worth(self):
         # Sum ExternalAssets for the client
         assets = self.external_assets.all()
@@ -857,6 +871,10 @@ class EmailInvite(models.Model):
     tax_transcript = models.FileField(null=True, blank=True)
     social_security_statement = models.FileField(null=True, blank=True)
     partner_social_security_statement = models.FileField(null=True, blank=True)
+    salutation = models.CharField(max_length=10, choices=constants.IB_SALUTATION_CHOICES,
+                           default=constants.IB_SALUTATION_MR)
+    suffix = models.CharField(max_length=10, choices=constants.IB_SUFFIX_CHOICES,
+                       blank=True, null=True)
 
     def __str__(self):
         return '{} {} {} ({})'.format(self.first_name, self.middle_name[:1],
