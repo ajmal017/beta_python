@@ -164,6 +164,8 @@ class GoalQuerySet(QuerySet):
         q = Q()
         for level in risk_levels:
             risk_min, risk_max = GoalMetric.risk_level_range(level)
+            risk_min /= 100
+            risk_max /= 100
             q |= Q(selected_settings__metric_group__metrics__configured_val__gte=risk_min,
                    selected_settings__metric_group__metrics__configured_val__lt=risk_max)
         qs = self.filter(q, selected_settings__metric_group__metrics__type=GoalMetric.METRIC_TYPE_RISK_SCORE)
@@ -229,6 +231,8 @@ class PositionLotQuerySet(QuerySet):
         q = Q()
         for level in risk_levels:
             risk_min, risk_max = GoalMetric.risk_level_range(level)
+            risk_min /= 100
+            risk_max /= 100
             q |= Q(execution_distribution__transaction__from_goal__selected_settings__metric_group__metrics__configured_val__gte=risk_min,
                    execution_distribution__transaction__from_goal__selected_settings__metric_group__metrics__configured_val__lt=risk_max)
             q |= Q(execution_distribution__transaction__to_goal__selected_settings__metric_group__metrics__configured_val__gte=risk_min,
