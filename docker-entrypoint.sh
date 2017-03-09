@@ -24,6 +24,9 @@ if [ "$1" = 'backend' ]; then
     # Run cron service
     cron
 
+    # Run celery
+    celery -A main worker -l info --workdir /betasmartz --detach
+
     # start supervisor
     supervisord
 

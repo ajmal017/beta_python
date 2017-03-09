@@ -5,16 +5,21 @@ from common.constants import GROUP_SUPPORT_STAFF
 from retiresmartz.models import RetirementPlan
 from .factories import AssetClassFactory, GroupFactory, \
     RetirementPlanFactory, RetirementAdviceFactory
+from statements.models import PDFStatement
 from api.v1.tests.factories import EmailInviteFactory, PortfolioSetFactory, SecurityAnswerFactory
 from django.core.urlresolvers import reverse
 from retiresmartz.models import RetirementAdvice
 from client.models import EmailInvite
 from main.models import InvestmentType
 from pinax.eventlog.models import Log as EventLog
+from unittest.mock import MagicMock
 
 
 class RetiresmartzAdviceTests(APITestCase):
     def setUp(self):
+        # Mocked to speed up tests, no need run them every time
+        PDFStatement.save_pdf = MagicMock()
+
         self.support_group = GroupFactory(name=GROUP_SUPPORT_STAFF)
         self.plan = RetirementPlanFactory.create()
         self.plan2 = RetirementPlanFactory.create(client=self.plan.client)
