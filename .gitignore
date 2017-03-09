@@ -141,3 +141,7 @@ local_settings.py
 reports/
 dev_database.sqlite3
 media/
+media_test/
+
+# redis-server dump
+dump.rdb

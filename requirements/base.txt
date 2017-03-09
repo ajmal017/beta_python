@@ -27,7 +27,7 @@ django-ckeditor-updated==4.4.4
 django-common-helpers==0.7.0
 django-compat==1.0.7
 django-cron==0.4.3
-
+celery==4.0.2
 
 
 django-filter==0.12.0

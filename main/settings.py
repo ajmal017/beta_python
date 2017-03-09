@@ -203,6 +203,8 @@ CMS_UNIHANDECODE_HOST = '/static/unihandecode/'
 CMS_UNIHANDECODE_VERSION = '1.0.0'
 CMS_UNIHANDECODE_DECODERS = ['ja', 'zh', 'vn', 'kr', 'diacritic']
 
+REDIS_URI = os.environ.get('REDIS_URI', 'redis://localhost:6379/0')
+
 # Django Suit configuration example
 SUIT_CONFIG = {
     # header
