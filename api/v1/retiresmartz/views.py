@@ -664,30 +664,33 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         projection.soc_sec_benefit = user.soc_sec_benefit
         projection.taxable_accounts = user.taxable_accounts
         projection.non_taxable_accounts = user.non_taxable_accounts
-        projection.accounts_401a = user.accounts_401a
-        projection.accounts_401k = user.accounts_401k
-        projection.accounts_403b = user.accounts_403b
-        projection.accounts_403k = user.accounts_403k
-        projection.accounts_409a = user.accounts_409a
-        projection.accounts_457 = user.accounts_457
-        projection.accounts_esop = user.accounts_esop
-        projection.accounts_gov = user.accounts_gov
-        projection.accounts_ind_401k = user.accounts_ind_401k
-        projection.accounts_ind_roth_401k = user.accounts_ind_roth_401k
-        projection.accounts_ira = user.accounts_ira
-        projection.accounts_mon_purch = user.accounts_mon_purch
-        projection.accounts_pay_deduct_ira = user.accounts_pay_deduct_ira
-        projection.accounts_prof_sharing = user.accounts_prof_sharing
-        projection.accounts_qual_annuity = user.accounts_qual_annuity
-        projection.accounts_qual_np = user.accounts_qual_np
-        projection.accounts_qual_np_roth = user.accounts_qual_np_roth
-        projection.accounts_priv_457 = user.accounts_priv_457
-        projection.accounts_roth_401k = user.accounts_roth_401k
-        projection.accounts_roth_ira = user.accounts_roth_ira
-        projection.accounts_sarsep_ira = user.accounts_sarsep_ira
-        projection.accounts_sep_ira = user.accounts_sep_ira
-        projection.accounts_simple_ira = user.accounts_simple_ira
-        projection.accounts_tax_def_annuity = user.accounts_tax_def_annuity
+
+        projection.list_of_accounts_balances = [
+            {'account_type' : '401a', 'data' : user.accounts_401a},
+            {'account_type' : '401k', 'data' : user.accounts_401k},
+            {'account_type' : '403b', 'data' : user.accounts_403b},
+            {'account_type' : '403k', 'data' : user.accounts_403k},
+            {'account_type' : '409a', 'data' : user.accounts_409a},
+            {'account_type' : '457', 'data' : user.accounts_457},
+            {'account_type' : 'esop', 'data' : user.accounts_esop},
+            {'account_type' : 'gov', 'data' : user.accounts_gov},
+            {'account_type' : 'ind_401k', 'data' : user.accounts_ind_401k},
+            {'account_type' : 'ind_roth_401k', 'data' : user.accounts_ind_roth_401k},
+            {'account_type' : 'ira', 'data' : user.accounts_ira},
+            {'account_type' : 'mon_purch', 'data' : user.accounts_mon_purch},
+            {'account_type' : 'pay_deduct_ira', 'data' : user.accounts_pay_deduct_ira},
+            {'account_type' : 'prof_sharing', 'data' : user.accounts_prof_sharing},
+            {'account_type' : 'qual_annuity', 'data' : user.accounts_qual_annuity},
+            {'account_type' : 'qual_np', 'data' : user.accounts_qual_np},
+            {'account_type' : 'qual_np_roth', 'data' : user.accounts_qual_np_roth},
+            {'account_type' : 'priv_457', 'data' : user.accounts_priv_457},
+            {'account_type' : 'roth_401k', 'data' : user.accounts_roth_401k},
+            {'account_type' : 'roth_ira', 'data' : user.accounts_roth_ira},
+            {'account_type' : 'sarsep_ira', 'data' : user.accounts_sarsep_ira},
+            {'account_type' : 'sep_ira', 'data' : user.accounts_sep_ira},
+            {'account_type' : 'simple_ira', 'data' : user.accounts_simple_ira},
+            {'account_type' : 'tax_def_annuity', 'data' : user.accounts_tax_def_annuity}]
+        
         projection.reverse_mort = user.reverse_mort
         projection.house_value = user.house_value
         projection.house_value_at_retire_in_todays = user.house_value_at_retire_in_todays
@@ -710,30 +713,33 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             projection.part_current_percent_fed_tax = partner.current_percent_fed_tax
             projection.part_current_percent_state_tax = partner.current_percent_state_tax
             projection.part_non_taxable_inc = partner.non_taxable_inc
-            projection.part_accounts_401a = partner.accounts_401a
-            projection.part_accounts_401k = partner.accounts_401k
-            projection.part_accounts_403b = partner.accounts_403b
-            projection.part_accounts_403k = partner.accounts_403k
-            projection.part_accounts_409a = partner.accounts_409a
-            projection.part_accounts_457 = partner.accounts_457
-            projection.part_accounts_esop = partner.accounts_esop
-            projection.part_accounts_gov = partner.accounts_gov
-            projection.part_accounts_ind_401k = partner.accounts_ind_401k
-            projection.part_accounts_ind_roth_401k = partner.accounts_ind_roth_401k
-            projection.part_accounts_ira = partner.accounts_ira
-            projection.part_accounts_mon_purch = partner.accounts_mon_purch
-            projection.part_accounts_pay_deduct_ira = partner.accounts_pay_deduct_ira
-            projection.part_accounts_prof_sharing = partner.accounts_prof_sharing
-            projection.part_accounts_qual_annuity = partner.accounts_qual_annuity
-            projection.part_accounts_qual_np = partner.accounts_qual_np
-            projection.part_accounts_qual_np_roth = partner.accounts_qual_np_roth
-            projection.part_accounts_priv_457 = partner.accounts_priv_457
-            projection.part_accounts_roth_401k = partner.accounts_roth_401k
-            projection.part_accounts_roth_ira = partner.accounts_roth_ira
-            projection.part_accounts_sarsep_ira = partner.accounts_sarsep_ira
-            projection.part_accounts_sep_ira = partner.accounts_sep_ira
-            projection.part_accounts_simple_ira = partner.accounts_simple_ira
-            projection.part_accounts_tax_def_annuity = partner.accounts_tax_def_annuity
+            
+            projection.part_list_of_accounts_balances = [
+                {'account_type' : '401a', 'data' : partner.accounts_401a},
+                {'account_type' : '401k', 'data' : partner.accounts_401k},
+                {'account_type' : '403b', 'data' : partner.accounts_403b},
+                {'account_type' : '403k', 'data' : partner.accounts_403k},
+                {'account_type' : '409a', 'data' : partner.accounts_409a},
+                {'account_type' : '457', 'data' : partner.accounts_457},
+                {'account_type' : 'esop', 'data' : partner.accounts_esop},
+                {'account_type' : 'gov', 'data' : partner.accounts_gov},
+                {'account_type' : 'ind_401k', 'data' : partner.accounts_ind_401k},
+                {'account_type' : 'ind_roth_401k', 'data' : partner.accounts_ind_roth_401k},
+                {'account_type' : 'ira', 'data' : partner.accounts_ira},
+                {'account_type' : 'mon_purch', 'data' : partner.accounts_mon_purch},
+                {'account_type' : 'pay_deduct_ira', 'data' : partner.accounts_pay_deduct_ira},
+                {'account_type' : 'prof_sharing', 'data' : partner.accounts_prof_sharing},
+                {'account_type' : 'qual_annuity', 'data' : partner.accounts_qual_annuity},
+                {'account_type' : 'qual_np', 'data' : partner.accounts_qual_np},
+                {'account_type' : 'qual_np_roth', 'data' : partner.accounts_qual_np_roth},
+                {'account_type' : 'priv_457', 'data' : partner.accounts_priv_457},
+                {'account_type' : 'roth_401k', 'data' : partner.accounts_roth_401k},
+                {'account_type' : 'roth_ira', 'data' : partner.accounts_roth_ira},
+                {'account_type' : 'sarsep_ira', 'data' : partner.accounts_sarsep_ira},
+                {'account_type' : 'sep_ira', 'data' : partner.accounts_sep_ira},
+                {'account_type' : 'simple_ira', 'data' : partner.accounts_simple_ira},
+                {'account_type' : 'tax_def_annuity', 'data' : partner.accounts_tax_def_annuity}]            
+            
             projection.part_tot_taxable_dist = partner.tot_taxable_dist
             projection.part_annuity_payments = partner.annuity_payments
             projection.part_pension_payments = partner.pension_payments
