@@ -585,6 +585,8 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
           ]
         }
         """
+        print(' ---------------------- ')
+        print('A')
         plan = self.get_object()
         # We need a date of birth for the client
         if not plan.client.date_of_birth:
@@ -609,6 +611,8 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         plan.set_settings(settings)
         plan.save()
 
+        print(' ---------------------- ')
+        print('B')
         # Get the z-multiplier for the given confidence
         z_mult = -st.norm.ppf(plan.expected_return_confidence)
         performance = (settings.portfolio.er + z_mult * settings.portfolio.stdev)/100
