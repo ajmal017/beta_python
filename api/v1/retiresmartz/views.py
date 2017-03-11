@@ -590,19 +590,23 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         plan = self.get_object()
         # We need a date of birth for the client
         if not plan.client.date_of_birth:
+            print('*********************** ---- Client must have a date of birth entered to calculate retirement plans.')
             raise ValidationError("Client must have a date of birth entered to calculate retirement plans.")
 
         # Selected_life_expectancy must be between 65 - 100
         if plan.selected_life_expectancy > 100:
+            print('*********************** ---- Life expectancy value above valid range (>100)')
             raise ValidationError("Life expectancy value above valid range (>100)")
 
         if plan.selected_life_expectancy < 65:
+            print('*********************** ---- Life expectancy value below valid range (<65)')
             raise ValidationError("Life expectancy value below valid range (<65)")
 
         # TODO: We can cache the portfolio on the plan and only update it every 24hrs, or if the risk changes.
         try:
             settings = create_settings(plan)
         except Unsatisfiable as e:
+            print('*********************** ---- Unsatisfiable as e')
             rdata = {'reason': "No portfolio could be found: {}".format(e)}
             if e.req_funds is not None:
                 rdata['req_funds'] = e.req_funds
