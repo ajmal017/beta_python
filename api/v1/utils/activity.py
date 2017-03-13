@@ -18,6 +18,7 @@ from common.constants import DEC_2PL, EPOCH_TM
 from main.event import Event
 from main.models import ActivityLog, ActivityLogEvent, Goal, HistoricalBalance, \
     Transaction
+from statements.models import RecordOfAdvice, RetirementStatementOfAdvice, StatementOfAdvice
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,11 @@ def parse_event_logs(request, logs, transactions, goal):
         data = []
         if args:
             for locstr in map(str.strip, args.strip().splitlines()):
+                # Documents
+                if locstr == 'document_type':
+                    data.append(fields.get('document_type', '').strip('\'"'))
+                    break
+
                 in_trans = False
                 item = fields
                 for branch in locstr.split('.'):
@@ -190,12 +196,19 @@ def get(request, obj):
         accounts = ClientAccount.objects.filter(Q(primary_owner=obj) | Q(signatories__id=obj.id))
         account_ids = accounts.values_list('id', flat=True)
         goal_ids = []
+        rsoas = RetirementStatementOfAdvice.objects.filter(retirement_plan__client=obj)
+        rsoa_ids = rsoas.values_list('id', flat=True)
+
         for account in accounts:
             goal_ids = goal_ids + list(account.goals.values_list('id', flat=True))
-        # Filter for only the events where the object is account or goal
-        ctm = ContentType.objects.get_for_models(ClientAccount, Goal)
+        # Filter for only the events where the object is account or goal or statements
+        ctm = ContentType.objects.get_for_models(ClientAccount, Goal, RecordOfAdvice, \
+                                                 RetirementStatementOfAdvice, StatementOfAdvice)
         el_filter = (Q(content_type=ctm[ClientAccount], object_id__in=account_ids) |
-                    Q(content_type=ctm[Goal], object_id__in=goal_ids))
+                    Q(content_type=ctm[Goal], object_id__in=goal_ids) |
+                    Q(content_type=ctm[RecordOfAdvice], object_id__in=account_ids) |
+                    Q(content_type=ctm[RetirementStatementOfAdvice], object_id__in=rsoa_ids) |
+                    Q(content_type=ctm[StatementOfAdvice], object_id__in=account_ids))
     else:
         raise Exception("object type: {} not supported.".format(type(obj)))
 

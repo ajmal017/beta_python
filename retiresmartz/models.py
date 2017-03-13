@@ -29,6 +29,7 @@ from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from main.settings import BASE_DIR
 from main.constants import GENDER_MALE
+from main.event import Event
 from main.tasks import send_plan_agreed_email_task
 logger = logging.getLogger('retiresmartz.models')
 from main.celery import app as celery_app
@@ -348,6 +349,12 @@ class RetirementPlan(TimestampedModel):
         email.content_subtype = "html"
         email.attach('SOA.pdf', pdf_content, 'application/pdf')
         email.send()
+
+        # Log event
+        e = Event.DOCUMENTS_GENERATED.log(None,
+                                          'Retirement Statement of Advice',
+                                          user=plan.client.user,
+                                          obj=soa)
 
     @property
     def portfolio(self):
