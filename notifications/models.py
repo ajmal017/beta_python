@@ -284,6 +284,8 @@ class Notify(ChoiceEnum):
 
     UPDATE_PERSONAL_INFO = 'updated personal info'
 
+    CLIENT_AGREE_RETIREMENT_PLAN = 'agreed'
+
     def send(self, actor, target=None, recipient=None, action_object=None,
              public=True, description=None, timestamp=None,
              level=Notification.LEVELS.info):

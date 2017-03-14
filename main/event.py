@@ -82,13 +82,13 @@ class Event(ChoiceEnum):
     # TODO: Update `list_of_event_logging_data` & `required object type` below.
 
     # Documents Type: `Statements of Advice`
-    SOA_GENERATED = (50, ['document_type'], 'statements.StatementOfAdvice')
+    SOA_GENERATED = (50, [], 'statements.StatementOfAdvice')
 
     # Documents Type: `Records of Advice`
-    ROA_GENERATED = (51, ['document_type'], 'statements.RecordOfAdvice')
+    ROA_GENERATED = (51, [], 'statements.RecordOfAdvice')
 
     # Documents Type: `Retirement Statement of Advice`
-    RETIREMENT_SOA_GENERATED = (52, ['document_type'], 'statements.RetirementStatementOfAdvice')
+    RETIREMENT_SOA_GENERATED = (52, [], 'statements.RetirementStatementOfAdvice')
 
     # ONLY CONFIRMED ALLOCATION CHANGES
     ALLOCATION_CHANGED = (53, [], 'main.Goal')

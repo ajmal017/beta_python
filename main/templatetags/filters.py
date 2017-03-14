@@ -73,3 +73,7 @@ def index(ary, i):
 @register.filter
 def account_type_text(acc_type):
     return ClientAccount.get_account_type_text(acc_type)
+
+@register.filter
+def to_class_name(value):
+    return value.__class__.__name__

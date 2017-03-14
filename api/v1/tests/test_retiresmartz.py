@@ -11,7 +11,8 @@ from api.v1.tests.factories import ExternalAssetFactory, MarkowitzScaleFactory, 
 from common.constants import GROUP_SUPPORT_STAFF
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction, \
     populate_inflation
-from main.models import InvestmentType, GoalSetting, GoalMetricGroup, GoalMetric
+from main.models import ActivityLogEvent, InvestmentType, GoalSetting, GoalMetricGroup, GoalMetric
+from main.event import Event
 from main.tests.fixture import Fixture1
 from retiresmartz.models import RetirementPlan
 from .factories import AssetClassFactory, ContentTypeFactory, GroupFactory, \
@@ -435,6 +436,32 @@ class RetiresmartzTests(APITestCase):
         self.assertEqual(response.data['client'], plan.client.id)
         self.assertEqual(response.data['calculated_life_expectancy'], plan.calculated_life_expectancy)
         self.assertNotEqual(response.data['statement_of_advice'], None)
+
+    def test_agreed_on_plan_logs_activity(self):
+        """
+        Test agreed on retirement plan is logged in activity.
+        """
+
+        # We need to activate the activity logging for the desired event types.
+        ActivityLogEvent.get(Event.RETIREMENT_SOA_GENERATED)
+
+        plan = RetirementPlanFactory.create()
+        self.client.force_authenticate(user=plan.client.user)
+        url = '/api/v1/clients/%s/retirement-plans/%s'%(plan.client.id, plan.id)
+        dt = now()
+        new_data = dict(self.base_plan_data, agreed_on=dt)
+        response = self.client.put(url, new_data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        url = '/api/v1/clients/{}/activity'.format(plan.client.id)
+        response = self.client.get(url)
+        download = {
+            'url': plan.statement_of_advice.pdf_url,
+            'name': 'Statement Of Advice'
+        }
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0]['type'], ActivityLogEvent.get(Event.RETIREMENT_SOA_GENERATED).activity_log.id)
+        self.assertEqual(response.data[0]['download'], download)
 
     def test_add_plan(self):
         '''

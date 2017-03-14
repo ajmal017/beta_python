@@ -32,7 +32,7 @@ from .filters import FirmActivityFilterSet, FirmAnalyticsAdvisorsFilterSet, \
     FirmAnalyticsClientsFilterSet, FirmAnalyticsGoalsAdvisorsFilterSet, \
     FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsGoalsUsersFilterSet, \
     FirmAnalyticsOverviewFilterSet
-
+from retiresmartz.models import RetirementPlan
 logger = logging.getLogger('main.views.firm.dashboard')
 
 
@@ -692,10 +692,11 @@ class FirmActivityView(ListView, LegalView):
     model = Notification
 
     def get_context_data(self, **kwargs):
-        qs = self.get_queryset()
+        qs = self.get_queryset().order_by('-timestamp')
         f = FirmActivityFilterSet(self.request.GET, queryset=qs)
         return {
             'filter': f,
+            'retirement_plan_class_name': RetirementPlan.__name__
         }
 
     def post(self, request):
