@@ -1,5 +1,6 @@
 import decimal
 import logging
+import json
 from datetime import datetime, time
 from decimal import Decimal
 
@@ -71,11 +72,6 @@ def parse_event_logs(request, logs, transactions, goal):
         data = []
         if args:
             for locstr in map(str.strip, args.strip().splitlines()):
-                # Documents
-                if locstr == 'document_type':
-                    data.append(fields.get('document_type', '').strip('\'"'))
-                    break
-
                 in_trans = False
                 item = fields
                 for branch in locstr.split('.'):
@@ -139,6 +135,12 @@ def parse_event_logs(request, logs, transactions, goal):
         memos = [memo[0] for memo in log.memos.values_list('comment', 'staff') if _is_authorised(request.user, memo[1])]
         if memos:
             result['memos'] = memos
+
+        if isinstance(log.obj, RetirementStatementOfAdvice):
+            result['download'] = {
+              'url': log.obj.pdf_url,
+              'name': 'Statement Of Advice'
+            }
 
         items.append(result)
 
@@ -236,4 +238,4 @@ def get(request, obj):
     items.extend([{'type': tp,
                    'time': int((datetime.combine(bal['date'], time()) - EPOCH_TM).total_seconds()),
                    'balance': Decimal.from_float(bal['sum']).quantize(DEC_2PL)} for bal in qs])
-    return Response(sorted(items, key=operator.itemgetter("time")))
+    return Response(sorted(items, key=operator.itemgetter("time"), reverse=True))

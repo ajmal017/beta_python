@@ -61,7 +61,19 @@
                 {{ item.actor }} (<a href="mailto:{{ item.recipient.email }}">{{ item.recipient.email }}</a>)
               </td>
               <td>{{ item.verb }}</td>
-              <td>{{ item.target|default_if_none:"&mdash;" }} <br> {{ item.action_object|default_if_none:"&mdash;" }}</td>
+              <td>
+                {% if item.action_object|to_class_name == retirement_plan_class_name %}
+                  New Retirement Plan
+                  <br />
+                  <a href="{{ item.action_object.statement_of_advice.pdf_url }}" target="_blank">
+                    Statement of Advice
+                  </a>
+                  <br />
+                  {{ item.target|default_if_none:"&mdash;" }}
+                {% else %}
+                  {{ item.target|default_if_none:"&mdash;" }} <br /> {{ item.action_object|default_if_none:"&mdash;" }}
+                {% endif %}
+              </td>
               <td>{{ item.timestamp|date:'d-M-y H:i' }}</td>
               <td>{{ item.description|default_if_none:"&mdash;" }}</td>
             </tr>
@@ -74,7 +86,7 @@
     <div>
       <form method="post">
         {% csrf_token %}
-        <button type="submit">Download Activity as CSV</button>
+        <button type="submit" class="btn btn-primary">Download Activity as CSV</button>
       </form>
     </div>
   </div>

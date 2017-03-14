@@ -9,6 +9,7 @@ from functools import reduce
 from main import constants
 from retiresmartz.models import RetirementPlan
 from statements import utils
+from django.core.urlresolvers import reverse
 logger = logging.getLogger(__name__)
 
 
@@ -77,6 +78,10 @@ class StatementOfAdvice(PDFStatement):
         return 'Statement of Advice for %s' % self.account
 
     @property
+    def pdf_url(self):
+        return reverse('statements:statement_of_advice', kwargs={'pk': self.id, 'ext': '.pdf'})
+
+    @property
     def filename(self):
         return self.account
 
@@ -90,6 +95,10 @@ class RetirementStatementOfAdvice(PDFStatement):
 
     def __str__(self):
         return 'Statement of Advice for %s' % self.retirement_plan
+
+    @property
+    def pdf_url(self):
+        return reverse('statements:retirement_statement_of_advice', kwargs={'pk': self.id, 'ext': '.pdf'})
 
     @property
     def filename(self):
@@ -170,6 +179,10 @@ class RecordOfAdvice(PDFStatement):
 
     def __str__(self):
         return 'Record of Advice %s %s' % (self.account, self.date)
+
+    @property
+    def pdf_url(self):
+        return reverse('statements:record_of_advice', kwargs={'pk': self.id, 'ext': '.pdf'})
 
     @property
     def filename(self):

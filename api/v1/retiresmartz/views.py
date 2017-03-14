@@ -19,6 +19,7 @@ from api.v1.views import ApiViewMixin
 from client.models import Client
 from common.utils import d2ed
 from main.event import Event
+from notifications.models import Notify
 from main.models import Ticker
 from portfolios.calculation import Unsatisfiable
 from retiresmartz import advice_responses
@@ -423,6 +424,17 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                 advice.save()
 
         if updated.agreed_on:
+            # Log event
+            e = Event.RETIREMENT_SOA_GENERATED.log('New Retirement Plan Agreed.',
+                                              user=updated.client.user,
+                                              obj=updated.statement_of_advice)
+
+            Notify.CLIENT_AGREE_RETIREMENT_PLAN.send(
+                actor=updated.client,
+                recipient=updated.client.advisor.user,
+                action_object=updated,
+                target=updated.client.firm
+            )
             updated.send_plan_agreed_email()
 
         return Response(self.serializer_response_class(updated).data)
@@ -698,7 +710,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             {'account_type' : 'sep_ira', 'data' : user.accounts_sep_ira},
             {'account_type' : 'simple_ira', 'data' : user.accounts_simple_ira},
             {'account_type' : 'tax_def_annuity', 'data' : user.accounts_tax_def_annuity}]
-        
+
         projection.reverse_mort = user.reverse_mort
         projection.house_value = user.house_value
         projection.house_value_at_retire_in_todays = user.house_value_at_retire_in_todays
@@ -721,7 +733,7 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             projection.part_current_percent_fed_tax = partner.current_percent_fed_tax
             projection.part_current_percent_state_tax = partner.current_percent_state_tax
             projection.part_non_taxable_inc = partner.non_taxable_inc
-            
+
             projection.part_list_of_accounts_balances = [
                 {'account_type' : '401a', 'data' : partner.accounts_401a},
                 {'account_type' : '401k', 'data' : partner.accounts_401k},
@@ -746,8 +758,8 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
                 {'account_type' : 'sarsep_ira', 'data' : partner.accounts_sarsep_ira},
                 {'account_type' : 'sep_ira', 'data' : partner.accounts_sep_ira},
                 {'account_type' : 'simple_ira', 'data' : partner.accounts_simple_ira},
-                {'account_type' : 'tax_def_annuity', 'data' : partner.accounts_tax_def_annuity}]            
-            
+                {'account_type' : 'tax_def_annuity', 'data' : partner.accounts_tax_def_annuity}]
+
             projection.part_tot_taxable_dist = partner.tot_taxable_dist
             projection.part_annuity_payments = partner.annuity_payments
             projection.part_pension_payments = partner.pension_payments

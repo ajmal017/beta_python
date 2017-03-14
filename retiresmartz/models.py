@@ -350,11 +350,6 @@ class RetirementPlan(TimestampedModel):
         email.attach('SOA.pdf', pdf_content, 'application/pdf')
         email.send()
 
-        # Log event
-        e = Event.DOCUMENTS_GENERATED.log(None,
-                                          'Retirement Statement of Advice',
-                                          user=plan.client.user,
-                                          obj=soa)
 
     @property
     def portfolio(self):
