@@ -13,7 +13,6 @@ from portfolios.markowitz_scale import risk_score_to_lambda
 from portfolios.prediction.investment_clock import InvestmentClock as Predictor
 from portfolios.providers.data.django import DataProviderDjango
 from main.models import AssetFeatureValue, GoalMetric
-from main.settings import BASE_DIR
 
 MAX_ALLOWED = 0.2
 INSTRUMENT_TABLE_SYMBOL_LABEL = 'symbol'
@@ -316,11 +315,10 @@ def optimize_settings(settings, idata, data_provider, execution_provider, risk_s
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Optimising settings using lambda: {}, \ncovars: {}".format(lam, lcovars))
 
-    from main.settings import KFA_PORTFOLIO, AON_PORTFOLIO
-    if KFA_PORTFOLIO:
+    if sys_settings.KFA_PORTFOLIO:
         weights = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
         cost = 1
-    elif AON_PORTFOLIO:
+    elif sys_settings.AON_PORTFOLIO:
         weights = get_portfolio_weights(RISK_ALLOCATIONS_AON, settings_instruments, risk_profile)
         cost = 1
     else:
@@ -454,7 +452,6 @@ def update_expected_return(data, settings_instruments, id_to_ticker):
 
 
 def read_risk_profile_data():
-    #data = pd.read_csv(BASE_DIR + subdir, index_col=0)
     data = pd.read_json(RISK_ALLOCATIONS_ASSET_CLASSES, convert_axes=False)
     return data
 
@@ -553,8 +550,7 @@ def calculate_portfolio(settings, data_provider, execution_provider, retry=True,
     decrease = 1
     modelportfolio_constraints = [1]
 
-    from main.settings import KFA_PORTFOLIO, AON_PORTFOLIO
-    if not KFA_PORTFOLIO and not AON_PORTFOLIO:
+    if not sys_settings.KFA_PORTFOLIO and not sys_settings.AON_PORTFOLIO:
         while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0 and retry:
             modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
                 settings_instruments=settings_instruments,
