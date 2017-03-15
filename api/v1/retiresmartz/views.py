@@ -36,6 +36,7 @@ from main import tax_sheet as tax
 from main import tax_helpers as helpers
 from pinax.eventlog.models import Log as EventLog
 from main.inflation import inflation_level
+from main import constants
 from functools import reduce
 import time
 
@@ -685,31 +686,31 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         projection.taxable_accounts = user.taxable_accounts
         projection.non_taxable_accounts = user.non_taxable_accounts
 
-        projection.list_of_accounts_balances = [
-            {'account_type' : '401a', 'data' : user.accounts_401a},
-            {'account_type' : '401k', 'data' : user.accounts_401k},
-            {'account_type' : '403b', 'data' : user.accounts_403b},
-            {'account_type' : '403k', 'data' : user.accounts_403k},
-            {'account_type' : '409a', 'data' : user.accounts_409a},
-            {'account_type' : '457', 'data' : user.accounts_457},
-            {'account_type' : 'esop', 'data' : user.accounts_esop},
-            {'account_type' : 'gov', 'data' : user.accounts_gov},
-            {'account_type' : 'ind_401k', 'data' : user.accounts_ind_401k},
-            {'account_type' : 'ind_roth_401k', 'data' : user.accounts_ind_roth_401k},
-            {'account_type' : 'ira', 'data' : user.accounts_ira},
-            {'account_type' : 'mon_purch', 'data' : user.accounts_mon_purch},
-            {'account_type' : 'pay_deduct_ira', 'data' : user.accounts_pay_deduct_ira},
-            {'account_type' : 'prof_sharing', 'data' : user.accounts_prof_sharing},
-            {'account_type' : 'qual_annuity', 'data' : user.accounts_qual_annuity},
-            {'account_type' : 'qual_np', 'data' : user.accounts_qual_np},
-            {'account_type' : 'qual_np_roth', 'data' : user.accounts_qual_np_roth},
-            {'account_type' : 'priv_457', 'data' : user.accounts_priv_457},
-            {'account_type' : 'roth_401k', 'data' : user.accounts_roth_401k},
-            {'account_type' : 'roth_ira', 'data' : user.accounts_roth_ira},
-            {'account_type' : 'sarsep_ira', 'data' : user.accounts_sarsep_ira},
-            {'account_type' : 'sep_ira', 'data' : user.accounts_sep_ira},
-            {'account_type' : 'simple_ira', 'data' : user.accounts_simple_ira},
-            {'account_type' : 'tax_def_annuity', 'data' : user.accounts_tax_def_annuity}]
+        projection.list_of_account_balances = [
+            {'account_type' : constants.ACCOUNT_TYPE_401A, 'data' : user.accounts_401a},
+            {'account_type' : constants.ACCOUNT_TYPE_401K, 'data' : user.accounts_401k},
+            {'account_type' : constants.ACCOUNT_TYPE_403B, 'data' : user.accounts_403b},
+            {'account_type' : constants.ACCOUNT_TYPE_403K, 'data' : user.accounts_403k},
+            {'account_type' : constants.ACCOUNT_TYPE_409A, 'data' : user.accounts_409a},
+            {'account_type' : constants.ACCOUNT_TYPE_457, 'data' : user.accounts_457},
+            {'account_type' : constants.ACCOUNT_TYPE_ESOP, 'data' : user.accounts_esop},
+            {'account_type' : constants.ACCOUNT_TYPE_GOVERMENTAL, 'data' : user.accounts_gov},
+            {'account_type' : constants.ACCOUNT_TYPE_INDIVDUAL401K, 'data' : user.accounts_ind_401k},
+            {'account_type' : constants.ACCOUNT_TYPE_INDROTH401K, 'data' : user.accounts_ind_roth_401k},
+            {'account_type' : constants.ACCOUNT_TYPE_IRA, 'data' : user.accounts_ira},
+            {'account_type' : constants.ACCOUNT_TYPE_MONEYPURCHASE, 'data' : user.accounts_mon_purch},
+            {'account_type' : constants.ACCOUNT_TYPE_PAYROLLDEDUCTIRA, 'data' : user.accounts_pay_deduct_ira},
+            {'account_type' : constants.ACCOUNT_TYPE_PROFITSHARING, 'data' : user.accounts_prof_sharing},
+            {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDANNUITY, 'data' : user.accounts_qual_annuity},
+            {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDNPPLAN, 'data' : user.accounts_qual_np},
+            {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDNPROTHPLAN, 'data' : user.accounts_qual_np_roth},
+            {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDPRIV457PLAN, 'data' : user.accounts_priv_457},
+            {'account_type' : constants.ACCOUNT_TYPE_ROTH401K, 'data' : user.accounts_roth_401k},
+            {'account_type' : constants.ACCOUNT_TYPE_ROTHIRA, 'data' : user.accounts_roth_ira},
+            {'account_type' : constants.ACCOUNT_TYPE_SARSEPIRA, 'data' : user.accounts_sarsep_ira},
+            {'account_type' : constants.ACCOUNT_TYPE_SEPIRA, 'data' : user.accounts_sep_ira},
+            {'account_type' : constants.ACCOUNT_TYPE_SIMPLEIRA, 'data' : user.accounts_simple_ira},
+            {'account_type' : constants.ACCOUNT_TYPE_TAXDEFERRED_ANNUITY, 'data' : user.accounts_tax_def_annuity}]
 
         projection.reverse_mort = user.reverse_mort
         projection.house_value = user.house_value
@@ -734,31 +735,31 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             projection.part_current_percent_state_tax = partner.current_percent_state_tax
             projection.part_non_taxable_inc = partner.non_taxable_inc
 
-            projection.part_list_of_accounts_balances = [
-                {'account_type' : '401a', 'data' : partner.accounts_401a},
-                {'account_type' : '401k', 'data' : partner.accounts_401k},
-                {'account_type' : '403b', 'data' : partner.accounts_403b},
-                {'account_type' : '403k', 'data' : partner.accounts_403k},
-                {'account_type' : '409a', 'data' : partner.accounts_409a},
-                {'account_type' : '457', 'data' : partner.accounts_457},
-                {'account_type' : 'esop', 'data' : partner.accounts_esop},
-                {'account_type' : 'gov', 'data' : partner.accounts_gov},
-                {'account_type' : 'ind_401k', 'data' : partner.accounts_ind_401k},
-                {'account_type' : 'ind_roth_401k', 'data' : partner.accounts_ind_roth_401k},
-                {'account_type' : 'ira', 'data' : partner.accounts_ira},
-                {'account_type' : 'mon_purch', 'data' : partner.accounts_mon_purch},
-                {'account_type' : 'pay_deduct_ira', 'data' : partner.accounts_pay_deduct_ira},
-                {'account_type' : 'prof_sharing', 'data' : partner.accounts_prof_sharing},
-                {'account_type' : 'qual_annuity', 'data' : partner.accounts_qual_annuity},
-                {'account_type' : 'qual_np', 'data' : partner.accounts_qual_np},
-                {'account_type' : 'qual_np_roth', 'data' : partner.accounts_qual_np_roth},
-                {'account_type' : 'priv_457', 'data' : partner.accounts_priv_457},
-                {'account_type' : 'roth_401k', 'data' : partner.accounts_roth_401k},
-                {'account_type' : 'roth_ira', 'data' : partner.accounts_roth_ira},
-                {'account_type' : 'sarsep_ira', 'data' : partner.accounts_sarsep_ira},
-                {'account_type' : 'sep_ira', 'data' : partner.accounts_sep_ira},
-                {'account_type' : 'simple_ira', 'data' : partner.accounts_simple_ira},
-                {'account_type' : 'tax_def_annuity', 'data' : partner.accounts_tax_def_annuity}]
+            projection.part_list_of_account_balances = [
+                {'account_type' : constants.ACCOUNT_TYPE_401A, 'data' : partner.accounts_401a},
+                {'account_type' : constants.ACCOUNT_TYPE_401K, 'data' : partner.accounts_401k},
+                {'account_type' : constants.ACCOUNT_TYPE_403B, 'data' : partner.accounts_403b},
+                {'account_type' : constants.ACCOUNT_TYPE_403K, 'data' : partner.accounts_403k},
+                {'account_type' : constants.ACCOUNT_TYPE_409A, 'data' : partner.accounts_409a},
+                {'account_type' : constants.ACCOUNT_TYPE_457, 'data' : partner.accounts_457},
+                {'account_type' : constants.ACCOUNT_TYPE_ESOP, 'data' : partner.accounts_esop},
+                {'account_type' : constants.ACCOUNT_TYPE_GOVERMENTAL, 'data' : partner.accounts_gov},
+                {'account_type' : constants.ACCOUNT_TYPE_INDIVDUAL401K, 'data' : partner.accounts_ind_401k},
+                {'account_type' : constants.ACCOUNT_TYPE_INDROTH401K, 'data' : partner.accounts_ind_roth_401k},
+                {'account_type' : constants.ACCOUNT_TYPE_IRA, 'data' : partner.accounts_ira},
+                {'account_type' : constants.ACCOUNT_TYPE_MONEYPURCHASE, 'data' : partner.accounts_mon_purch},
+                {'account_type' : constants.ACCOUNT_TYPE_PAYROLLDEDUCTIRA, 'data' : partner.accounts_pay_deduct_ira},
+                {'account_type' : constants.ACCOUNT_TYPE_PROFITSHARING, 'data' : partner.accounts_prof_sharing},
+                {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDANNUITY, 'data' : partner.accounts_qual_annuity},
+                {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDNPPLAN, 'data' : partner.accounts_qual_np},
+                {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDNPROTHPLAN, 'data' : partner.accounts_qual_np_roth},
+                {'account_type' : constants.ACCOUNT_TYPE_QUALIFIEDPRIV457PLAN, 'data' : partner.accounts_priv_457},
+                {'account_type' : constants.ACCOUNT_TYPE_ROTH401K, 'data' : partner.accounts_roth_401k},
+                {'account_type' : constants.ACCOUNT_TYPE_ROTHIRA, 'data' : partner.accounts_roth_ira},
+                {'account_type' : constants.ACCOUNT_TYPE_SARSEPIRA, 'data' : partner.accounts_sarsep_ira},
+                {'account_type' : constants.ACCOUNT_TYPE_SEPIRA, 'data' : partner.accounts_sep_ira},
+                {'account_type' : constants.ACCOUNT_TYPE_SIMPLEIRA, 'data' : partner.accounts_simple_ira},
+                {'account_type' : constants.ACCOUNT_TYPE_TAXDEFERRED_ANNUITY, 'data' : partner.accounts_tax_def_annuity}]
 
             projection.part_tot_taxable_dist = partner.tot_taxable_dist
             projection.part_annuity_payments = partner.annuity_payments
