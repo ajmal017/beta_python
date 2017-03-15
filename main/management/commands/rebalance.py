@@ -21,7 +21,7 @@ from datetime import timedelta, date, datetime
 from portfolios.management.commands.measure_goals import get_risk_score
 from portfolios.returns import get_return_history
 from django.core.management.base import BaseCommand
-
+from django.conf import settings as sys_settings
 from portfolios.providers.data.django import DataProviderDjango
 from portfolios.calculation import get_instruments
 logger = logging.getLogger('rebalance')
@@ -591,12 +591,11 @@ def perturbate(goal, idata, data_provider, execution_provider):
     min_weights = unify_min_weights([min_weights, min_TLH_weights])
     weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
-    from main.settings import KFA_PORTFOLIO, AON_PORTFOLIO
     from portfolios.calculation import get_portfolio_weights, RISK_ALLOCATIONS_KFA, RISK_ALLOCATIONS_AON
-    if KFA_PORTFOLIO:
+    if sys_settings.KFA_PORTFOLIO:
         weight_list = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
         weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
-    elif AON_PORTFOLIO:
+    elif sys_settings.AON_PORTFOLIO:
         weight_list = get_portfolio_weights(RISK_ALLOCATIONS_AON, settings_instruments, risk_profile)
         weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
 
