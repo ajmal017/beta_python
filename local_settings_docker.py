@@ -13,6 +13,10 @@ else:
     TEMPLATE_DEBUG = True
     ALLOWED_HOSTS = ["{}.betasmartz.com".format(environment)]
 
+
+if environment in ['ipdev', 'ipdemostaging', 'ipdemo']:
+    AON_PORTFOLIO = True
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
