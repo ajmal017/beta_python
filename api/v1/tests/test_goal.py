@@ -397,6 +397,7 @@ class GoalTests(APITestCase):
         TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='AGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
+        TickerFactory.create(symbol='GRFXX', asset_class=self.stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
         self.portfolio_set.asset_classes.add(fund.asset_class)
@@ -438,6 +439,7 @@ class GoalTests(APITestCase):
         TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='AGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
+        TickerFactory.create(symbol='GRFXX', asset_class=self.stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
 
@@ -475,6 +477,7 @@ class GoalTests(APITestCase):
         TickerFactory.create(symbol='IAGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='AGG', asset_class=self.bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=self.stocks_asset_class)
+        TickerFactory.create(symbol='GRFXX', asset_class=self.stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
 

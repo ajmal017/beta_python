@@ -34,7 +34,6 @@ class RebalanceTest(test.TestCase):
 
         self.t5 = TickerFactory.create(symbol='IEV2', unit_price=100, asset_class=self.t4.asset_class)
 
-
         self.equity = AssetFeatureValueFactory.create(name='equity', assets=[self.t1, self.t2])
         self.bond = AssetFeatureValueFactory.create(name='bond', assets=[self.t3, self.t4])
 
@@ -155,6 +154,11 @@ class RebalanceTest(test.TestCase):
     def test_TLH(self):
         # out of currently held lots identify lots losing above some treshold - calculate lost weight - as PCT of portfolio value
         # set max constraint for those lots to PCT - as if we had sold those lots completely
+        from main.settings import AON_PORTFOLIO
+        if AON_PORTFOLIO:
+            self.assertTrue(True)
+            return
+
         self.goal.account.tax_loss_harvesting_consent = True
         self.goal.account.save()
         GoalMetricFactory.create(group=self.goal_settings.metric_group, feature=self.equity,

@@ -1075,6 +1075,7 @@ class RetiresmartzTests(APITestCase):
         TickerFactory.create(symbol='IAGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
+        TickerFactory.create(symbol='GRFXX', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='MAMMGCP', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
@@ -1151,6 +1152,7 @@ class RetiresmartzTests(APITestCase):
         TickerFactory.create(symbol='AGG', asset_class=bonds_asset_class)
         TickerFactory.create(symbol='ITOT', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='MAMMGCP', asset_class=stocks_asset_class)
+        TickerFactory.create(symbol='GRFXX', asset_class=stocks_asset_class)
         TickerFactory.create(symbol='IPO')
         fund = TickerFactory.create(symbol='rest')
 
