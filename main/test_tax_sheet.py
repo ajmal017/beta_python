@@ -73,28 +73,19 @@ income_growth = 3.
 paid_days = 0
 retirement_postal_code = 10052
 
-retirement_accounts = [{'cat': 3,
-                             'employer_match_type': 'contributions',
-                             'owner': 'self',
-                             'contrib_period': 'monthly',
-                             'contrib_amt': 28,
-                             'employer_match': 0.5,
-                             'balance_efdt': '2016-12-31',
-                             'acc_type': 5,
-                             'balance': 0,
-                             'id': 1,
-                             'name': 'Walmart 401k'},
-                            {'cat': 4,
-                             'employer_match_type': 'none',
-                             'owner': 'self',
-                             'contrib_period': 'yearly',
-                             'contrib_amt': 13,
-                             'employer_match': 0,
-                             'balance_efdt': '2017-02-16',
-                             'acc_type': 6,
-                             'balance': 0,
-                             'id': 2,
-                             'name': 'Roth'}]
+retirement_accounts = [{'id': 1,
+                        'cat': 2,
+                        'balance': 25000,
+                        'acc_type': 5,
+                        'name': '401k',
+                        'contrib_period': 'monthly',
+                        'contrib_amt': 266,
+                        'owner': 'self',
+                        'balance_efdt': '2017-02-03',
+                        'employer_match_type': 'contributions',
+                        'employer_match': 0.52}]
+
+
 
 expenses = [{'cat': 11, 'amt': 56, 'who': 'self', 'id': 11, 'desc': 'Savings'},
             {'cat': 13, 'amt': 26, 'who': 'self', 'id': 13, 'desc': 'Tobacco'},
