@@ -13,7 +13,7 @@ RUN pip install --upgrade pip setuptools==20.7.0 requests==2.9.1
 # We need to put the numpy here before installing the main requirements.txt, as the cvxpy dependency somehow isn't working properly
 # cache numpy and requirements installation to docker image
 # lets cache all of the large python science libs with docker
-RUN pip install numpy==1.9.2
+RUN pip install numpy==1.11.2
 RUN pip install pandas==0.16.2
 RUN pip install scipy==0.16.0
 ADD requirements/base.txt ./betasmartz/requirements/base.txt
