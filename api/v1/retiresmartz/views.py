@@ -679,9 +679,6 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         projection.taxable_accounts = user.taxable_accounts
         projection.non_taxable_accounts = user.non_taxable_accounts
 
-        print('------------ 401k -----------------')
-        print(user.accounts_401k)
-
         projection.list_of_account_balances = [
             {'account_type' : constants.ACCOUNT_TYPE_401A, 'data' : user.accounts_401a},
             {'account_type' : constants.ACCOUNT_TYPE_401K, 'data' : user.accounts_401k},
