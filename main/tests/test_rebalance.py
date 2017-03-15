@@ -154,8 +154,8 @@ class RebalanceTest(test.TestCase):
     def test_TLH(self):
         # out of currently held lots identify lots losing above some treshold - calculate lost weight - as PCT of portfolio value
         # set max constraint for those lots to PCT - as if we had sold those lots completely
-        from main.settings import AON_PORTFOLIO
-        if AON_PORTFOLIO:
+        from main.settings import AON_PORTFOLIO, KFA_PORTFOLIO
+        if AON_PORTFOLIO or KFA_PORTFOLIO:
             self.assertTrue(True)
             return
 
