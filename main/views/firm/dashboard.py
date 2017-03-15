@@ -18,20 +18,21 @@ from functools import reduce
 from operator import itemgetter
 
 from client.models import Client
-from main.constants import (INVITATION_ADVISOR, INVITATION_SUPERVISOR,
-                            INVITATION_TYPE_DICT)
+from main.constants import (INVITATION_ADVISOR, INVITATION_SUPERVISOR, INVITATION_TYPE_DICT,
+                            EMPLOYMENT_STATUS_EMMPLOYED, EMPLOYMENT_STATUS_SELF_EMPLOYED)
 from main.forms import BetaSmartzGenericUserSignupForm, EmailInvitationForm
 from main.models import Advisor, EmailInvitation, Goal, GoalMetric, GoalType, \
     PositionLot, Supervisor, Ticker, Transaction, User
 from main.views.base import LegalView
+from django.core.urlresolvers import reverse
 from main.views.firm.forms import PricingPlanAdvisorFormset, \
-    PricingPlanClientFormset, PricingPlanForm
+    PricingPlanClientFormset, PricingPlanForm, FirmApplicationClientForm
 from notifications.models import Notification, Notify
 from support.models import SupportRequest
 from .filters import FirmActivityFilterSet, FirmAnalyticsAdvisorsFilterSet, \
     FirmAnalyticsClientsFilterSet, FirmAnalyticsGoalsAdvisorsFilterSet, \
     FirmAnalyticsGoalsClientsFilterSet, FirmAnalyticsGoalsUsersFilterSet, \
-    FirmAnalyticsOverviewFilterSet
+    FirmAnalyticsOverviewFilterSet, FirmApplicationsClientsFilterSet
 from retiresmartz.models import RetirementPlan
 logger = logging.getLogger('main.views.firm.dashboard')
 
@@ -720,9 +721,33 @@ class FirmActivityView(ListView, LegalView):
         return response
 
 
-class FirmApplicationView(TemplateView, LegalView):
+class FirmApplicationView(ListView, LegalView):
     template_name = "firm/application.html"
+    model = Client
 
+    def get_context_data(self, **kwargs):
+        qs = self.get_queryset()
+        f = FirmApplicationsClientsFilterSet(self.request.GET, queryset=qs)
+        return {
+            'filter': f
+        }
+
+
+class FirmApplicationDetailView(UpdateView, LegalView):
+    template_name = "firm/application-details.html"
+    form_class = FirmApplicationClientForm
+    model = Client
+
+    def get_success_url(self):
+        return reverse('firm:application')
+
+    def get_context_data(self, **kwargs):
+        context = super(FirmApplicationDetailView, self).get_context_data(**kwargs)
+        context['employed_statuses'] = [
+            EMPLOYMENT_STATUS_EMMPLOYED,
+            EMPLOYMENT_STATUS_SELF_EMPLOYED
+        ]
+        return context
 
 class FirmSupportPricingView(TemplateView, LegalView):
     template_name = "firm/support-pricing.html"

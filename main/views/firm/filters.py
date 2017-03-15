@@ -254,3 +254,13 @@ class FirmAnalyticsGoalsUsersFilterSet(filters.FilterSet):
     class Meta:
         model = User
         fields = ['users']
+
+
+class FirmApplicationsClientsFilterSet(filters.FilterSet):
+    search = SearchFilter(widget=forms.TextInput(
+        attrs=dict({'placeholder': 'Search...'})),
+        lookup_fields=['user__first_name', 'user__last_name', 'user__email'])
+
+    class Meta:
+        model = Client
+        fields = ['search']

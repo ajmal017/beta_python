@@ -96,8 +96,8 @@ class AdvisorTest(BaseTest):
             'politically_exposed': True,
             'ssn': '555-55-5555',
             'social_security_statement': 'https://some.url/on/softlayer/cloud/storage',
-            'social_security_statement_data': json.dumps(test_security_statement_data),
+            'social_security_statement_data': test_security_statement_data,
         }
         advisor.clean()
         self.assertEqual(advisor.regional_data.get('social_security_statement'), 'https://some.url/on/softlayer/cloud/storage')
-        self.assertEqual(json.loads(advisor.regional_data.get('social_security_statement_data')), test_security_statement_data)
+        self.assertEqual(advisor.regional_data.get('social_security_statement_data'), test_security_statement_data)

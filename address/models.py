@@ -57,6 +57,16 @@ class Address(models.Model):
         else:
             return '{}, {}, {}'.format(self.address, self.region.name, self.post_code)
 
+    @cached_property
+    def address_line(self):
+        ads = [x for x in self.address.split('\n') if x != '']
+        return ads[1] if len(ads) >= 2 else ''
+
+    @cached_property
+    def city(self):
+        ads = self.address.split('\n')
+        return ads[0]
+
     def __str__(self):
         return self.address
 
