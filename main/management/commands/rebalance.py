@@ -585,9 +585,20 @@ def perturbate(goal, idata, data_provider, execution_provider):
         min_TLH_weights, max_TLH_weights = perform_TLH(goal, data_provider, tax_max_weights)
 
     opt_inputs = calc_opt_inputs(goal.active_settings, idata, data_provider, execution_provider)
+    xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, lcovars, mu = opt_inputs
+
     tax_max_weights = unify_max_weights([tax_max_weights, max_TLH_weights])
     min_weights = unify_min_weights([min_weights, min_TLH_weights])
     weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
+
+    from main.settings import KFA_PORTFOLIO, AON_PORTFOLIO
+    from portfolios.calculation import get_portfolio_weights, RISK_ALLOCATIONS_KFA, RISK_ALLOCATIONS_AON
+    if KFA_PORTFOLIO:
+        weight_list = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
+        weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
+    elif AON_PORTFOLIO:
+        weight_list = get_portfolio_weights(RISK_ALLOCATIONS_AON, settings_instruments, risk_profile)
+        weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
 
     if weights is None:
         min_weights = execution_provider.get_asset_weights_without_tax_winners(goal=goal)

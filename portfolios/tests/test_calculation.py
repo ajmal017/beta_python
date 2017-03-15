@@ -80,18 +80,20 @@ class CalculationTest(TestCase):
         xs, lam, risk_profile, constraints, constraints_without_model, settings_instruments, settings_symbol_ixs, lcovars, mu = result
         self.assertEqual(len(constraints), 4)  # All positive, sum to 1, and the max constraint
 
+    @skip("old test")
     @mock.patch.object(timezone, 'now', MagicMock(return_value=mocked_now))
     def test_calculate_portfolio_old(self):
         fund0 = TickerFactory.create(symbol='IAGG')
         fund1 = TickerFactory.create(symbol='ITOT')
+        fund5 = TickerFactory.create(symbol='GRFXX')
         fund2 = TickerFactory.create(symbol='VEA')
         fund0 = TickerFactory.create(symbol='IPO')
         fund3 = TickerFactory.create(symbol='EEM')
         fund4 = TickerFactory.create(symbol='AGG')
 
-        AssetFeatureValueFactory.create(assets=[fund1, fund2, fund3, fund4])
+        AssetFeatureValueFactory.create(assets=[fund1, fund2, fund3, fund4, fund5])
         ps1 = PortfolioSetFactory \
-            .create(asset_classes=[fund1.asset_class, fund2.asset_class, fund3.asset_class, fund4.asset_class])
+            .create(asset_classes=[fund1.asset_class, fund2.asset_class, fund3.asset_class, fund4.asset_class, fund5.asset_class])
 
         # Create a settings object with a metric for a feature with no instruments in the current portfolio set.
         feature = AssetFeatureValueFactory.create()
@@ -133,6 +135,7 @@ class CalculationTest(TestCase):
         asset_class2 = AssetClassFactory.create(name='HEDGE_FUNDS')
 
         fund0 = TickerFactory.create(symbol='IAGG', asset_class=asset_class1)
+        fund0 = TickerFactory.create(symbol='GRFXX', asset_class=asset_class1)
         fund1 = TickerFactory.create(symbol='ITOT', asset_class=asset_class2)
         fund0 = TickerFactory.create(symbol='IPO')
         fund0 = TickerFactory.create(symbol='AGG', asset_class=asset_class1)
