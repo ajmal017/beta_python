@@ -378,7 +378,6 @@ class TaxUser(object):
         if self.retirement_accounts is not None:
             for acnt in self.retirement_accounts:
                 k = helpers.get_retirement_account_index(acnt)
-                print('==============================================','retirement_account', str(k))
                 self.maindf[str(k) + '_Employee'] = self.maindf['Total_Income'] * self.monthly_contrib_employee_base[k] * self.btc_factor
                 self.maindf[str(k) + '_Employer'] = self.maindf['Total_Income'] * self.monthly_contrib_employer_base[k] * self.btc_factor
                 pre_capital_growth, pre_balance = self.get_capital_growth_and_balance_series(self.pre_retirement_end, str(k), self.init_balance[k] )       
