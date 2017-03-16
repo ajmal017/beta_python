@@ -1,5 +1,6 @@
 from functools import reduce
 from main import constants, tax_helpers
+from client.models import ClientAccount
 from retiresmartz.models import RetirementPlan
 from django.core.exceptions import ObjectDoesNotExist
 import math
@@ -7,6 +8,8 @@ import numpy as np
 from tzlocal import get_localzone
 from pytz import timezone
 import requests
+from random import random
+
 # import matplotlib.pyplot as plt
 
 def get_lifestyle_box(client):
@@ -294,28 +297,47 @@ def get_retirement_income_chart(plan, has_partner):
         return None
 
 
+def get_random_colors(len):
+    colors = []
+    letters = list('0123456789ABCDEF')
+    for num in range(0, len):
+        color = '#'
+        for i in list(range(0, 6)):
+            color += letters[int(math.floor(random() * 16))]
+        colors += [color]
+    return colors
+
 def get_account_balance_chart(plan, has_partner):
     try:
         p = plan.projection
 
-        base_idx = plan.retirement_age - plan.client.age - 1
-        last_idx = plan.selected_life_expectancy - plan.client.age
+        base_idx = 0
+        last_idx = plan.selected_life_expectancy - plan.client.age - 1
 
         max_limit = 0
-        for idx in range(base_idx, last_idx):
-            sum_value = value_at(p.taxable_accounts, idx) + value_at(p.non_taxable_accounts, idx)
-            if has_partner:
-                sum_value += value_at(p.part_taxable_accounts, idx) + value_at(p.part_non_taxable_accounts, idx)
-            max_limit = max(max_limit, sum_value)
-
-        colors = ['#83b75e', '#6faddb']
-        partner_colors = ['#ffc82c', '#a98419']
-        legends = ['Taxable Accounts', 'Non Taxable Accounts']
-        partner_legends = ['Spouse - Taxable Accounts', 'Spouse - Non Taxable Accounts']
+        sum_value = [0] * (last_idx - base_idx + 1)
+        list_of_account_balances = list(filter(lambda item: item['data'] is not None, p.list_of_account_balances))
         if has_partner:
-            partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
+            part_list_of_account_balances = list(filter(lambda item: item['data'] is not None, p.part_list_of_account_balances))
+
+        for idx in range(base_idx, last_idx):
+            for acc in list_of_account_balances:
+                sum_value[idx] += value_at(acc['data'], idx)
+            if has_partner:
+                for acc in part_list_of_account_balances:
+                    sum_value[idx] += value_at(acc['data'], idx)
+        max_limit = max(sum_value)
+
+        colors = get_random_colors(len(list_of_account_balances))
+        legends = list(map(lambda item: ClientAccount.get_account_type_text(item['account_type']), list_of_account_balances))
+
+        if has_partner:
+            partner_colors = get_random_colors(len(part_list_of_account_balances))
+            partner_legends = list(map(lambda item: 'Partner ' + ClientAccount.get_account_type_text(item['account_type']), part_list_of_account_balances))
             colors += partner_colors
             legends += partner_legends
+            partner_age = int(tax_helpers.get_age(plan.partner_data['dob']))
+
         values = []
         if max_limit > 0:
             y_interval_0 = max_limit / 10
@@ -333,16 +355,13 @@ def get_account_balance_chart(plan, has_partner):
         x_width = x_interval * x_num + 42
 
         for idx in range(base_idx, last_idx):
-            y_values = [
-                value_at(p.taxable_accounts, idx) / max_limit * 100,
-                value_at(p.non_taxable_accounts, idx) / max_limit * 100,
-            ]
+            y_values = []
+            for acc in list_of_account_balances:
+                y_values.append(value_at(acc['data'], idx) / max_limit * 100)
             x_label = str(plan.client.age + 1 + idx)
             if has_partner:
-                y_values += [
-                    value_at(p.part_taxable_accounts, idx) / max_limit * 100,
-                    value_at(p.part_non_taxable_accounts, idx) / max_limit * 100,
-                ]
+                for acc in part_list_of_account_balances:
+                    y_values.append(value_at(acc['data'], idx) / max_limit * 100)
                 x_label += ' / ' + str(partner_age + 1 + idx)
 
             values += [{
