@@ -591,13 +591,17 @@ def perturbate(goal, idata, data_provider, execution_provider):
     min_weights = unify_min_weights([min_weights, min_TLH_weights])
     weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
-    from portfolios.calculation import get_portfolio_weights, RISK_ALLOCATIONS_KFA, RISK_ALLOCATIONS_AON
+    from portfolios.calculation import get_portfolio_weights, RISK_ALLOCATIONS_KFA, RISK_ALLOCATIONS_AON, RISK_ALLOCATIONS_LEE
+    
     pp_type = goal.portfolio_provider.type
     if pp_type == constants.PORTFOLIO_PROVIDER_TYPE_KRANE:
         weight_list = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
         weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
     elif pp_type == constants.PORTFOLIO_PROVIDER_TYPE_AON:
         weight_list = get_portfolio_weights(RISK_ALLOCATIONS_AON, settings_instruments, risk_profile)
+        weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
+    elif pp_type == constants.PORTFOLIO_PROVIDER_TYPE_LEE:
+        weight_list = get_portfolio_weights(RISK_ALLOCATIONS_LEE, settings_instruments, risk_profile)
         weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
 
     if weights is None:
@@ -654,6 +658,7 @@ def rebalance(goal, idata, data_provider, execution_provider):
         weights = optimal_weights
         reason = ExecutionProviderAbstract.Reason.METRIC_CHANGE.value
     else:
+            
         # The important metrics weren't changed, so try and perturbate.
         weights, reason = perturbate(goal, idata, data_provider=data_provider, execution_provider=execution_provider)
 

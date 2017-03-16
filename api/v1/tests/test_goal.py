@@ -21,6 +21,7 @@ from main.models import GoalMetric, Execution, Transaction, Goal, PortfolioProvi
 from main.risk_profiler import max_risk, MINIMUM_RISK
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction
 from main.models import ActivityLog, ActivityLogEvent, EventMemo, MarketOrderRequest, InvestmentType
+from main import constants
 from main.tests.fixture import Fixture1
 from .factories import GroupFactory, GoalFactory, ClientAccountFactory, GoalSettingFactory, TickerFactory, \
     AssetClassFactory, PortfolioSetFactory, MarketIndexFactory, GoalMetricFactory, AssetFeatureValueFactory
@@ -416,7 +417,12 @@ class GoalTests(APITestCase):
         goal_settings = GoalSettingFactory.create()
         # Create a risk score metric for the settings
         GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
-        goal = GoalFactory.create(account=account, selected_settings=goal_settings, portfolio_set=self.portfolio_set)
+        portfolio_provider=PortfolioProvider(type=constants.PORTFOLIO_PROVIDER_TYPE_KRANE)
+        portfolio_provider.save()
+        goal = GoalFactory.create(account=account,
+                                  portfolio_provider=portfolio_provider,
+                                  selected_settings=goal_settings,
+                                  portfolio_set=self.portfolio_set)
         goal_settings.completion_date = timezone.now().date() - timedelta(days=365)
         serializer = GoalSettingSerializer(goal_settings)
         url = '/api/v1/goals/{}/calculate-all-portfolios?setting={}'.format(goal.id, json.dumps(serializer.data))
@@ -460,7 +466,12 @@ class GoalTests(APITestCase):
         # Create a risk score metric for the settings
         GoalMetricFactory.create(group=goal_settings.metric_group, type=GoalMetric.METRIC_TYPE_RISK_SCORE)
 
-        goal = GoalFactory.create(account=account, selected_settings=goal_settings, portfolio_set=self.portfolio_set)
+        portfolio_provider=PortfolioProvider(type=constants.PORTFOLIO_PROVIDER_TYPE_KRANE)
+        portfolio_provider.save()
+        goal = GoalFactory.create(account=account,
+                                  portfolio_provider=portfolio_provider,
+                                  selected_settings=goal_settings,
+                                  portfolio_set=self.portfolio_set)
         serializer = GoalSettingSerializer(goal_settings)
         url = '/api/v1/goals/{}/calculate-portfolio?setting={}'.format(goal.id, json.dumps(serializer.data))
         response = self.client.get(url)

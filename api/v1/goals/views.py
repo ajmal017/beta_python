@@ -378,7 +378,7 @@ class GoalViewSet(ApiViewMixin, NestedViewSetMixin, viewsets.ModelViewSet):
             data_provider = DataProviderDjango()
             execution_provider = ExecutionProviderDjango()
             data = [self.build_portfolio_data(item[1], item[0])
-                    for item in calculate_portfolios(setting=settings,
+                    for item in calculate_portfolios(settings=settings,
                                                      data_provider=data_provider,
                                                      execution_provider=execution_provider)]
             return Response(data)

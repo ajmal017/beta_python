@@ -615,7 +615,7 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
                                            amount=initial_dep)
 
             # Calculate the optimised portfolio
-            try:
+            try:    
                 weights, er, stdev = calculate_portfolio(settings,
                                                          data_provider,
                                                          execution_provider,
