@@ -243,7 +243,7 @@ class DefaultDefaultPortfolioProviderAdmin(admin.ModelAdmin):
     list_display = ('default_provider', 'changed')
 
 class PortfolioProviderAdmin(admin.ModelAdmin):
-    list_display = ('name', 'TLH', 'portfolio_optimization')
+    list_display = ('name', 'type', 'TLH', 'portfolio_optimization')
 
 class GoalAdmin(admin.ModelAdmin):
     list_display = ('account', 'name', 'type')

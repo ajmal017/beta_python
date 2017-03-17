@@ -1477,6 +1477,9 @@ class InvalidStateError(Exception):
 
 class PortfolioProvider(models.Model):
     name = models.CharField(max_length=100)
+    type = models.IntegerField(choices=constants.PORTFOLIO_PROVIDER_TYPE_CHOICES,
+                               unique=True,
+                               default=constants.PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
     TLH = models.BooleanField(default=True)
     portfolio_optimization = models.BooleanField(default=True)
     constraints = models.BooleanField(default=True)
