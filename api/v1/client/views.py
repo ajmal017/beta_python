@@ -381,6 +381,7 @@ class ClientUserRegisterView(ApiViewMixin, views.APIView):
             'email': invite.email,
             'username': invite.email,
             'first_name': invite.first_name,
+            'middle_name': invite.middle_name,
             'last_name': invite.last_name,
             'password': serializer.validated_data['password'],
         }
