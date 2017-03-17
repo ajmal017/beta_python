@@ -85,4 +85,4 @@ class EnumSerializer(serializers.Serializer):
 class PortfolioProviderSerializer(ReadOnlyModelSerializer):
     class Meta:
         model = PortfolioProvider
-        fields = ('id', 'name',)
+        fields = ('id', 'name', 'type',)

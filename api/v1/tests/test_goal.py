@@ -11,7 +11,7 @@ from pinax.eventlog.models import Log
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-
+from main.constants import PORTFOLIO_PROVIDER_TYPE_BETASMARTZ
 from .factories import MarkowitzScaleFactory, GoalTypeFactory, \
     ExecutionDistributionFactory, RecurringTransactionFactory, \
     ContentTypeFactory, TransactionFactory, PositionLotFactory
@@ -639,7 +639,7 @@ class GoalTests(APITestCase):
                                                  benchmark=self.bonds_index)
         self.stocks_ticker = TickerFactory.create(asset_class=self.stocks_asset_class,
                                                   benchmark=self.stocks_index)
-        self.portfolio_provider = PortfolioProvider.objects.create(name='BetaSmartz')
+        self.portfolio_provider = PortfolioProvider.objects.create(name='BetaSmartz', type=PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
         # populate the data needed for the optimisation
@@ -670,7 +670,10 @@ class GoalTests(APITestCase):
         self.client.force_authenticate(account.primary_owner.user)
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertDictEqual(response.data['portfolio_provider'], {'id': self.portfolio_provider.id, 'name': self.portfolio_provider.name})
+        self.assertDictEqual(response.data['portfolio_provider'],
+                             {'id': self.portfolio_provider.id,
+                              'name': self.portfolio_provider.name,
+                              'type': PORTFOLIO_PROVIDER_TYPE_BETASMARTZ})
 
     def test_get_goal_positions(self):
         goal = GoalFactory.create()

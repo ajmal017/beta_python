@@ -3,7 +3,8 @@ from rest_framework.test import APITestCase
 from django.core.urlresolvers import reverse
 from client.models import AccountTypeRiskProfileGroup, RiskCategory
 from main.constants import ACCOUNT_TYPE_CORPORATE, ACCOUNT_TYPE_JOINT, \
-    ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_SMSF, ACCOUNT_TYPE_TRUST, ACCOUNT_TYPE_ROTH401K
+    ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_SMSF, ACCOUNT_TYPE_TRUST, ACCOUNT_TYPE_ROTH401K, \
+    PORTFOLIO_PROVIDER_TYPE_BETASMARTZ
 from main.event import Event
 from main.models import ActivityLog, ActivityLogEvent, AccountType, PortfolioProvider
 from main.tests.fixture import Fixture1
@@ -254,7 +255,7 @@ class SettingsTests(APITestCase):
         self.assertEqual(response.data[0]['name'], group.name)
 
     def test_get_portfolio_providers(self):
-        PortfolioProvider.objects.create(name='BetaSmartz')
+        PortfolioProvider.objects.create(name='BetaSmartz', type=PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
 
         url = '/api/v1/settings/portfolio-providers'
         self.client.force_authenticate(user=Fixture1.client1().user)
@@ -262,3 +263,4 @@ class SettingsTests(APITestCase):
 
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['name'], 'BetaSmartz')
+        self.assertEqual(response.data[0]['type'], PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
