@@ -564,7 +564,7 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
         execution_provider = ExecutionProviderDjango()
         idata = get_instruments(data_provider)
 
-        portfolio_provider_id = validated_data['portfolio_provider'] if 'portfolio_provider' in validated_data else get_default_provider_id
+        portfolio_provider_id = validated_data['portfolio_provider'] if 'portfolio_provider' in validated_data else get_default_provider_id()
 
         with transaction.atomic():
             metric_group = GoalMetricGroup.objects.create(type=GoalMetricGroup.TYPE_CUSTOM)
@@ -579,6 +579,7 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
                 name=validated_data['name'],
                 type=validated_data['type'],
                 portfolio_set=account.default_portfolio_set,
+                portfolio_provider_id=portfolio_provider_id,
                 selected_settings=settings,
             )
             # Based on the risk profile, and whether an ethical profile was specified on creation, set up Metrics.
