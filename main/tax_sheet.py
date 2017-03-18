@@ -998,11 +998,17 @@ class TaxUser(object):
         if self.total_income == 0:
             return 0, 0, 0, 0
             
-        if not self.fica_ss:
+        if not self.fica_ss \
+           and (self.employment_status[0] != constants.EMPLOYMENT_STATUS_UNEMPLOYED \
+                and self.employment_status[0] == constants.EMPLOYMENT_STATUS_RETIRED \
+                and self.employment_status[0] == constants.EMPLOYMENT_STATUS_NOT_LABORFORCE):
             raise Exception('self.fica_ss is None')
         soc_sec_percent = self.fica_ss/self.total_income
         
-        if not self.fica_medicare:
+        if not self.fica_medicare \
+           and (self.employment_status[0] != constants.EMPLOYMENT_STATUS_UNEMPLOYED \
+                and self.employment_status[0] == constants.EMPLOYMENT_STATUS_RETIRED \
+                and self.employment_status[0] == constants.EMPLOYMENT_STATUS_NOT_LABORFORCE):
             raise Exception('self.fica_medicare is None')
         medicare_percent = self.fica_medicare/self.total_income
         

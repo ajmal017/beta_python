@@ -64,80 +64,33 @@ class TestPlan(object):
         self.btc = btc
 
 # first, the plan
-retirement_age = 56
-lifestyle = 3
-income = 60000.
+retirement_age = 67
+lifestyle = 2
+income = 123456
 reverse_mortgage = False
-desired_risk = 0.45
-income_growth = 3.
+desired_risk = 0.32
+income_growth = 1.0
 paid_days = 0
-retirement_postal_code = 10052
+retirement_postal_code = 1
 
-retirement_accounts = [{'id': 1,
-                        'cat': 2,
-                        'balance': 25000,
-                        'acc_type': 5,
-                        'name': '401k',
-                        'contrib_period': 'monthly',
-                        'contrib_amt': 266,
-                        'owner': 'self',
-                        'balance_efdt': '2017-02-03',
-                        'employer_match_type': 'contributions',
-                        'employer_match': 0.52}]
+retirement_accounts = [{'cat': 5, 'owner': 'self', 'contrib_period': 'monthly', 'id': 1, 'employer_match_type': 'income', 'name': '401K', 'balance': 1234, 'employer_match': 0.05, 'contrib_amt': 300, 'acc_type': 5, 'balance_efdt': '2017-02-06'}]
 
+expenses = [{'cat': 1, 'who': 'self', 'desc': 'Alcoholic Beverage', 'amt': 98, 'id': 1}, {'cat': 2, 'who': 'self', 'desc': 'Apparel & Services', 'amt': 315, 'id': 2}, {'cat': 3, 'who': 'self', 'desc': 'Education', 'amt': 154, 'id': 3}, {'cat': 4, 'who': 'self', 'desc': 'Entertainment', 'amt': 406, 'id': 4}, {'cat': 5, 'who': 'self', 'desc': 'Food', 'amt': 989, 'id': 5}, {'cat': 6, 'who': 'self', 'desc': 'Healthcare', 'amt': 411, 'id': 6}, {'cat': 7, 'who': 'self', 'desc': 'Housing', 'amt': 2770, 'id': 7}, {'cat': 8, 'who': 'self', 'desc': 'Insuarance, Pensions & Social Security', 'amt': 1094, 'id': 8}, {'cat': 9, 'who': 'self', 'desc': 'Personal Care', 'amt': 97, 'id': 9}, {'cat': 10, 'who': 'self', 'desc': 'Reading', 'amt': 13, 'id': 10}, {'cat': 11, 'who': 'self', 'desc': 'Savings', 'amt': 162, 'id': 11}, {'cat': 13, 'who': 'self', 'desc': 'Tobacco', 'amt': 21, 'id': 13}, {'cat': 14, 'who': 'self', 'desc': 'Transportation', 'amt': 1281, 'id': 14}, {'cat': 15, 'who': 'self', 'desc': 'Miscellaneous', 'amt': 136, 'id': 15}, {'cat': 12, 'who': 'self', 'desc': 'Taxes', 'amt': 2040.2788727697182, 'id': 12}]
 
-
-expenses = [{'cat': 11, 'amt': 56, 'who': 'self', 'id': 11, 'desc': 'Savings'},
-            {'cat': 13, 'amt': 26, 'who': 'self', 'id': 13, 'desc': 'Tobacco'},
-            {'cat': 14, 'amt': 940, 'who': 'self', 'id': 14, 'desc': 'Transportation'},
-            {'cat': 15, 'amt': 48, 'who': 'self', 'id': 15, 'desc': 'Miscellaneous'},
-            {'cat': 1, 'amt': 53, 'who': 'self', 'id': 1, 'desc': 'Alcoholic Beverage'},
-            {'cat': 2, 'amt': 133, 'who': 'self', 'id': 2, 'desc': 'Apparel & Services'},
-            {'cat': 3, 'amt': 93, 'who': 'self', 'id': 3, 'desc': 'Education'},
-            {'cat': 4, 'amt': 211, 'who': 'self', 'id': 4, 'desc': 'Entertainment'},
-            {'cat': 5, 'amt': 596, 'who': 'self', 'id': 5, 'desc': 'Food'},
-            {'cat': 6, 'amt': 281, 'who': 'self', 'id': 6, 'desc': 'Healthcare'},
-            {'cat': 7, 'amt': 1258, 'who': 'self', 'id': 7, 'desc': 'Housing'},
-            {'cat': 8, 'amt': 412, 'who': 'self', 'id': 8, 'desc': 'Insuarance, Pensions & Social Security'},
-            {'cat': 9, 'amt': 54, 'who': 'self', 'id': 9, 'desc': 'Personal Care'},
-            {'cat': 10, 'amt': 6, 'who': 'self', 'id': 10, 'desc': 'Reading'},
-            {'cat': 12, 'amt': 698.4725578065284, 'who': 'self', 'id': 12, 'desc': 'Taxes'}]
-
-
-btc = 1596.
+btc = 3600
 
 # second, the client
-regional_data = { "tax_transcript":"/media/sample_2012_pd4aUzv.pdf",
-                  "ssn":"123-12-3412",
-                  "tax_transcript_data_ex":{   "selfEmploymentTax":0,
-                                               "otherRefundableCredits":0,
-                                               "nonTaxableCombatPay":0,
-                                               "excessSocialSecurity":0,
-                                               "totalAdjustments":0,
-                                               "isBlind":False,
-                                               "filingStatus":1,
-                                               "netPremiumCredit":0,
-                                               "additionalChildTaxCredit":0,
-                                               "isSpouseBlind":False,
-                                               "taxableIncome":0,
-                                               "adjustedGrossIncome":1370,
-                                               "standardDeduction":0,
-                                               "earnedIncomeCredit":0 },
-                  "politically_exposed":False,
-                  "tax_transcript_data":{'SSN': '123-45-6789',
-                                         'filing_status': 0}
+regional_data =  {'tax_transcript_data' : {'se_tax': 0, 'total_tax': 0, 'SSN': '134-12-3413', 'std_deduction': 0, 'address': {'address2': '', 'post_code': '00001', 'state': 'USA', 'address1': '123 MAIN STREET', 'city': 'ANYWHERE'}, 'total_adjustments': 0, 'taxable_income': 0, 'combat_credit': 0, 'filing_status': 1, 'total_income': 0, 'earned_income_credit': 0, 'excess_ss_credit': 0, 'SSN_spouse': '123-45-6789\n987-65-4321', 'tentative_tax': 0, 'blind': False, 'exemption_amount': 0, 'add_child_tax_credit': 0, 'premium_tax_credit': 0, 'adjusted_gross_income': 1376, 'refundable_credit': 0, 'blind_spouse': False, 'total_credits': 0, 'name': 'THOMAS E TAXPAYER', 'total_payments': 0, 'tax_period': '2011-12-31', 'name_spouse': 'TAMARA B TAXPAYER', 'exemptions': 3}}
 
-                  }
-
-date_of_birth = pd.Timestamp('1989-06-01')
-home_value = 250000.
+date_of_birth = pd.Timestamp('1990-12-21')
+home_value = 1234.0
 civil_status = abstract.PersonalData.CivilStatus['SINGLE'].value
-employment_status = constants.EMPLOYMENT_STATUS_EMMPLOYED
-ss_fra_todays = 1.
+employment_status = constants.EMPLOYMENT_STATUS_UNEMPLOYED
+ss_fra_todays = 1078.0
 
 # third, the rest
 plans = []
-life_exp = 79.
+life_exp = 85
 is_partner = False
 
 # now set up the plan
