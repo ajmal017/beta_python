@@ -6,7 +6,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from api.v1.goals.serializers import GoalSettingStatelessSerializer, GoalSettingSerializer
-from main.models import GoalMetricGroup, GoalSetting, Portfolio, PortfolioItem, Ticker, GoalMetric
+from main.models import GoalMetricGroup, GoalSetting, Portfolio, PortfolioItem, Ticker, GoalMetric, \
+     get_default_provider
 from portfolios.calculation import calculate_portfolio, get_instruments
 from portfolios.providers.data.django import DataProviderDjango
 from portfolios.providers.execution.django import ExecutionProviderDjango
@@ -44,6 +45,7 @@ def create_settings(plan):
 
     # Create a mock goal so we can call calculate_portfolio
     class MockGoal(object):
+        portfolio_provider = get_default_provider()
         portfolio_set = plan.client.advisor.default_portfolio_set
         id = 0
         available_balance = 100000
