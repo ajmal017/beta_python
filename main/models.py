@@ -1496,7 +1496,8 @@ def get_default_provider():
     if default_providers.count() > 0:
         default = default_providers.latest('changed')
     else:
-        betasmartz = PortfolioProvider.objects.get_or_create(name='BetaSmartz')[0]
+        betasmartz = PortfolioProvider.objects.get_or_create(name='BetaSmartz',
+                                                             type=constants.PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)[0]
         default = DefaultPortfolioProvider.objects.get_or_create(default_provider=betasmartz)[0]
     return default.default_provider
 
