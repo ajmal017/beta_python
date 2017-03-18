@@ -14,6 +14,7 @@ from portfolios.calculation import \
     MIN_PORTFOLIO_PCT, calc_opt_inputs, create_portfolio_weights, create_portfolio_max_weights, INSTRUMENT_TABLE_EXPECTED_RETURN_LABEL
 
 from main.models import GoalMetric, PositionLot
+from main import constants
 from collections import defaultdict
 from django.db.models import Sum, F, Case, When, Value, FloatField
 from django.utils import timezone
@@ -21,7 +22,6 @@ from datetime import timedelta, date, datetime
 from portfolios.management.commands.measure_goals import get_risk_score
 from portfolios.returns import get_return_history
 from django.core.management.base import BaseCommand
-from django.conf import settings as sys_settings
 from portfolios.providers.data.django import DataProviderDjango
 from portfolios.calculation import get_instruments
 logger = logging.getLogger('rebalance')
@@ -592,10 +592,11 @@ def perturbate(goal, idata, data_provider, execution_provider):
     weights = optimise_up(opt_inputs, min_weights, tax_max_weights)
 
     from portfolios.calculation import get_portfolio_weights, RISK_ALLOCATIONS_KFA, RISK_ALLOCATIONS_AON
-    if sys_settings.KFA_PORTFOLIO:
+    pp_type = goal.portfolio_provider.type
+    if pp_type == constants.PORTFOLIO_PROVIDER_TYPE_KRANE:
         weight_list = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
         weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
-    elif sys_settings.AON_PORTFOLIO:
+    elif pp_type == constants.PORTFOLIO_PROVIDER_TYPE_AON:
         weight_list = get_portfolio_weights(RISK_ALLOCATIONS_AON, settings_instruments, risk_profile)
         weights = {id: w for id, w in zip(settings_instruments.id.values.tolist(), weight_list)}
 

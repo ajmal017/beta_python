@@ -12,7 +12,8 @@ from portfolios.algorithms.markowitz import markowitz_optimizer_3, markowitz_cos
 from portfolios.markowitz_scale import risk_score_to_lambda
 from portfolios.prediction.investment_clock import InvestmentClock as Predictor
 from portfolios.providers.data.django import DataProviderDjango
-from main.models import AssetFeatureValue, GoalMetric
+from main.models import AssetFeatureValue, GoalMetric, get_default_provider
+from main import constants
 
 MAX_ALLOWED = 0.2
 INSTRUMENT_TABLE_SYMBOL_LABEL = 'symbol'
@@ -46,6 +47,13 @@ logger.setLevel(logging.WARN)
 # Raise exceptions if we're doing something dumb with pandas slices
 pd.set_option('mode.chained_assignment', 'raise')
 
+
+def get_portfolio_provider_type(goal):
+    try:
+        portfolio_provider = goal.portfolio_provider
+    except:
+        portfolio_provider = get_default_provider()
+    return portfolio_provider.type
 
 def create_portfolio_weights(instruments, min_weights, abs_min):
     pweights = []
@@ -315,10 +323,11 @@ def optimize_settings(settings, idata, data_provider, execution_provider, risk_s
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("Optimising settings using lambda: {}, \ncovars: {}".format(lam, lcovars))
 
-    if sys_settings.KFA_PORTFOLIO:
+    pp_type = get_portfolio_provider_type(settings.goal)
+    if pp_type == constants.PORTFOLIO_PROVIDER_TYPE_KRANE:
         weights = get_portfolio_weights(RISK_ALLOCATIONS_KFA, settings_instruments, risk_profile)
         cost = 1
-    elif sys_settings.AON_PORTFOLIO:
+    elif pp_type == constants.PORTFOLIO_PROVIDER_TYPE_AON:
         weights = get_portfolio_weights(RISK_ALLOCATIONS_AON, settings_instruments, risk_profile)
         cost = 1
     else:
@@ -550,7 +559,8 @@ def calculate_portfolio(settings, data_provider, execution_provider, retry=True,
     decrease = 1
     modelportfolio_constraints = [1]
 
-    if not sys_settings.KFA_PORTFOLIO and not sys_settings.AON_PORTFOLIO:
+    pp_type = get_portfolio_provider_type(settings.goal)
+    if pp_type not in [constants.PORTFOLIO_PROVIDER_TYPE_KRANE, constants.PORTFOLIO_PROVIDER_TYPE_AON]:
         while not weights.any() and decrease < 100 and len(modelportfolio_constraints) > 0 and retry:
             modelportfolio_constraints, ac_weights, ticker_per_ac = get_model_constraints(
                 settings_instruments=settings_instruments,

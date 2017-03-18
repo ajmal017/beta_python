@@ -19,6 +19,7 @@ from unittest.mock import MagicMock
 from unittest import mock
 from main.management.commands.rebalance import get_held_weights
 from main.models import Ticker, GoalMetric, Portfolio, PortfolioSet
+from main import constants
 from portfolios.calculation import get_instruments
 from datetime import datetime, date
 from django.conf import settings
@@ -155,7 +156,8 @@ class RebalanceTest(test.TestCase):
     def test_TLH(self):
         # out of currently held lots identify lots losing above some treshold - calculate lost weight - as PCT of portfolio value
         # set max constraint for those lots to PCT - as if we had sold those lots completely
-        if settings.AON_PORTFOLIO or settings.KFA_PORTFOLIO:
+        pp_type = self.goal.portfolio_provider.type
+        if pp_type == constants.PORTFOLIO_PROVIDER_TYPE_AON or pp_type == constants.PORTFOLIO_PROVIDER_TYPE_KRANE:
             self.assertTrue(True)
             return
 

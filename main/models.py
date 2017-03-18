@@ -1491,14 +1491,17 @@ class DefaultPortfolioProvider(models.Model):
     default_provider = models.OneToOneField('PortfolioProvider', null=True, blank=True)
     changed = models.DateTimeField(auto_now_add=True)
 
-def get_default_provider_id():
-    betasmartz = PortfolioProvider.objects.get_or_create(name='BetaSmartz')[0]
+def get_default_provider():
     default_providers = DefaultPortfolioProvider.objects.all()
     if default_providers.count() > 0:
         default = default_providers.latest('changed')
     else:
+        betasmartz = PortfolioProvider.objects.get_or_create(name='BetaSmartz')[0]
         default = DefaultPortfolioProvider.objects.get_or_create(default_provider=betasmartz)[0]
-    return default.default_provider.id
+    return default.default_provider
+
+def get_default_provider_id():
+    return get_default_provider().id
 
 
 class Goal(models.Model):
