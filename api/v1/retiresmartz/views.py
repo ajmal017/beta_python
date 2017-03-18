@@ -815,11 +815,8 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         return Response({'portfolio': pser.data, 'projection': proj_data, 'reload_feed': reload_feed})
 
     def check_is_on_track(self, proj_data, plan):
-        def value_at_retirement(retirement_date, arr):
-            for item in arr:
-                if item['x'] >= retirement_date:
-                    return item['y']
-            return 0
+        def values_since_retirement(retirement_date, arr):
+            return list(filter(lambda item: item['x'] >= retirement_date, arr))
 
         def value_map(item_array):
             return {
@@ -839,10 +836,14 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         retirement_date = plan.client.date_of_birth + relativedelta(years=+plan.retirement_age)
         rt_dt_epoch = time.mktime(retirement_date.timetuple())
 
-        rt_value = value_at_retirement(rt_dt_epoch, values)
-        target_rt_value = value_at_retirement(rt_dt_epoch, target_values)
+        rt_values = values_since_retirement(rt_dt_epoch, values)
+        target_rt_values = values_since_retirement(rt_dt_epoch, target_values)
 
-        return rt_value >= target_rt_value
+        ary_len = min(len(rt_values), len(target_rt_values))
+        for i in range(0, ary_len):
+            if rt_values[i]['y'] < target_rt_values[i]['y']:
+                return False
+        return True
 
 
 class RetiresmartzAdviceViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
