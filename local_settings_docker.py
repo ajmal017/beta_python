@@ -2,7 +2,7 @@ import os
 
 environment = os.environ["ENVIRONMENT"]
 
-if environment in ["production", "demo", 'beta']:
+if environment in ["production", "demo", 'beta', 'ip', 'ipdemo']:
     hn = 'app' if environment == 'production' else environment
     ALLOWED_HOSTS = ["{}.betasmartz.com".format(hn)]
     SITE_URL = "https://{}.betasmartz.com".format(hn)
@@ -14,7 +14,7 @@ else:
     ALLOWED_HOSTS = ["{}.betasmartz.com".format(environment)]
 
 
-if environment in ['ipdev', 'ipdemostaging', 'ipdemo']:
+if environment in ['ipdev', 'ipdemostaging', 'ipdemo', 'ip']:
     AON_PORTFOLIO = True
 
 DATABASES = {
