@@ -101,6 +101,16 @@ main() {
         FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_IPDEMO}
         UNDERARMOUR_CLIENT_ID=${UNDERARMOUR_CLIENT_ID_IPDEMO}
         UNDERARMOUR_CLIENT_SECRET=${UNDERARMOUR_CLIENT_SECRET_IPDEMO}
+    elif [[ ${2} == 'ip' ]]
+    then
+        # ip production deploys on production machine
+        DBPW=${IP_DBPW}
+        POSTGRES_PASSWORD=${PRODUCTION_POSTGRES}
+        REDDB=4
+        FITBIT_CLIENT_ID=${FITBIT_CLIENT_ID_IP}
+        FITBIT_CLIENT_SECRET=${FITBIT_CLIENT_SECRET_IP}
+        UNDERARMOUR_CLIENT_ID=${UNDERARMOUR_CLIENT_ID_IP}
+        UNDERARMOUR_CLIENT_SECRET=${UNDERARMOUR_CLIENT_SECRET_IP}
     elif [[ ${2} == 'manudemo' ]]
     then
         # ipdemo deploys on production machine
