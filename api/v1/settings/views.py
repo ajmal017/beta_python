@@ -12,7 +12,7 @@ from client.models import RiskProfileGroup
 from main import constants, models
 from main.abstract import PersonalData
 from main.constants import US_RETIREMENT_ACCOUNT_TYPES
-from main.models import AccountType, Ticker, PortfolioProvider
+from main.models import AccountType, Ticker, PortfolioProvider, PortfolioSet
 from user.autologout import SessionExpire
 from . import serializers
 from ..permissions import IsAdvisorOrClient
@@ -222,6 +222,12 @@ class SettingsViewSet(ReadOnlyApiViewMixin, NestedViewSetMixin, GenericViewSet):
     def portfolio_providers(self, request):
         pps = PortfolioProvider.objects.all()
         serializer = serializers.PortfolioProviderSerializer(pps, many=True)
+        return Response(serializer.data)
+
+    @list_route(methods=['get'], url_path='portfolio-sets')
+    def portfolio_sets(self, request):
+        pss = PortfolioSet.objects.all()
+        serializer = serializers.PortfolioSetSerializer(pss, many=True)
         return Response(serializer.data)
 
     @list_route(methods=['get'], url_path='health-devices', permission_classes=[IsAuthenticated])

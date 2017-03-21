@@ -4,9 +4,9 @@ from django.core.urlresolvers import reverse
 from client.models import AccountTypeRiskProfileGroup, RiskCategory
 from main.constants import ACCOUNT_TYPE_CORPORATE, ACCOUNT_TYPE_JOINT, \
     ACCOUNT_TYPE_PERSONAL, ACCOUNT_TYPE_SMSF, ACCOUNT_TYPE_TRUST, ACCOUNT_TYPE_ROTH401K, \
-    PORTFOLIO_PROVIDER_TYPE_BETASMARTZ
+    PORTFOLIO_PROVIDER_TYPE_KRANE, PORTFOLIO_SET_TYPE_KRANE
 from main.event import Event
-from main.models import ActivityLog, ActivityLogEvent, AccountType, PortfolioProvider
+from main.models import ActivityLog, ActivityLogEvent, AccountType, PortfolioProvider, PortfolioSet
 from main.tests.fixture import Fixture1
 from common.constants import GROUP_SUPPORT_STAFF
 from api.v1.tests.factories import MarketIndexFactory, TickerFactory, AssetFeatureFactory, GroupFactory, \
@@ -255,12 +255,23 @@ class SettingsTests(APITestCase):
         self.assertEqual(response.data[0]['name'], group.name)
 
     def test_get_portfolio_providers(self):
-        PortfolioProvider.objects.create(name='BetaSmartz', type=PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
+        PortfolioProvider.objects.create(name='Krane', type=PORTFOLIO_PROVIDER_TYPE_KRANE)
 
         url = '/api/v1/settings/portfolio-providers'
         self.client.force_authenticate(user=Fixture1.client1().user)
         response = self.client.get(url)
 
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['name'], 'BetaSmartz')
-        self.assertEqual(response.data[0]['type'], PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
+        self.assertEqual(response.data[0]['name'], 'Krane')
+        self.assertEqual(response.data[0]['type'], PORTFOLIO_PROVIDER_TYPE_KRANE)
+
+    def test_get_portfolio_sets(self):
+        PortfolioSet.objects.create(name='Krane', type=PORTFOLIO_SET_TYPE_KRANE, risk_free_rate=0.0)
+
+        url = '/api/v1/settings/portfolio-sets'
+        self.client.force_authenticate(user=Fixture1.client1().user)
+        response = self.client.get(url)
+
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[1]['name'], 'Krane')
+        self.assertEqual(response.data[1]['type'], PORTFOLIO_SET_TYPE_KRANE)

@@ -10,15 +10,16 @@ from rest_framework.fields import FloatField, IntegerField
 
 from api.v1.serializers import EventMemoMixin, NoCreateModelSerializer, \
     NoUpdateModelSerializer, ReadOnlyModelSerializer
-from api.v1.settings.serializers import PortfolioProviderSerializer
+from api.v1.settings.serializers import PortfolioProviderSerializer, PortfolioSetSerializer
 from main.event import Event
 from main.models import AssetFeatureValue, Goal, GoalMetric, GoalMetricGroup, GoalSetting, GoalType, Portfolio, \
-    PortfolioItem, RecurringTransaction, Ticker, Transaction, get_default_provider_id
+    PortfolioItem, RecurringTransaction, Ticker, Transaction, get_default_provider, get_default_provider_id, PortfolioSet, PortfolioProvider
 from main.risk_profiler import recommend_risk, validate_risk_score
 from portfolios.calculation import Unsatisfiable, calculate_portfolio, current_stats_from_weights, get_instruments
 from portfolios.providers.data.django import DataProviderDjango
 from portfolios.providers.execution.django import ExecutionProviderDjango
 from support.models import SupportRequest
+from main import constants
 
 
 logger = logging.getLogger('goal_serializer')
@@ -496,6 +497,7 @@ class GoalSerializer(ReadOnlyModelSerializer):
     earned = EarnedSerializer(source='earnings')
     selected_settings = GoalSettingSerializer()
     portfolio_provider = PortfolioProviderSerializer()
+    portfolio_set = PortfolioSetSerializer()
 
     class Meta:
         model = Goal
@@ -564,8 +566,6 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
         execution_provider = ExecutionProviderDjango()
         idata = get_instruments(data_provider)
 
-        portfolio_provider_id = validated_data['portfolio_provider'] if 'portfolio_provider' in validated_data else get_default_provider_id()
-
         with transaction.atomic():
             metric_group = GoalMetricGroup.objects.create(type=GoalMetricGroup.TYPE_CUSTOM)
             settings = GoalSetting.objects.create(
@@ -574,12 +574,45 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
                 hedge_fx=False,
                 metric_group=metric_group,
             )
+
+            portfolio_provider_id = validated_data['portfolio_provider'] if 'portfolio_provider' in validated_data else get_default_provider_id()
+            print('==========>', 'portfolio_provider_id', str(portfolio_provider_id))
+            
+            portfolio_set_id = ''
+            portfolio_providers = PortfolioProvider.objects.all()
+            portfolio_provider = get_default_provider()
+            for pp in portfolio_providers:
+                if pp.id == portfolio_provider_id:
+                    portfolio_provider = pp
+                    print('found pp')
+            print('==========>', 'was found printed?')
+            print('==========>', 'assigning portfolio_provider', 'id:', str(portfolio_provider.id), 'pp:', str(portfolio_provider), 'type:', str(portfolio_provider.type), 'name:', str(portfolio_provider.name))
+
+            if portfolio_provider.type == constants.PORTFOLIO_PROVIDER_TYPE_KRANE:
+               portfolio_set_type=constants.PORTFOLIO_SET_TYPE_KRANE
+            elif portfolio_provider.type == constants.PORTFOLIO_PROVIDER_TYPE_AON:
+               portfolio_set_type=constants.PORTFOLIO_SET_TYPE_AON
+            elif portfolio_provider.type == constants.PORTFOLIO_PROVIDER_TYPE_LEE:
+               portfolio_set_type=constants.PORTFOLIO_SET_TYPE_LEE
+            else:
+                raise Exception('unhandled portfolio_provider_id')
+            print('==========>', 'portfolio_set_type', str(portfolio_set_type))
+            
+            portfolio_sets = PortfolioSet.objects.all()
+            portfolio_set = account.default_portfolio_set
+            for ps in portfolio_sets:
+                if ps.type == portfolio_set_type:
+                    print('found ps')
+                    portfolio_set = ps
+            print('==========>', 'was found printed?')
+            print('==========>', 'assigning portfolio_set', 'id:', str(portfolio_set.id), 'ps:', str(portfolio_set), 'type:', str(portfolio_set.type), 'name:', str(portfolio_set.name))
+                    
             goal = Goal.objects.create(
                 account=account,
                 name=validated_data['name'],
                 type=validated_data['type'],
-                portfolio_set=account.default_portfolio_set,
-                portfolio_provider_id=portfolio_provider_id,
+                portfolio_set=portfolio_set,
+                portfolio_provider=portfolio_provider,
                 selected_settings=settings,
             )
             # Based on the risk profile, and whether an ethical profile was specified on creation, set up Metrics.

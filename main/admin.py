@@ -14,10 +14,10 @@ from main.models import AccountGroup, ActivityLog, ActivityLogEvent, Advisor, \
     AssetFeature, AssetFeePlan, AuthorisedRepresentative, Dividend, \
     EventMemo, Firm, FirmData, FiscalYear, Goal, GoalMetric, GoalMetricGroup, \
     GoalSetting, GoalType, Inflation, InvestmentType, MarketIndex, Performer, \
-    Portfolio, PortfolioItem, PortfolioSet, PositionLot, PricingPlan, \
+    Portfolio, PortfolioItem, PositionLot, PricingPlan, \
     ProxyAssetClass, ProxyTicker, Ticker, Transaction, User, View, \
     ManagerBenchmarks
-from main.models import PortfolioProvider, DefaultPortfolioProvider
+from main.models import PortfolioProvider, DefaultPortfolioProvider, PortfolioSet, DefaultPortfolioSet
 
 
 class AssetResource(resources.ModelResource):
@@ -242,6 +242,9 @@ class GoalTypeAdmin(admin.ModelAdmin):
 class DefaultDefaultPortfolioProviderAdmin(admin.ModelAdmin):
     list_display = ('default_provider', 'changed')
 
+class DefaultPortfolioSetAdmin(admin.ModelAdmin):
+    list_display = ('default_set', 'changed')
+
 class PortfolioProviderAdmin(admin.ModelAdmin):
     list_display = ('name', 'type', 'TLH', 'portfolio_optimization')
 
@@ -264,6 +267,7 @@ class PortfolioAdmin(admin.ModelAdmin):
 
 class PortfolioSetAdmin(admin.ModelAdmin):
     filter_horizontal = ('asset_classes',)
+    list_display = ('name', 'type')
     inlines = (PortfolioViewsInline,)
 
 
@@ -369,6 +373,7 @@ admin.site.register(advisor_models.BulkInvestorTransfer, AdvisorBulkInvestorTran
 admin.site.register(Performer, PerformerAdmin)
 admin.site.register(PortfolioProvider, PortfolioProviderAdmin)
 admin.site.register(DefaultPortfolioProvider, DefaultDefaultPortfolioProviderAdmin)
+admin.site.register(DefaultPortfolioSet, DefaultPortfolioSetAdmin)
 admin.site.register(Goal, GoalAdmin)
 admin.site.register(GoalType, GoalTypeAdmin)
 admin.site.register(MarketIndex)

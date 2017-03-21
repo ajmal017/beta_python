@@ -380,13 +380,35 @@ class ExternalAccount(ExternalAsset):
 class PortfolioSet(models.Model):
     name = models.CharField(max_length=100, unique=True)
     asset_classes = models.ManyToManyField(AssetClass, related_name='portfolio_sets')
-    risk_free_rate = models.FloatField()
+    type = models.IntegerField(choices=constants.PORTFOLIO_SET_TYPE_CHOICES,
+                               unique=False,
+                               default=constants.PORTFOLIO_SET_TYPE_KRANE)
+    risk_free_rate = models.FloatField(default=0.0)
 
     def get_views_all(self):
         return self.views.all()
 
     def __str__(self):
         return self.name
+
+
+class DefaultPortfolioSet(models.Model):
+    default_set = models.OneToOneField('PortfolioSet', null=True, blank=True)
+    changed = models.DateTimeField(auto_now_add=True)
+
+def get_default_set():
+    default_sets = DefaultPortfolioSet.objects.all()
+    if default_sets.count() > 0:
+        default = default_sets.latest('changed')
+    else:
+        krane = PortfolioSet.objects.get_or_create(name='Krane',
+                                                        type=constants.PORTFOLIO_SET_TYPE_KRANE,
+                                                        risk_free_rate=0.0)[0]
+        default = DefaultPortfolioSet.objects.get_or_create(default_set=krane)[0]
+    return default.default_set
+
+def get_default_set_id():
+    return get_default_set().id
 
 
 class AccountType(models.Model):
@@ -1496,8 +1518,8 @@ class InvalidStateError(Exception):
 class PortfolioProvider(models.Model):
     name = models.CharField(max_length=100)
     type = models.IntegerField(choices=constants.PORTFOLIO_PROVIDER_TYPE_CHOICES,
-                               unique=True,
-                               default=constants.PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
+                               unique=False,
+                               default=constants.PORTFOLIO_PROVIDER_TYPE_KRANE)
     TLH = models.BooleanField(default=True)
     portfolio_optimization = models.BooleanField(default=True)
     constraints = models.BooleanField(default=True)
@@ -1514,9 +1536,9 @@ def get_default_provider():
     if default_providers.count() > 0:
         default = default_providers.latest('changed')
     else:
-        betasmartz = PortfolioProvider.objects.get_or_create(name='BetaSmartz',
-                                                             type=constants.PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)[0]
-        default = DefaultPortfolioProvider.objects.get_or_create(default_provider=betasmartz)[0]
+        krane = PortfolioProvider.objects.get_or_create(name='Krane',
+                                                             type=constants.PORTFOLIO_PROVIDER_TYPE_KRANE)[0]
+        default = DefaultPortfolioProvider.objects.get_or_create(default_provider=krane)[0]
     return default.default_provider
 
 def get_default_provider_id():
@@ -1541,9 +1563,7 @@ class Goal(models.Model):
     name = models.CharField(max_length=100)
     type = models.ForeignKey(GoalType)
     created = models.DateTimeField(auto_now_add=True)
-    portfolio_set = models.ForeignKey(
-        PortfolioSet,
-        help_text='The set of assets that may be used to create a portfolio for this goal.')
+    portfolio_set = models.ForeignKey('PortfolioSet', related_name='goal', default=get_default_set_id)
     # The cash_balance field should NEVER be updated by an API. only our internal processes.
     cash_balance = models.FloatField(default=0.0, validators=[MinValueValidator(0.0)])
     portfolio_provider = models.ForeignKey('PortfolioProvider', related_name='goal', default=get_default_provider_id)

@@ -11,7 +11,7 @@ from pinax.eventlog.models import Log
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from main.constants import PORTFOLIO_PROVIDER_TYPE_BETASMARTZ
+from main.constants import PORTFOLIO_PROVIDER_TYPE_KRANE
 from .factories import MarkowitzScaleFactory, GoalTypeFactory, \
     ExecutionDistributionFactory, RecurringTransactionFactory, \
     ContentTypeFactory, TransactionFactory, PositionLotFactory
@@ -568,6 +568,8 @@ class GoalTests(APITestCase):
         populate_cycle_obs(500, asof=mocked_now.date())
         populate_cycle_prediction(asof=mocked_now.date())
 
+        self.portfolio_provider = PortfolioProvider.objects.create(name='Krane', type=PORTFOLIO_PROVIDER_TYPE_KRANE)
+
         url = '/api/v1/goals'
         self.client.force_authenticate(user=Fixture1.client1().user)
         account = ClientAccountFactory.create(primary_owner=Fixture1.client1())
@@ -581,9 +583,12 @@ class GoalTests(APITestCase):
             'completion': timezone.now().date() + timedelta(days=7),
             'initial_deposit': 0,
             'ethical': True,
+            'portfolio_provider': self.portfolio_provider.id
         })
+
         self.assertEqual(ser.is_valid(), True, msg="Serializer has errors %s"%ser.errors)
         response = self.client.post(url, ser.data)
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['selected_settings']['target'], 0)
         self.assertEqual(response.data['on_track'], True)
@@ -606,6 +611,8 @@ class GoalTests(APITestCase):
         populate_cycle_obs(500, asof=mocked_now.date())
         populate_cycle_prediction(asof=mocked_now.date())
 
+        self.portfolio_provider = PortfolioProvider.objects.create(name='Krane', type=PORTFOLIO_PROVIDER_TYPE_KRANE)
+
         url = '/api/v1/goals'
         self.client.force_authenticate(user=Fixture1.client1().user)
         account = ClientAccountFactory.create(primary_owner=Fixture1.client1())
@@ -619,9 +626,12 @@ class GoalTests(APITestCase):
             'completion': timezone.now().date(),
             'initial_deposit': 0,
             'ethical': True,
+            'portfolio_provider': self.portfolio_provider.id
         })
+
         self.assertEqual(ser.is_valid(), True, msg="Serializer has errors %s"%ser.errors)
         response = self.client.post(url, ser.data)
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['selected_settings']['target'], 500)
         # "OnTrack" is false because the 500 deposit is still pending
@@ -650,7 +660,9 @@ class GoalTests(APITestCase):
                                                  benchmark=self.bonds_index)
         self.stocks_ticker = TickerFactory.create(asset_class=self.stocks_asset_class,
                                                   benchmark=self.stocks_index)
-        self.portfolio_provider = PortfolioProvider.objects.create(name='BetaSmartz', type=PORTFOLIO_PROVIDER_TYPE_BETASMARTZ)
+
+        self.portfolio_provider = PortfolioProvider.objects.create(name='Krane', type=PORTFOLIO_PROVIDER_TYPE_KRANE)
+
         # Set the markowitz bounds for today
         self.m_scale = MarkowitzScaleFactory.create()
         # populate the data needed for the optimisation
@@ -673,6 +685,7 @@ class GoalTests(APITestCase):
             'ethical': True,
             'portfolio_provider': self.portfolio_provider.id
         }
+
         # unauthenticated 403
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -684,7 +697,7 @@ class GoalTests(APITestCase):
         self.assertDictEqual(response.data['portfolio_provider'],
                              {'id': self.portfolio_provider.id,
                               'name': self.portfolio_provider.name,
-                              'type': PORTFOLIO_PROVIDER_TYPE_BETASMARTZ})
+                              'type': PORTFOLIO_PROVIDER_TYPE_KRANE})
 
     def test_get_goal_positions(self):
         goal = GoalFactory.create()

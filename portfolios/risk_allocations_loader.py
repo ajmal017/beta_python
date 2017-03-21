@@ -14,7 +14,7 @@ def get_allocation(path):
         for row in df[col]:
             col_sum = col_sum + float(row)
         if col_sum != 1:
-            raise Exception('column {}: sum is not equal to 1 ({}). Correct in csv file and then process again.'.format(str(col), str(col_sum)))
+            print('WARNING: {} - column {}: sum is not equal to 1 ({}).'.format(str(path), str(col), str(col_sum)))
 
     js = df.to_json()
     return str(js)
