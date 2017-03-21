@@ -17,8 +17,6 @@ from main.models import AssetFeatureValue, GoalMetric, get_default_provider
 from main import constants
 from portfolios import risk_allocations_loader as risk_allocs
 
-DEBUG=True
-
 MAX_ALLOWED = 0.2
 INSTRUMENT_TABLE_SYMBOL_LABEL = 'symbol'
 INSTRUMENT_TABLE_ASSET_CLASS_LABEL = 'ac'
@@ -358,12 +356,9 @@ def optimize_settings(settings, idata, data_provider, execution_provider, risk_s
 def get_portfolio_weights(json, settings_instruments, risk_profile):
     data = pd.read_json(json, convert_axes=False)
     portfolio = data.ix[:, str(risk_profile)]
-    print('%%%%%%%', 'portfolio:', str(portfolio))
     weights = list()
-    print('%%%%%%%', 'settings_instruments:', str(settings_instruments), 'settings_instruments.index:', str(settings_instruments.index))
     for p in settings_instruments.index:
         id = settings_instruments.ix[p].id
-        print('%%%%%%%', 'p:', str(p), 'portfolio.index:', str(portfolio.index))
         if p in portfolio.index:
             weights.append(portfolio[p])
         else:
@@ -580,12 +575,6 @@ def calculate_portfolio(settings, data_provider, execution_provider, retry=True,
     modelportfolio_constraints = [1]
 
     pp_type = get_portfolio_provider_type(settings.goal)
-
-    if DEBUG:
-        print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^', 'pp_type not in [constants.PORTFOLIO_PROVIDER_TYPE_KRANE, constants.PORTFOLIO_PROVIDER_TYPE_AON, constants.PORTFOLIO_PROVIDER_TYPE_LEE]:',
-              str(pp_type not in [constants.PORTFOLIO_PROVIDER_TYPE_KRANE,
-                       constants.PORTFOLIO_PROVIDER_TYPE_AON,
-                       constants.PORTFOLIO_PROVIDER_TYPE_LEE]))
     
     if pp_type not in [constants.PORTFOLIO_PROVIDER_TYPE_KRANE,
                        constants.PORTFOLIO_PROVIDER_TYPE_AON,
