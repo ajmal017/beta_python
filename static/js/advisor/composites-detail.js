@@ -8,6 +8,7 @@ $(function () {
             var form = $(this).closest("form");
             $.post(location.href, {
                 "csrfmiddlewaretoken": form.find("[name=csrfmiddlewaretoken]").val(),
+                "object_pk": form.find("[name=object_pk]").val(),
                 "goal_id": form.find("[name=goal_id]").val(),
                 "portfolio_id": form.find("[name=portfolio_id] option:selected").val()
             }, function (r) {
