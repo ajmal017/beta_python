@@ -115,7 +115,7 @@ def build_positions(goal, weights, instruments):
     avail = goal.available_balance
     for ix, weight in weights.items():
         if weight > MIN_PORTFOLIO_PCT:
-            res[ix] = int(avail * weight / instruments.ix[ix, ploc])
+            res[ix] = int(avail * weight / instruments[instruments.id == ix].price.values[0])
 
     # orderable quantitites will probably always be in single units of shares (ETFs).
     # TODO: Make sure we have landed very near to orderable quantities.
@@ -628,7 +628,7 @@ def perturbate(goal, idata, data_provider, execution_provider):
             reason = Reason.DRIFT.value
 
     if weights is None:
-        min_weights = perturbate_mix(goal, opt_inputs)
+        weights, min_weights = perturbate_mix(goal, opt_inputs)
         weights = optimise_up(opt_inputs, min_weights)
         new_weights = process_risk(weights, goal, idata, data_provider, execution_provider)
     else:

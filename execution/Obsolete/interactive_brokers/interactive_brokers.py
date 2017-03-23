@@ -9,7 +9,7 @@ from ib.lib.logger import logger as basicConfig
 from ib.opt import ibConnection, message
 
 from execution.Obsolete.ibroker import IBroker
-from execution.Obsolete.interactive_brokers.order import Order, OrderStatus
+from execution.Obsolete.interactive_brokers.order.order import Order, OrderStatus
 from execution.account_groups.account_allocations import Execution, AccountAllocations
 from execution.data_structures.market_depth import MarketDepth
 

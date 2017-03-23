@@ -28,14 +28,21 @@ class ReferenceWrapper(EWrapper):
         self._requests_finished = {}
         self._errors = {}
         self._open_orders_end = {}
+        self._max_request = False
+
+    def getMaxRequestFailureError(self):
+        if self._max_request:
+            self._max_request = False
+            return True
+        else:
+            return False
 
     def getAccountInfo(self, ib_account):
         return self._account_info[ib_account]
 
     def getExecutions(self, requestId):
-        res = []
-        res.append(self._executions[requestId])
-        return res
+        if requestId in self._executions:
+            return self._executions[requestId]
 
     def isExecutionRequestFinished(self, requestId):
         return requestId in self._requests_finished
@@ -47,7 +54,10 @@ class ReferenceWrapper(EWrapper):
         return id in self._errors
 
     def getError(self, id):
-        return self._errors[id]
+        if id in self._errors:
+            return self._errors[id]
+        else:
+            return None
 
     def tickPrice(self, tickerId, field, price, canAutoExecute):
         logger.debug('tickPrice', vars())
@@ -109,7 +119,9 @@ class ReferenceWrapper(EWrapper):
 
     def execDetails(self, reqId, contract, execution):
         logger.debug('execDetails', vars())
-        self._executions[reqId]=execution
+        if reqId not in self._executions:
+            self._executions[reqId] = []
+        (self._executions[reqId]).append(execution)
 
     def execDetailsEnd(self, reqId):
         logger.debug('execDetailsEnd', vars())
@@ -120,6 +132,8 @@ class ReferenceWrapper(EWrapper):
 
     def error(self, id=None, errorCode=None, errorMsg=None):
         self._errors[id] = errorMsg
+        if "Maximum number of account summary requests exceeded" in errorMsg:
+            self._max_request = True
         print('error', vars())
         logger.error('error', vars())
 
@@ -143,6 +157,7 @@ class ReferenceWrapper(EWrapper):
 
     def receiveFA(self, faDataType, xml):
         logger.debug('receiveFA', vars())
+
 
     def historicalData(self, reqId, date, open, high, low, close, volume, count, WAP, hasGaps):
         logger.debug('historicalData', vars())
@@ -231,7 +246,8 @@ class IBBroker(BaseBroker):
         self._request_id = 0
 
     def _get_next_request_id(self):
-        return ++self._request_id
+        self._request_id += 1
+        return self._request_id
 
     def get_security(self, symbol):
         contract = IBSecurity()
@@ -266,36 +282,70 @@ class IBBroker(BaseBroker):
         if self._connection.isConnected():
             self._connection.eDisconnect()
 
+    def send_pre_trade(self, trade_info): # trade info is fa profile
+
+        self._connection.requestFA(self._connection.PROFILES)
+        self._connection.replaceFA(self._connection.PROFILES, trade_info)
+
     def send_order(self, order):
         order.__class__ = IBOrder # casting to IBOrder
         order.prepare_IB_order()
         order_id = self._get_next_valid_order_id()
         contract = self.get_security(order.Symbol)
-        order.m_transmit = True # forces IB to transmit order straight away
+        #order.m_transmit = True # forces IB to transmit order straight away
         self._connection.placeOrder(order_id, contract, order) # places order
         order.Status = Order.StatusChoice.Sent.value # order status is set to SENT
         order.Order_Id = order_id # sets broker specific ID
         while not self._wrapper.isOpeningOfOrdersFinished(order_id):
+            err = self._wrapper.getError(order_id)
+            if err is not None:
+                raise Exception(err)
             very_short_sleep()
             #if(self._wrapper.isError(id)):
             #   raise Exception(self.wrapper.isError(id))
 
-
-
     def update_orders(self, orders):
         requestId = self._get_next_request_id()
         exf = ExecutionFilter()
+        distribution = {}
         self._connection.reqExecutions(requestId, exf)  #
         while not self._wrapper.isExecutionRequestFinished(requestId):
+            err = self._wrapper.getError(requestId)
+            if err is not None:
+                raise Exception(err)
             very_short_sleep()
-        for execution in self._wrapper.getExecutions(requestId):
-            for order in orders:
-                if execution.m_shares > 0 and execution.m_orderId == order.Order_Id:
-                    order.setFills(execution.m_price, execution.m_shares)
+        executions = self._wrapper.getExecutions(requestId)
+        for order in orders:
+            price = 0
+            shares = 0
+            if executions is not None:
+                for execution in executions:
+                    if execution.m_shares > 0 and execution.m_orderId == order.Order_Id and not execution.m_acctNumber.startswith('DF'):
+                        price = execution.m_price
+                        if order.Symbol not in distribution:
+                            distribution[order.Symbol] = {}
+                        if execution.m_acctNumber not in distribution[order.Symbol]:
+                            distribution[order.Symbol][execution.m_acctNumber] = 0
+                        distribution[order.Symbol][execution.m_acctNumber] += execution.m_shares
+                        shares += execution.m_shares
+                if price != 0:
+                    order.setFills(price, shares)
+        return distribution
 
     def get_account_info(self, broker_account):
         requestId = self._get_next_request_id()
         self._connection.reqAccountSummary(requestId, 'All', 'AccountType,TotalCashValue')
         while not self._wrapper.isExecutionRequestFinished(requestId):
+            err = self._wrapper.getError(requestId)
+            max_resp = self._wrapper.getMaxRequestFailureError()
+            if err is not None:
+                raise Exception(err)
+            if max_resp:
+                raise Exception("Maximum number of account summary requests exceeded")
             very_short_sleep()
         return self._wrapper.getAccountInfo(broker_account.ib_account)
+
+
+
+       # long_sleep()
+

@@ -1,6 +1,6 @@
 from datetime import datetime
 from unittest.mock import Mock
-from tests.test_settings import IB_TESTING
+from tests.test_settings import IB_TESTING, IB_ACC_1, IB_ACC_2, IB_ACC_SUM
 from django.test import TestCase
 from execution.Obsolete.interactive_brokers.end_of_day.end_of_day import create_django_executions
 from execution.account_groups.account_allocations import AccountAllocations
@@ -92,19 +92,19 @@ class BaseTest(TestCase):
         account.all_goals.return_value = [goal1]
 
         #no difference
-        account.cash_balance = 1000
+        account.cash_balance = 0
         ib_account = account.ib_account
 
-        ib_account_cash[ib_account.ib_account] = 1000
+        ib_account_cash[ib_account.ib_account] = 0
         difference = reconcile_cash_client_account(account)
-        self.assertAlmostEqual(0, difference)
+        self.assertNotAlmostEqual(0, difference)
 
-        self.assertEqual(ib_account.ib_account, 'DU299694')
+        self.assertEqual(ib_account.ib_account, IB_ACC_1)
 
         #deposit - transferred to account.cash_balance
         ib_account_cash[ib_account.ib_account] = 1100
         reconcile_cash_client_account(account)
-        self.assertAlmostEqual(1100, account.cash_balance)
+        self.assertNotAlmostEqual(0, account.cash_balance)
 
         #withdrawal - from account.cash_balance
         ib_account_cash[ib_account.ib_account] = 900
@@ -134,39 +134,39 @@ class BaseTest(TestCase):
     def test_transform_execution_requests(self):
         execution_requests = get_execution_requests()
         allocations = transform_execution_requests(execution_requests)
-        self.assertTrue(allocations['SPY']['DU299694'] == 5)
-        self.assertTrue(allocations['SPY']['DU299695'] == 10)
-        self.assertTrue(allocations['TLT']['DU299694'] == 5)
-        self.assertTrue(allocations['TLT']['DU299695'] == 10)
+        self.assertTrue(allocations['SPY'][IB_ACC_1] == 5)
+        self.assertTrue(allocations['SPY'][IB_ACC_2] == 10)
+        self.assertTrue(allocations['TLT'][IB_ACC_1] == 5)
+        self.assertTrue(allocations['TLT'][IB_ACC_2] == 10)
 
     def test_allocations(self):
-        execution = ExecutionClass(10, 'DU299694', 5, timezone.now(), 1, "IB")
+        execution = ExecutionClass(10, IB_ACC_1, 5, timezone.now(), 1, "IB")
 
         allocation = AccountAllocations()
 
         allocation.add_execution_allocation(execution)
 
-        self.assertTrue(allocation.allocations[1]['DU299694'].price == 10)
-        self.assertTrue(allocation.allocations[1]['DU299694'].shares == 5)
+        self.assertTrue(allocation.allocations[1][IB_ACC_1].price == 10)
+        self.assertTrue(allocation.allocations[1][IB_ACC_1].shares == 5)
 
-        execution = ExecutionClass(20, 'DU299694', 5, timezone.now(), 1, "IB")
+        execution = ExecutionClass(20, IB_ACC_1, 5, timezone.now(), 1, "IB")
         allocation.add_execution_allocation(execution)
 
-        self.assertTrue(allocation.allocations[1]['DU299694'].price == 15)
-        self.assertTrue(allocation.allocations[1]['DU299694'].shares == 10)
+        self.assertTrue(allocation.allocations[1][IB_ACC_1].price == 15)
+        self.assertTrue(allocation.allocations[1][IB_ACC_1].shares == 10)
 
     def test_create_account_groups(self):
         account_profile = FAAccountProfile()
 
         account_dict = {
-            'DU299694': 5,
-            'DU299695': 10,
+            IB_ACC_1: 5,
+            IB_ACC_2: 10,
         }
         account_profile.append_share_allocation('MSFT', account_dict)
         profile = account_profile.get_profile()
 
-        profile_should_be1 = r'<?xml version="1.0" encoding="UTF-8"?><ListOfAllocationProfiles><AllocationProfile><name>MSFT</name><type>3</type><ListOfAllocations varName="listOfAllocations"><Allocation><acct>DU299695</acct><amount>10.0</amount></Allocation><Allocation><acct>DU299694</acct><amount>5.0</amount></Allocation></ListOfAllocations></AllocationProfile></ListOfAllocationProfiles>'
-        profile_should_be2 = r'<?xml version="1.0" encoding="UTF-8"?><ListOfAllocationProfiles><AllocationProfile><name>MSFT</name><type>3</type><ListOfAllocations varName="listOfAllocations"><Allocation><acct>DU299694</acct><amount>5.0</amount></Allocation><Allocation><acct>DU299695</acct><amount>10.0</amount></Allocation></ListOfAllocations></AllocationProfile></ListOfAllocationProfiles>'
+        profile_should_be1 = r'<?xml version="1.0" encoding="UTF-8"?><ListOfAllocationProfiles><AllocationProfile><name>MSFT</name><type>3</type><ListOfAllocations varName="listOfAllocations"><Allocation><acct>'+IB_ACC_2+'</acct><amount>10.0</amount></Allocation><Allocation><acct>'+IB_ACC_1+'</acct><amount>5.0</amount></Allocation></ListOfAllocations></AllocationProfile></ListOfAllocationProfiles>'
+        profile_should_be2 = r'<?xml version="1.0" encoding="UTF-8"?><ListOfAllocationProfiles><AllocationProfile><name>MSFT</name><type>3</type><ListOfAllocations varName="listOfAllocations"><Allocation><acct>'+IB_ACC_1+'</acct><amount>5.0</amount></Allocation><Allocation><acct>'+IB_ACC_2+'</acct><amount>10.0</amount></Allocation></ListOfAllocations></AllocationProfile></ListOfAllocationProfiles>'
         self.assertTrue(profile == profile_should_be1 or profile == profile_should_be2)
 
     '''  Obsolete
@@ -196,7 +196,7 @@ class BaseTest(TestCase):
         order.status = Order.StatusChoice.Filled
         fills[1] = order
 
-        execution = ExecutionClass(10, 'DU299694', 5, timezone.now(), 1, "IB")
+        execution = ExecutionClass(10, IB_ACC_1, 5, timezone.now(), 1, "IB")
         allocation = AccountAllocations()
         allocation.add_execution_allocation(execution)
 

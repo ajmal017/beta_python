@@ -5,7 +5,7 @@ from main.models import PortfolioItem
 from execution.end_of_day import create_sale
 from unittest.mock import patch
 from django.utils import timezone
-from api.v1.tests.factories import GoalFactory, PositionLotFactory, TickerFactory, \
+from api.v1.tests.factories import GoalFactory, IBAccountFactory, PositionLotFactory, TickerFactory, \
     TransactionFactory, GoalSettingFactory, GoalMetricFactory, AssetFeatureValueFactory, \
     PortfolioSetFactory, MarkowitzScaleFactory, PortfolioFactory
 from main.models import Transaction, GoalMetric

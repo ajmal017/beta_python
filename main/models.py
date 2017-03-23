@@ -2332,7 +2332,9 @@ class Order(models.Model):
     def setFills(self, FillPrice, FillQuantity):
         self.FillPrice = FillPrice
         self.FillQuantity = FillQuantity
-        fill_info = Order.FillInfo.FILLED if self.FillQuantity == self.Quantity else (Order.FillInfo.UNFILLED if self.FillQuantity == 0 else Order.FillInfo.PARTIALY_FILLED)
+        self.fill_info = Order.FillInfo.FILLED.value if self.FillQuantity == self.Quantity else (Order.FillInfo.UNFILLED.value if self.FillQuantity == 0 else Order.FillInfo.PARTIALY_FILLED.value)
+        self.fills.create(order=self, volume=FillQuantity, price=FillPrice, executed=datetime.now())
+
 class ExecutionFill(models.Model):
     # one apex_fill may contribute to many ExecutionApexFills and many Executions
     fill = models.ForeignKey('Fill', related_name='execution_fill')
