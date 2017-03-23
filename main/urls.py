@@ -25,6 +25,7 @@ urlpatterns_firm = patterns(
 
     url(r'^activity$', FirmActivityView.as_view(), name='activity'),
     url(r'^application$', FirmApplicationView.as_view(), name='application'),
+    url(r'^application/(?P<pk>\d+)$', FirmApplicationDetailView.as_view(), name='application-detail'),
     url(r'^support$', FirmSupport.as_view(), name='support'),
     url(r'^support/forms$', FirmSupportForms.as_view(), name='support-forms'),
     url(r'^support/pricing$', FirmSupportPricingView.as_view(), name='support-pricing'),

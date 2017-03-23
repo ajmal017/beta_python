@@ -69,20 +69,20 @@ class PersonalData(models.Model):
             'provide_tfn': f([AU], bool),
             'medicare_number': f([AU], str),
             'ssn': f([US], str, True),
-            'politically_exposed': f([US], bool, True),
+            'politically_exposed': f([], bool),
             'tax_transcript': f([US], str),  # url to file
             'tax_transcript_data': f([US], dict),  # JSON Object
             'tax_transcript_data_ex': f([US], dict),  # JSON Object
             'social_security_statement': f([US], str),  # url to file
-            'social_security_statement_data': f([US], str),  # JSON Object
+            'social_security_statement_data': f([US], dict),  # JSON Object
             'partner_social_security_statement': f([US], str),  # url to file
-            'partner_social_security_statement_data': f([US], str),  # JSON Object
+            'partner_social_security_statement_data': f([US], dict),  # JSON Object
         }
 
         VE = curry(lambda m: ValueError({'regional_data': m}))
         country = self.country
         country_fields = dict((n, ft[1]) for n, ft in field_types.items()
-                              if country in ft[0])
+                              if country in ft[0] or len(ft[0]) == 0)
 
         try:
             unknown_fields = set(self.regional_data.keys()) - \

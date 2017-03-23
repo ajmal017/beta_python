@@ -19,15 +19,16 @@ from django.utils.timezone import now
 from django.views.generic import CreateView, TemplateView, View
 from django.views.generic.edit import ProcessFormView
 
-from client.models import JointAccountConfirmationModel
+from client.models import Client, JointAccountConfirmationModel
 from main.constants import AUTHORIZED_REPRESENTATIVE, INVITATION_ADVISOR, \
     INVITATION_SUPERVISOR, INVITATION_TYPE_DICT, PERSONAL_DATA_FIELDS, \
-    SUCCESS_MESSAGE
+    SUCCESS_MESSAGE, EMPLOYMENT_STATUS_EMMPLOYED, EMPLOYMENT_STATUS_SELF_EMPLOYED
 from main.forms import BetaSmartzGenericUserSignupForm, PERSONAL_DATA_WIDGETS
 from main.models import AuthorisedRepresentative, Firm, FirmData, \
     Goal, Platform, PricingPlan, PricingPlanAdvisor, PricingPlanClient, Ticker, \
     Transaction, User
 from main.optimal_goal_portfolio import solve_shares_re_balance
+from main import constants
 from notifications.models import Notify
 from ..base import AdminView, LegalView
 from ...forms import EmailInvitationForm
@@ -590,3 +591,110 @@ PricingPlanClientFormset = forms.modelformset_factory(
     formset=PricingPlanBaseClientFormset,
     can_delete=True,
 )
+
+
+class FirmApplicationClientForm(forms.ModelForm):
+    required_css_class = 'required'
+
+    first_name = forms.CharField(label='First Name')
+    middle_name = forms.CharField(label='Middle Name', required=False)
+    last_name = forms.CharField(label='Last Name')
+    email = forms.CharField(label='Email')
+
+    salutation = forms.CharField(label='Salutation', max_length=10, widget=forms.Select(choices=constants.IB_SALUTATION_CHOICES))
+    suffix = forms.CharField(label='Suffix', max_length=10, widget=forms.Select(choices=constants.IB_SUFFIX_CHOICES), required=False)
+    tax_transcript = forms.FileField(label='Tax Transcript', required=False)
+    social_security_statement = forms.FileField(label='Social Security Statement', required=False)
+
+    address1 = forms.CharField(label='Address 1')
+    address2 = forms.CharField(label='Address 2', required=False)
+    city = forms.CharField(label='City')
+    post_code = forms.CharField(label='Zip code', max_length=16, required=False)
+    state = forms.CharField(label='State', max_length=128)
+    country = forms.CharField(label='Country', max_length=2)
+
+    ssn = forms.CharField(label='Social Security Number')
+    politically_exposed = forms.BooleanField(label='Politically Exposed', required=False)
+
+    additional_document = forms.FileField(required=False)
+
+    class Meta:
+        model = Client
+        fields = ['first_name', 'middle_name', 'last_name', 'email', # User model
+                  'salutation', 'suffix', 'tax_transcript', 'social_security_statement', # Invitation model
+                  'address1', 'address2', 'city', 'post_code',  'state', 'country', # Address model
+                  'gender', 'civil_status', 'phone_num', 'date_of_birth', # Client model
+                  'employer_type', 'employer', 'employment_status', 'income', 'other_income', 'industry_sector', 'occupation', # Client model - employement
+                  'ssn', 'politically_exposed'] # Client regional_data
+
+    def __init__(self, *args, **kwargs):
+        super(FirmApplicationClientForm, self).__init__(*args, **kwargs)
+        client = kwargs['instance']
+        user = client.user
+        address = client.residential_address
+
+        self.fields['first_name'].initial = user.first_name
+        self.fields['middle_name'].initial = user.middle_name
+        self.fields['last_name'].initial = user.last_name
+        self.fields['email'].initial = user.email
+
+        try:
+            invitation = user.invitation
+            self.fields['salutation'].initial = invitation.salutation
+            self.fields['suffix'].initial = invitation.salutation
+            self.fields['tax_transcript'].initial = invitation.tax_transcript
+            self.fields['social_security_statement'].initial = invitation.social_security_statement
+        except:
+            pass
+
+        self.fields['address1'].initial = address.address_line
+        self.fields['city'].initial = address.city
+        self.fields['post_code'].initial = address.post_code
+        self.fields['state'].initial = address.region.code
+        self.fields['country'].initial = address.region.country
+
+        self.fields['ssn'].initial = client.regional_data['ssn']
+        self.fields['politically_exposed'].initial = client.regional_data['politically_exposed']
+
+    # def clean(self):
+    #     cleaned_data = super(FirmApplicationClientForm, self).clean()
+    #     employed_statuses = [EMPLOYMENT_STATUS_EMMPLOYED, EMPLOYMENT_STATUS_SELF_EMPLOYED]
+    #     print(cleaned_data['income'])
+    #     if cleaned_data['employment_status'] in employed_statuses and cleaned_data['income'] is None:
+    #         raise forms.ValidationError("Income field is required")
+    #     return cleaned_data
+
+    def save(self, commit=True, *args, **kwargs):
+        client = super(FirmApplicationClientForm, self).save(commit=False, *args, **kwargs)
+
+        regional_data = client.regional_data
+        regional_data['ssn'] = self.cleaned_data['ssn']
+        regional_data['politically_exposed'] = self.cleaned_data['politically_exposed']
+        client.regional_data = regional_data
+
+        if commit:
+            client.save()
+
+        user = client.user
+        user.first_name = self.cleaned_data['first_name']
+        user.middle_name = self.cleaned_data['middle_name']
+        user.last_name = self.cleaned_data['last_name']
+        user.email = self.cleaned_data['email']
+
+        # TODO: Residential addresss assignment here
+
+        if commit:
+            user.save()
+
+        try:
+            invitation = user.invitation
+            invitation.salutation = self.cleaned_data['salutation']
+            invitation.suffix = self.cleaned_data['suffix']
+            invitation.tax_transcript = self.cleaned_data['tax_transcript']
+            invitation.social_security_statement = self.cleaned_data['social_security_statement']
+            if commit:
+                invitation.save()
+        except ObjectDoesNotExist:
+            pass
+
+        return client

@@ -1,0 +1,145 @@
+{% extends "layouts_new/base.html" %}
+{% load i18n bootstrap3 filters %}
+
+
+{% block main_content %}
+  <div class="container">
+
+    <h3>Edit client details</h3>
+
+    {% for item in form.errors.items %}
+      {{item}}
+    {% endfor %}
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <h4 class="m-t">Personal Information</h4>
+      <div class="row">
+        <div class="col-sm-2">
+          {% bootstrap_field form.salutation %}
+        </div>
+        <div class="col-sm-8">
+          <div class="row">
+            <div class="col-sm-4">
+              {% bootstrap_field form.first_name %}
+            </div>
+            <div class="col-sm-4">
+              {% bootstrap_field form.middle_name %}
+            </div>
+            <div class="col-sm-4">
+              {% bootstrap_field form.last_name %}
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-2">
+          {% bootstrap_field form.suffix %}
+        </div>
+      </div>
+      <h4 class="m-t">Contact Information</h4>
+      <div class="row">
+        <div class="col-sm-4">
+          {% bootstrap_field form.address1 %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.address2 %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.city %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.post_code %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.state %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.country %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.email %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.phone_num %}
+        </div>
+      </div>
+      <h4 class="m-t">Miscellaneous Information</h4>
+      <div class="row">
+        <div class="col-sm-3">
+          {% bootstrap_field form.gender %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.civil_status %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.date_of_birth %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.ssn %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.politically_exposed %}
+        </div>
+      </div>
+      <h4 class="m-t">Employment</h4>
+      <div class="row">
+        <div class="col-sm-4">
+          {% bootstrap_field form.employment_status %}
+        </div>
+      </div>
+      <div class="row employement-row"{% if not form.employment_status.value in employed_statuses %} style="display: none"{% endif %}>
+        <div class="col-sm-4">
+          {% bootstrap_field form.industry_sector %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.occupation %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.employer %}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 income-col"{% if not form.employment_status.value in employed_statuses %} style="display: none"{% endif %}>
+          {% bootstrap_field form.income %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.other_income %}
+        </div>
+      </div>
+      <h4 class="m-t">Documents</h4>
+      <div class="row">
+        <div class="col-sm-4">
+          {% bootstrap_field form.tax_transcript %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.social_security_statement %}
+        </div>
+        <div class="col-sm-4">
+          {% bootstrap_field form.additional_document %}
+        </div>
+      </div>
+
+      <button class="btn btn-default" type="reset">Cancel</button>
+      <button class="btn btn-primary" type="submit">Save</button>
+    </form>
+  </div>
+{% endblock %}
+
+{% block foot_js %}
+  <script type="application/javascript">
+  $("form button[type=reset]").click(function () {
+      window.location.href = "{% url 'firm:application' %}";
+  });
+  $('#id_employment_status').on('change', function(e) {
+    var val = e.target.value;
+    if (val === '1' || val === '3' || val === '4') {
+      $('.employement-row').hide();
+      $('.income-col input').removeAttr('required');
+      $('.income-col').hide();
+    } else {
+      $('.employement-row').show();
+      $('.income-col input').attr('required', 'required');
+      $('.income-col').show();
+    }
+  })
+  </script>
+{% endblock %}
