@@ -118,12 +118,13 @@
                         {% if goal.is_active %}
                         <form method="post" target="_self" class="portfolio">
                           {% csrf_token %}
+                          <input type="hidden" name="object_pk" value={{object.pk}} />
                           <input type="hidden" name="goal_id"
                                  value="{{ goal.id }}">
-                          <select name="portfolio_id" title="Portfolio" class="form-control" data-original-value="{{ goal.portfolio_set.id }}">
+                          <select name="portfolio_id" title="Portfolio" class="form-control" data-original-value="{{ goal.portfolio_provider.id }}">
                             {% for portfolio in portfolios %}
                               <option value="{{ portfolio.id }}"
-                                  {% if portfolio == goal.portfolio_set %}
+                                  {% if portfolio == goal.portfolio_provider %}
                                       selected{% endif %}>{{ portfolio.name }}</option>
                             {% endfor %}
                           </select>

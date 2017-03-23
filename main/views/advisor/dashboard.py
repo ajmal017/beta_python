@@ -20,7 +20,7 @@ from address.models import Address, Region
 from client.models import Client, ClientAccount
 from main.constants import (INVITATION_CLIENT)
 from main.models import AccountGroup, Advisor, Goal, PricingPlan, Platform, PortfolioSet, \
-    User
+    User, PortfolioProvider
 from main.views.base import AdvisorView, ClientView
 from notifications.models import Notify
 from user.autologout import SessionExpire
@@ -232,7 +232,7 @@ class AdvisorAccountGroupDetails(DetailView, AdvisorView):
         c = super(AdvisorAccountGroupDetails, self).get_context_data(**kwargs)
         c.update({
             'object': self.object,
-            'portfolios': PortfolioSet.objects.all(),
+            'portfolios': PortfolioProvider.objects.all(),
         })
         return c
 
@@ -245,10 +245,10 @@ class AdvisorAccountGroupDetails(DetailView, AdvisorView):
         if goal_id and portfolio_id:
             try:
                 goal = Goal.objects.get(pk=goal_id)
-                portfolio = PortfolioSet.objects.get(pk=portfolio_id)
-                if goal.portfolio_set_id != portfolio_id:
-                    goal.portfolio_set = portfolio
-                    goal.save(update_fields=['portfolio_set'])
+                portfolio = PortfolioProvider.objects.get(pk=portfolio_id)
+                if goal.portfolio_provider_id != portfolio_id:
+                    goal.portfolio_provider = portfolio
+                    goal.save(update_fields=['portfolio_provider'])
             except ObjectDoesNotExist:
                 pass
 
