@@ -11,7 +11,7 @@ from datetime import datetime
 from execution.end_of_day import broker_manager, create_orders, create_pre_trade_allocation, send_pre_trade, send_order,\
     process_fills, mark_order_as_complete, update_orders, process
 from unittest import skipIf
-from tests.test_settings import IB_TESTING
+from tests.test_settings import IB_TESTING, IB_ACC_1, IB_ACC_2, IB_ACC_SUM
 from execution.account_groups.create_account_groups import FAAccountProfile
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction
 
@@ -21,12 +21,12 @@ mocked_now = datetime(year=2016,month=6,day=1)
 class BaseTest(TestCase):
     def setUp(self):
         self.account1 = ClientAccountFactory.create()
-        self.broker_acc1 = IBAccountFactory.create(bs_account=self.account1, ib_account='DU627759')
+        self.broker_acc1 = IBAccountFactory.create(bs_account=self.account1, ib_account=IB_ACC_1)
         self.goal1 = GoalFactory.create(account=self.account1)
 
         self.account2 = ClientAccountFactory.create()
         self.goal2 = GoalFactory.create(account=self.account2)
-        self.broker_acc2 = IBAccountFactory.create(bs_account=self.account2, ib_account='DU627760')
+        self.broker_acc2 = IBAccountFactory.create(bs_account=self.account2, ib_account=IB_ACC_2)
 
         self.ticker1 = TickerFactory.create(symbol='GOOG')
         self.ticker2 = TickerFactory.create(symbol='AAPL')

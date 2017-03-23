@@ -3,6 +3,10 @@ from main.settings import *
 
 
 IB_TESTING = False
+IB_ACC_1='DU653263'
+IB_ACC_2='DU653264'
+IB_ACC_3='DU653265'
+IB_ACC_SUM='DF654262'
 
 INSTALLED_APPS += ('django_jenkins', )
 

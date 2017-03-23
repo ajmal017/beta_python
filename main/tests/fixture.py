@@ -1,5 +1,5 @@
 import datetime
-
+from tests.test_settings import IB_ACC_1, IB_ACC_2, IB_ACC_SUM
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -347,7 +347,7 @@ class Fixture1:
     @classmethod
     def ib_account1(cls) -> IBAccount:
         params = {
-            'ib_account': 'DU627759',
+            'ib_account': IB_ACC_1,
             'bs_account': Fixture1.personal_account1()
         }
         return IBAccount.objects.get_or_create(id=1, defaults=params)[0]
@@ -355,7 +355,7 @@ class Fixture1:
     @classmethod
     def ib_account2(cls) -> IBAccount:
         params = {
-            'ib_account': 'DU627760',
+            'ib_account': IB_ACC_2,
             'bs_account': Fixture1.personal_account2()
         }
         return IBAccount.objects.get_or_create(id=2, defaults=params)[0]

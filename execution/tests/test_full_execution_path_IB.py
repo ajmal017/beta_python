@@ -12,7 +12,7 @@ from datetime import datetime, date
 from execution.end_of_day import broker_manager, create_orders, create_pre_trade_allocation, send_pre_trade, send_order,\
     process_fills, mark_order_as_complete, update_orders, process
 from unittest import skipIf
-from tests.test_settings import IB_TESTING
+from tests.test_settings import IB_TESTING, IB_ACC_1, IB_ACC_2, IB_ACC_SUM
 from execution.account_groups.create_account_groups import FAAccountProfile
 from main.management.commands.populate_test_data import populate_prices, populate_cycle_obs, populate_cycle_prediction
 from unittest.mock import patch
@@ -46,7 +46,7 @@ class BaseTest(TestCase):
         portfolio_set = PortfolioSetFactory.create(name='set', risk_free_rate=0.01, asset_classes=asset_classes)
         self.goal = GoalFactory.create(approved_settings=self.goal_settings, active_settings=self.goal_settings,
                                        cash_balance=100, portfolio_set=portfolio_set)
-        self.broker_acc = IBAccountFactory.create(bs_account=self.goal.account, ib_account='DU627759')
+        self.broker_acc = IBAccountFactory.create(bs_account=self.goal.account, ib_account=IB_ACC_1)
         self.tickers = [self.t1, self.t2, self.t3, self.t4, self.t4]
         self.prices = [4, 4, 90, 90, 95]
         self.quantities = [5, 5, 5, 5, 5]

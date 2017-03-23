@@ -5,7 +5,7 @@ from main.models import Order
 from execution.broker.InteractiveBrokers.IBOrder import IBOrder
 from client.models import IBAccount
 from unittest import skip, skipIf
-from tests.test_settings import IB_TESTING
+from tests.test_settings import IB_TESTING, IB_ACC_1, IB_ACC_2, IB_ACC_SUM
 from execution.account_groups.create_account_groups import FAAccountProfile
 
 @skipIf(not IB_TESTING,"IB Testing is manually turned off.")
@@ -29,7 +29,7 @@ class BaseTest(TestCase):
 
     def test_IB_account_summary(self):
         account = IBAccount()
-        account.ib_account = "DU627759"
+        account.ib_account = IB_ACC_1
         account_info = self.con.get_account_info(account)
         self.assertTrue(account_info.cash != 0)
 
@@ -38,8 +38,8 @@ class BaseTest(TestCase):
         account_profile = FAAccountProfile()
 
         account_dict = {
-            'DU627759': 5,
-            'DU627760': 10,
+            IB_ACC_1: 5,
+            IB_ACC_2: 10,
         }
         account_profile.append_share_allocation('MSFT', account_dict)
         profile = account_profile.get_profile()
@@ -49,8 +49,8 @@ class BaseTest(TestCase):
         account_profile = FAAccountProfile()
 
         account_dict = {
-            'DU627759': 5,
-            'DU627760': 10,
+            IB_ACC_1: 5,
+            IB_ACC_2: 10,
         }
         account_profile.append_share_allocation('MSFT', account_dict)
         profile = account_profile.get_profile()
@@ -59,10 +59,10 @@ class BaseTest(TestCase):
         orders = []
         orders.append(order)
         distribution = self.con.update_orders(orders)
-        self.assertFalse('DU627759' in distribution and 'DU627760'in distribution)
-        if 'DU627759' in distribution and 'DU627760'in distribution:
-            self.assertFalse(distribution['DU627759'] == 5)
-            self.assertFalse(distribution['DU627760'] == 10)
+        self.assertFalse(IB_ACC_1 in distribution and IB_ACC_2 in distribution)
+        if IB_ACC_1 in distribution and IB_ACC_2 in distribution:
+            self.assertFalse(distribution[IB_ACC_1] == 5)
+            self.assertFalse(distribution[IB_ACC_2] == 10)
 
     def test_IB_send_order(self):
 
