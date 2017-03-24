@@ -7,7 +7,7 @@ from rest_framework.test import APITestCase
 from django.conf import settings
 from address.models import Region
 from api.v1.tests.factories import AdvisorFactory, EmailInviteFactory
-from client.models import EmailInvite
+from client.models import Client, EmailInvite
 from django.test import Client as DjangoClient
 from common.constants import GROUP_SUPPORT_STAFF
 from main.constants import ACCOUNT_TYPE_PERSONAL, EMPLOYMENT_STATUS_EMMPLOYED, GENDER_MALE
@@ -545,6 +545,54 @@ class ClientTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertNotEqual(usr.id, 44)
         self.assertEqual(response.data['user']['id'], usr.id)
+
+    def test_create_client_with_ib_onboard(self):
+        """
+        Test ib_onboard is created.
+        """
+        # We need an accepted invitation to be able to create a client
+        usr = UserFactory.create()
+        EmailInviteFactory.create(user=usr, status=EmailInvite.STATUS_ACCEPTED)
+
+        url = reverse('api:v1:client-list')
+        regional_data = {
+            'ssn': '555-55-5555',
+            'politically_exposed': True,
+        }
+        address = {
+            "address": "123 My Street\nSome City",
+            "post_code": "112233",
+            "region": {
+                "name": "New South Wales",
+                "country": "AU",
+                "code": "NSW",
+            }
+        }
+        ib_onboard = {
+            "account_number": "U1234567",
+            "employer_address": address,
+            "tax_address": address,
+        }
+        data = {
+            "advisor_agreement": True,
+            "betasmartz_agreement": True,
+            "date_of_birth": date(2016, 9, 21),
+            "employment_status": EMPLOYMENT_STATUS_EMMPLOYED,
+            "gender": GENDER_MALE,
+            "income": 1234,
+            "phone_num": "+1-234-234-2342",
+            "residential_address": address,
+            "regional_data": regional_data,
+            "ib_onboard": ib_onboard
+        }
+        self.client.force_authenticate(usr)
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        client = Client.objects.get(id=response.data.get('id'))
+        client_ib_onboard = client.ib_onboard
+        self.assertEqual(client_ib_onboard.account_number, ib_onboard['account_number'])
+        self.assertEqual(client_ib_onboard.employer_address.address, ib_onboard['employer_address']['address'])
+        self.assertEqual(client_ib_onboard.employer_address.post_code, ib_onboard['employer_address']['post_code'])
 
     def test_advisor_invite_states_displayed(self):
         usr_accepted = UserFactory.create()

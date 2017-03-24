@@ -9,7 +9,7 @@ from api.v1.address.serializers import AddressSerializer, AddressUpdateSerialize
 from api.v1.advisor.serializers import AdvisorFieldSerializer
 from api.v1.serializers import ReadOnlyModelSerializer
 from client.models import AccountTypeRiskProfileGroup, Client, EmailInvite, \
-    EmailNotificationPrefs, HealthDevice, RiskProfileAnswer, RiskProfileGroup
+    EmailNotificationPrefs, HealthDevice, IBOnboard, RiskProfileAnswer, RiskProfileGroup
 from main import constants
 from main.constants import ACCOUNT_TYPE_PERSONAL
 from main.models import ExternalAsset, ExternalAssetTransfer, User
@@ -19,6 +19,7 @@ from user.models import SecurityAnswer
 from ..user.serializers import PhoneNumberValidationSerializer, \
     UserFieldSerializer
 from django.conf import settings
+from onboarding.interactive_brokers import onboarding_helpers
 
 logger = logging.getLogger('api.v1.client.serializers')
 RESIDENTIAL_ADDRESS_KEY = 'residential_address'
@@ -34,6 +35,41 @@ class HealthDeviceSerializer(ReadOnlyModelSerializer):
         fields = ('id', 'provider', 'expires_at')
 
 
+class IBOnboardSerializer(ReadOnlyModelSerializer):
+    """
+    For Update (GET) requests only
+    """
+    employer_address = AddressSerializer()
+    tax_address = AddressSerializer()
+
+    class Meta:
+        model = IBOnboard
+
+
+class IBOnboardCreateSerializer(serializers.ModelSerializer):
+    """
+    For Update (POST) requests only
+    """
+    employer_address = AddressUpdateSerializer()
+    tax_address = AddressUpdateSerializer()
+
+    class Meta:
+        model = IBOnboard
+        fields = '__all__'
+
+    def create(self, validated_data):
+        print(validated_data['employer_address'])
+        print(validated_data['tax_address'])
+        employer_address_ser = AddressUpdateSerializer(data=validated_data.pop('employer_address'))
+        tax_address_ser = AddressUpdateSerializer(data=validated_data.pop('tax_address'))
+        employer_address_ser.is_valid(raise_exception=True)
+        tax_address_ser.is_valid(raise_exception=True)
+        validated_data['employer_address'] = employer_address_ser.save()
+        validated_data['tax_address'] = tax_address_ser.save()
+        ib_onboard = super(IBOnboardCreateSerializer, self).create(validated_data)
+        return ib_onboard
+
+
 class ClientSerializer(ReadOnlyModelSerializer):
     user = UserFieldSerializer()
     advisor = AdvisorFieldSerializer()
@@ -41,6 +77,7 @@ class ClientSerializer(ReadOnlyModelSerializer):
     regional_data = serializers.JSONField()
     reason = serializers.SerializerMethodField()
     health_device = serializers.SerializerMethodField()
+    ib_onboard = IBOnboardSerializer()
 
     class Meta:
         model = Client
@@ -87,6 +124,7 @@ class ClientCreateSerializer(serializers.ModelSerializer):
                                                                 required=False)
     residential_address = AddressUpdateSerializer()
     regional_data = serializers.JSONField()
+    ib_onboard = IBOnboardCreateSerializer(required=False)
 
     class Meta:
         model = Client
@@ -112,6 +150,7 @@ class ClientCreateSerializer(serializers.ModelSerializer):
             'height',
             'drinks',
             'date_of_birth',
+            'ib_onboard',
         )
 
     def validate_phone_num(self, phone_num):
@@ -130,6 +169,10 @@ class ClientCreateSerializer(serializers.ModelSerializer):
         address_ser.is_valid(raise_exception=True)
         validated_data[RESIDENTIAL_ADDRESS_KEY] = address_ser.save()
 
+        if 'ib_onboard' in validated_data:
+            ib_onboard_ser = IBOnboardCreateSerializer(data=validated_data.pop('ib_onboard'))
+            ib_onboard_ser.is_valid(raise_exception=True)
+
         # For now we auto confirm and approve the client.
         validated_data['is_confirmed'] = True
         validated_data['is_accepted'] = True
@@ -140,6 +183,12 @@ class ClientCreateSerializer(serializers.ModelSerializer):
             default_portfolio_set=validated_data['advisor'].default_portfolio_set,
             confirmed=True,
         )
+
+        if 'ib_onboard_ser' in locals():
+            ib_onboard = ib_onboard_ser.save(client=client)
+            # connect IB broker
+            status = onboarding_helpers.onboarding_from_invitation(ib_onboard)
+
         return client
 
 
@@ -330,7 +379,7 @@ class InvitationSerializer(ReadOnlyModelSerializer):
 
     class Meta:
         model = EmailInvite
-        read_only_fields = ('email', 'client_agreement_url', )
+        read_only_fields = ('email', 'client_agreement_url', 'salutation', 'suffix',)
         fields = (
             'invite_key',
             'status',
@@ -344,6 +393,8 @@ class InvitationSerializer(ReadOnlyModelSerializer):
             'firm_colored_logo',
             'client_agreement_url',
             'email',
+            'salutation',
+            'suffix',
         )
 
     def get_firm_name(self, obj):
@@ -379,7 +430,7 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmailInvite
-        read_only_fields = ('invite_key', 'email', 'status', 'client_agreement_url',)
+        read_only_fields = ('invite_key', 'email', 'status', 'client_agreement_url', 'salutation', 'invitation', )
         fields = (
             'email',
             'invite_key',
@@ -398,6 +449,8 @@ class PrivateInvitationSerializer(serializers.ModelSerializer):
             'social_security_statement_data',
             'partner_social_security_statement',
             'partner_social_security_statement_data',
+            'salutation',
+            'suffix',
         )
 
     def get_risk_profile_group(self, obj):

@@ -51,21 +51,32 @@ class Address(models.Model):
     @cached_property
     def full_address(self):
         ads = [x for x in self.address.split('\n') if x != '']
-        if len(ads) >= 2:
-            address, city = ads[0], ads[1]
-            return '{}, {}, {}, {}'.format(address, city, self.region.name, self.post_code)
-        else:
-            return '{}, {}, {}'.format(self.address, self.region.name, self.post_code)
+        ads_str = ', '.join(ads)
+        return '{}, {}, {}'.format(ads_str, self.region.name, self.post_code)
 
     @cached_property
-    def address_line(self):
-        ads = [x for x in self.address.split('\n') if x != '']
-        return ads[1] if len(ads) >= 2 else ''
+    def address1(self):
+        ads = self.address.split('\n')
+        return ads[0] if len(ads) > 0 else None
+
+    @cached_property
+    def address2(self):
+        ads = self.address.split('\n')
+        return ads[1] if len(ads) > 1 else None
 
     @cached_property
     def city(self):
         ads = self.address.split('\n')
-        return ads[0]
+        if len(ads) > 1:
+            return ads[-1]
+        else:
+            return None
+
+    def state_code(self):
+        return self.region.code
+
+    def country(self):
+        return self.region.country
 
     def __str__(self):
         return self.address + ', ' +  self.region.name + ', ' + self.region.country

@@ -1070,3 +1070,168 @@ class HealthDevice(models.Model):
     refresh_token = models.CharField(max_length=1000, null=True, blank=True, help_text='OAuth refresh token')
     expires_at = models.DateTimeField(null=True, blank=True, help_text='OAuth token expiry time')
     meta = JSONField(null=True, blank=True, help_text='Meta data')
+
+
+class IBOnboard(models.Model):
+    class PhoneType(ChoiceEnum):
+        WORK = "Work", "Work"
+        HOME = "Home", "Home"
+        FAX = "Fax", "Fax"
+        MOBILE = "Mobile", "Mobile"
+        MOBILE_WORK = "Mobile (work)", "Mobile (work)"
+        MOBILE_OTHER = "Mobile (other)", "Mobile (other)"
+        BUSINESS = "Business", "Business"
+        OTHER = "Other (voice)", "Other (voice)"
+
+    class TinType(ChoiceEnum):
+        SSN = 'SSN', 'SSN'
+        EIN = 'EIN', 'EIN'
+        NON_US_NATIONAL_IID = 'NonUS_NationalIID', 'NonUS_NationalIID'
+
+    account_number = models.CharField(max_length=32, null=True, blank=True)
+    client = models.OneToOneField('Client', related_name='ib_onboard', null=True, blank=True)
+    employer_address = models.OneToOneField('address.Address', related_name='ib_onboard_employer', null=True, blank=True)
+    tax_address = models.OneToOneField('address.Address', related_name='ib_onboard_tax', null=True, blank=True)
+    country_of_birth = models.CharField(max_length=250, blank=True, null=True, help_text='country of birth')
+    num_dependents = models.IntegerField(blank=True, null=True, verbose_name='Number of dependents',
+                                         help_text='number of dependents')
+    phone_type = models.CharField(choices=PhoneType.choices(), max_length=32, null=True, blank=True, default='Home',
+                                  help_text='phone type')
+    identif_leg_citizenship = models.CharField(max_length=250, blank=True, null=True, verbose_name='legal residence citizenship',
+                                               help_text='legal residence citizenship')
+    fin_info_tot_assets = models.IntegerField(blank=True, null=True, default=5, verbose_name='Total Assets',
+                                              help_text='total assets')
+    fin_info_liq_net_worth = models.IntegerField(blank=True, null=True, default=5, verbose_name='Liquid Net Worth',
+                                                 help_text='liquid net worth')
+    fin_info_ann_net_inc = models.IntegerField(blank=True, null=True, default=5, verbose_name='Annual Net Income',
+                                               help_text='annual net income')
+    fin_info_net_worth = models.IntegerField(blank=True, null=True, default=5, verbose_name='Net Worth',
+                                             help_text='net worth')
+    asset_exp_0_knowledge = models.IntegerField(blank=True, null=True, verbose_name='STK trading knowledge',
+                                             help_text='STK trading knowledge')
+    asset_exp_0_yrs = models.IntegerField(blank=True, null=True, verbose_name='STK trading experience',
+                                       help_text='STK trading experience')
+    asset_exp_0_trds_per_yr = models.IntegerField(blank=True, null=True, verbose_name='STK trading frequency',
+                                               help_text='STK trading frequency')
+    asset_exp_1_knowledge = models.IntegerField(blank=True, null=True, verbose_name='FUNDS trading knowledge',
+                                             help_text='FUNDS trading knowledge')
+    asset_exp_1_yrs = models.IntegerField(blank=True, null=True, verbose_name='FUNDS trading experience',
+                                       help_text='FUNDS trading experience')
+    asset_exp_1_trds_per_yr = models.IntegerField(blank=True, null=True, verbose_name='Fund Trades Per Year',
+                                               help_text='FUNDS trading frequency')
+    reg_status_broker_deal = models.NullBooleanField(blank=True, null=True, verbose_name='BROKERDEALER',
+                                                     help_text='BROKERDEALER')
+    reg_status_exch_memb = models.NullBooleanField(blank=True, null=True, verbose_name='EXCHANGEMEMBERSHIP',
+                                                   help_text='EXCHANGEMEMBERSHIP')
+    reg_status_disp = models.NullBooleanField(blank=True, null=True, verbose_name='DISPUTE', help_text='DISPUTE')
+    reg_status_investig = models.NullBooleanField(blank=True, null=True, help_text='INVESTIGATION')
+    reg_status_stk_cont = models.NullBooleanField(blank=True, null=True, help_text='STKCONTROL')
+    tax_resid_0_tin_type = models.CharField(choices=TinType.choices(), max_length=250, blank=True, null=True, default='SSN',
+                                            verbose_name='Tax residency TIN type', help_text='tax residency TIN type')
+    tax_resid_0_tin = models.CharField(max_length=250, blank=True, null=True, verbose_name='Tax residency tin',
+                                       help_text='tax residency tin')
+    doc_exec_ts = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    doc_exec_login_ts = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    doc_signed_by = models.CharField(max_length=250, blank=True, null=True, help_text='document signed by')
+    salutation = models.CharField(max_length=10, choices=constants.IB_SALUTATION_CHOICES,
+                                  default=constants.IB_SALUTATION_MR, help_text='Salutation')
+    suffix = models.CharField(max_length=10, choices=constants.IB_SUFFIX_CHOICES, blank=True, null=True, help_text='Suffix')
+
+    @cached_property
+    def residential_address(self):
+        if self.client:
+            return self.client.residential_address
+        else:
+            return None
+
+    @cached_property
+    def date_of_birth(self):
+        if self.client:
+            return self.client.date_of_birth
+        else:
+            return None
+
+    @cached_property
+    def email(self):
+        if self.client:
+            return self.client.user.email
+        else:
+            return None
+
+    @cached_property
+    def first_name(self):
+        if self.client:
+            return self.client.user.first_name
+        else:
+            return None
+
+    @cached_property
+    def last_name(self):
+        if self.client:
+            return self.client.user.last_name
+        else:
+            return None
+
+    @cached_property
+    def identif_ssn(self):
+        try:
+            return self.client.regional_data['ssn']
+        except:
+            return None
+
+    @cached_property
+    def civil_status(self):
+        if self.client:
+            return self.client.civil_status
+        else:
+            return None
+
+    @cached_property
+    def income(self):
+        if self.client:
+            return self.client.income
+        else:
+            return None
+
+    @cached_property
+    def employment_status(self):
+        if self.client:
+            return self.client.employment_status
+        else:
+            return None
+
+    @cached_property
+    def phone_number(self):
+        if self.client:
+            return self.client.phone_num
+        else:
+            return None
+
+    @cached_property
+    def gender(self):
+        if self.client:
+            return self.client.gender
+        else:
+            return None
+
+    @cached_property
+    def employer(self):
+        if self.client:
+            return self.client.employer
+        else:
+            return None
+
+
+    @cached_property
+    def occupation(self):
+        if self.client:
+            return self.client.occupation
+        else:
+            return None
+
+    @cached_property
+    def empl_business(self):
+        if self.client:
+            return self.client.industry_sector
+        else:
+            return None
