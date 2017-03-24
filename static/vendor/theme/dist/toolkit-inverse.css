@@ -9853,6 +9853,110 @@ fieldset[disabled] .btn-danger-outline.active {
 .footer-links ul.advised-user-only {
   margin-left: 0px;
 }
+.round-frame {
+  border: 1px solid #DFDFDF;
+  box-sizing: content-box;
+  border-radius: 6px;
+  margin: 30px 0;
+}
+.round-frame:after {
+  clear: both;
+  content: '';
+  display: table;
+}
+.round-frame-row {
+  margin: 0 -15px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  box-sizing: border-box;
+}
+.round-frame-sidebar {
+  z-index: 10;
+}
+.round-frame-sidebar .nav-tabs {
+  border-bottom: none;
+}
+.round-frame-sidebar-inner {
+  height: 100%;
+}
+.round-frame-sidebar-shadow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+.round-frame-sidebar-shadow:before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  top: 0;
+  bottom: 0;
+  box-shadow: 1px 0 10px rgba(0, 0, 0, 0.2);
+}
+.round-frame-sidebar-panel {
+  z-index: 1;
+  position: relative;
+  margin: 0;
+  border: none !important;
+  border-radius: 0;
+  -ms-flex-item-align: stretch;
+      align-self: stretch;
+  box-shadow: none;
+  background: none;
+}
+.round-frame-sidebar-panel > .panel-body {
+  padding: 0;
+}
+.round-frame-sidebar-panel .nav > li {
+  margin-top: 0;
+}
+.round-frame-sidebar-panel .nav > li > a {
+  border-radius: 0;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-left-width: 5px !important;
+  border-left-style: solid;
+  border-left-color: transparent;
+  color: #333;
+  margin-right: 0;
+  padding: 10px 15px;
+}
+.round-frame-sidebar-panel .nav > li > a,
+.round-frame-sidebar-panel .nav > li > a:active,
+.round-frame-sidebar-panel .nav > li > a:focus,
+.round-frame-sidebar-panel .nav > li > a:hover {
+  background: inherit;
+  color: inherit;
+  font-weight: bold;
+}
+.round-frame-sidebar-panel .nav > li:nth-child(odd) a {
+  background-color: #F9F9F9;
+}
+.round-frame-sidebar-panel .nav > .active > a,
+.round-frame-sidebar-panel .nav > .active > a:active,
+.round-frame-sidebar-panel .nav > .active > a:focus,
+.round-frame-sidebar-panel .nav > .active > a:hover {
+  border-left-color: #45a018;
+  color: #BBB;
+}
+.round-frame-sidebar-inner,
+.round-frame-sidebar-shadow:before {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  overflow: hidden;
+}
+.round-frame-content-pane {
+  margin: 0 0 0 -15px;
+  border: none !important;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 30px 15px;
+}
 .custom-select {
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAUCAMAAACzvE1FAAAADFBMVEX////////////////1pQ5zAAAAA3RSTlMAf4C/aSLHAAAAPElEQVR42q3NMQ4AIAgEQTn//2cLdRKppSGzBYwzVXvznNWs8C58CiussPJj8h6NwgorrKRdTvuV9v16Afn0AYFOB7aYAAAAAElFTkSuQmCC);
 }
