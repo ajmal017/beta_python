@@ -2,6 +2,14 @@
 {% load i18n filters %}
 {% load static from staticfiles %}
 
+{% block css %}
+  <style>
+    table.dataTable thead > tr > th {
+      padding-left: 8px;
+    }
+
+  </style>
+{% endblock %}
 
 {% block foot_js %}
 <script type="application/javascript" src="{% static "js/widgets.js" %}"></script>
