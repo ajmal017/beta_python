@@ -37,7 +37,6 @@ logger = logging.getLogger('api.v1.client.views')
 
 
 class ExternalAssetViewSet(ApiViewMixin, NestedViewSetMixin, viewsets.ModelViewSet):
-    print('****************** class ExternalAssetViewSet')
     model = ExternalAsset
     # We define the queryset because our get_queryset calls super so the Nested queryset works.
     queryset = ExternalAsset.objects.all()
@@ -64,7 +63,6 @@ class ExternalAssetViewSet(ApiViewMixin, NestedViewSetMixin, viewsets.ModelViewS
 
 
 class RetirementIncomeViewSet(ApiViewMixin, NestedViewSetMixin, viewsets.ModelViewSet):
-    print('****************** class RetirementIncomeViewSet')
     model = RetirementPlanEinc
     # We define the queryset because our get_queryset calls super so the Nested queryset works.
     queryset = RetirementPlanEinc.objects.all()
@@ -98,7 +96,6 @@ class ClientViewSet(ApiViewMixin,
                     mixins.UpdateModelMixin,
                     mixins.ListModelMixin,
                     GenericViewSet):
-    print('****************** class ClientViewSett')
     """
     Everything except delete
     """
@@ -364,7 +361,6 @@ class InvitesView(ApiViewMixin, views.APIView):
 
 
 class ClientUserRegisterView(ApiViewMixin, views.APIView):
-    print('****************** class ClientUserRegisterView')
     """
     Register Client's User from an invite token
     """
@@ -424,15 +420,10 @@ class ClientUserRegisterView(ApiViewMixin, views.APIView):
                                                                                       user.last_name,
                                                                                       user.email)
         invite.advisor.user.email_user('Client has accepted your invitation', msg)
-        print('*****************************************')
-        for key, value in request.POST.items():
-            print(key, value)
-        print('*****************************************')
         return Response(user_serializer.data)
 
 
 class EmailNotificationsView(ApiViewMixin, RetrieveUpdateAPIView):
-    print('****************** class EmailNotificationsView')
     permission_classes = IsClient,
     serializer_class = EmailNotificationsSerializer
 
@@ -441,7 +432,6 @@ class EmailNotificationsView(ApiViewMixin, RetrieveUpdateAPIView):
 
 
 class ProfileView(ApiViewMixin, RetrieveUpdateAPIView):
-    print('****************** class ProfileView')
     permission_classes = IsClient,
     serializer_class = PersonalInfoSerializer
 
@@ -450,7 +440,6 @@ class ProfileView(ApiViewMixin, RetrieveUpdateAPIView):
 
 
 class ClientResendInviteView(SingleObjectMixin, views.APIView):
-    print('****************** class ClientResendInviteView')
     permission_classes = [IsAuthenticated, ]
     queryset = EmailInvite.objects.all()
 
@@ -469,7 +458,6 @@ class ClientResendInviteView(SingleObjectMixin, views.APIView):
 
 
 class QuovoGetIframeTokenView(ReadOnlyApiViewMixin, views.APIView):
-    print('****************** class QuovoGetIframeTokenView')
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
 
@@ -480,7 +468,6 @@ class QuovoGetIframeTokenView(ReadOnlyApiViewMixin, views.APIView):
 
 
 class QuovoGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
-    print('****************** class QuovoGetAccountsVie')
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer, )
 
@@ -490,7 +477,6 @@ class QuovoGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
 
 
 class PlaidCreateAccessTokenView(ApiViewMixin, views.APIView):
-    print('****************** class PlaidCreateAccessTokenView')
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
 
@@ -504,7 +490,6 @@ class PlaidCreateAccessTokenView(ApiViewMixin, views.APIView):
 
 
 class PlaidGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
-    print('****************** class PlaidGetAccountsView')
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
 
@@ -514,7 +499,6 @@ class PlaidGetAccountsView(ReadOnlyApiViewMixin, views.APIView):
 
 
 class IbOnboardingView(ReadOnlyApiViewMixin, views.APIView):
-    print('****************** class IbOnboardingView')
     permission_classes = [IsAuthenticated, ]
     renderer_classes = (JSONRenderer,)
 

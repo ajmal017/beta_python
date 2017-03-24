@@ -447,7 +447,6 @@ class GoalSettingStatelessSerializer(NoCreateModelSerializer, NoUpdateModelSeria
             mtric_group = DummyGroup()
         else:
             mtric_group = GoalMetricGroup.objects.get(id=gid)
-
         goalt = goal
 
         # Currently unused
@@ -576,7 +575,6 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
             )
 
             portfolio_provider_id = validated_data['portfolio_provider'] if 'portfolio_provider' in validated_data else get_default_provider_id()
-            print('==========>', 'portfolio_provider_id', str(portfolio_provider_id))
             
             portfolio_set_id = ''
             portfolio_providers = PortfolioProvider.objects.all()
@@ -584,9 +582,6 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
             for pp in portfolio_providers:
                 if pp.id == portfolio_provider_id:
                     portfolio_provider = pp
-                    print('found pp')
-            print('==========>', 'was found printed?')
-            print('==========>', 'assigning portfolio_provider', 'id:', str(portfolio_provider.id), 'pp:', str(portfolio_provider), 'type:', str(portfolio_provider.type), 'name:', str(portfolio_provider.name))
 
             if portfolio_provider.type == constants.PORTFOLIO_PROVIDER_TYPE_KRANE:
                portfolio_set_type=constants.PORTFOLIO_SET_TYPE_KRANE
@@ -596,16 +591,12 @@ class GoalCreateSerializer(NoUpdateModelSerializer):
                portfolio_set_type=constants.PORTFOLIO_SET_TYPE_LEE
             else:
                 raise Exception('unhandled portfolio_provider_id')
-            print('==========>', 'portfolio_set_type', str(portfolio_set_type))
             
             portfolio_sets = PortfolioSet.objects.all()
             portfolio_set = account.default_portfolio_set
             for ps in portfolio_sets:
                 if ps.type == portfolio_set_type:
-                    print('found ps')
                     portfolio_set = ps
-            print('==========>', 'was found printed?')
-            print('==========>', 'assigning portfolio_set', 'id:', str(portfolio_set.id), 'ps:', str(portfolio_set), 'type:', str(portfolio_set.type), 'name:', str(portfolio_set.name))
                     
             goal = Goal.objects.create(
                 account=account,

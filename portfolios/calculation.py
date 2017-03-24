@@ -94,20 +94,16 @@ def build_instruments(data_provider):
             - Each AssetFeatureValue in the system
     """
     ac_ps = data_provider.get_asset_class_to_portfolio_set()
-    print('<<<<<<<<<<<<<<<<< ac_ps', str(ac_ps))
 
     predictor = Predictor(data_provider)
     ers, covars = predictor.get_fund_predictions()
 
     tickers = data_provider.get_tickers()
-    print('<<<<<<<<<<<<< tickers', str(tickers))
 
     # Much faster building the dataframes once, not appending on iteration.
     irows = []
     for ticker in tickers:
-        print('<<<<<<<<<<<<<<<< ticker', str(ticker), str(ticker.symbol))
         if ticker.id not in ers:
-            logger.warn('<<<<<<<<<<<<<<<<<<<', "Excluding {} from instruments as it has no predictions".format(ticker))
             continue
 
         #data_provider.get_market_weight_latest(ticker=ticker)
@@ -135,7 +131,6 @@ def build_instruments(data_provider):
                                                      'id'
                                                      ],
                                             ).set_index('symbol')
-    print('===== instruments', str(instruments))
 
     masks = get_masks(instruments, data_provider)
 
@@ -378,7 +373,6 @@ def calc_opt_inputs(settings, idata, data_provider, execution_provider, metric_o
 
     # Get the global instrument data
     covars, instruments, masks = idata
-    print('&&&&&&&&&&&&&&&&&&&&&&&&', str(idata))
 
     # Convert the settings into a constraint based on a mask for the instruments appropriate for the settings given
     settings_symbol_ixs, cvx_masks = get_settings_masks(settings=settings, masks=masks)

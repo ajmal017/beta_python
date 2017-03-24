@@ -305,13 +305,6 @@ def onboarding_from_invitation(ib_onboard):
                      ib_account):
             self.ib_account = ib_account
 
-    debug = True
-    if debug:
-        print('-----------------------')
-        print('starting onboarding _from_invitation')
-        print('-----------------------')
-
-
     user = TestUser(email=ib_onboard.email,
                     first_name=ib_onboard.first_name,
                     last_name=ib_onboard.last_name,
