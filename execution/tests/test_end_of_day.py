@@ -13,7 +13,7 @@ from main.tests.fixture import Fixture1
 from main.management.commands.rebalance import reduce_cash
 from api.v1.tests.factories import TickerFactory
 from execution.broker.BaseBroker import BaseBroker
-from unittest import skipIf
+from unittest import skipIf,skip
 
 
 
@@ -84,6 +84,7 @@ class BaseTest(TestCase):
         }
         ExecutionRequest.objects.get_or_create(id=4, defaults=params)
 
+    @skip("Turtned off due to consecutive IB message limits.")
     @skipIf(not IB_TESTING, "IB Testing is manually turned off.")
     def test_change_account_cash(self):
         goal1 = Fixture1.goal1()
