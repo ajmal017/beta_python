@@ -961,6 +961,14 @@ class AccountGroup(models.Model):
                 return False
         return True
 
+    @cached_property
+    def pending_settings_approval(self):
+        for account in self.accounts.all():
+            for goal in account.goals:
+                if goal.awaiting_settings_approval:
+                    return True
+        return False
+
     @property
     def since(self):
         min_created_at = self.accounts.first().created_at
@@ -1659,6 +1667,12 @@ class Goal(models.Model):
 
         self.state = Goal.State.ARCHIVED
         self.save()
+
+    @cached_property
+    def awaiting_settings_approval(self):
+        if self.approved_settings != self.selected_settings:
+            return True
+        return False
 
     @transaction.atomic
     def set_selected(self, setting):
