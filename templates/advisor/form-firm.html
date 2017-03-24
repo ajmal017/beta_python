@@ -58,11 +58,11 @@
             <tbody>
               <tr>
                 <td width="1%"><span class="icon icon-phone"></span></td>
-                <td>{{ SUPPORT_PHONE|phone }}</td>
+                <td>{{ firm.firm_details.advisor_support_phone|phone }}</td>
               </tr>
               <tr>
                 <td width="1%"><span class="icon icon-mail"></span></td>
-                <td><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></td>
+                <td><a href="mailto:{{ firm.firm_details.advisor_support_phone }}">Email Support</a></td>
               </tr>
             </tbody>
           </table>
@@ -75,11 +75,11 @@
             <tbody>
               <tr>
                 <td width="1%"><span class="icon icon-phone"></span></td>
-                <td>{{ SUPPORT_PHONE|phone }}</td>
+                <td>{{ firm.firm_details.advisor_support_phone|phone }}</td>
               </tr>
               <tr>
                 <td width="1%"><span class="icon icon-mail"></span></td>
-                <td><a href="mailto:{{ SUPPORT_EMAIL }}">Email Support</a></td>
+                <td><a href="mailto:{{ firm.firm_details.advisor_support_phone }}">Email Support</a></td>
               </tr>
             </tbody>
           </table>
@@ -163,5 +163,3 @@
 
 
 {% endcomment %}
-
-

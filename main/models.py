@@ -645,6 +645,24 @@ class FirmData(models.Model):
                                 default="https://www.betasmartz.com",
                                 help_text="Official Site URL")
 
+    advisor_support_phone = models.CharField(verbose_name='Advisor Support Phone',
+                                            max_length=255, null=True, blank=True)
+
+    advisor_support_email = models.EmailField(verbose_name='Advisor Support Email',
+                                              null=True, blank=True)
+
+    advisor_support_workhours = models.TextField(verbose_name='Advisor Support Workhours',
+                                                 null=True, blank=True)
+
+    client_support_phone = models.CharField(verbose_name='Client Support Phone',
+                                            max_length=255, null=True, blank=True)
+
+    client_support_email = models.EmailField(verbose_name='Client Support Email',
+                                             null=True, blank=True)
+
+    client_support_workhours = models.TextField(verbose_name='Client Support Workhours',
+                                             null=True, blank=True)
+
     def __str__(self):
         return "FirmData for {}".format(self.firm)
 

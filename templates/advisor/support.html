@@ -17,18 +17,20 @@
             <tbody>
               <tr>
                 <td width="1%"><span class="icon icon-phone"></span></td>
-                <td>{{ SUPPORT_PHONE|phone }}</td>
+                <td>{{ firm.firm_details.advisor_support_phone|phone }}</td>
               </tr>
               <tr>
                 <td width="1%"><span class="icon icon-mail"></span></td>
-                <td><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></td>
+                <td>
+                  <a href="mailto:{{ firm.firm_details.advisor_support_email }}">
+                    {{ firm.firm_details.advisor_support_email }}
+                  </a>
+                </td>
               </tr>
               <tr>
                 <td width="1%"><span class="icon icon-stopwatch"></span></td>
                 <td>
-                  Monday - Friday: 9AM - 8PM AEST
-                  <br>
-                  Saturday - Sunday: 11AM - 6PM AEST
+                  {{ firm.firm_details.advisor_support_workhours|linebreaksbr }}
                 </td>
               </tr>
             </tbody>
@@ -42,18 +44,20 @@
             <tbody>
               <tr>
                 <td width="1%"><span class="icon icon-phone"></span></td>
-                <td>{{ SUPPORT_PHONE|phone }}</td>
+                <td>{{ firm.firm_details.client_support_phone|phone }}</td>
               </tr>
               <tr>
                 <td width="1%"><span class="icon icon-mail"></span></td>
-                <td><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></td>
+                <td>
+                  <a href="mailto:{{ firm.firm_details.client_support_email }}">
+                    {{ firm.firm_details.client_support_email }}
+                  </a>
+                </td>
               </tr>
               <tr>
                 <td width="1%"><span class="icon icon-stopwatch"></span></td>
                 <td>
-                  Monday - Friday: 9AM - 8PM AEST
-                  <br>
-                  Saturday - Sunday: 11AM - 6PM AEST
+                  {{ firm.firm_details.client_support_workhours|linebreaksbr }}
                 </td>
               </tr>
             </tbody>
