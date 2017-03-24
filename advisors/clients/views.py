@@ -18,7 +18,11 @@ from main.constants import ACCOUNT_TYPES
 from main.views.base import AdvisorView
 from notifications.models import Notify
 from support.models import SupportRequest
-
+from main.models import PortfolioProvider, PricingPlan
+from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect, \
+    JsonResponse
+from django.views.generic import DetailView
+from user.autologout import SessionExpire
 
 logger = logging.getLogger(__name__)
 
@@ -89,9 +93,75 @@ class AdvisorClients(TemplateView, AdvisorView):
         return ctx
 
 
-class AdvisorClientDetails(TemplateView, AdvisorView):
+class AdvisorClientAccountsDetails(DetailView, AdvisorView):
+    template_name = "advisor/clients/accountdetail.html"
+    client = None
+    model = Client
+
+    def get(self, request, *args, **kwargs):
+        client_id = kwargs["pk"]
+        client = Client.objects.filter(pk=client_id)
+        client = client.filter(Q(advisor=self.advisor) | Q(
+            secondary_advisors__in=[self.advisor])).all()
+
+        if not client:
+            raise http.Http404("Client not found")
+
+        self.client = client[0]
+
+        return super(AdvisorClientAccountsDetails, self).get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super(AdvisorClientAccountsDetails, self).get_context_data(**kwargs)
+        ctx.update({
+            "client": self.client,
+            'portfolios': PortfolioProvider.objects.all(),
+        })
+        return ctx
+
+    def post(self, request, **kwargs):
+        goal_id = request.POST.get('goal_id', None)
+        portfolio_id = request.POST.get('portfolio_id', None)
+        pricing_plan_pk = request.POST.get('pricing_plan_pk', None)
+        object_pk = request.POST.get('object_pk', None)
+
+        if goal_id and portfolio_id:
+            try:
+                goal = Goal.objects.get(pk=goal_id)
+                portfolio = PortfolioProvider.objects.get(pk=portfolio_id)
+                if goal.portfolio_provider_id != portfolio_id:
+                    goal.portfolio_provider = portfolio
+                    goal.save(update_fields=['portfolio_provider'])
+            except ObjectDoesNotExist:
+                pass
+
+        if pricing_plan_pk:
+            try:
+                plan = PricingPlan.objects.get(pk=pricing_plan_pk)
+                bps = request.POST.get('pricing_plan_bps', None)
+                fixed = request.POST.get('pricing_plan_fixed', None)
+                plan.bps = bps
+                plan.fixed = fixed
+                plan.save(update_fields=['bps','fixed'])
+            except ObjectDoesNotExist:
+                pass
+
+        return HttpResponseRedirect(
+            reverse('advisor:clients:accountsdetail',kwargs={'pk': object_pk})
+        )
+        # FIXME: hack, emulates ApiRenderer output
+        return JsonResponse({
+            'meta': {
+                'session_expires_on': SessionExpire(request).expire_time(),
+            },
+            'error': []
+        })
+
+
+class AdvisorClientDetails(DetailView, AdvisorView):
     template_name = "advisor/clients/detail.html"
     client = None
+    model = Client
 
     def get(self, request, *args, **kwargs):
         client_id = kwargs["pk"]
@@ -106,10 +176,6 @@ class AdvisorClientDetails(TemplateView, AdvisorView):
 
         return super(AdvisorClientDetails, self).get(request, *args, **kwargs)
 
-    def get_context_data(self, **kwargs):
-        ctx = super(AdvisorClientDetails, self).get_context_data(**kwargs)
-        ctx.update({"client": self.client})
-        return ctx
 
 
 class AdvisorCreateNewAccountForExistingClient(AdvisorView, CreateView):

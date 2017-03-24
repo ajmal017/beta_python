@@ -11,6 +11,8 @@ urlpatterns = patterns(
     url(r'^$', views.AdvisorClients.as_view(), name='list'),
     url(r'^(?P<pk>\d+)$', views.AdvisorClientDetails.as_view(),
         name='detail'),
+    url(r'^(?P<pk>\d+)/accounts$', views.AdvisorClientAccountsDetails.as_view(),
+        name='accountsdetail'),
     url(r'^(?P<pk>\d+)/account-invites$',
         views.AdvisorCreateNewAccountForExistingClient.as_view(),
         name='account-invites'),

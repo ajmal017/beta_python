@@ -131,7 +131,8 @@
                 </td>
                 <td>
                   <div>
-                    <a href="{% url 'advisor:clients:detail' client.id %}">{{ client.name }}</a>
+                    <a href="{% url 'advisor:clients:accountsdetail' client.id %}">{{ client.name }}</a>
+
                   </div>
                 </td>
                 <td>{% if client.on_track %}<span style='color:green;'>On Track</span>{% else %}<span style='color:red;'>Off Track</span>{% endif %}</td>
