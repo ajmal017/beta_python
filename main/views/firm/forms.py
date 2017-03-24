@@ -647,7 +647,8 @@ class FirmApplicationClientForm(forms.ModelForm):
         except:
             pass
 
-        self.fields['address1'].initial = address.address_line
+        self.fields['address1'].initial = address.address1
+        self.fields['address2'].initial = address.address2
         self.fields['city'].initial = address.city
         self.fields['post_code'].initial = address.post_code
         self.fields['state'].initial = address.region.code
