@@ -4,10 +4,10 @@ from api.v1.tests.factories import ExecutionRequestFactory, APEXAccountFactory, 
 from execution.end_of_day import *
 from main.models import Order
 from unittest import skipIf
-from tests.test_settings import IB_TESTING, IB_ACC_1, IB_ACC_2, IB_ACC_SUM
+from tests.test_settings import IB_TESTING, ETNA_TESTING
 
 ib_testing = False
-
+@skipIf(not ETNA_TESTING,"ETNA Testing is manually turned off.")
 @skipIf(not IB_TESTING,"IB Testing is manually turned off.")
 class BaseTest(TestCase):
     def setUp(self):

@@ -8,8 +8,9 @@ from execution.broker.ETNA.ETNABroker import ETNABroker
 from main.models import Fill
 from execution.end_of_day import create_orders, send_order, process_fills, mark_order_as_complete, update_orders
 from unittest import skipIf
-from tests.test_settings import IB_TESTING
+from tests.test_settings import IB_TESTING, ETNA_TESTING
 
+@skipIf(not ETNA_TESTING,"ETNA Testing is manually turned off.")
 @skipIf(not IB_TESTING,"IB Testing is manually turned off.")
 class BaseTest(TestCase):
     def setUp(self):
