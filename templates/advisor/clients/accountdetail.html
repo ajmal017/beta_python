@@ -1,0 +1,150 @@
+{% extends "layouts_new/base.html" %}
+{% load i18n %}
+{% load filters %}
+{% load static from staticfiles %}
+{% load i18n humanize filters pricing_plan %}
+
+{% block foot_js %}
+  <script type="application/javascript" src="{% static "js/widgets.js" %}"></script>
+  <script type="application/javascript" src="{% static "js/advisor/composites-detail.js" %}"></script>
+{% endblock %}
+
+{% block css %}
+  <style>
+    table.dataTable thead > tr > th {
+      padding-left: 8px;
+    }
+
+  </style>
+{% endblock %}
+
+{% block main_content %}
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-9">
+          <h3>{{ client.full_name }}</h3>
+      </div>
+      <div class="col-sm-3 text-sm-right">
+        <div class="form-group">
+          <a class="btn btn-primary-outline" href="{% url 'client:page' client.pk %}" target="_blank">Login</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-sm-6 m-b">
+        <div class="statcard statcard-success">
+          <div class="p-a">
+            <span class="statcard-desc">Total balance</span>
+            <h2>
+              {{ client.total_balance|currency }}
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6 m-b">
+        <div class="statcard statcard-success">
+          <div class="p-a">
+            <span class="statcard-desc">Total returns</span>
+            <h2>
+              {{ client.total_earnings|currency }}
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="table-responsive">
+        <table class="table" id="accounts">
+          <thead>
+          <tr>
+            <th>Account</th>
+            <th>Pricing Plan</th>
+            <th>Login</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for account in client.accounts.all %}
+            <tr>
+              <td><b>{{ account.name|upper }}</b></td>
+              <td>
+                <span class="pricingPlanView">
+                  {{ account.primary_owner.my_pricing_plan|display:"total" }}
+                  <small> <a onclick="$('.pricingPlanEdit').toggle(); $('.pricingPlanView').toggle();" class="icon icon-pencil"></a></small>
+                </span>
+                <span class="pricingPlanEdit" style="display:none">
+                  <form method="post" class="form-inline" style="display: inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="object_pk" value={{object.pk}} />
+                    <input type="hidden" name="pricing_plan_pk" value="{{account.primary_owner.my_pricing_plan.pk}}"/>
+                    <input type="number" name="pricing_plan_bps" style="width:80px" value="{{ account.primary_owner.my_pricing_plan.bps }}">bps</input> ,
+                    $<input type="number" name="pricing_plan_fixed" style="width:80px" value="{{ account.primary_owner.my_pricing_plan.fixed }}"/>
+                    <button type="submit">Save</button>
+                  </form>
+                </span>
+              </td>
+              <td><a
+                  href="{% url "client:page" account.primary_owner.id %}"
+                  class="btn btn-primary-outline btn-xs"
+                  target="_blank">Login</a></td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <table class="table goals">
+                  <thead>
+                  <tr>
+                    <th>Goal Name</th>
+                    <th>Status</th>
+                    <th>Balance</th>
+                    <th>Return</th>
+                    <th>Portfolio Strategy</th>
+                    <th>Auto Frequency</th>
+                    <th>Auto Amount</th>
+                    <th>Term (yrs)</th>
+                    <th>Target</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {% for goal in account.all_goals.all %}
+                    <tr>
+                      <td>{{ goal.name }}</td>
+                      <td>{{ goal.get_state_display }}</td>
+                      <td>{{ goal.total_balance|currency }}</td>
+                      <td>{{ goal.total_return|currency }}</td>
+                      <td>
+                        {% if goal.is_active %}
+                        <form method="post" target="_self" class="portfolio">
+                          {% csrf_token %}
+                          <input type="hidden" name="object_pk" value={{object.pk}} />
+                          <input type="hidden" name="goal_id"
+                                 value="{{ goal.id }}">
+                          <select name="portfolio_id" title="Portfolio" class="form-control" data-original-value="{{ goal.portfolio_provider.id }}">
+                            {% for portfolio in portfolios %}
+                              <option value="{{ portfolio.id }}"
+                                  {% if portfolio == goal.portfolio_provider %}
+                                      selected{% endif %}>{{ portfolio.name }}</option>
+                            {% endfor %}
+                          </select>
+                          <a class="save-portfolio btn btn-success btn-xs hidden">Save</a>
+                        </form>
+                        {% endif %}
+                      </td>
+                      <td>{{ goal.auto_frequency }}</td>
+                      <td>{{ goal.auto_amount }}</td>
+                      <td>{{ goal.get_term }}</td>
+                      <td>{{ goal.active_settings.target|currency }}</td>
+                    </tr>
+                  {% endfor %}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+{% endblock %}
