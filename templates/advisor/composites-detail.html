@@ -7,6 +7,16 @@
   <script type="application/javascript" src="{% static "js/advisor/composites-detail.js" %}"></script>
 {% endblock %}
 
+
+{% block css %}
+  <style>
+    table.dataTable thead > tr > th {
+      padding-left: 8px;
+    }
+
+  </style>
+{% endblock %}
+
 {% block main_content %}
   <div class="container">
     <div class="row">
