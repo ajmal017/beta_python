@@ -79,7 +79,7 @@
           <tbody>
           {% for account in object.accounts.all %}
             <tr>
-              <td>{{ account.name }}</td>
+              <td><b>{{ account.name|upper }}</b></td>
               <td>
                 <span class="pricingPlanView">
                   {{ account.primary_owner.my_pricing_plan|display:"total" }}
