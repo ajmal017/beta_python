@@ -87,12 +87,11 @@ class SingleInvestorTransferForm(forms.ModelForm):
         self.field_sections = [{"fields": ('to_advisor',),
                                 "header": "To Advisor"},
                                {"fields": ('investor',),
-                                "header": "Investor"},
+                                "header": "Client"},
                                {"fields": ('signatures',),
                                 "header": "Signatures",
-                                "detail": mark_safe("Signatures of the investor and the previous advisor: if this is "
-                                                    "for a Joint Account the signature of the second  investor "
-                                                    "is required. <a target='_blank' href='/static/docs/advisor_single_transferer_signatures.pdf'>Example</a>")},
+                                "detail": mark_safe("Signature of existing advisor or authorised firm representative. "
+                                                    "<a target='_blank' href='/static/docs/account_transfer_between_advisors_in_the_same_firm.pdf'>Example</a>")},
                                ]
 
         self.fields["investor"].queryset = self.initial["from_advisor"].clients
@@ -128,8 +127,8 @@ class BulkInvestorTransferForm(forms.ModelForm):
                                 "header": "Investors"},
                                {"fields": ('signatures',),
                                 "header": "Signatures",
-                                "detail": mark_safe("Signatures of the previous advisor and new advisor."
-                                                    " <a target='_blank' href='/static/docs/advisor_bulk_transferer_signatures.pdf'>Example</a>")},
+                                "detail": mark_safe("Signature of existing advisor or authorised firm representative"
+                                                    " <a target='_blank' href='/static/docs/account_transfer_between_advisors_in_the_same_firm.pdf'>Example</a>")},
                                ]
 
         self.fields["investors"].queryset = self.initial["from_advisor"].clients

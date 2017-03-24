@@ -80,7 +80,7 @@ class AdvisorSingleInvestorTransferView(AdvisorView, CreateView):
 
     def get_context_data(self, **kwargs):
         ctx_data = super(AdvisorSingleInvestorTransferView, self).get_context_data(**kwargs)
-        ctx_data["form_name"] = "Single investor transfer"
+        ctx_data["form_name"] = "Single client transfer"
         return ctx_data
 
     def get_success_url(self):
@@ -88,7 +88,7 @@ class AdvisorSingleInvestorTransferView(AdvisorView, CreateView):
             actor=self.advisor,
             target=self.object
         )
-        messages.success(self.request, "Single investor transfer submitted successfully")
+        messages.success(self.request, "Single client transfer submitted successfully")
         return super(AdvisorSingleInvestorTransferView, self).get_success_url()
 
     def get_initial(self):
@@ -112,7 +112,7 @@ class AdvisorSingleInvestorTransferUpdateView(AdvisorView, UpdateView):
 
     def get_context_data(self, **kwargs):
         ctx_data = super(AdvisorSingleInvestorTransferUpdateView, self).get_context_data(**kwargs)
-        ctx_data["form_name"] = "Single investor transfer"
+        ctx_data["form_name"] = "Single client transfer"
         ctx_data["object"] = self.object
         return ctx_data
 
@@ -121,7 +121,7 @@ class AdvisorSingleInvestorTransferUpdateView(AdvisorView, UpdateView):
             actor=self.advisor,
             target=self.object
         )
-        messages.success(self.request, "Single investor transfer submitted successfully")
+        messages.success(self.request, "Single client transfer submitted successfully")
         return super(AdvisorSingleInvestorTransferUpdateView, self).get_success_url()
 
     def get_initial(self):
@@ -135,7 +135,7 @@ class AdvisorBulkInvestorTransferView(AdvisorView, CreateView):
 
     def get_context_data(self, **kwargs):
         ctx_data = super(AdvisorBulkInvestorTransferView, self).get_context_data(**kwargs)
-        ctx_data["form_name"] = "Bulk investor transfer"
+        ctx_data["form_name"] = "Bulk client transfer"
         return ctx_data
 
     def get_success_url(self):
@@ -143,7 +143,7 @@ class AdvisorBulkInvestorTransferView(AdvisorView, CreateView):
             actor=self.advisor,
             target=self.object
         )
-        messages.success(self.request, "Bulk investor transfer submitted successfully")
+        messages.success(self.request, "Bulk client transfer submitted successfully")
         return super(AdvisorBulkInvestorTransferView, self).get_success_url()
 
     def get_initial(self):
