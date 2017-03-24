@@ -68,7 +68,7 @@ class Address(models.Model):
         return ads[0]
 
     def __str__(self):
-        return self.address
+        return self.address + ', ' +  self.region.name + ', ' + self.region.country
 
     class Meta:
         verbose_name = _('address')
