@@ -1088,6 +1088,11 @@ class IBOnboard(models.Model):
         EIN = 'EIN', 'EIN'
         NON_US_NATIONAL_IID = 'NonUS_NationalIID', 'NonUS_NationalIID'
 
+    class StkControlType(ChoiceEnum):
+        DIRECTOR = 1, 'A Director',
+        SHAREHOLDER = 2, 'A 10% Shareholder'
+        POLICYMAKING_OFFICER = 3, 'A Policy-Making Officer'
+
     account_number = models.CharField(max_length=32, null=True, blank=True)
     client = models.OneToOneField('Client', related_name='ib_onboard', null=True, blank=True)
     employer_address = models.OneToOneField('address.Address', related_name='ib_onboard_employer', null=True, blank=True)
@@ -1125,7 +1130,8 @@ class IBOnboard(models.Model):
                                                    help_text='EXCHANGEMEMBERSHIP')
     reg_status_disp = models.NullBooleanField(blank=True, null=True, verbose_name='DISPUTE', help_text='DISPUTE')
     reg_status_investig = models.NullBooleanField(blank=True, null=True, help_text='INVESTIGATION')
-    reg_status_stk_cont = models.NullBooleanField(blank=True, null=True, help_text='STKCONTROL')
+    reg_status_stk_cont = models.IntegerField(choices=StkControlType.choices(), blank=True, null=True,
+                                              help_text='STKCONTROL')
     tax_resid_0_tin_type = models.CharField(choices=TinType.choices(), max_length=250, blank=True, null=True, default='SSN',
                                             verbose_name='Tax residency TIN type', help_text='tax residency TIN type')
     tax_resid_0_tin = models.CharField(max_length=250, blank=True, null=True, verbose_name='Tax residency tin',

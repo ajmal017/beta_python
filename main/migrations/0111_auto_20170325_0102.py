@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='firmdata',
             name='advisor_support_email',
-            field=models.EmailField(verbose_name='Client Support Email', max_length=254, null=True, blank=True),
+            field=models.EmailField(verbose_name='Advisor Support Email', max_length=254, null=True, blank=True),
         ),
         migrations.AddField(
             model_name='firmdata',
