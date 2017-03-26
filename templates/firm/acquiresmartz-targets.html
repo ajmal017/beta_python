@@ -1,0 +1,160 @@
+{% extends "layouts_new/base.html" %}
+{% load i18n bootstrap3 filters %}
+{% load static from staticfiles %}
+
+{% block css %}
+  <link rel="stylesheet" href="{% static 'css_new/acquiresmartz.css' %}">
+{% endblock %}
+
+{% block main_content %}
+<section>
+    <div class="container">
+        <h3>Cognitive client acquisition</h3>
+        <div class="row">
+            {% include "firm/partials/acquiresmartz-tabs.html" %}
+            {% include "firm/partials/acquiresmartz-period.html" %}
+        </div>
+        <div class="row">
+            {% include "firm/partials/acquiresmartz-sidebar.html" %}
+            <div class="col-lg-9 col-md-8 rightBig">
+                <div>
+                    <table id="bigTable" class="tableApp">
+                        <tr>
+                            <th><span class="caret"></span></th>
+                            <th>Handle</th>
+                            <th>User</th>
+                            <th>Location</th>
+                            <th>Time</th>
+                            <th>When</th>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="tweet-icon"><i class="fa fa-twitter"></i></span></td>
+                            <td><p>@CouEdwards</p><p class="green">Moving to Chicago for the pizza</p></td>
+                            <td>Courtney Edwards</td>
+                            <td></td>
+                            <td>5:59 pm</td>
+                            <td>
+                                <p>08-MAR-2016<p>
+                                <p>
+                                    <a href="#" class="action-icon" title="Message" data-target="#msgModal" data-toggle="modal"><i class="fa fa-envelope-o"></i></a>
+                                    <a href="#" class="action-icon" title="Personality" data-target="#personalityModal" data-toggle="modal"><i class="fa fa-user"></i></a>
+                                    <a href="#" class="action-icon" title="Target" data-target="#starModal" data-toggle="modal"><i class="fa fa-chevron-right"></i></a>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% include "firm/partials/modal-acquiresmartz-edit-campaign.html" %}
+{% include "firm/partials/modal-acquiresmartz-send-message.html" %}
+{% include "firm/partials/modal-acquiresmartz-personality.html" %}
+{% include "firm/partials/modal-acquiresmartz-chart.html" %}
+{% endblock %}

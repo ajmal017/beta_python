@@ -45,6 +45,11 @@ urlpatterns_firm = patterns(
     url(r'^supervisors/create$', FirmSupervisorsCreate.as_view(), name='supervisors-create'),
     url(r'^supervisors/(?P<pk>\d+)/edit', FirmSupervisorsEdit.as_view(), name='supervisors-edit'),
     url(r'^supervisors/(?P<pk>\d+)/delete', FirmSupervisorDelete.as_view(), name='supervisors-delete'),
+
+    url(r'^acquiresmartz$', lambda x: HttpResponseRedirect(reverse_lazy('firm:acquiresmartz-leads')), name='acquiresmartz'),
+    url(r'^acquiresmartz/leads$', FirmAcquireSmartzLeads.as_view(), name='acquiresmartz-leads'),
+    url(r'^acquiresmartz/targets$', FirmAcquireSmartzTargets.as_view(), name='acquiresmartz-targets'),
+    url(r'^acquiresmartz/cognitics$', FirmAcquireSmartzCognitics.as_view(), name='acquiresmartz-cognitics'),
 )
 
 urlpatterns_oauth1healthdevice = patterns(

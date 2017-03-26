@@ -987,3 +987,16 @@ class FirmAdvisorInvites(CreateView, LegalView):
                                                                               inviter_type=firm.content_type,
                                                                               )
         return response
+
+
+
+class FirmAcquireSmartzLeads(TemplateView, LegalView):
+    template_name = 'firm/acquiresmartz-leads.html'
+
+
+class FirmAcquireSmartzTargets(TemplateView, LegalView):
+    template_name = 'firm/acquiresmartz-targets.html'
+
+
+class FirmAcquireSmartzCognitics(TemplateView, LegalView):
+    template_name = 'firm/acquiresmartz-cognitics.html'
