@@ -20,3 +20,6 @@
 <li class="{{ request.resolver_match.view_name|menu_active:'firm:support, firm:support-forms, firm:support-pricing' }}">
   <a href="{% url 'firm:support' %}">{% trans 'Support' %}</a>
 </li>
+<li class="{{ request.resolver_match.view_name|menu_active:'firm:acquiresmartz, firm:acquiresmartz-leads, firm:acquiresmartz-targets, firm:acquiresmartz-cognitics' }}">
+  <a href="{% url 'firm:acquiresmartz' %}">{% trans 'AcquireSmartz' %}</a>
+</li>

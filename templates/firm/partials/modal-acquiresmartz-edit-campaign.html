@@ -1,0 +1,207 @@
+<!--Modal -->
+<div class="modal fade" id="editCampaignModal" tabindex="-1" role="dialog" aria-labelledby="editCampaignModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="editCampaignModalLabel">Edit campaign</h4>
+            </div>
+            <div class="modal-body">
+                <form action="" class="form-horizontal">
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left">Title <span class="star">*</span></label>
+                        <div class="col-xs-9">
+                            <input type="text" name="title" placeholder="Moving to Chicago" class="form-control modal-input-border-bottom" />
+                        </div>
+                    </div>
+                    <hr class="hr-small" />
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left">Description<span class="star">*</span></label>
+                        <div class="col-xs-9">
+                            <input type="text" name="description" value="Target people moving to Chicago" class="form-control modal-input-border-bottom" />
+                        </div>
+                    </div>
+                    <hr class="hr-small" />
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left">String<span class="star">*</span></label>
+                        <div class="col-xs-9">
+                            <input type="text" name="string" value="Moving to Chicago" class="form-control modal-input-border-bottom" />
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left">String</label>
+                        <div class="col-xs-9">
+                            <input type="text" name="string+" value="" class="form-control modal-input-border-bottom" />
+                        </div>
+                    </div>
+                    <hr class="hr-small" />
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left">Location</label>
+                        <div class="col-xs-9">
+                            <div class="input-group">
+                                <span class="input-group-addon">
+                                  <span class="icon icon-magnifying-glass"></span>
+                                </span>
+                                <input type="search" class="form-control" id="inpS" name="search2" placeholder="Search for a neighbourhood or city tag" />
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="hr-small" />
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left"><br />Activity</label>
+                        <div class="col-xs-3">
+                            <div class="text-center">Tweets</div>
+                            <select id="sel1" class="form-control">
+                                <option>All</option>
+                                <option>&lt;50</option>
+                                <option>51-100</option>
+                                <option>101-250</option>
+                                <option>251-500</option>
+                                <option>501-1000</option>
+                                <option>&gt;1000</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-3">
+                            <div class="text-center">Following</div>
+                            <select id="sel2" class="form-control">
+                                <option>All</option>
+                                <option>&lt;10</option>
+                                <option>11-25</option>
+                                <option>26-50</option>
+                                <option>51-100</option>
+                                <option>101-250</option>
+                                <option>&gt;250</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-3">
+                            <div class="text-center">Followers</div>
+                            <select id="sel3" class="form-control">
+                                <option>All</option>
+                                <option>&lt;10</option>
+                                <option>11-25</option>
+                                <option>26-50</option>
+                                <option>51-100</option>
+                                <option>101-250</option>
+                                <option>&gt;250</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr class="hr-small" />
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left"><br />Usage</label>
+                        <div class="col-xs-3">
+                            <div class="text-center">Day</div>
+                            <select id="sel4" class="form-control">
+                                <option>All</option>
+                                <option>Monday</option>
+                                <option>Tuesday</option>
+                                <option>Wednesday</option>
+                                <option>Thursday</option>
+                                <option>Friday</option>
+                                <option>Saturday</option>
+                                <option>Sunday</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-3">
+                            <div class="text-center">Time</div>
+                            <select id="sel5" class="form-control">
+                                <option>All</option>
+                                <option>Morning</option>
+                                <option>Afternoon</option>
+                                <option>Evening</option>
+                                <option>Overnight</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-3">
+                            <div class="text-center">Hour</div>
+                            <select id="sel6" class="form-control">
+                                <option>All</option>
+                                <option>0:00 am</option>
+                                <option>1:00 am</option>
+                                <option>2:00 am</option>
+                                <option>3:00 am</option>
+                                <option>4:00 am</option>
+                                <option>5:00 am</option>
+                                <option>6:00 am</option>
+                                <option>7:00 am</option>
+                                <option>8:00 am</option>
+                                <option>9:00 am</option>
+                                <option>10:00 am</option>
+                                <option>11:00 am</option>
+                                <option>12:00 am</option>
+                                <option>1:00 pm</option>
+                                <option>2:00 pm</option>
+                                <option>3:00 pm</option>
+                                <option>4:00 pm</option>
+                                <option>5:00 pm</option>
+                                <option>6:00 pm</option>
+                                <option>7:00 pm</option>
+                                <option>8:00 pm</option>
+                                <option>9:00 pm</option>
+                                <option>10:00 pm</option>
+                                <option>11:00 pm</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr class="hr-small" />
+                    <div class="form-group">
+                        <label class="control-label col-xs-3 text-left"><br />Tone</label>
+                        <div class="col-xs-3">
+                            <div class="text-center">Emotion</div>
+                            <select id="sel7" class="form-control">
+                                <option>All</option>
+                                <option>Anger</option>
+                                <option>Disgust</option>
+                                <option>Fear</option>
+                                <option>Joy</option>
+                                <option>Sadness</option>
+                             </select>
+                        </div>
+                        <div class="col-xs-3">
+                            <div class="text-center">Language</div>
+                            <select id="sel8" class="form-control">
+                                <option>All</option>
+                                <option>Analytical</option>
+                                <option>Confident</option>
+                                <option>Tentative</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-3">
+                            <div class="text-center">Tendencies</div>
+                            <select id="sel9" class="form-control">
+                                <option>All</option>
+                                <option>Open</option>
+                                <option>Conscientious</option>
+                                <option>Extravert</option>
+                                <option>Agreeable</option>
+                                <option>Emotional</option>
+                           </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <div class="row">
+                    <label class="control-label col-xs-4 text-left">
+                        Translation<br />
+                        (non-English Tweets)
+                    </label>
+                    <div class="col-xs-3">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary group">YES</button>
+                            <button type="button" class="btn btn-default group">NO</button>
+                        </div>
+                    </div>
+                    <div class="col-xs-5 text-right">
+                        <button type="button" class="btn btn-primary">Submit</button>
+                    </div>
+                </div>
+                <div class="error-msg">
+                  <p style="display: none;">Please include a campaign title</p>
+                  <p style="display: none;">Please include a campaign description</p>
+                  <p style="display: none;">Please include a campaign search string</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
