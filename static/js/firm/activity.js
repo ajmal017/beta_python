@@ -22,7 +22,7 @@
     $(function () {
         $("#ytdPicker").find("input").datepicker({
             endDate: "0d",
-            orientation: "bottom"
+            orientation: "top"
         }).on("changeDate", function (e) {
             $("#id_start").remove();
             $("#id_end").remove();
@@ -30,7 +30,7 @@
         });
         $("#customDatepicker").find(".input-daterange").datepicker({
             endDate: "0d",
-            orientation: "bottom"
+            orientation: "top"
         }).on("changeDate", function (e) {
             $("#id_ytd").remove();
             $("#activityFilterForm").submit();
