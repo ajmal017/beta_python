@@ -39,19 +39,19 @@
           {% if form.bps.errors %}
             <span class="error">{{ form.bps.errors|join:"; " }}</span>
           {% endif %}
-          <span>{{ form.bps }} bps</span>,
+          <span>{{ form.bps|widget_class:'form-control' }} bps</span>,
         </div>
         <div class="column">
           {% if form.fixed.errors %}
             <span class="error">{{ form.fixed.errors|join:"; " }}</span>
           {% endif %}
-          <span>$ {{ form.fixed }}</span>
+          <span>$ {{ form.fixed|widget_class:'form-control' }}</span>
         </div>
         <div class="column">
-          <button type="submit" data-type="{{ type }}">Save</button>
+          <button type="submit" class="btn btn-primary-outline" data-type="{{ type }}">Save</button>
           {% if form.instance.id %}
             {{ form.DELETE }}
-            <button type="submit" data-type="{{ type }}" class="delete">Delete</button>
+            <button type="submit" data-type="{{ type }}" class="btn btn-danger-outline delete">Delete</button>
           {% endif %}
         </div>
     </td>

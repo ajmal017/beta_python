@@ -3,9 +3,18 @@
     margin-right: 1rem;
 }
 
+#pricing-plans table {
+  margin-bottom: 0;
+}
+
+#pricing-plans td {
+  vertical-align: middle;
+}
+
 #pricing-plans .column input {
     width: 7rem;
     text-align: right;
+    display: inline-block;
 }
 
 #pricing-plans span.error {

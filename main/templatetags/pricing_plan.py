@@ -23,3 +23,6 @@ def display(value, field_prefix=None):
     except Exception as e:
         print(e)
 
+@register.filter(name='widget_class')
+def widget_class(field, css_class):
+   return field.as_widget(attrs={"class":css_class})
