@@ -27,6 +27,7 @@ from retiresmartz.models import RetirementAdvice, RetirementPlan
 from address.models import Address
 from .managers import ClientAccountQuerySet, ClientQuerySet
 from main.constants import GENDER_MALE
+from address.constants import COUNTRY_CHOICES
 
 logger = logging.getLogger('client.models')
 
@@ -1097,21 +1098,21 @@ class IBOnboard(models.Model):
     client = models.OneToOneField('Client', related_name='ib_onboard', null=True, blank=True)
     employer_address = models.OneToOneField('address.Address', related_name='ib_onboard_employer', null=True, blank=True)
     tax_address = models.OneToOneField('address.Address', related_name='ib_onboard_tax', null=True, blank=True)
-    country_of_birth = models.CharField(max_length=250, blank=True, null=True, help_text='country of birth')
+    country_of_birth = models.CharField(max_length=250, blank=True, null=True, help_text='Country of birth', choices=COUNTRY_CHOICES)
     num_dependents = models.IntegerField(blank=True, null=True, verbose_name='Number of dependents',
-                                         help_text='number of dependents')
+                                         help_text='Number of dependents')
     phone_type = models.CharField(choices=PhoneType.choices(), max_length=32, null=True, blank=True, default='Home',
-                                  help_text='phone type')
-    identif_leg_citizenship = models.CharField(max_length=250, blank=True, null=True, verbose_name='legal residence citizenship',
-                                               help_text='legal residence citizenship')
+                                  help_text='Phone Type')
+    identif_leg_citizenship = models.CharField(max_length=250, blank=True, null=True, verbose_name='Legal residence citizenship',
+                                               help_text='Legal residence citizenship', choices=COUNTRY_CHOICES)
     fin_info_tot_assets = models.IntegerField(blank=True, null=True, default=5, verbose_name='Total Assets',
-                                              help_text='total assets')
+                                              help_text='Total assets')
     fin_info_liq_net_worth = models.IntegerField(blank=True, null=True, default=5, verbose_name='Liquid Net Worth',
-                                                 help_text='liquid net worth')
+                                                 help_text='Liquid net worth')
     fin_info_ann_net_inc = models.IntegerField(blank=True, null=True, default=5, verbose_name='Annual Net Income',
-                                               help_text='annual net income')
+                                               help_text='Annual net income')
     fin_info_net_worth = models.IntegerField(blank=True, null=True, default=5, verbose_name='Net Worth',
-                                             help_text='net worth')
+                                             help_text='Net worth')
     asset_exp_0_knowledge = models.IntegerField(blank=True, null=True, verbose_name='STK trading knowledge',
                                              help_text='STK trading knowledge')
     asset_exp_0_yrs = models.IntegerField(blank=True, null=True, verbose_name='STK trading experience',
@@ -1129,16 +1130,17 @@ class IBOnboard(models.Model):
     reg_status_exch_memb = models.NullBooleanField(blank=True, null=True, verbose_name='EXCHANGEMEMBERSHIP',
                                                    help_text='EXCHANGEMEMBERSHIP')
     reg_status_disp = models.NullBooleanField(blank=True, null=True, verbose_name='DISPUTE', help_text='DISPUTE')
-    reg_status_investig = models.NullBooleanField(blank=True, null=True, help_text='INVESTIGATION')
+    reg_status_investig = models.NullBooleanField(blank=True, null=True, verbose_name='Investigation', help_text='INVESTIGATION')
     reg_status_stk_cont = models.IntegerField(choices=StkControlType.choices(), blank=True, null=True,
                                               help_text='STKCONTROL')
     tax_resid_0_tin_type = models.CharField(choices=TinType.choices(), max_length=250, blank=True, null=True, default='SSN',
-                                            verbose_name='Tax residency TIN type', help_text='tax residency TIN type')
-    tax_resid_0_tin = models.CharField(max_length=250, blank=True, null=True, verbose_name='Tax residency tin',
-                                       help_text='tax residency tin')
+                                            verbose_name='Tax residency TIN type', help_text='Tax residency TIN type')
+    tax_resid_0_tin = models.CharField(max_length=250, blank=True, null=True, verbose_name='Tax residency TIN',
+                                       help_text='Tax residency TIN')
     doc_exec_ts = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     doc_exec_login_ts = models.DateTimeField(auto_now_add=True, null=True, blank=True)
-    doc_signed_by = models.CharField(max_length=250, blank=True, null=True, help_text='document signed by')
+    doc_signed_by = models.CharField(max_length=250, blank=True, null=True, verbose_name='Document signed by',
+                                     help_text='Document signed by')
     salutation = models.CharField(max_length=10, choices=constants.IB_SALUTATION_CHOICES,
                                   default=constants.IB_SALUTATION_MR, help_text='Salutation')
     suffix = models.CharField(max_length=10, choices=constants.IB_SUFFIX_CHOICES, blank=True, null=True, help_text='Suffix')

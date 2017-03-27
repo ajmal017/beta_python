@@ -8,6 +8,7 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse_lazy
 from django.db.models import Q
+from django.forms import inlineformset_factory
 from django.forms.models import BaseModelFormSet
 from django.http import Http404
 from django.shortcuts import HttpResponseRedirect, get_object_or_404, \
@@ -19,7 +20,7 @@ from django.utils.timezone import now
 from django.views.generic import CreateView, TemplateView, View
 from django.views.generic.edit import ProcessFormView
 
-from client.models import Client, JointAccountConfirmationModel
+from client.models import Client, IBOnboard, JointAccountConfirmationModel
 from main.constants import AUTHORIZED_REPRESENTATIVE, INVITATION_ADVISOR, \
     INVITATION_SUPERVISOR, INVITATION_TYPE_DICT, PERSONAL_DATA_FIELDS, \
     SUCCESS_MESSAGE, EMPLOYMENT_STATUS_EMMPLOYED, EMPLOYMENT_STATUS_SELF_EMPLOYED
@@ -33,6 +34,9 @@ from notifications.models import Notify
 from ..base import AdminView, LegalView
 from ...forms import EmailInvitationForm
 from ...models import EmailInvitation, Section
+from api.v1.address.serializers import RegionSerializer
+from address.models import Address
+from address.constants import COUNTRY_CHOICES
 
 __all__ = ["InviteLegalView", "AuthorisedRepresentativeSignUp", 'FirmDataView',
            "EmailConfirmationView", 'Confirmation',
@@ -593,7 +597,29 @@ PricingPlanClientFormset = forms.modelformset_factory(
 )
 
 
-class FirmApplicationClientForm(forms.ModelForm):
+class AddressHelper():
+    def update_address(self, address, prefix):
+        if address is None:
+            address = Address()
+        address.address = '\n'.join([
+            self.cleaned_data[prefix + 'address1'],
+            self.cleaned_data[prefix + 'address2'],
+            self.cleaned_data[prefix + 'city']
+        ])
+        address.post_code = self.cleaned_data[prefix + 'post_code']
+
+        address_region_ser = RegionSerializer(data={
+            'country': self.cleaned_data[prefix + 'country'],
+            'name': self.cleaned_data[prefix + 'state'],
+            'code': self.cleaned_data[prefix + 'state']
+        })
+        address_region_ser.is_valid(raise_exception=True)
+        address_region = address_region_ser.save()
+        address.region = address_region
+        address.save()
+        return address
+
+class FirmApplicationClientForm(forms.ModelForm, AddressHelper):
     required_css_class = 'required'
 
     first_name = forms.CharField(label='First Name')
@@ -601,8 +627,6 @@ class FirmApplicationClientForm(forms.ModelForm):
     last_name = forms.CharField(label='Last Name')
     email = forms.CharField(label='Email')
 
-    salutation = forms.CharField(label='Salutation', max_length=10, widget=forms.Select(choices=constants.IB_SALUTATION_CHOICES))
-    suffix = forms.CharField(label='Suffix', max_length=10, widget=forms.Select(choices=constants.IB_SUFFIX_CHOICES), required=False)
     tax_transcript = forms.FileField(label='Tax Transcript', required=False)
     social_security_statement = forms.FileField(label='Social Security Statement', required=False)
 
@@ -611,21 +635,25 @@ class FirmApplicationClientForm(forms.ModelForm):
     city = forms.CharField(label='City')
     post_code = forms.CharField(label='Zip code', max_length=16, required=False)
     state = forms.CharField(label='State', max_length=128)
-    country = forms.CharField(label='Country', max_length=2)
+    country = forms.ChoiceField(label='Country', choices=COUNTRY_CHOICES)
 
-    ssn = forms.CharField(label='Social Security Number')
+    ssn = forms.CharField(label='Social Security Number', required=False)
     politically_exposed = forms.BooleanField(label='Politically Exposed', required=False)
 
     additional_document = forms.FileField(required=False)
 
+    salutation = forms.CharField(label='Salutation', max_length=10, widget=forms.Select(choices=constants.IB_SALUTATION_CHOICES))
+    suffix = forms.CharField(label='Suffix', max_length=10, widget=forms.Select(choices=constants.IB_SUFFIX_CHOICES), required=False)
+
     class Meta:
         model = Client
         fields = ['first_name', 'middle_name', 'last_name', 'email', # User model
-                  'salutation', 'suffix', 'tax_transcript', 'social_security_statement', # Invitation model
-                  'address1', 'address2', 'city', 'post_code',  'state', 'country', # Address model
+                  'tax_transcript', 'social_security_statement', # Invitation model
+                  'address1', 'address2', 'city', 'post_code',  'state', 'country', # Address fields
                   'gender', 'civil_status', 'phone_num', 'date_of_birth', # Client model
                   'employer_type', 'employer', 'employment_status', 'income', 'other_income', 'industry_sector', 'occupation', # Client model - employement
-                  'ssn', 'politically_exposed'] # Client regional_data
+                  'ssn', 'politically_exposed', # Client regional_data
+                  'salutation', 'suffix',]  # IBOnboard
 
     def __init__(self, *args, **kwargs):
         super(FirmApplicationClientForm, self).__init__(*args, **kwargs)
@@ -640,8 +668,6 @@ class FirmApplicationClientForm(forms.ModelForm):
 
         try:
             invitation = user.invitation
-            self.fields['salutation'].initial = invitation.salutation
-            self.fields['suffix'].initial = invitation.salutation
             self.fields['tax_transcript'].initial = invitation.tax_transcript
             self.fields['social_security_statement'].initial = invitation.social_security_statement
         except:
@@ -654,24 +680,53 @@ class FirmApplicationClientForm(forms.ModelForm):
         self.fields['state'].initial = address.region.code
         self.fields['country'].initial = address.region.country
 
-        self.fields['ssn'].initial = client.regional_data['ssn']
+        self.fields['ssn'].initial = client.regional_data['ssn'] if 'ssn' in client.regional_data else ''
         self.fields['politically_exposed'].initial = client.regional_data['politically_exposed']
 
-    # def clean(self):
-    #     cleaned_data = super(FirmApplicationClientForm, self).clean()
-    #     employed_statuses = [EMPLOYMENT_STATUS_EMMPLOYED, EMPLOYMENT_STATUS_SELF_EMPLOYED]
-    #     print(cleaned_data['income'])
-    #     if cleaned_data['employment_status'] in employed_statuses and cleaned_data['income'] is None:
-    #         raise forms.ValidationError("Income field is required")
-    #     return cleaned_data
+        try:
+            ib_onboard = client.ib_onboard
+            self.fields['salutation'].initial = ib_onboard.salutation
+            self.fields['suffix'].initial = ib_onboard.suffix
+        except:
+            pass
+
+    def clean(self):
+        cleaned_data = super(FirmApplicationClientForm, self).clean()
+        # employed_statuses = [EMPLOYMENT_STATUS_EMMPLOYED, EMPLOYMENT_STATUS_SELF_EMPLOYED]
+        # print(cleaned_data['income'])
+        # if cleaned_data['employment_status'] in employed_statuses and cleaned_data['income'] is None:
+        #     raise forms.ValidationError("Income field is required")
+        if cleaned_data['country'] != 'US':
+            del cleaned_data['ssn']
+        return cleaned_data
 
     def save(self, commit=True, *args, **kwargs):
         client = super(FirmApplicationClientForm, self).save(commit=False, *args, **kwargs)
 
         regional_data = client.regional_data
-        regional_data['ssn'] = self.cleaned_data['ssn']
+        if self.cleaned_data['country'] == 'US':
+            regional_data['ssn'] = self.cleaned_data['ssn']
+        else:
+            if 'ssn' in regional_data:
+                del regional_data['ssn']
+            if 'tax_transcript' in regional_data:
+                del regional_data['tax_transcript']
+            if 'tax_transcript_data' in regional_data:
+                del regional_data['tax_transcript_data']
+            if 'tax_transcript_data_ex' in regional_data:
+                del regional_data['tax_transcript_data_ex']
+            if 'social_security_statement' in regional_data:
+                del regional_data['social_security_statement']
+            if 'social_security_statement_data' in regional_data:
+                del regional_data['social_security_statement_data']
+            if 'partner_social_security_statement' in regional_data:
+                del regional_data['partner_social_security_statement']
+            if 'partner_social_security_statement_data' in regional_data:
+                del regional_data['partner_social_security_statement_data']
+
         regional_data['politically_exposed'] = self.cleaned_data['politically_exposed']
         client.regional_data = regional_data
+        client.residential_address = self.update_address(client.residential_address, '')
 
         if commit:
             client.save()
@@ -682,15 +737,11 @@ class FirmApplicationClientForm(forms.ModelForm):
         user.last_name = self.cleaned_data['last_name']
         user.email = self.cleaned_data['email']
 
-        # TODO: Residential addresss assignment here
-
         if commit:
             user.save()
 
         try:
             invitation = user.invitation
-            invitation.salutation = self.cleaned_data['salutation']
-            invitation.suffix = self.cleaned_data['suffix']
             invitation.tax_transcript = self.cleaned_data['tax_transcript']
             invitation.social_security_statement = self.cleaned_data['social_security_statement']
             if commit:
@@ -698,4 +749,70 @@ class FirmApplicationClientForm(forms.ModelForm):
         except ObjectDoesNotExist:
             pass
 
+        try:
+            ib_onboard = client.ib_onboard
+        except ObjectDoesNotExist:
+            ib_onboard = IBOnboard(client=client)
+
+        ib_onboard.salutation = self.cleaned_data['salutation']
+        ib_onboard.suffix = self.cleaned_data['suffix']
+
+        if commit:
+            ib_onboard.save()
+
         return client
+
+
+class FirmApplicationIBOnboardForm(forms.ModelForm, AddressHelper):
+    required_css_class = 'required'
+
+    tax_address1 = forms.CharField(label='Address 1')
+    tax_address2 = forms.CharField(label='Address 2', required=False)
+    tax_city = forms.CharField(label='City')
+    tax_post_code = forms.CharField(label='Zip code', max_length=16, required=False)
+    tax_state = forms.CharField(label='State', max_length=128)
+    tax_country = forms.ChoiceField(label='Country', choices=COUNTRY_CHOICES)
+
+    emp_address1 = forms.CharField(label='Address 1')
+    emp_address2 = forms.CharField(label='Address 2', required=False)
+    emp_city = forms.CharField(label='City')
+    emp_post_code = forms.CharField(label='Zip code', max_length=16, required=False)
+    emp_state = forms.CharField(label='State', max_length=128)
+    emp_country = forms.ChoiceField(label='Country', choices=COUNTRY_CHOICES)
+
+    class Meta:
+        model = IBOnboard
+        exclude = ['salutation', 'suffix', 'doc_exec_ts', 'doc_exec_login_ts']
+
+    def __init__(self, *args, **kwargs):
+        super(FirmApplicationIBOnboardForm, self).__init__(*args, **kwargs)
+        if 'instance' in kwargs:
+            ib_onboard = kwargs['instance']
+            if ib_onboard.tax_address:
+                self.fields['tax_address1'].initial = ib_onboard.tax_address.address1
+                self.fields['tax_address2'].initial = ib_onboard.tax_address.address2
+                self.fields['tax_city'].initial = ib_onboard.tax_address.city
+                self.fields['tax_post_code'].initial = ib_onboard.tax_address.post_code
+                self.fields['tax_state'].initial = ib_onboard.tax_address.region.code
+                self.fields['tax_country'].initial = ib_onboard.tax_address.region.country
+
+            if ib_onboard.employer_address:
+                self.fields['emp_address1'].initial = ib_onboard.employer_address.address1
+                self.fields['emp_address2'].initial = ib_onboard.employer_address.address2
+                self.fields['emp_city'].initial = ib_onboard.employer_address.city
+                self.fields['emp_post_code'].initial = ib_onboard.employer_address.post_code
+                self.fields['emp_state'].initial = ib_onboard.employer_address.region.code
+                self.fields['emp_country'].initial = ib_onboard.employer_address.region.country
+
+    def save(self, commit=True, *args, **kwargs):
+        ib_onboard = super(FirmApplicationIBOnboardForm, self).save(commit=False, *args, **kwargs)
+        ib_onboard.tax_address = self.update_address(ib_onboard.tax_address, 'tax_')
+        ib_onboard.employer_address = self.update_address(ib_onboard.employer_address, 'emp_')
+
+        if commit:
+            ib_onboard.save()
+        return ib_onboard
+
+FirmApplicationIBOnboardFormSet = inlineformset_factory(Client, IBOnboard,
+                                                        form=FirmApplicationIBOnboardForm,
+                                                        exclude=['salutation', 'suffix', 'doc_exec_ts', 'doc_exec_login_ts'])

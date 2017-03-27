@@ -58,8 +58,6 @@ class IBOnboardCreateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def create(self, validated_data):
-        print(validated_data['employer_address'])
-        print(validated_data['tax_address'])
         employer_address_ser = AddressUpdateSerializer(data=validated_data.pop('employer_address'))
         tax_address_ser = AddressUpdateSerializer(data=validated_data.pop('tax_address'))
         employer_address_ser.is_valid(raise_exception=True)
