@@ -33,6 +33,10 @@ logger = logging.getLogger('client.models')
 
 
 class Client(NeedApprobation, NeedConfirmation, PersonalData):
+    class CoverageType(ChoiceEnum):
+        SINGLE = 'Single', 'Single'
+        FAMILY = 'Family', 'Family'
+
     WORTH_AFFLUENT = 'affluent'
     WORTH_HIGH = 'high'
     WORTH_VERY_HIGH = 'very-high'
@@ -74,8 +78,24 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
                                        max_length=20, null=True, blank=True)
     employer_type = models.IntegerField(choices=constants.EMPLOYER_TYPES,
                                         null=True, blank=True)
-    student_loan = models.NullBooleanField(null=True, blank=True)
     employer = models.CharField(max_length=255, null=True, blank=True)
+
+    student_loan = models.NullBooleanField(null=True, blank=True)
+    student_loan_assistance_program = models.NullBooleanField(blank=True, null=True,
+            verbose_name='Assistance Program',
+            help_text='Does your employer offer a loan repayment assistance program?')
+    student_loan_graduate_looking = models.NullBooleanField(blank=True, null=True,
+            verbose_name='Graduate',
+            help_text='Are you a graduate looking to refinance your student loans?')
+    student_loan_parent_looking = models.NullBooleanField(blank=True, null=True,
+            verbose_name='Parent',
+            help_text='Are you a parent looking to refinance Parent Plus loans?')
+
+    hsa_eligible = models.NullBooleanField(blank=True, null=True)
+    hsa_provider_name = models.CharField(max_length=255, null=True, blank=True)
+    hsa_state = models.CharField(max_length=255, null=True, blank=True)
+    hsa_coverage_type = models.CharField(choices=CoverageType.choices(), max_length=32, null=True, blank=True)
+
     smoker = models.NullBooleanField(null=True, blank=True)
     daily_exercise = models.PositiveIntegerField(null=True, blank=True,
                                                  help_text="In Minutes")
