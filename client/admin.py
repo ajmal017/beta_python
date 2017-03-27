@@ -5,7 +5,7 @@ from nested_admin.nested import NestedModelAdmin, NestedTabularInline
 
 from client.models import (AccountTypeRiskProfileGroup, Client, ClientAccount,
     RiskProfileAnswer, RiskProfileGroup, RiskProfileQuestion, RiskCategory,
-    EmailInvite, AccountBeneficiary)
+    EmailInvite, AccountBeneficiary, IBOnboard)
 from main.admin import approve_application
 
 
@@ -13,16 +13,25 @@ class ClientAccountInline(admin.StackedInline):
     model = ClientAccount
 
 
+class IBOnboardInline(admin.StackedInline):
+    model = IBOnboard
+
+
 class ClientAdmin(admin.ModelAdmin):
     list_display = ('user', 'phone_num', 'is_accepted', 'is_confirmed', 'firm',
                     'geolocation_lock')
     list_filter = ('is_accepted',)
     actions = (approve_application,)
-    inlines = (ClientAccountInline,)
+    inlines = (IBOnboardInline, ClientAccountInline,)
 
     def get_queryset(self, request):
         qs = super(ClientAdmin, self).get_queryset(request)
         return qs.filter(user__prepopulated=False)
+
+
+class IBOnboardAdmin(admin.ModelAdmin):
+    list_display = ('account_number', 'email')
+    list_display_links = ('account_number', 'email')
 
 
 class ClientAccountAdmin(admin.ModelAdmin):
@@ -93,3 +102,4 @@ admin.site.register(RiskProfileAnswer, RiskProfileAnswerAdmin)
 admin.site.register(RiskCategory, RiskCategoryAdmin)
 admin.site.register(EmailInvite, EmailInviteAdmin)
 admin.site.register(AccountBeneficiary, AccountBeneficiaryAdmin)
+admin.site.register(IBOnboard, IBOnboardAdmin)
