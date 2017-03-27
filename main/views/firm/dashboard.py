@@ -26,7 +26,7 @@ from main.models import Advisor, EmailInvitation, Goal, GoalMetric, GoalType, \
 from main.views.base import LegalView
 from django.core.urlresolvers import reverse
 from main.views.firm.forms import PricingPlanAdvisorFormset, \
-    PricingPlanClientFormset, PricingPlanForm, FirmApplicationClientForm
+    PricingPlanClientFormset, PricingPlanForm, FirmApplicationClientForm, FirmApplicationIBOnboardFormSet
 from notifications.models import Notification, Notify
 from support.models import SupportRequest
 from .filters import FirmActivityFilterSet, FirmAnalyticsAdvisorsFilterSet, \
@@ -726,7 +726,7 @@ class FirmApplicationView(ListView, LegalView):
     model = Client
 
     def get_context_data(self, **kwargs):
-        qs = self.get_queryset()
+        qs = self.get_queryset().order_by('user__first_name').order_by('user__last_name')
         f = FirmApplicationsClientsFilterSet(self.request.GET, queryset=qs)
         return {
             'filter': f
@@ -748,6 +748,30 @@ class FirmApplicationDetailView(UpdateView, LegalView):
             EMPLOYMENT_STATUS_SELF_EMPLOYED
         ]
         return context
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        ib_formset = FirmApplicationIBOnboardFormSet(instance=self.object)
+        return self.render_to_response(self.get_context_data(form=self.get_form(), ib_formset=ib_formset))
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        ib_formset = FirmApplicationIBOnboardFormSet(self.request.POST, instance=self.object)
+        if form.is_valid() and ib_formset.is_valid():
+            return self.form_valid(form, ib_formset)
+        else:
+            return self.form_invalid(form, ib_formset)
+
+    def form_valid(self, form, ib_formset):
+        self.object = form.save()
+        ib_formset.instance = self.object
+        ib_formset.save()
+        return HttpResponseRedirect(self.get_success_url())
+
+    def form_invalid(self, form, ib_formset):
+        return self.render_to_response(self.get_context_data(form=form, ib_formset=ib_formset))
+
 
 class FirmSupportPricingView(TemplateView, LegalView):
     template_name = "firm/support-pricing.html"
