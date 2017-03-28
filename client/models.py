@@ -153,17 +153,29 @@ class Client(NeedApprobation, NeedConfirmation, PersonalData):
     def __str__(self):
         return self.user.get_full_name()
 
+    @staticmethod
+    def get_employment_status_text(employment_status):
+        return get_text_of_choices_enum(employment_status, constants.EMPLOYMENT_STATUSES)
+
     @cached_property
     def employment_status_text(self):
-        return get_text_of_choices_enum(self.employment_status, constants.EMPLOYMENT_STATUSES)
+        return Client.get_employment_status_text(self.employment_status)
+
+    @staticmethod
+    def get_employer_type_text(employer_type):
+        return get_text_of_choices_enum(employer_type, constants.EMPLOYER_TYPES)
 
     @cached_property
     def employer_type_text(self):
-        return get_text_of_choices_enum(self.employer_type, constants.EMPLOYER_TYPES)
+        return Client.get_employer_type_text(self.employer_type)
+
+    @staticmethod
+    def get_occupation_text(occupation):
+        return get_text_of_choices_enum(occupation, constants.OCCUPATION_TYPES)
 
     @cached_property
     def occupation_text(self):
-        return get_text_of_choices_enum(self.occupation, constants.OCCUPATION_TYPES)
+        return Client.get_occupation_text(self.occupation)
 
     @cached_property
     def salutation(self):
@@ -753,7 +765,7 @@ class ClientAccount(models.Model):
 
     @cached_property
     def account_type_text(self):
-        return ClientAccount.get_account_type_text(this.account_type, constants.ACCOUNT_TYPES)
+        return ClientAccount.get_account_type_text(self.account_type)
 
 
 class RiskProfileGroup(models.Model):

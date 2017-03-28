@@ -149,9 +149,13 @@ class PersonalData(models.Model):
             PersonalData.CivilStatus.MARRIED_FILING_SEPARATELY_LIVED_TOGETHER
         ]
 
+    @staticmethod
+    def get_filing_status_text(civil_status):
+        return get_text_of_choices_enum(civil_status, PersonalData.CivilStatus.choices())
+
     @cached_property
     def filing_status_text(self):
-        return get_text_of_choices_enum(self.civil_status, PersonalData.CivilStatus.choices())
+        return PersonalData.get_filing_status_text(self.civil_status)
 
 
 class NeedApprobation(models.Model):

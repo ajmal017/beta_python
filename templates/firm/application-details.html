@@ -6,13 +6,13 @@
 {% block main_content %}
   <div class="container">
 
-    <h3>Edit client details</h3>
+    <h3>Edit <strong>{{client.name}}</strong></h3>
 
     {% for item in form.errors.items %}
       {{item}}
     {% endfor %}
 
-    <form method="post" enctype="multipart/form-data">
+    <form method="post" enctype="multipart/form-data" id="clientAppForm">
       {% csrf_token %}
       <h4 class="m-t">Personal Information</h4>
       <div class="row">
@@ -77,6 +77,36 @@
         <div class="col-sm-3">
           {% bootstrap_field form.ssn %}
         </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-3">
+          {% bootstrap_field form.student_loan %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.student_loan_assistance_program %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.student_loan_graduate_looking %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.student_loan_parent_looking %}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-3">
+          {% bootstrap_field form.hsa_eligible %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.hsa_provider_name %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.hsa_state %}
+        </div>
+        <div class="col-sm-3">
+          {% bootstrap_field form.hsa_coverage_type %}
+        </div>
+      </div>
+      <div class="row">
         <div class="col-sm-3">
           {% bootstrap_field form.politically_exposed %}
         </div>
@@ -259,20 +289,53 @@
         </div>
       {% endfor %}
       <hr />
-      <div class="row">
-        <div class="col-xs-6">
-          <button class="btn btn-primary-outline" type="reset">Cancel</button>
-        </div>
-        <div class="col-xs-6 text-right">
-          <button class="btn btn-primary" type="submit">Save</button>
-        </div>
+      <div class="text-center">
+        <button class="btn btn-primary-outline" type="reset">Cancel</button>
+        <button class="btn btn-primary" type="button" id="showConfirmModal">Save</button>
       </div>
     </form>
+    <hr />
+    <div class="text-right">
+      <form method="post" action="{% url 'firm:application-send-email' client.id %}">
+        {% csrf_token %}
+        <div class="inline-checkbox-wrap">Email to: </div>
+        <div class="inline-checkbox-wrap">
+          <div class="btn-group" data-toggle="buttons">
+            <label class="btn btn-primary-outline active">
+              <input type="radio" name="email_to" value="client" autocomplete="off" checked> Client
+            </label>
+            <label class="btn btn-primary-outline">
+              <input type="radio" name="email_to" value="advisor" autocomplete="off"> Advisor
+            </label>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+    </div>
+
   </div>
+
+  <div tabindex="-1" class="modal fade" id="confirmSaveModal" role="dialog" aria-hidden="true" aria-labelledby="confirmSaveModalLabel">
+      <div class="modal-dialog">
+          <div class="modal-content">
+              <div class="modal-body center">
+                  <h3 id="confirmSaveModalLabel" class="text-center">Save Changes</h3>
+                  <p>By confirming you wish to save changes, you will resubmit your client information to your broker dealer.</p>
+                  <p>Submitting and resubmitting details may result in a need for further information to be provided before account approval can be accepted or the suspension of an existing account. </p>
+              </div>
+          <div class="modal-footer">
+              <button class="btn btn-primary-outline pull-left" type="button" data-dismiss="modal">Cancel</button>
+              <button class="btn btn-primary" type="button" id="clientAppFormSubmit">Send</button>
+          </div>
+          </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
 {% endblock %}
 
 {% block foot_js %}
   <script type="text/javascript" src="{% static 'js/jquery.maskedinput.min.js' %}"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAeqDOMTcsTwwY6SBbOHIIx8Zb8jXH5jk0&libraries=places&callback=initAutocomplete" async defer></script>
   <script type="application/javascript">
   $(function () {
     $('#id_ssn').mask('999-99-9999');
@@ -299,7 +362,29 @@
         $('.income-col input').removeAttr('required');
         $('.income-col').hide();
       }
-    })
+    });
+
+    $('#id_address1, #id_ib_onboard-0-tax_address1, #id_ib_onboard-0-emp_address1')
+      .on('keyup keypress', function(e) {
+        var keyCode = e.keyCode || e.which;
+        if (keyCode === 13) {
+          e.preventDefault();
+          return false;
+        }
+      });
+
+    $('#clientAppForm').on('submit', function (e) {
+      if (($("#confirmSaveModal").data('bs.modal') || {}).isShown) {
+        return true;
+      } else {
+        $('#confirmSaveModal').modal('show');
+        return false;
+      }
+    });
+
+    $('#showConfirmModal, #clientAppFormSubmit').on('click', function(e) {
+      $('#clientAppForm').submit();
+    });
   });
 
   var placeSearch;
@@ -345,8 +430,6 @@
     }
   }
 
-  // Bias the autocomplete object to the user's geographical location,
-  // as supplied by the browser's 'navigator.geolocation' object.
   function geolocate() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(position) {
@@ -390,5 +473,4 @@
   }
 
   </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDMwLm71pukebcVaUzBsr6UEOmFnEAOlO0&libraries=places&callback=initAutocomplete" async defer></script>
 {% endblock %}

@@ -14,10 +14,12 @@ from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
                                   TemplateView, UpdateView)
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
 from functools import reduce
 from operator import itemgetter
 
-from client.models import Client
+from client.models import Client, IBOnboard
 from main.constants import (INVITATION_ADVISOR, INVITATION_SUPERVISOR, INVITATION_TYPE_DICT,
                             EMPLOYMENT_STATUS_EMMPLOYED, EMPLOYMENT_STATUS_SELF_EMPLOYED)
 from main.forms import BetaSmartzGenericUserSignupForm, EmailInvitationForm
@@ -739,6 +741,7 @@ class FirmApplicationDetailView(UpdateView, LegalView):
     model = Client
 
     def get_success_url(self):
+        messages.success(self.request, "Client Information Updated successfully")
         return reverse('firm:application')
 
     def get_context_data(self, **kwargs):
@@ -771,6 +774,64 @@ class FirmApplicationDetailView(UpdateView, LegalView):
 
     def form_invalid(self, form, ib_formset):
         return self.render_to_response(self.get_context_data(form=form, ib_formset=ib_formset))
+
+
+class FirmApplicationSendEmailView(TemplateView, LegalView):
+    def redirect_url(self):
+        return reverse('firm:application-detail', kwargs={'pk': self.kwargs['pk']})
+
+    def redirect_success(self):
+        messages.success(self.request, "Email sent successfully")
+        return HttpResponseRedirect(self.redirect_url())
+
+    def redirect_fail(self, message):
+        messages.error(self.request, message)
+        return HttpResponseRedirect(self.redirect_url())
+
+    def get_csv_content(self, client):
+        try:
+            ib_onboard = client.ib_onboard
+        except:
+            ib_onboard = None
+
+        context = {
+            'client': client,
+            'ib_onboard': ib_onboard,
+            'user': client.user
+        }
+        return render_to_string('email/firm_client_application/csv.txt', context)
+
+    def get(self, request, *args, **kwargs):
+        redirect_url = reverse('firm:application-detail', kwargs={'pk': self.kwargs['pk']})
+        return HttpResponseRedirect(redirect_url)
+
+    def post(self, request, *args, **kwargs):
+        email_to = request.POST.get('email_to', '')
+        if email_to in ['advisor', 'client']:
+            client = Client.objects.get(pk=kwargs['pk'])
+            advisor = client.advisor
+            context = {
+                'advisor': advisor,
+                'client': client,
+                'firm': client.firm
+            }
+
+            if email_to == 'advisor':
+                subject = 'Your Client\'s BetaSmartz Account Information'
+                html_content = render_to_string('email/firm_client_application/to_advisor.html', context)
+                recipient = advisor.user.email
+            else:
+                subject = 'Your BetaSmartz Account Information'
+                html_content = render_to_string('email/firm_client_application/to_client.html', context)
+                recipient = client.user.email
+            csv_content = self.get_csv_content(client)
+            email = EmailMessage(subject, html_content, None, [recipient])
+            email.content_subtype = "html"
+            email.attach('Client Data - {}.csv'.format(client.name), csv_content, 'text/csv')
+            email.send()
+            return self.redirect_success()
+        else:
+            return self.redirect_fail('Please choose advisor/client')
 
 
 class FirmSupportPricingView(TemplateView, LegalView):

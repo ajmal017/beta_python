@@ -52,7 +52,7 @@ class Address(models.Model):
     def full_address(self):
         ads = [x for x in self.address.split('\n') if x != '']
         ads_str = ', '.join(ads)
-        return '{}, {}, {}'.format(ads_str, self.region.name, self.post_code)
+        return '{}, {}, {}, {}'.format(ads_str, self.region.name, self.post_code, self.country)
 
     @cached_property
     def address1(self):
@@ -72,14 +72,16 @@ class Address(models.Model):
         else:
             return None
 
+    @cached_property
     def state_code(self):
         return self.region.code
 
+    @cached_property
     def country(self):
         return self.region.country
 
     def __str__(self):
-        return self.address + ', ' +  self.region.name + ', ' + self.region.country
+        return self.full_address
 
     class Meta:
         verbose_name = _('address')

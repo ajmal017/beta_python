@@ -645,6 +645,9 @@ class FirmApplicationClientForm(forms.ModelForm, AddressHelper):
     salutation = forms.CharField(label='Salutation', max_length=10, widget=forms.Select(choices=constants.IB_SALUTATION_CHOICES))
     suffix = forms.CharField(label='Suffix', max_length=10, widget=forms.Select(choices=constants.IB_SUFFIX_CHOICES), required=False)
 
+    email_to_client = forms.BooleanField(label='Client', required=False)
+    email_to_advisor = forms.BooleanField(label='Advisor', required=False)
+
     class Meta:
         model = Client
         fields = ['first_name', 'middle_name', 'last_name', 'email', # User model
@@ -653,6 +656,8 @@ class FirmApplicationClientForm(forms.ModelForm, AddressHelper):
                   'gender', 'civil_status', 'phone_num', 'date_of_birth', # Client model
                   'employer_type', 'employer', 'employment_status', 'income', 'other_income', 'industry_sector', 'occupation', # Client model - employement
                   'ssn', 'politically_exposed', # Client regional_data
+                  'student_loan', 'student_loan_assistance_program', 'student_loan_graduate_looking',
+                  'student_loan_parent_looking', 'hsa_eligible', 'hsa_provider_name', 'hsa_state', 'hsa_coverage_type', 
                   'salutation', 'suffix',]  # IBOnboard
 
     def __init__(self, *args, **kwargs):
