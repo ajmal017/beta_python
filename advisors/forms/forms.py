@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django import forms
 from django.http import QueryDict
 from django.utils.safestring import mark_safe
+from django.contrib.staticfiles.templatetags.staticfiles import static
 
 from advisors.models import ChangeDealerGroup, SingleInvestorTransfer, \
     BulkInvestorTransfer
@@ -39,17 +40,21 @@ class ChangeDealerGroupForm(forms.ModelForm):
                                 "detail": mark_safe("A letter from your previous Dealer Group authorising the release "
                                                     "of your current investors. A template of this letter has been supplied, "
                                                     "This letter must be provided on the previous Dealer Group's "
-                                                    "company letterhead. <a target='_blank' href='/static/docs/previous_dealer_group_release_authorization.pdf'>Example</a>")},
+                                                    "company letterhead. <a target='_blank' href='{}'>Example</a>".format(
+                                                        static('docs/previous_dealer_group_release_authorization.pdf')))},
                                {"fields": ('letter_new_group',),
                                 "header": "New Dealer Group Acceptance Authorization",
                                 "detail": mark_safe("A letter from the new Dealer Group accepting the transfer of your "
                                                     "current investors. A template of this letter has been supplied. This letter"
-                                                    "must be provided on the new Dealer Group's company letterhead. <a target='_blank' href='/static/docs/new_dealer_group_acceptance_authorization.pdf'>Example</a>")},
+                                                    "must be provided on the new Dealer Group's company letterhead. "
+                                                    "<a target='_blank' href='{}'>Example</a>".format(
+                                                        static('docs/new_dealer_group_acceptance_authorization.pdf')))},
                                {"fields": ('signature',),
                                 "header": "Advisor Signature",
                                 "detail": mark_safe(
-                                    "Please upload a signature approval by an Authorised Signatory of the new Dealer Group. <a target='_blank' href='/static/docs/advisor_signature_change_dealer_group.pdf'>Example</a>"),
-                                }
+                                    "Please upload a signature approval by an Authorised Signatory of the new Dealer Group. "
+                                    "<a target='_blank' href='{}'>Example</a>".format(
+                                        static('docs/advisor_signature_change_dealer_group.pdf')))},
                                ]
         self.fields["new_firm"].queryset = Firm.objects.exclude(pk=self.initial["old_firm"].pk)
         self.fields["clients"].queryset = self.initial["advisor"].clients
@@ -91,7 +96,8 @@ class SingleInvestorTransferForm(forms.ModelForm):
                                {"fields": ('signatures',),
                                 "header": "Signatures",
                                 "detail": mark_safe("Signature of existing advisor or authorised firm representative. "
-                                                    "<a target='_blank' href='/static/docs/account_transfer_between_advisors_in_the_same_firm.pdf'>Example</a>")},
+                                                    "<a target='_blank' href='{}'>Example</a>".format(
+                                                        static('docs/account_transfer_between_advisors_in_the_same_firm.pdf')))},
                                ]
 
         self.fields["investor"].queryset = self.initial["from_advisor"].clients
@@ -127,8 +133,9 @@ class BulkInvestorTransferForm(forms.ModelForm):
                                 "header": "Investors"},
                                {"fields": ('signatures',),
                                 "header": "Signatures",
-                                "detail": mark_safe("Signature of existing advisor or authorised firm representative"
-                                                    " <a target='_blank' href='/static/docs/account_transfer_between_advisors_in_the_same_firm.pdf'>Example</a>")},
+                                "detail": mark_safe("Signature of existing advisor or authorised firm representative. "
+                                                    "<a target='_blank' href='{}'>Example</a>".format(
+                                                        static('docs/account_transfer_between_advisors_in_the_same_firm.pdf')))},
                                ]
 
         self.fields["investors"].queryset = self.initial["from_advisor"].clients
