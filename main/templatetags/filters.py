@@ -2,7 +2,7 @@ from django.template import Library
 from django.utils.safestring import mark_safe
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.utils.timezone import now
-from client.models import ClientAccount
+from client.models import Client, ClientAccount
 
 register = Library()
 
@@ -73,6 +73,22 @@ def index(ary, i):
 @register.filter
 def account_type_text(acc_type):
     return ClientAccount.get_account_type_text(acc_type)
+
+@register.filter
+def occupation_text(occupation):
+    return Client.get_occupation_text(occupation)
+
+@register.filter
+def employment_status_text(employment_status):
+    return Client.get_employment_status_text(employment_status)
+
+@register.filter
+def employer_type_text(employer_type):
+    return Client.get_employer_type_text(employer_type)
+
+@register.filter
+def filing_status_text(filing_status):
+    return Client.get_filing_status_text(filing_status)
 
 @register.filter
 def to_class_name(value):

@@ -330,6 +330,7 @@ class RetirementPlan(TimestampedModel):
         context = {
             'client': plan.client,
             'advisor': plan.client.advisor,
+            'firm': plan.client.firm,
             'partner_name': partner_name
         }
 

@@ -257,6 +257,11 @@ table thead .active .icon-sort {
   padding: 0;
 }
 
+.inline-checkbox-wrap {
+  display: inline-block;
+  margin-right: 15px;
+}
+
 .required .control-label:after {
   content: ' *';
   color: #d9534f;
