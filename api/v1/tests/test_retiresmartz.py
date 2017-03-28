@@ -848,6 +848,7 @@ class RetiresmartzTests(APITestCase):
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('on_track' in response.data)
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
         self.assertTrue('reload_feed' in response.data)
@@ -874,6 +875,7 @@ class RetiresmartzTests(APITestCase):
         url = '/api/v1/clients/{}/retirement-plans/{}/calculated-data'.format(plan.client.id, plan.id)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('on_track' in response.data)
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
         self.assertTrue('reload_feed' in response.data)
@@ -1101,8 +1103,10 @@ class RetiresmartzTests(APITestCase):
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('on_track' in response.data)
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
+        self.assertTrue('reload_feed' in response.data)
         self.assertEqual(len(response.data['projection']), 50)
 
 
@@ -1180,8 +1184,10 @@ class RetiresmartzTests(APITestCase):
         # We should be ready to calculate properly
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('on_track' in response.data)
         self.assertTrue('portfolio' in response.data)
         self.assertTrue('projection' in response.data)
+        self.assertTrue('reload_feed' in response.data)
         self.assertEqual(len(response.data['projection']), 50)
 
         # Try life_expectancy below valid range
