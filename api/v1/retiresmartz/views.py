@@ -575,7 +575,10 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
         try:
             projection = plan.projection
             pser = PortfolioSerializer(instance=plan.goal_setting.portfolio)
-            return Response({'portfolio': pser.data, 'projection': projection.proj_data, 'reload_feed': False})
+            return Response({'portfolio': pser.data,
+                             'projection': projection.proj_data,
+                             'on_track': projection.on_track,
+                             'reload_feed': False})
         except ObjectDoesNotExist:
             return self.calculate(request, parent_lookup_client, format)
 
@@ -810,7 +813,10 @@ class RetiresmartzViewSet(ApiViewMixin, NestedViewSetMixin, ModelViewSet):
             advice.save()
             reload_feed = True
 
-        return Response({'portfolio': pser.data, 'projection': proj_data, 'reload_feed': reload_feed})
+        return Response({'portfolio': pser.data,
+                         'projection': proj_data,
+                         'on_track': on_track,
+                         'reload_feed': reload_feed})
 
     def check_is_on_track(self, proj_data, plan):
         def values_since_retirement(retirement_date, arr):
