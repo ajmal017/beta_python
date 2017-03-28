@@ -1,8 +1,8 @@
 import os
 from main.settings import *
 
-ETNA_TESTING = True
-IB_TESTING = True
+ETNA_TESTING = False
+IB_TESTING = False
 IB_ACC_1='DU653263'
 IB_ACC_2='DU653264'
 IB_ACC_3='DU653265'

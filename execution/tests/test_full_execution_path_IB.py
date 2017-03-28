@@ -95,7 +95,7 @@ class BaseTest(TestCase):
 
         goals = Goal.objects.all()
 
-        process(self.data_provider, self.execution_provider)
+        process(self.data_provider, self.execution_provider, 5)
         for goal in goals:
             sum_volume = Execution.objects.filter(distributions__execution_request__goal=goal) \
                 .aggregate(sum=Sum('volume'))

@@ -185,7 +185,7 @@ def create_orders():
 
             provider = provider_manager.get("IB")
             md = provider.get_market_depth_L1(ticker.symbol)
-            order = broker_manager.get(grouped_volume_per_share.broker).create_order(price=round(md.get_mid()*0.995 if grouped_volume_per_share.volume > 0 else md.get_mid()*1.005,2), quantity=grouped_volume_per_share.volume, ticker=ticker)
+            order = broker_manager.get(grouped_volume_per_share.broker).create_order(price=round(md.get_mid()*1.005 if grouped_volume_per_share.volume > 0 else md.get_mid()*0.995,2), quantity=grouped_volume_per_share.volume, ticker=ticker)
             order.save()
             mor_ids = MarketOrderRequest.objects.all().filter(state=MarketOrderRequest.State.APPROVED.value,
                                                               execution_requests__asset_id=ticker.id).\
@@ -239,7 +239,7 @@ def create_pre_trade_allocation():
         mor = MarketOrderRequest.objects.get(execution_requests__id=er.id)
         if mor.account.broker_acc_id not in allocation[er.asset.symbol]:
             allocation[er.asset.symbol][mor.account.broker_acc_id] = 0
-        allocation[er.asset.symbol][mor.account.broker_acc_id] += er.volume
+        allocation[er.asset.symbol][mor.account.broker_acc_id] += abs(er.volume)
     return allocation
 
 @transaction.atomic
@@ -335,7 +335,7 @@ def create_sale(ticker_id, volume, current_price, execution_distribution):
                             sell_execution_distribution=execution_distribution,
                             buy_execution_distribution=lot.execution_distribution)
 
-def execute():
+def execute(delay):
     # 1 market_order_request, 1 execution_request, 2 fills
     # out
     create_orders()
@@ -353,7 +353,7 @@ def execute():
 
 
         orders.append(order)
-    time.sleep(1 * 60)
+    time.sleep(delay)
     distributions = update_orders(orders)
     for order in orders:
         mark_order_as_complete(order)
@@ -361,7 +361,7 @@ def execute():
     process_fills(distributions)
 
 
-def process(data_provider, execution_provider):
+def process(data_provider, execution_provider, delay):
     # actually tickers are created here - we need to set proper asset class for each ticker
     goals = Goal.objects.all()
     #get_markowitz_scale(self)
@@ -395,7 +395,7 @@ def process(data_provider, execution_provider):
                                         allowed_side=-1)
         approve_mor(mor)
     # process sells
-    execute()
+    execute(delay)
     for goal in goals:
         # now create buys - but only use cash to finance proceeds of buys
         mor, requests = create_request(goal, new_positions, reason,
@@ -403,7 +403,7 @@ def process(data_provider, execution_provider):
                                         data_provider=data_provider,
                                         allowed_side=1)
         approve_mor(mor)
-    execute()
+    execute(delay)
 
 
 # obsolete - delete
